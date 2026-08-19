@@ -38,6 +38,7 @@ E-learning/
 
 ## Quy ước
 
+- **Mở đầu mỗi phiên làm việc:** chạy skill `start-session` (hoặc `/start-session`) trước khi làm bất cứ việc gì — nó xác định phase hiện tại, task kế tiếp và trạng thái git.
 - **Ngôn ngữ:** code, tên biến, commit message bằng tiếng Anh; tài liệu trong `docs/` và giao tiếp với user bằng tiếng Việt. UI song ngữ ưu tiên tiếng Việt.
 - **Backend layering:** router → service → model. Router không chứa business logic. Xem skill `fastapi-endpoint`.
 - **Schema change:** luôn qua Alembic migration, xem skill `db-migration`. Cập nhật `docs/database-design.md` cùng lúc.

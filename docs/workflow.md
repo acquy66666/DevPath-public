@@ -42,7 +42,7 @@ Quy trình làm việc đề xuất cho một người làm khóa luận 14 tu�
 
 ## Kỹ thuật dùng Claude Code hiệu quả cho dự án này
 
-1. **Mỗi phiên bắt đầu bằng ngữ cảnh:** "Đang làm task X trong phase N" — CLAUDE.md và các skill sẽ tự nạp quy ước, không cần giải thích lại.
+1. **Mỗi phiên bắt đầu bằng `/start-session`:** skill này tự đọc plan, xác định phase + task kế tiếp, kiểm tra git và đề xuất mục tiêu phiên — bạn chỉ cần chốt. Không cần giải thích lại ngữ cảnh mỗi lần.
 2. **Skill tự kích hoạt:** khi đụng endpoint → `fastapi-endpoint`; schema → `db-migration`; UI → `nextjs-feature`; grader → `sandbox-grading` (bắt buộc); báo cáo → `thesis-report`. Nếu Claude quên, nhắc tên skill.
 3. **Một việc một phiên:** xong tính năng, commit, mở phiên mới (hoặc `/clear`) cho tính năng kế — context sạch cho kết quả tốt hơn.
 4. **Việc song song độc lập** (ví dụ: seed data + viết docs trong khi bạn xử lý VNPay đăng ký tài khoản) → dùng subagent/worktree.

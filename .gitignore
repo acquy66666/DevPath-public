@@ -1,0 +1,33 @@
+# Secrets & env
+.env
+.env.*
+!.env.example
+*.pem
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+
+# Media / data lớn (đi qua R2, không commit)
+*.mp4
+*.m3u8
+hls-output/
+uploads/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Claude Code local
+.claude/settings.local.json

@@ -1,0 +1,80 @@
+# Kiến trúc hệ thống
+
+## Sơ đồ tổng thể
+
+```mermaid
+flowchart LR
+    subgraph Client
+        W[Next.js Web App]
+    end
+    subgraph VPS["VPS — Docker Compose"]
+        N[Nginx reverse proxy] --> W2[Next.js SSR]
+        N --> A[FastAPI]
+        A --> P[(PostgreSQL)]
+        A --> R[(Redis)]
+        A -->|enqueue| Q[Celery Queue - Redis broker]
+        Q --> G[Grader Worker]
+        G -->|docker run| S[Sandbox Containers<br/>network=none, cgroup limits]
+        Q --> BW[Background Worker<br/>embedding, mail, certificate]
+        A --> GM[Gemini API]
+        BW --> GM
+    end
+    W --> N
+    A --> R2[Cloudflare R2<br/>video HLS + assets]
+    W -->|HLS segments| R2
+    A --> PAY[VNPay / MoMo sandbox]
+```
+
+## Các thành phần
+
+| Thành phần | Vai trò | Ghi chú |
+|---|---|---|
+| Next.js | UI, SSR trang public (SEO), client app cho trải nghiệm học | Không có business logic |
+| FastAPI | REST API duy nhất, auth JWT, authorization | Layering: router → service → model |
+| PostgreSQL | Nguồn chân lý dữ liệu | Full-text search bằng `tsvector` (đủ cho phạm vi khóa luận, khỏi cần Elasticsearch) |
+| Redis | Cache, session/refresh token, leaderboard (sorted set), rate limit, Celery broker, pub/sub tiến độ chấm bài | |
+| Celery workers | Job async: chấm bài, sinh embedding, sinh chứng chỉ PDF, gửi mail | Queue riêng cho grading (ưu tiên) và background |
+| Grader | Nhận job, điều phối Docker sandbox, tổng hợp verdict | Chi tiết bảo mật: skill `sandbox-grading` |
+| Cloudflare R2 | Video HLS, thumbnail, tài liệu | Egress miễn phí; upload qua presigned URL |
+| Gemini API | Chatbot RAG, sinh quiz | Free tier; luôn có fallback khi API lỗi/quota |
+
+## Ba luồng kỹ thuật trọng điểm
+
+### 1. Chấm mã nguồn (⭐ điểm nhấn 1)
+
+```
+Submit code → API validate + tạo submission(pending) → Celery queue
+→ Grader worker → docker run (image theo ngôn ngữ, cô lập hoàn toàn)
+→ chạy từng test case → verdict per test → update DB
+→ Redis pub/sub → client nhận realtime (WebSocket, fallback polling)
+```
+
+### 2. Chatbot RAG (⭐ điểm nhấn 3)
+
+```
+Ingest (async khi giảng viên upload): transcript/tài liệu → chunk (~500 token, overlap)
+→ Gemini embedding → lưu pgvector
+Query: câu hỏi học viên → embed → similarity search top-k (lọc theo course_id)
+→ prompt Gemini kèm context + system prompt trợ giảng → trả lời có trích nguồn bài học
+```
+
+- Dùng **pgvector** ngay trong PostgreSQL — không thêm vector DB riêng.
+- Chat history lưu DB, giới hạn context window theo phiên.
+
+### 3. Hybrid Recommender (⭐ điểm nhấn 2)
+
+- **Content-based:** embedding (title + description + category) → cosine similarity, giải quyết cold-start item.
+- **Collaborative filtering:** implicit feedback (enroll, hoàn thành, rating) → ALS/item-based CF trên ma trận user–item.
+- **Hybrid:** weighted blend, fallback content-based + phổ biến-theo-danh-mục khi user mới.
+- Tính offline theo batch (Celery beat, mỗi đêm), cache kết quả top-N per user vào Redis.
+- Đánh giá: precision@k, recall@k trên tập held-out từ dữ liệu seed — script tại `backend/scripts/eval_recommender.py`.
+
+## Quyết định kiến trúc đã chốt
+
+| Quyết định | Lý do |
+|---|---|
+| Monolith FastAPI + workers (không microservices) | Một người làm trong 14 tuần; tách process theo vai trò (API/worker) là đủ "hệ phân tán" để trình bày |
+| pgvector thay vì vector DB riêng | Ít moving part, đủ quy mô demo |
+| Postgres FTS thay vì Elasticsearch | Như trên |
+| WebSocket cho kết quả chấm, fallback polling | Realtime là điểm demo ăn tiền |
+| Python-only grading ở v1 | Image per-language thiết kế sẵn chỗ mở rộng |

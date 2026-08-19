@@ -4,7 +4,7 @@
 
 ## Khảo sát & thiết kế
 
-- [ ] Khảo sát 2–3 nền tảng tham chiếu (Udemy, Coursera, CodeLearn.io) — ghi bảng so sánh tính năng vào `docs/report/assets/` (dùng cho chương 1)
+- [x] Khảo sát 2–3 nền tảng tham chiếu (Udemy, Coursera, CodeLearn.io) — ghi bảng so sánh tính năng vào [`docs/report/assets/khao-sat-nen-tang-tham-chieu.md`](../report/assets/khao-sat-nen-tang-tham-chieu.md) (dùng cho chương 1)
 - [ ] Chốt danh sách use case theo 3 nhóm người dùng (từ đề cương mục 5) — vẽ use case diagram
 - [ ] ERD chi tiết từ [database-design.md](../database-design.md) — vẽ mermaid/draw.io, review lại quan hệ N-N và các cột trạng thái
 - [ ] Wireframe màn chính: trang chủ, danh sách + chi tiết khóa học, player, trang nộp code, dashboard giảng viên, admin (Figma hoặc giấy — không cầu toàn)

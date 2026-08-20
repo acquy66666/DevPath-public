@@ -18,6 +18,28 @@ jobs:
       run:
         working-directory: backend
 
+    # Auth tests run against a real database inside a rolled-back transaction,
+    # so the suite needs Postgres from here on. tests/conftest.py skips the
+    # database tests when it cannot connect *and* CI is unset -- in CI it fails
+    # instead, so a broken service container can never show up as a green run.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: devpath
+          POSTGRES_PASSWORD: devpath
+          POSTGRES_DB: devpath
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U devpath -d devpath"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://devpath:devpath@localhost:5432/devpath
+
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +54,9 @@ jobs:
 
       - name: Ruff
         run: ruff check .
+
+      - name: Migrate the test database
+        run: alembic upgrade head
 
       - name: Pytest
         run: pytest -q

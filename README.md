@@ -34,7 +34,7 @@ Khóa luận tốt nghiệp: nền tảng e-learning kiểu Udemy tích hợp AI
 
 ## Trạng thái
 
-**Phase 1 — Foundation.** Backend FastAPI đã chạy được (`/api/v1/health`, pytest xanh) — xem [backend/README.md](backend/README.md). Kế tiếp: Next.js, `docker compose`, migration đầu tiên và CI, theo [phase-1-foundation.md](docs/plan/phase-1-foundation.md). Hướng dẫn chạy cả hệ thống bằng một lệnh sẽ bổ sung vào đây khi `infra/docker-compose.yml` xong.
+**Phase 1 — Foundation.** Backend FastAPI và frontend Next.js đều chạy được, frontend gọi được `/api/v1/health` của backend — xem [backend/README.md](backend/README.md) và [frontend/README.md](frontend/README.md). Kế tiếp: `docker compose`, migration đầu tiên và CI, theo [phase-1-foundation.md](docs/plan/phase-1-foundation.md). Hướng dẫn chạy cả hệ thống bằng một lệnh sẽ bổ sung vào đây khi `infra/docker-compose.yml` xong.
 
 ## Quy ước
 

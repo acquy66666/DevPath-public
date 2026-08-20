@@ -28,6 +28,22 @@ npm run lint
 npm run build
 ```
 
+## Auth (Phase 2)
+
+| Đường dẫn | Nội dung |
+|---|---|
+| `/dang-ky` | Form tạo tài khoản (họ tên, email, mật khẩu) |
+| `/dang-nhap` | Form đăng nhập |
+
+- `lib/api/auth.ts` — client typed khớp `backend/app/schemas/auth.py`.
+- `lib/auth/auth-provider.tsx` — `AuthProvider` + hook `useAuth()`: `user`, `accessToken`, `status`, `signIn`, `signUp`, `signOut`.
+- `lib/auth/validation.ts` — bản sao quy tắc validate của backend (mật khẩu ≥ 8 ký tự và ≤ 72 **byte**), chỉ để báo lỗi ngay cạnh ô nhập; backend vẫn là nơi quyết định.
+- `lib/auth/error-messages.ts` — ánh xạ `code` của backend sang câu tiếng Việt. Không bao giờ switch theo `message`.
+
+**Access token nằm trong bộ nhớ, không ở `localStorage` cũng không ở cookie JS đọc được.** Refresh token là cookie `HttpOnly` của backend, nên F5 xong `AuthProvider` gọi `/auth/refresh` để dựng lại phiên — đó là lúc header hiện ô xám chờ (`status === "loading"`). Đánh đổi: `middleware.ts` của Next không đọc được cookie đó nên guard route phải làm ở client; chưa có route nào cần guard cho tới khi có trang học.
+
+**Cạm bẫy đã gặp: refresh gọi hai lần là mất phiên.** Backend xoay vòng refresh token và coi token đã thu hồi quay lại là bị đánh cắp (thu hồi sạch phiên). React StrictMode chạy effect hai lượt trong dev ⇒ hai request refresh song song ⇒ tự đăng xuất chính mình. `lib/api/auth.ts` vì thế gom mọi lời gọi refresh đang bay vào **một** promise duy nhất. Hệ quả còn lại: mở hai tab cùng lúc sau khi để lâu vẫn có thể chạm vào tình huống này — nếu thành phiền thì thêm khoảng ân hạn (leeway) phía backend.
+
 ## Cấu trúc
 
 ```

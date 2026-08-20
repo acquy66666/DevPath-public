@@ -3,13 +3,17 @@
  * that error parsing, headers and the base URL live in exactly one place.
  */
 
-const FALLBACK_BASE_URL = "http://127.0.0.1:8000";
+const FALLBACK_BASE_URL = "http://localhost:8000";
 
 /**
  * Server and browser reach the backend by different names. Under Docker
  * Compose a Server Component resolves the service hostname `backend`, which
  * means nothing in the user's browser -- the browser has to use the port
  * published on the host. Outside Docker both sides collapse to the same URL.
+ *
+ * The browser URL must stay on `localhost`, not `127.0.0.1`: those count as
+ * different sites, and the refresh cookie is `SameSite=lax`, so the browser
+ * would silently drop it on every call from a page served at localhost:3000.
  */
 function baseUrl(): string {
   if (typeof window === "undefined") {
@@ -35,12 +39,23 @@ export class ApiError extends Error {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export interface ApiRequestInit extends RequestInit {
+  /** Access token to send as `Authorization: Bearer`, when the call needs one. */
+  accessToken?: string | null;
+}
+
+export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
+  const { accessToken, headers, ...rest } = init;
+
   const response = await fetch(`${baseUrl()}${path}`, {
-    ...init,
+    ...rest,
+    // The refresh token is an HttpOnly cookie on the backend origin; without
+    // this the browser keeps it to itself and every refresh looks signed out.
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...init?.headers,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...headers,
     },
   });
 
@@ -59,6 +74,11 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
 
     throw new ApiError(code, message, response.status);
+  }
+
+  // 204 and friends have no body at all; parsing one would throw.
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return undefined as T;
   }
 
   return (await response.json()) as T;

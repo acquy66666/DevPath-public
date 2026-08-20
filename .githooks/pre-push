@@ -1,0 +1,43 @@
+#!/bin/sh
+#
+# Blocks force-push and deletion of protected branches.
+#
+# GitHub branch protection is unavailable for this repo (private repo on the
+# Free plan), so this hook is the local stand-in. It is bypassable with
+# --no-verify and only protects this working copy -- it is a safety net for
+# accidents, not a server-side guarantee.
+#
+# Enabled via: git config core.hooksPath .githooks
+
+protected="main"
+zero=$(git hash-object --stdin </dev/null | tr '[0-9a-f]' '0')
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+	branch=${remote_ref#refs/heads/}
+	case " $protected " in
+		*" $branch "*) ;;
+		*) continue ;;
+	esac
+
+	if [ "$local_sha" = "$zero" ]; then
+		echo "pre-push: refusing to delete '$branch' on the remote." >&2
+		exit 1
+	fi
+
+	if [ "$remote_sha" = "$zero" ]; then
+		continue
+	fi
+
+	if ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
+		echo "pre-push: remote commit $remote_sha is unknown locally; run 'git fetch' and try again." >&2
+		exit 1
+	fi
+
+	if ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+		echo "pre-push: refusing non-fast-forward push to '$branch' -- this would rewrite history." >&2
+		echo "pre-push: if you really mean it, re-run with --no-verify." >&2
+		exit 1
+	fi
+done
+
+exit 0

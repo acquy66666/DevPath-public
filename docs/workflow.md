@@ -23,7 +23,7 @@ Quy trình làm việc đề xuất cho một người làm khóa luận 14 tu�
 |---|---|
 | Đầu tuần | Đọc lại file phase hiện tại, chọn các task tuần này, điều chỉnh nếu tuần trước trễ |
 | Trong tuần | Vòng lặp tính năng ở trên; mỗi ngày kết thúc bằng commit sạch (không để code dở qua đêm không commit) |
-| Cuối tuần | Demo tự thân những gì làm được; cập nhật bằng chứng báo cáo (skill `thesis-report`); ghi lại quyết định kỹ thuật đáng nhớ vào docs |
+| Cuối tuần | Demo tự thân những gì làm được; **thu bằng chứng** (ảnh + số đo) vào `docs/report/assets/phase-N/` theo bảng trong skill `thesis-report`; ghi 1–2 dòng cho mỗi quyết định kỹ thuật vào `decisions.md`. Chưa viết báo cáo — việc đó ở Phase 7 |
 | Cuối phase | Chạy gate checklist cuối file phase; chưa qua gate → chưa sang phase mới; tag git `phase-N-done` |
 
 ## Phân vai với Claude Code
@@ -52,6 +52,7 @@ Quy trình làm việc đề xuất cho một người làm khóa luận 14 tu�
 ## Git
 
 - `main` luôn chạy được; feature branch `feature/<tên>` cho mọi thay đổi ≥1 giờ
+- Bảo vệ `main`: hook `.githooks/pre-push` chặn force-push và xóa nhánh. **Sau mỗi lần clone mới phải chạy lại `git config core.hooksPath .githooks`** — config này không đi theo repo. Hook bypass được bằng `--no-verify`, chỉ là lưới an toàn chống lỡ tay, không thay thế branch protection phía GitHub
 - Commit nhỏ, message Conventional Commits; tag `phase-N-done` tại mỗi gate
 - Push lên GitHub hằng ngày — GitHub là backup khóa luận của bạn
 - File `.env`, `*.pem`, dữ liệu video KHÔNG commit
@@ -60,4 +61,4 @@ Quy trình làm việc đề xuất cho một người làm khóa luận 14 tu�
 
 1. **Xây ngang thay vì xây dọc** — làm "toàn bộ backend" 5 tuần đầu rồi mới đụng UI. Luôn làm vertical slice từng tính năng chạy được end-to-end.
 2. **Để dành 3 điểm nhấn ⭐ đến cuối** — sandbox ở tuần 6–8 và AI ở tuần 9–10 là *chính giữa* kế hoạch, đúng chỗ của nó. Tính năng phụ (wishlist, banner...) mới là thứ được phép trễ.
-3. **Dồn báo cáo về tuần 14** — mỗi phase kết thúc phải cập nhật chương báo cáo tương ứng ngay (skill `thesis-report` liệt kê bằng chứng cần thu từng phase).
+3. **Đến tuần 14 mới phát hiện thiếu bằng chứng** — kế hoạch này *cố ý* viết báo cáo sau khi sản phẩm xong (Phase 7), nên rủi ro không nằm ở câu chữ mà ở số liệu: thiếu ảnh chụp, thiếu log, thiếu số đo thì phải dựng lại môi trường để đo lại giữa tuần bảo vệ. Mỗi gate phase đều có một mục thu bằng chứng — đừng tick nó cho có.

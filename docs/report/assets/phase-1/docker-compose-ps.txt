@@ -1,0 +1,7 @@
+$ docker compose -f infra/docker-compose.yml ps
+NAME                 STATUS                       PORTS
+devpath-backend-1    Up About an hour (healthy)   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+devpath-frontend-1   Up 42 minutes (healthy)      0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+devpath-postgres-1   Up 59 minutes (healthy)      0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+devpath-redis-1      Up 59 minutes (healthy)      0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+devpath-worker-1     Up 59 minutes (healthy)      8000/tcp

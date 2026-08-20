@@ -15,7 +15,7 @@
 - [ ] Bật ruleset bảo vệ `main` trên GitHub sau khi có Pro (đăng ký GitHub Student Developer Pack) — rules: `non_fast_forward` + `deletion`, không bypass actor
 - [x] Monorepo skeleton: `backend/`, `frontend/`, `grader/`, `infra/` theo cấu trúc trong CLAUDE.md
 - [x] Backend: FastAPI + SQLAlchemy async + Alembic + pytest chạy được; endpoint `/health`; cấu hình bằng pydantic-settings (`.env`)
-- [ ] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`
+- [x] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`
 - [ ] `infra/docker-compose.yml`: postgres (kèm pgvector), redis, backend, frontend, worker — up một lệnh
 - [ ] Migration đầu tiên: bảng `users`, `categories`, `courses` (đủ để phase 2 bắt đầu)
 - [ ] CI GitHub Actions: lint + test backend & frontend trên mỗi PR

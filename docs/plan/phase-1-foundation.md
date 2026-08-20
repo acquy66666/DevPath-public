@@ -14,7 +14,7 @@
 - [x] `git init`, tạo repo GitHub, branch protection main — repo private trên gói Free nên GitHub chặn cả ruleset lẫn branch protection (HTTP 403); thay bằng git hook `.githooks/pre-push` chặn force-push và xóa nhánh `main`
 - [ ] Bật ruleset bảo vệ `main` trên GitHub sau khi có Pro (đăng ký GitHub Student Developer Pack) — rules: `non_fast_forward` + `deletion`, không bypass actor
 - [x] Monorepo skeleton: `backend/`, `frontend/`, `grader/`, `infra/` theo cấu trúc trong CLAUDE.md
-- [ ] Backend: FastAPI + SQLAlchemy async + Alembic + pytest chạy được; endpoint `/health`; cấu hình bằng pydantic-settings (`.env`)
+- [x] Backend: FastAPI + SQLAlchemy async + Alembic + pytest chạy được; endpoint `/health`; cấu hình bằng pydantic-settings (`.env`)
 - [ ] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`
 - [ ] `infra/docker-compose.yml`: postgres (kèm pgvector), redis, backend, frontend, worker — up một lệnh
 - [ ] Migration đầu tiên: bảng `users`, `categories`, `courses` (đủ để phase 2 bắt đầu)

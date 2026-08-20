@@ -18,7 +18,7 @@
 - [x] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`
 - [x] `infra/docker-compose.yml`: postgres (kèm pgvector), redis, backend, frontend, worker — up một lệnh
 - [x] Migration đầu tiên: bảng `users`, `categories`, `courses` (đủ để phase 2 bắt đầu)
-- [ ] CI GitHub Actions: lint + test backend & frontend trên mỗi PR
+- [x] CI GitHub Actions: lint + test backend & frontend trên mỗi PR
 - [ ] Seed script skeleton (`backend/scripts/seed.py`) — tài khoản admin, vài category
 
 ## Gate cuối phase

@@ -55,5 +55,5 @@ Mỗi thư mục cấp 1 có README riêng nêu nguyên tắc và trạng thái 
 
 ## Trạng thái hiện tại
 
-- Giai đoạn: **Phase 1 — Foundation, đang làm.** Đã xong: khảo sát nền tảng tham chiếu, đặc tả CSDL đủ để code, repo + hook bảo vệ `main`, khung monorepo. Bước tiếp theo: dựng FastAPI chạy được với `/health` — xem [docs/plan/phase-1-foundation.md](docs/plan/phase-1-foundation.md).
+- Giai đoạn: **Phase 1 — Foundation, gần xong.** Đã xong: khảo sát nền tảng tham chiếu, đặc tả CSDL, repo + hook bảo vệ `main`, khung monorepo, backend FastAPI với `/health`, frontend Next.js, `docker compose` dựng đủ stack, migration đầu tiên (`users`/`categories`/`courses`), CI GitHub Actions. Còn lại: seed script và gate cuối phase — xem [docs/plan/phase-1-foundation.md](docs/plan/phase-1-foundation.md).
 - Kế hoạch đã tách **Phase 7 — Báo cáo**: trong Phase 1–6 không viết báo cáo, chỉ thu bằng chứng vào `docs/report/assets/phase-N/`.

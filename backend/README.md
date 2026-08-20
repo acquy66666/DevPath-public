@@ -25,6 +25,36 @@ scripts/                   seed.py, eval_recommender.py, rebuild_course_stats.py
 
 Chi tiết đầy đủ: skill `fastapi-endpoint` và `db-migration` trong `.claude/skills/`.
 
-## Chưa có gì ở đây
+## Chạy local
 
-Thư mục mới chỉ là khung package. FastAPI app, cấu hình pydantic-settings, Alembic và pytest được thêm ở task kế tiếp của [Phase 1](../docs/plan/phase-1-foundation.md).
+```bash
+python -m venv .venv
+```
+
+```bash
+.venv\Scripts\python.exe -m pip install -e ".[dev]"
+```
+
+```bash
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+Kiểm tra: `http://127.0.0.1:8000/api/v1/health` và tài liệu API ở `/docs` (tự tắt khi `ENV=production`).
+
+Test và lint:
+
+```bash
+.venv\Scripts\python.exe -m pytest
+```
+
+```bash
+.venv\Scripts\python.exe -m ruff check .
+```
+
+Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy từ [.env.example](.env.example).
+
+## Trạng thái
+
+Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, pytest chạy được với httpx `ASGITransport` (không cần server, không cần DB).
+
+Chưa có: migration nào (`alembic/versions/` rỗng — bảng `users`/`categories`/`courses` là task kế tiếp), endpoint readiness kiểm tra DB/Redis (chờ `docker compose`), auth (Phase 2).

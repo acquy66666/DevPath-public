@@ -19,7 +19,7 @@
 - [x] `infra/docker-compose.yml`: postgres (kèm pgvector), redis, backend, frontend, worker — up một lệnh
 - [x] Migration đầu tiên: bảng `users`, `categories`, `courses` (đủ để phase 2 bắt đầu)
 - [x] CI GitHub Actions: lint + test backend & frontend trên mỗi PR
-- [ ] Seed script skeleton (`backend/scripts/seed.py`) — tài khoản admin, vài category
+- [x] Seed script skeleton (`backend/scripts/seed.py`) — tài khoản admin, vài category
 
 ## Gate cuối phase
 

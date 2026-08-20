@@ -3,7 +3,25 @@
  * that error parsing, headers and the base URL live in exactly one place.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000";
+const FALLBACK_BASE_URL = "http://127.0.0.1:8000";
+
+/**
+ * Server and browser reach the backend by different names. Under Docker
+ * Compose a Server Component resolves the service hostname `backend`, which
+ * means nothing in the user's browser -- the browser has to use the port
+ * published on the host. Outside Docker both sides collapse to the same URL.
+ */
+function baseUrl(): string {
+  if (typeof window === "undefined") {
+    return (
+      process.env.API_BASE_URL_INTERNAL ??
+      process.env.NEXT_PUBLIC_API_BASE_URL ??
+      FALLBACK_BASE_URL
+    );
+  }
+
+  return process.env.NEXT_PUBLIC_API_BASE_URL ?? FALLBACK_BASE_URL;
+}
 
 /** Mirrors the backend envelope: {"detail": {"code", "message"}}. */
 export class ApiError extends Error {
@@ -18,7 +36,7 @@ export class ApiError extends Error {
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${baseUrl()}${path}`, {
     ...init,
     headers: {
       "Content-Type": "application/json",

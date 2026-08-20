@@ -43,3 +43,6 @@ build/
 # Next.js
 .turbo/
 next-env.d.ts
+
+# Playwright MCP scratch output
+.playwright-mcp/

@@ -26,4 +26,22 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Hot reload frontend không hoạt động trong Docker trên Windows** — Turbopack không nhận thay đổi qua bind mount dù đã cấu hình `watchOptions.pollIntervalMs` và xác nhận mtime tới được container. Backend thì reload bình thường nhờ polling. Cách làm việc: chạy Next native trên host, phần còn lại trong Docker (ghi trong `infra/README.md`).
 
-**CI có job migration riêng** — test backend không chạm database nên hai job lint/test không thể fail vì migration hỏng. Job thứ ba chạy upgrade → downgrade → upgrade → `alembic check` → seed hai lần, trên database trắng không có init script.
+**CI có job migration riêng** — test backend không chạm database nên hai job lint/test không thể fail vì migration hỏng. Job thứ ba chạy upgrade → downgrade → upgrade → `alembic check` → seed hai lần, trên database trắng không có init script. (Từ Phase 2 test backend có chạm database — xem mục cuối phần dưới.)
+
+## Phase 2 — Core Platform
+
+**Access token là JWT, refresh token là chuỗi ngẫu nhiên** — access token phải xác thực được mà không truy vấn DB, nên là JWT HS256 sống 15 phút. Refresh token cần **thu hồi được**, mà JWT thì không thu hồi được nếu không tra bảng — vậy nên nó chỉ là 48 byte `secrets` ngẫu nhiên, tra thẳng bảng `refresh_tokens`.
+
+**Refresh token chỉ đi trong cookie `HttpOnly`, giới hạn `Path=/api/v1/auth`** — JavaScript không đọc được nên một lỗ XSS ở frontend không lấy được phiên 30 ngày. Giới hạn path để cookie không bị gửi kèm mọi request khác (giảm bề mặt CSRF). `SameSite=lax` chứ không `strict`: vào site từ kết quả tìm kiếm Google không được hiện ra như chưa đăng nhập.
+
+**DB chỉ lưu SHA-256 của refresh token, không dùng bcrypt** — token là 384 bit ngẫu nhiên, không có "mật khẩu yếu" để làm chậm kẻ dò, nên bcrypt chỉ tốn thời gian ở **mỗi lần refresh**. Lộ dump DB vẫn không đăng nhập lại được vì không có token thô.
+
+**Xoay vòng refresh token + coi tái sử dụng là bị đánh cắp** — mỗi lần refresh thành công thu hồi token cũ. Token đã thu hồi quay lại ⇒ thu hồi **toàn bộ** phiên của user đó (`REFRESH_TOKEN_REUSED`). Không phân biệt được bản của kẻ trộm với bản của nạn nhân nên phải cắt cả hai; giá phải trả là người dùng bị đăng xuất mọi thiết bị trong một số tình huống lành tính (hai tab cùng refresh sau khi đã đăng xuất).
+
+**Email sai và mật khẩu sai trả cùng một lỗi `INVALID_CREDENTIALS`, kèm bcrypt "mồi"** — nếu tài khoản không tồn tại mà trả lời ngay thì thời gian phản hồi khác biệt biến form đăng nhập thành công cụ dò xem một email có đăng ký ở đây không. Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) cũng rơi vào nhánh này.
+
+**Khóa tài khoản kiểm tra *sau* khi so mật khẩu** — trả `ACCOUNT_LOCKED` trước khi biết mật khẩu đúng hay sai cũng là một cách lộ "email này có tài khoản".
+
+**Vai trò không nhận từ request body** — `register_user()` tự đặt `role='student'`; gửi kèm `"role": "admin"` bị bỏ qua. Chống mass assignment ngay từ chữ ký hàm chứ không bằng việc nhớ lọc field.
+
+**Test backend từ nay chạy trên Postgres thật** — auth có quá nhiều hành vi ở tầng DB (unique email, cascade, xoay vòng token) để mock cho đáng tin. Mỗi test nằm trong một transaction bị rollback (`join_transaction_mode="create_savepoint"` nên `commit()` thật trong service vẫn chạy). Job `backend` của CI vì thế phải thêm service Postgres; máy dev không có DB thì nhóm test này tự skip, nhưng khi biến `CI` được đặt thì fail — CI không được phép xanh nhờ bỏ qua test.

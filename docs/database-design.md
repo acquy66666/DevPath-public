@@ -258,7 +258,7 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | Nhóm bảng | Trạng thái | Revision |
 |---|---|---|
 | `users`, `categories`, `courses` | ✅ đã có trong DB | `576c29b76f4e` |
-| `refresh_tokens` | ⏳ Phase 2 (auth) | |
+| `refresh_tokens` | ✅ đã có trong DB | `adab7334f140` |
 | `course_sections`, `lessons`, `video_assets`, `reviews` | ⏳ Phase 2 | |
 | Nhóm học tập, bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 

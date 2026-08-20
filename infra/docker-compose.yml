@@ -10,6 +10,9 @@ x-backend-env: &backend-env
   # own network namespace.
   DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-devpath}:${POSTGRES_PASSWORD:-devpath}@postgres:5432/${POSTGRES_DB:-devpath}
   REDIS_URL: redis://redis:6379/0
+  # Dev default only; the VPS .env must set a real one or the app refuses
+  # to start (see Settings.reject_the_dev_secret_in_production).
+  JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
   CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
   # The Windows host's filesystem events do not cross into the Linux VM, so
   # the reloader has to poll for changes instead of waiting to be told.

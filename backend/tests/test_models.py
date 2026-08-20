@@ -7,7 +7,7 @@ upgrade/downgrade against the dev database.
 
 import pytest
 
-from app.models import Base, Category, Course, User
+from app.models import Base, Category, Course, RefreshToken, User
 
 
 def constraint_names(model: type) -> set[str]:
@@ -18,8 +18,14 @@ def index_names(model: type) -> set[str]:
     return {i.name for i in model.__table__.indexes}
 
 
-def test_all_three_tables_are_registered() -> None:
-    assert set(Base.metadata.tables) == {"users", "categories", "courses"}
+def test_registered_tables_match_the_phases_done_so_far() -> None:
+    """Phase 1 created three tables; Phase 2 auth adds refresh_tokens."""
+    assert set(Base.metadata.tables) == {
+        "users",
+        "categories",
+        "courses",
+        "refresh_tokens",
+    }
 
 
 @pytest.mark.parametrize("model", [User, Category, Course])
@@ -114,3 +120,40 @@ def test_courses_is_the_only_soft_deleted_table() -> None:
     assert "deleted_at" in Course.__table__.c
     assert "deleted_at" not in User.__table__.c
     assert "deleted_at" not in Category.__table__.c
+
+
+def test_refresh_tokens_indexes_match_the_spec() -> None:
+    assert {"uq_refresh_tokens_token_hash", "ix_refresh_tokens_user_id"} == index_names(
+        RefreshToken
+    )
+
+
+def test_refresh_token_hash_column_fits_sha256_hex() -> None:
+    """Only the hash is stored: a leaked database must not yield usable tokens."""
+    assert RefreshToken.__table__.c.token_hash.type.length == 64
+    assert "token" not in {
+        c.name for c in RefreshToken.__table__.columns if c.name != "token_hash"
+    }
+
+
+def test_deleting_a_user_takes_their_sessions_with_them() -> None:
+    fk = next(iter(RefreshToken.__table__.c.user_id.foreign_keys))
+    assert fk.column.table.name == "users"
+    assert fk.ondelete == "CASCADE"
+
+
+def test_refresh_token_records_expiry_and_revocation() -> None:
+    table = RefreshToken.__table__
+    assert table.c.expires_at.nullable is False
+    assert table.c.revoked_at.nullable is True
+
+
+def test_refresh_token_has_created_at_but_no_updated_at() -> None:
+    """Deviates from the project-wide timestamp pair on purpose.
+
+    docs/database-design.md gives this table `created_at` only: a session row
+    is written once and then at most revoked, and `revoked_at` says when that
+    happened more precisely than a generic `updated_at` would.
+    """
+    assert "created_at" in RefreshToken.__table__.c
+    assert "updated_at" not in RefreshToken.__table__.c

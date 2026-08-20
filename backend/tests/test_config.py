@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from app.core.config import Settings
 
@@ -35,3 +36,33 @@ def test_cors_origins_still_accepts_a_json_list(monkeypatch: pytest.MonkeyPatch)
     settings = Settings()
 
     assert settings.cors_origins == ["http://localhost:3000"]
+
+
+def test_production_refuses_to_start_on_the_default_jwt_secret(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A shipped signing key would let anyone mint themselves an admin token."""
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.delenv("JWT_SECRET", raising=False)
+
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_production_starts_with_a_real_jwt_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("JWT_SECRET", "a-real-secret-from-the-vps-env-file")
+
+    assert Settings().jwt_secret == "a-real-secret-from-the-vps-env-file"
+
+
+def test_refresh_cookie_is_https_only_in_production_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Secure cookies never arrive over plain http, which is all localhost has."""
+    monkeypatch.setenv("ENV", "development")
+    assert Settings().cookie_secure is False
+
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("JWT_SECRET", "a-real-secret-from-the-vps-env-file")
+    assert Settings().cookie_secure is True

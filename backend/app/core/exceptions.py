@@ -31,6 +31,15 @@ class NotFoundError(DomainError):
     code = "NOT_FOUND"
 
 
+class NotAuthenticatedError(DomainError):
+    """No usable credentials. 401 with a WWW-Authenticate header is what a
+    Bearer scheme owes the client (RFC 6750); the header is added by the
+    handler in register_exception_handlers."""
+
+    status_code = status.HTTP_401_UNAUTHORIZED
+    code = "NOT_AUTHENTICATED"
+
+
 class PermissionDeniedError(DomainError):
     status_code = status.HTTP_403_FORBIDDEN
     code = "PERMISSION_DENIED"
@@ -46,7 +55,10 @@ def _error(status_code: int, code: str, message: str) -> JSONResponse:
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def handle_domain_error(_: Request, exc: DomainError) -> JSONResponse:
-        return _error(exc.status_code, exc.code, exc.message)
+        response = _error(exc.status_code, exc.code, exc.message)
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            response.headers["WWW-Authenticate"] = "Bearer"
+        return response
 
     @app.exception_handler(StarletteHTTPException)
     async def handle_http_exception(_: Request, exc: StarletteHTTPException) -> JSONResponse:
@@ -59,7 +71,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def handle_validation_error(_: Request, exc: RequestValidationError) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             content={
                 "detail": {
                     "code": "VALIDATION_ERROR",

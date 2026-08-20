@@ -63,4 +63,12 @@ Migration đầu tiên (`576c29b76f4e`) tạo `users`, `categories`, `courses` c
 .venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, auth (Phase 2), seed script.
+Sau khi migration chạy xong, nạp dữ liệu tối thiểu (một tài khoản admin, 8 danh mục 2 cấp):
+
+```bash
+.venv\Scripts\python.exe -m scripts.seed
+```
+
+Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì. Mật khẩu admin lấy từ `SEED_ADMIN_PASSWORD` (mặc định `devpath-admin` kèm cảnh báo), email từ `SEED_ADMIN_EMAIL`.
+
+Chưa có: endpoint readiness kiểm tra DB/Redis, auth (Phase 2), khóa học seed (Phase 2).

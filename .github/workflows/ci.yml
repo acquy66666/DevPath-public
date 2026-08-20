@@ -66,7 +66,7 @@ jobs:
         run: npm run build
 
   migrations:
-    name: Migrations — up, down, up on an empty database
+    name: Migrations & seed on an empty database
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -115,3 +115,14 @@ jobs:
 
       - name: Check for un-migrated model changes
         run: alembic check
+
+      # Twice on purpose: the second run proves the script is idempotent,
+      # which is what makes it safe to re-run on a database that already has
+      # data. A pristine database is also the only place a missing default or
+      # a broken constraint shows up.
+      - name: Seed, then seed again
+        env:
+          SEED_ADMIN_PASSWORD: ci-not-a-real-password
+        run: |
+          python -m scripts.seed
+          python -m scripts.seed

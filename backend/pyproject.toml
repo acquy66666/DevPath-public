@@ -13,6 +13,7 @@ dependencies = [
     "alembic>=1.14",
     "redis>=5.2",
     "celery[redis]>=5.4",
+    "bcrypt>=4.2",
 ]
 
 [project.optional-dependencies]

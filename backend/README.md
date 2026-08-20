@@ -57,4 +57,10 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 
 Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, pytest chạy được với httpx `ASGITransport` (không cần server, không cần DB).
 
-Chưa có: migration nào (`alembic/versions/` rỗng — bảng `users`/`categories`/`courses` là task kế tiếp), endpoint readiness kiểm tra DB/Redis (chờ `docker compose`), auth (Phase 2).
+Migration đầu tiên (`576c29b76f4e`) tạo `users`, `categories`, `courses` cùng ba extension `vector`, `unaccent`, `pg_trgm`. Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
+
+```bash
+.venv\Scripts\python.exe -m alembic upgrade head
+```
+
+Chưa có: endpoint readiness kiểm tra DB/Redis, auth (Phase 2), seed script.

@@ -249,5 +249,20 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 - **Leaderboard:** nguồn chân lý là `xp_events`, Redis sorted set chỉ là view; có script rebuild.
 - **`payment_events` append-only**; trạng thái `orders` chỉ đổi khi verify chữ ký IPN thành công.
 - **Soft delete:** chỉ `courses`. Mọi truy vấn public đi qua một hàm dùng chung đã lọc `deleted_at IS NULL` — không rải điều kiện này khắp nơi rồi quên một chỗ.
-- **`gen_random_uuid()`** cần extension `pgcrypto` (Postgres 16 có sẵn); `doc_chunks.embedding` cần `vector`. Cả hai bật trong migration đầu tiên.
-- **Migration đầu tiên (Phase 1)** chỉ tạo `users`, `categories`, `courses` + hai extension. Các bảng còn lại tạo đúng phase dùng tới chúng, theo vertical slice.
+- **`gen_random_uuid()`** không cần extension: từ Postgres 13 nó là hàm dựng sẵn, và dự án chốt Postgres 16. `pgcrypto` vì thế **không** được bật — bản đặc tả trước ghi cần là nhầm.
+- **Extension bật trong migration đầu tiên:** `vector` (embedding RAG, Phase 4), `unaccent` và `pg_trgm` (tìm kiếm tiếng Việt, Phase 2). Dùng `CREATE EXTENSION IF NOT EXISTS` nên chạy được cả trên DB đã có sẵn extension (máy dev qua `infra/postgres/init/`) lẫn DB trắng (CI, VPS). Chiều `downgrade` cố tình **không** drop extension.
+- **Migration đầu tiên (Phase 1)** chỉ tạo `users`, `categories`, `courses`. Các bảng còn lại tạo đúng phase dùng tới chúng, theo vertical slice.
+
+## 11. Trạng thái hiện thực
+
+| Nhóm bảng | Trạng thái | Revision |
+|---|---|---|
+| `users`, `categories`, `courses` | ✅ đã có trong DB | `576c29b76f4e` |
+| `refresh_tokens` | ⏳ Phase 2 (auth) | |
+| `course_sections`, `lessons`, `video_assets`, `reviews` | ⏳ Phase 2 | |
+| Nhóm học tập, bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
+
+Hai điểm của `courses` đã có cột nhưng **chưa có hành vi**, làm ở Phase 2 cùng lúc với tính năng dùng tới:
+
+- `search_vector` — cột và index GIN đã tạo, nhưng trigger cập nhật thì chưa. Trigger cần chốt cấu hình FTS tiếng Việt (`unaccent` + trọng số cho `title`/`subtitle`/`description`), là việc của tính năng tìm kiếm. Đến lúc đó cột vẫn NULL và index rỗng.
+- `rating_avg`, `rating_count`, `students_count`, `duration_total_s` — mặc định `0`, chờ `reviews` và `enrollments` xuất hiện mới có gì để denormalize.

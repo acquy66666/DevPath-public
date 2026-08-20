@@ -7,10 +7,10 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import get_settings
-from app.models.base import Base
 
-# Import every model module here so that autogenerate can see the tables.
-# from app.models import user, course  # noqa: F401
+# Importing the package registers every model on Base.metadata; without it
+# autogenerate sees an empty schema and cheerfully drops all the tables.
+from app.models import Base  # noqa: F401
 
 config = context.config
 

@@ -37,7 +37,7 @@ jobs:
         run: pytest -q
 
   frontend:
-    name: Frontend — lint, types & build
+    name: Frontend — lint & build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,11 +58,10 @@ jobs:
       - name: ESLint
         run: npm run lint
 
-      # npm run lint does not type-check; a build would catch type errors too,
-      # but this reports them without waiting for a full compile.
-      - name: TypeScript
-        run: npx tsc --noEmit
-
+      # No separate `tsc --noEmit` step. Next generates the global types the
+      # app relies on (LayoutProps, PageProps) into .next/types during the
+      # build, so type-checking ahead of it fails on a clean checkout -- and
+      # type-checking after it would only repeat what the build already did.
       - name: Build
         run: npm run build
 

@@ -15,14 +15,16 @@ dependencies = [
     "redis>=5.2",
     "celery[redis]>=5.4",
     "bcrypt>=4.2",
-    "pyjwt>=2.10",
+    # [crypto] pulls in `cryptography`: without it PyJWT cannot verify the
+    # RS256 signature on Google's id_token and Google sign-in fails at runtime.
+    "pyjwt[crypto]>=2.10",
+    "httpx>=0.28",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
-    "httpx>=0.28",
     "ruff>=0.8",
 ]
 

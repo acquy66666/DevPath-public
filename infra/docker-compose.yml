@@ -13,6 +13,12 @@ x-backend-env: &backend-env
   # Dev default only; the VPS .env must set a real one or the app refuses
   # to start (see Settings.reject_the_dev_secret_in_production).
   JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+  # Empty by default: the Google endpoints answer 503 until an OAuth client
+  # exists. Put real values in infra/.env to switch them on.
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/auth/google/callback}
+  FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
   CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
   # The Windows host's filesystem events do not cross into the Linux VM, so
   # the reloader has to poll for changes instead of waiting to be told.
@@ -113,6 +119,7 @@ services:
       # published host port instead.
       API_BASE_URL_INTERNAL: http://backend:8000
       NEXT_PUBLIC_API_BASE_URL: http://localhost:${BACKEND_PORT:-8000}
+      NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
       # Read by next.config.ts. WATCHPACK_POLLING and CHOKIDAR_USEPOLLING do
       # nothing here -- those belong to webpack, and Next 16 builds with
       # Turbopack, whose watcher is configured through next.config.ts instead.

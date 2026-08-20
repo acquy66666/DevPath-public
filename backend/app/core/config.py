@@ -32,6 +32,15 @@ class Settings(BaseSettings):
     refresh_token_ttl_days: int = 30
     refresh_cookie_name: str = "devpath_refresh"
 
+    # Google OAuth. Empty until someone registers an OAuth client in Google
+    # Cloud Console; `google_oauth_enabled` is what the routes check.
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
+
+    # Where the browser lands after the OAuth round trip.
+    frontend_url: str = "http://localhost:3000"
+
     # NoDecode: without it pydantic-settings JSON-decodes list fields straight
     # from the environment and raises before the validator below ever runs.
     cors_origins: Annotated[list[str], NoDecode] = ["http://localhost:3000"]
@@ -56,6 +65,11 @@ class Settings(BaseSettings):
         if self.env == "production" and self.jwt_secret == DEV_JWT_SECRET:
             raise ValueError("JWT_SECRET must be set to a real secret when ENV=production")
         return self
+
+    @property
+    def google_oauth_enabled(self) -> bool:
+        """Both halves or neither -- a client id without its secret cannot sign in."""
+        return bool(self.google_client_id and self.google_client_secret)
 
     @property
     def cookie_secure(self) -> bool:

@@ -16,10 +16,26 @@ const MESSAGES: Record<string, string> = {
   REFRESH_TOKEN_REUSED:
     "Phiên đăng nhập đã bị thu hồi vì lý do an toàn. Vui lòng đăng nhập lại.",
   NOT_AUTHENTICATED: "Bạn cần đăng nhập để tiếp tục.",
+
+  // Đăng nhập Google — backend chuyển hướng về /dang-nhap?loi=<code>.
+  GOOGLE_ACCESS_DENIED: "Bạn đã hủy đăng nhập bằng Google.",
+  GOOGLE_STATE_INVALID:
+    "Phiên đăng nhập Google không hợp lệ hoặc đã quá hạn. Bấm đăng nhập lại giúp mình nhé.",
+  GOOGLE_AUTH_FAILED: "Không đăng nhập được bằng Google. Thử lại sau ít phút.",
+  GOOGLE_EMAIL_NOT_VERIFIED:
+    "Google chưa xác thực email của tài khoản này nên không dùng để đăng nhập được.",
+  GOOGLE_ACCOUNT_CONFLICT:
+    "Email này đã liên kết với một tài khoản Google khác. Dùng mật khẩu để đăng nhập nhé.",
+  GOOGLE_OAUTH_NOT_CONFIGURED: "Đăng nhập bằng Google chưa được bật trên máy chủ này.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
 const UNKNOWN_FAILURE = "Có lỗi xảy ra, vui lòng thử lại.";
+
+/** Message for a bare error code, e.g. the `loi` query the OAuth callback sends. */
+export function errorMessageForCode(code: string): string {
+  return MESSAGES[code] ?? UNKNOWN_FAILURE;
+}
 
 export function authErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {

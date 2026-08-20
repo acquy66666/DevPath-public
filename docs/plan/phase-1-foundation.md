@@ -5,7 +5,7 @@
 ## Khảo sát & thiết kế
 
 - [x] Khảo sát 2–3 nền tảng tham chiếu (Udemy, Coursera, CodeLearn.io) — ghi bảng so sánh tính năng vào [`docs/report/assets/khao-sat-nen-tang-tham-chieu.md`](../report/assets/khao-sat-nen-tang-tham-chieu.md) (dùng cho chương 1)
-- [ ] Rà soát [database-design.md](../database-design.md) đủ để code: quan hệ N-N, các cột trạng thái, index cần thiết — sửa thẳng vào file, **không vẽ sơ đồ** (ERD hình vẽ để Phase 7)
+- [x] Rà soát [database-design.md](../database-design.md) đủ để code: quan hệ N-N, các cột trạng thái, index cần thiết — sửa thẳng vào file, **không vẽ sơ đồ** (ERD hình vẽ để Phase 7)
 
 > **Đã dời sang [Phase 7](phase-7-report.md):** use case diagram, ERD hình vẽ, wireframe. Lý do: đây là deliverable của báo cáo, vẽ khi sản phẩm đã hoàn chỉnh thì khớp thực tế và không phải vẽ lại. Phạm vi tính năng lấy trực tiếp từ [đề cương mục 5](../../de-cuong-khoa-luan-elearning.md); giao diện dựng thẳng bằng shadcn/ui khi code Phase 2.
 

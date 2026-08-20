@@ -31,3 +31,15 @@ Thumbs.db
 
 # Claude Code local
 .claude/settings.local.json
+
+# Python build / test artifacts
+.coverage
+htmlcov/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# Next.js
+.turbo/
+next-env.d.ts

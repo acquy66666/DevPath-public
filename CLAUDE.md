@@ -24,17 +24,23 @@ Nền tảng học trực tuyến kiểu Udemy tích hợp AI: chấm mã nguồ
 | Thanh toán | VNPay/MoMo sandbox |
 | Triển khai | Docker Compose trên VPS |
 
-## Cấu trúc monorepo (dự kiến)
+## Cấu trúc monorepo
 
 ```
 E-learning/
-├── backend/          # FastAPI: app/{api,core,models,schemas,services,workers}
-├── frontend/         # Next.js: app/, components/, lib/
-├── grader/           # Judge worker + Dockerfile sandbox images per language
-├── infra/            # docker-compose.yml, nginx, deploy scripts
+├── backend/          # FastAPI
+│   ├── app/{api/v1,core,models,schemas,services,workers}/
+│   ├── tests/api/
+│   └── scripts/      # seed.py, eval_recommender.py, rebuild_course_stats.py
+├── frontend/         # Next.js — scaffold bằng create-next-app, xem frontend/README.md
+├── grader/           # runner/, images/<language>/, tests/fixtures/
+├── infra/            # docker-compose.yml, nginx/, scripts/
 ├── docs/             # Tài liệu thiết kế + kế hoạch (tiếng Việt)
+├── .githooks/        # pre-push chặn force-push/xóa main
 └── de-cuong-khoa-luan-elearning.md
 ```
+
+Mỗi thư mục cấp 1 có README riêng nêu nguyên tắc và trạng thái — đọc trước khi làm việc trong đó.
 
 ## Quy ước
 
@@ -49,4 +55,5 @@ E-learning/
 
 ## Trạng thái hiện tại
 
-- Giai đoạn: **Phase 0 — scaffolding xong, chưa viết code.** Bước tiếp theo: Phase 1 trong [docs/plan/phase-1-foundation.md](docs/plan/phase-1-foundation.md).
+- Giai đoạn: **Phase 1 — Foundation, đang làm.** Đã xong: khảo sát nền tảng tham chiếu, đặc tả CSDL đủ để code, repo + hook bảo vệ `main`, khung monorepo. Bước tiếp theo: dựng FastAPI chạy được với `/health` — xem [docs/plan/phase-1-foundation.md](docs/plan/phase-1-foundation.md).
+- Kế hoạch đã tách **Phase 7 — Báo cáo**: trong Phase 1–6 không viết báo cáo, chỉ thu bằng chứng vào `docs/report/assets/phase-N/`.

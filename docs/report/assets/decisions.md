@@ -45,3 +45,10 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Vai trò không nhận từ request body** — `register_user()` tự đặt `role='student'`; gửi kèm `"role": "admin"` bị bỏ qua. Chống mass assignment ngay từ chữ ký hàm chứ không bằng việc nhớ lọc field.
 
 **Test backend từ nay chạy trên Postgres thật** — auth có quá nhiều hành vi ở tầng DB (unique email, cascade, xoay vòng token) để mock cho đáng tin. Mỗi test nằm trong một transaction bị rollback (`join_transaction_mode="create_savepoint"` nên `commit()` thật trong service vẫn chạy). Job `backend` của CI vì thế phải thêm service Postgres; máy dev không có DB thì nhóm test này tự skip, nhưng khi biến `CI` được đặt thì fail — CI không được phép xanh nhờ bỏ qua test.
+
+**Access token giữ trong bộ nhớ React, không lưu `localStorage`** — không có kho nào để script chèn vào trang đọc trộm, và token chết theo tab. Cái phải trả: mỗi lần F5 phải gọi `/auth/refresh` để dựng lại phiên (một nhịp "đang tải" ở header), và `middleware.ts` của Next không guard được route vì cookie refresh thuộc origin của backend — guard sẽ làm ở client khi có trang cần bảo vệ.
+
+**Mọi lời gọi refresh của frontend gom vào một promise** — xoay vòng token gặp React StrictMode (chạy effect hai lượt trong dev) thành ra tự đăng xuất: request thứ hai mang đúng token mà request thứ nhất vừa thu hồi, backend coi là bị đánh cắp và hủy sạch phiên. Đã tái hiện thật rồi mới sửa. Còn sót tình huống hai tab mở song song; nếu gặp nhiều thì thêm khoảng ân hạn ở backend, đổi lại token bị trộm sẽ dùng được trong khoảng đó.
+
+**URL backend cho trình duyệt phải là `localhost`, không phải `127.0.0.1`** — trình duyệt coi đây là hai site khác nhau, cookie `SameSite=lax` sẽ không được gửi kèm. Biểu hiện rất khó đoán: đăng nhập được nhưng F5 là mất phiên.
+

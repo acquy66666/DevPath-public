@@ -45,7 +45,7 @@ Xóa sạch dữ liệu (Postgres, Redis) để dựng lại từ đầu — scr
 docker compose -f infra/docker-compose.yml down -v
 ```
 
-## Hai điều dễ vấp
+## Ba điều dễ vấp
 
 - **Hot reload: backend có, frontend không.** Windows không truyền sự kiện file vào máy ảo Linux, nên watcher phải hỏi định kỳ. Backend bật `WATCHFILES_FORCE_POLLING` và reload thật (đã kiểm chứng: sửa file → `WatchFiles detected changes ... Reloading`). Frontend thì **không**: đã thử `watchOptions.pollIntervalMs` trong `next.config.ts` (API chính thức của Next, biến `WATCH_POLL_INTERVAL_MS` do compose truyền vào) lẫn việc bỏ anonymous volume `.next`, Turbopack vẫn không nhận thay đổi — dù `stat` xác nhận mtime mới đã tới trong container. Cấu hình polling được giữ lại vì đúng đắn và tự tắt khi chạy ngoài Docker.
 
@@ -59,7 +59,12 @@ docker compose -f infra/docker-compose.yml down -v
   cd frontend && npm run dev
   ```
 
-  Lúc đó `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` trong `.env.local` là đủ, không cần `API_BASE_URL_INTERNAL`. Container `frontend` vẫn tồn tại để `docker compose up` một lệnh dựng đủ stack như gate Phase 1 yêu cầu; chỉ cần nhớ nó phục vụ bản code tại thời điểm khởi động, sửa xong thì `docker compose restart frontend`.
+  Lúc đó `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000` trong `.env.local` là đủ, không cần `API_BASE_URL_INTERNAL`. Phải là `localhost` chứ không phải `127.0.0.1`: trình duyệt coi hai tên này là **hai site khác nhau**, mà cookie refresh đặt `SameSite=lax` nên sẽ bị bỏ im lặng khi trang ở `localhost:3000` gọi sang `127.0.0.1:8000` — biểu hiện là đăng nhập xong F5 phát là mất phiên. Container `frontend` vẫn tồn tại để `docker compose up` một lệnh dựng đủ stack như gate Phase 1 yêu cầu; chỉ cần nhớ nó phục vụ bản code tại thời điểm khởi động, sửa xong thì `docker compose restart frontend`.
+- **Thêm dependency frontend thì phải `--renew-anon-volumes`.** `node_modules` của container là anonymous volume; `docker compose up --build frontend` dựng image mới nhưng vẫn gắn lại volume cũ, nên gói vừa cài không có trong container và trang chết với `Module not found`. Lệnh đúng:
+
+  ```bash
+  docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes frontend
+  ```
 - **Frontend cần hai URL backend.** Server Component gọi `http://backend:8000` (tên service trong mạng compose), còn trình duyệt không phân giải được tên đó nên phải gọi `http://localhost:8000`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía này; `frontend/lib/api/client.ts` chọn theo `typeof window`.
 
 ## Ghi chú vận hành

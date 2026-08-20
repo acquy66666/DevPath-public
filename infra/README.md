@@ -5,11 +5,62 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ## Cấu trúc
 
 ```
-docker-compose.yml       postgres (pgvector), redis, backend, frontend, worker, grader
-docker-compose.prod.yml  override cho VPS (nginx, HTTPS, restart policy)
+docker-compose.yml       postgres (pgvector), redis, backend, worker, frontend
+docker-compose.prod.yml  override cho VPS (nginx, HTTPS, restart policy) — chưa có
+postgres/init/           SQL chạy một lần khi volume rỗng (CREATE EXTENSION)
 nginx/                   reverse proxy, cấu hình TLS
 scripts/                 deploy, backup DB (pg_dump → R2), restore
 ```
+
+## Chạy stack ở máy dev
+
+```bash
+cp infra/.env.example infra/.env
+```
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+Lần đầu mất vài phút để build image. Sau đó:
+
+| Địa chỉ | Nội dung |
+|---|---|
+| http://localhost:3000 | Frontend Next.js |
+| http://localhost:8000/docs | Tài liệu API (tự tắt khi `ENV=production`) |
+| localhost:5432 | Postgres — dùng cho Alembic chạy từ venv trên host |
+| localhost:6379 | Redis |
+
+Cả năm service đều có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
+
+Mã nguồn `backend/` và `frontend/` được bind mount nên sửa file là reload, không cần build lại. Chỉ build lại khi đổi `pyproject.toml`, `package.json` hoặc `Dockerfile`:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build
+```
+
+Xóa sạch dữ liệu (Postgres, Redis) để dựng lại từ đầu — script khởi tạo extension chỉ chạy khi volume rỗng:
+
+```bash
+docker compose -f infra/docker-compose.yml down -v
+```
+
+## Hai điều dễ vấp
+
+- **Hot reload: backend có, frontend không.** Windows không truyền sự kiện file vào máy ảo Linux, nên watcher phải hỏi định kỳ. Backend bật `WATCHFILES_FORCE_POLLING` và reload thật (đã kiểm chứng: sửa file → `WatchFiles detected changes ... Reloading`). Frontend thì **không**: đã thử `watchOptions.pollIntervalMs` trong `next.config.ts` (API chính thức của Next, biến `WATCH_POLL_INTERVAL_MS` do compose truyền vào) lẫn việc bỏ anonymous volume `.next`, Turbopack vẫn không nhận thay đổi — dù `stat` xác nhận mtime mới đã tới trong container. Cấu hình polling được giữ lại vì đúng đắn và tự tắt khi chạy ngoài Docker.
+
+  **Cách làm việc thực tế khi sửa nhiều code frontend:** chạy Next trực tiếp trên host, phần còn lại vẫn trong Docker.
+
+  ```bash
+  docker compose -f infra/docker-compose.yml up -d postgres redis backend worker
+  ```
+
+  ```bash
+  cd frontend && npm run dev
+  ```
+
+  Lúc đó `NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000` trong `.env.local` là đủ, không cần `API_BASE_URL_INTERNAL`. Container `frontend` vẫn tồn tại để `docker compose up` một lệnh dựng đủ stack như gate Phase 1 yêu cầu; chỉ cần nhớ nó phục vụ bản code tại thời điểm khởi động, sửa xong thì `docker compose restart frontend`.
+- **Frontend cần hai URL backend.** Server Component gọi `http://backend:8000` (tên service trong mạng compose), còn trình duyệt không phân giải được tên đó nên phải gọi `http://localhost:8000`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía này; `frontend/lib/api/client.ts` chọn theo `typeof window`.
 
 ## Ghi chú vận hành
 
@@ -19,4 +70,6 @@ scripts/                 deploy, backup DB (pg_dump → R2), restore
 
 ## Chưa có gì ở đây
 
-`docker-compose.yml` được viết ở task riêng trong [Phase 1](../docs/plan/phase-1-foundation.md), sau khi backend và frontend chạy được độc lập.
+- `docker-compose.prod.yml` và cấu hình `nginx/` — viết khi deploy VPS ở [Phase 2](../docs/plan/phase-2-core-platform.md).
+- Service `grader` — thêm ở [Phase 3](../docs/plan/phase-3-code-grading.md) cùng lúc với code grader, qua checklist skill `sandbox-grading`.
+- `scripts/` backup và restore DB — [Phase 6](../docs/plan/phase-6-hardening-deploy.md).

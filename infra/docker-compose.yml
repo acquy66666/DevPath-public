@@ -1,0 +1,143 @@
+# Development stack — `docker compose up` from this directory brings up
+# everything the platform needs. Production overrides (nginx, TLS, restart
+# policies) land in docker-compose.prod.yml when the VPS deploy happens.
+name: devpath
+
+x-backend-env: &backend-env
+  ENV: development
+  DEBUG: "true"
+  # Hostnames are compose service names, not localhost: each service is its
+  # own network namespace.
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-devpath}:${POSTGRES_PASSWORD:-devpath}@postgres:5432/${POSTGRES_DB:-devpath}
+  REDIS_URL: redis://redis:6379/0
+  CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
+  # The Windows host's filesystem events do not cross into the Linux VM, so
+  # the reloader has to poll for changes instead of waiting to be told.
+  WATCHFILES_FORCE_POLLING: "true"
+
+x-backend-volumes: &backend-volumes
+  - ../backend:/app
+  # Anonymous volume: keeps the host's Windows virtualenv out of the container,
+  # where its executables would not run anyway.
+  - /app/.venv
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-devpath}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpath}
+      POSTGRES_DB: ${POSTGRES_DB:-devpath}
+    ports:
+      # Published so Alembic and psql can run from the host venv.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-devpath} -d ${POSTGRES_DB:-devpath}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    # Append-only file: a restart must not drop queued jobs.
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ../backend
+    image: devpath-backend:dev
+    command:
+      ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    environment: *backend-env
+    volumes: *backend-volumes
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      # urllib rather than curl — the slim image has Python but no HTTP client.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    # Same image as backend; compose reuses the build cache rather than
+    # compiling the layers twice.
+    build:
+      context: ../backend
+    image: devpath-backend:dev
+    command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info"]
+    environment: *backend-env
+    volumes: *backend-volumes
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ../frontend
+    image: devpath-frontend:dev
+    environment:
+      # Two URLs on purpose. Server Components resolve the compose hostname;
+      # the browser cannot, so anything shipped to the client uses the
+      # published host port instead.
+      API_BASE_URL_INTERNAL: http://backend:8000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:${BACKEND_PORT:-8000}
+      # Read by next.config.ts. WATCHPACK_POLLING and CHOKIDAR_USEPOLLING do
+      # nothing here -- those belong to webpack, and Next 16 builds with
+      # Turbopack, whose watcher is configured through next.config.ts instead.
+      WATCH_POLL_INTERVAL_MS: "1000"
+    volumes:
+      - ../frontend:/app
+      # Dependencies and build output stay inside the container: the host copies
+      # are Windows builds, and .next churns too much to cross the mount.
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      # 30s, not 10s: every probe renders the page server-side, backend fetch
+      # included.
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:

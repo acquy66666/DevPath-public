@@ -31,4 +31,4 @@
 
 - [ ] Demo end-to-end trên VPS: đăng ký Google → tìm khóa học → enroll → xem video → thoát → vào lại đúng vị trí cũ
 - [ ] Test pass: auth, course CRUD, enroll, progress
-- [ ] Thu bằng chứng chương 4: screenshot các luồng, sơ đồ auth
+- [ ] Thu bằng chứng vào `docs/report/assets/phase-2/`: screenshot luồng đăng ký/đăng nhập Google, tạo khóa học, player đang phát + tiến độ; ghi 1–2 dòng cho mỗi quyết định kỹ thuật đáng nhớ vào `decisions.md` (nguyên liệu chương 4, **chưa viết báo cáo**)

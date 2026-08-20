@@ -1,17 +1,18 @@
 # Phase 1 — Foundation (tuần 1–2, 24/08 → 06/09)
 
-**Mục tiêu:** nền móng vững để 12 tuần sau chỉ tập trung viết tính năng. Kết thúc phase: `docker compose up` chạy đủ stack, ERD chốt, wireframe các màn chính.
+**Mục tiêu:** nền móng vững để 12 tuần sau chỉ tập trung viết tính năng. Kết thúc phase: `docker compose up` chạy đủ stack, schema CSDL chốt trong `database-design.md`, CI xanh.
 
 ## Khảo sát & thiết kế
 
 - [x] Khảo sát 2–3 nền tảng tham chiếu (Udemy, Coursera, CodeLearn.io) — ghi bảng so sánh tính năng vào [`docs/report/assets/khao-sat-nen-tang-tham-chieu.md`](../report/assets/khao-sat-nen-tang-tham-chieu.md) (dùng cho chương 1)
-- [ ] Chốt danh sách use case theo 3 nhóm người dùng (từ đề cương mục 5) — vẽ use case diagram
-- [ ] ERD chi tiết từ [database-design.md](../database-design.md) — vẽ mermaid/draw.io, review lại quan hệ N-N và các cột trạng thái
-- [ ] Wireframe màn chính: trang chủ, danh sách + chi tiết khóa học, player, trang nộp code, dashboard giảng viên, admin (Figma hoặc giấy — không cầu toàn)
+- [ ] Rà soát [database-design.md](../database-design.md) đủ để code: quan hệ N-N, các cột trạng thái, index cần thiết — sửa thẳng vào file, **không vẽ sơ đồ** (ERD hình vẽ để Phase 7)
+
+> **Đã dời sang [Phase 7](phase-7-report.md):** use case diagram, ERD hình vẽ, wireframe. Lý do: đây là deliverable của báo cáo, vẽ khi sản phẩm đã hoàn chỉnh thì khớp thực tế và không phải vẽ lại. Phạm vi tính năng lấy trực tiếp từ [đề cương mục 5](../../de-cuong-khoa-luan-elearning.md); giao diện dựng thẳng bằng shadcn/ui khi code Phase 2.
 
 ## Khung dự án
 
-- [ ] `git init`, tạo repo GitHub, branch protection main
+- [x] `git init`, tạo repo GitHub, branch protection main — repo private trên gói Free nên GitHub chặn cả ruleset lẫn branch protection (HTTP 403); thay bằng git hook `.githooks/pre-push` chặn force-push và xóa nhánh `main`
+- [ ] Bật ruleset bảo vệ `main` trên GitHub sau khi có Pro (đăng ký GitHub Student Developer Pack) — rules: `non_fast_forward` + `deletion`, không bypass actor
 - [ ] Monorepo skeleton: `backend/`, `frontend/`, `grader/`, `infra/` theo cấu trúc trong CLAUDE.md
 - [ ] Backend: FastAPI + SQLAlchemy async + Alembic + pytest chạy được; endpoint `/health`; cấu hình bằng pydantic-settings (`.env`)
 - [ ] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`
@@ -24,5 +25,4 @@
 
 - [ ] `docker compose up` → mở được frontend, frontend gọi được backend, backend nối được DB/Redis
 - [ ] CI xanh trên main
-- [ ] ERD + wireframe + use case đã lưu vào `docs/report/assets/`
-- [ ] Cập nhật chương 1 + 3 (phần thiết kế) của báo cáo — dàn ý là đủ
+- [ ] Thu bằng chứng vào `docs/report/assets/phase-1/`: ảnh chụp `docker compose ps` đủ service, ảnh CI xanh, `schema.sql` dump sau migration đầu tiên

@@ -12,7 +12,7 @@
 - [ ] UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson), lịch sử phiên
 - [ ] Quiz model + attempt flow: làm quiz tính giờ (giờ tính ở backend), tự chấm, xem giải thích
 - [ ] Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) → instructor duyệt/sửa từng câu trước khi publish
-- [ ] Đánh giá chatbot: bộ 20 câu hỏi test trên khóa học seed, chấm đúng/sai/có trích nguồn — bảng vào báo cáo
+- [ ] Đánh giá chatbot: bộ 20 câu hỏi test trên khóa học seed, chấm đúng/sai/có trích nguồn — bộ câu hỏi + bảng kết quả lưu vào `docs/report/assets/phase-4/`
 
 ## Tuần 10 — Hybrid recommender
 
@@ -22,7 +22,7 @@
 - [ ] Batch Celery beat hằng đêm → cache top-N vào Redis; API `/recommendations`
 - [ ] UI: khối "Gợi ý cho bạn" (trang chủ), "Khóa học tương tự" (trang chi tiết), "Học tiếp theo" (sau khi hoàn thành)
 - [ ] Seed thêm dữ liệu tương tác giả lập (script tạo ~50 user với hành vi enroll/rating theo cụm sở thích) để đo lường
-- [ ] `backend/scripts/eval_recommender.py`: precision@k, recall@k trên held-out — số liệu + phương pháp vào báo cáo chương 5
+- [ ] `backend/scripts/eval_recommender.py`: precision@k, recall@k trên held-out — output script lưu vào `docs/report/assets/phase-4/recommender-eval.md`, ghi rõ lệnh chạy để tái tạo
 
 ## Gate cuối phase
 
@@ -30,3 +30,4 @@
 - [ ] Demo: 2 user sở thích khác nhau thấy gợi ý khác nhau
 - [ ] Precision@k / recall@k đo được, script tái tạo được
 - [ ] Sinh quiz từ 1 bài giảng thật, instructor duyệt và học viên làm được
+- [ ] Thu bằng chứng vào `docs/report/assets/phase-4/`: bảng precision@k/recall@k, 3–5 hội thoại chatbot có trích nguồn (kể cả 1 ca từ chối ngoài phạm vi), ví dụ quiz sinh tự động kèm nhận xét chất lượng, screenshot khối gợi ý của 2 user khác nhau

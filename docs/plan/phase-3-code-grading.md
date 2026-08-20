@@ -10,7 +10,7 @@
 - [ ] Runner core: chạy 1 file code + 1 stdin trong container với đủ giới hạn (network none, memory, cpus, pids, read-only, no-new-privileges, cap-drop ALL, tmpfs /tmp, timeout 2 lớp)
 - [ ] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
 - [ ] Bộ test verdict: AC / WA / TLE / MLE / RE / CE / SE — fixture cho từng loại trong `grader/tests/fixtures/`
-- [ ] **Bộ test bảo mật:** thử network, đọc file ngoài mount, ghi rootfs, fork bomb → tất cả bị chặn (kết quả vào báo cáo chương 5)
+- [ ] **Bộ test bảo mật:** thử network, đọc file ngoài mount, ghi rootfs, fork bomb → tất cả bị chặn (lưu output test vào `docs/report/assets/phase-3/attack-tests.txt`)
 
 ## Tuần 7 — Tích hợp queue & API
 
@@ -25,11 +25,11 @@
 - [ ] Redis pub/sub tiến độ chấm → WebSocket endpoint; fallback polling
 - [ ] Trang nộp bài: Monaco editor, starter code, chạy thử với sample test, nộp chính thức, lịch sử submission
 - [ ] Kết quả hiển thị per-test realtime (đang chấm test 3/10...)
-- [ ] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — số liệu vào báo cáo
+- [ ] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — script đo lưu trong repo, số liệu vào `docs/report/assets/phase-3/benchmark.md`
 - [ ] Buffer trễ / hoàn thiện UX còn dở của phase trước
 
 ## Gate cuối phase
 
 - [ ] Demo: tạo bài tập → nộp bài sai → thấy WA realtime → sửa → AC
 - [ ] Toàn bộ test verdict + test bảo mật xanh trong CI
-- [ ] Bằng chứng chương 4+5: sơ đồ kiến trúc grading, bảng benchmark, bảng thử nghiệm tấn công
+- [ ] Thu bằng chứng vào `docs/report/assets/phase-3/`: bảng benchmark, output test tấn công, log demo đủ 7 verdict, screenshot trang nộp bài lúc chấm realtime (sơ đồ kiến trúc grading vẽ ở Phase 7)

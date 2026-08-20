@@ -27,4 +27,4 @@
 - [ ] Demo end-to-end: thêm giỏ hàng → áp coupon → VNPay sandbox → thanh toán → vào học ngay
 - [ ] Học viên hoàn thành khóa → nhận chứng chỉ PDF, quét QR verify được
 - [ ] Admin duyệt khóa học mới trước khi hiện công khai
-- [ ] Bằng chứng chương 4: screenshot luồng thanh toán, dashboard
+- [ ] Thu bằng chứng vào `docs/report/assets/phase-5/`: screenshot luồng thanh toán VNPay end-to-end, log IPN (đã che dữ liệu nhạy cảm), chứng chỉ PDF mẫu + trang verify, dashboard instructor và admin

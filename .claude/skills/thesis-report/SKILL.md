@@ -7,7 +7,18 @@ description: Use when writing, updating, or planning the thesis report (báo cá
 
 ## Nguyên tắc quan trọng nhất
 
-**Báo cáo viết song song với code, không dồn về tuần 13–14.** Cuối mỗi phase, cập nhật chương tương ứng và chụp/lưu bằng chứng ngay khi tính năng còn chạy tốt. Bằng chứng lưu tại `docs/report/assets/`.
+**Viết báo cáo ở Phase 7, sau khi sản phẩm hoàn chỉnh và đóng băng tính năng.** Trong Phase 1–6 không viết chương nào, không vẽ sơ đồ nào — nhưng **bắt buộc thu bằng chứng** ở gate mỗi phase, lưu vào `docs/report/assets/phase-N/`.
+
+Ranh giới rõ ràng:
+
+| Làm ngay trong lúc code (Phase 1–6) | Để đến Phase 7 |
+|---|---|
+| Screenshot màn hình lúc tính năng vừa chạy | Viết chương, đặt caption, trích dẫn |
+| Chạy script đo và lưu output (benchmark, precision@k, load test) | Vẽ use case, ERD, sơ đồ kiến trúc, sơ đồ luồng |
+| Lưu log demo, output test tấn công sandbox | Bản vẽ thiết kế giao diện |
+| Ghi 1–2 dòng cho mỗi quyết định kỹ thuật vào `docs/report/assets/decisions.md` | Slide, kịch bản demo |
+
+Lý do chia thế này: câu chữ và hình vẽ làm cuối thì khớp sản phẩm thật và không phải sửa lại; còn số đo/ảnh chụp mà không lấy ngay thì tuần 14 phải dựng lại môi trường để đo lại — đắt và dễ thiếu.
 
 ## Cấu trúc chương đề xuất
 
@@ -22,12 +33,13 @@ description: Use when writing, updating, or planning the thesis report (báo cá
 
 | Phase | Thu thập |
 |---|---|
-| 1 | ERD final, wireframe, bảng use case |
-| 2 | Screenshot luồng đăng ký→học video; sơ đồ luồng auth JWT/OAuth |
-| 3 | Sơ đồ kiến trúc grading; bảng đo thời gian chấm (per ngôn ngữ, per giới hạn); log demo các verdict; bảng thử nghiệm tấn công sandbox (fork bomb, network, đọc file → đều bị chặn) |
-| 4 | Precision@k / recall@k trên tập dữ liệu seed; ví dụ hội thoại chatbot có trích nguồn; ví dụ quiz sinh tự động kèm đánh giá chất lượng |
-| 5 | Screenshot luồng thanh toán sandbox end-to-end; dashboard admin |
-| 6 | Kết quả load test nhẹ (k6/locust); URL demo chạy trên VPS; bảng tổng hợp test |
+| 1 | Bảng khảo sát nền tảng tham chiếu; ảnh `docker compose ps` đủ service; ảnh CI xanh; dump schema sau migration đầu |
+| 2 | Screenshot luồng đăng ký→học video; ghi chú quyết định về JWT/OAuth, HLS, R2 (chưa vẽ sơ đồ) |
+| 3 | Bảng đo thời gian chấm (per giới hạn tài nguyên); log demo đủ 7 verdict; output test tấn công sandbox (fork bomb, network, đọc file → đều bị chặn); screenshot chấm realtime |
+| 4 | Precision@k / recall@k trên tập dữ liệu seed; ví dụ hội thoại chatbot có trích nguồn + 1 ca từ chối ngoài phạm vi; ví dụ quiz sinh tự động kèm đánh giá chất lượng |
+| 5 | Screenshot luồng thanh toán sandbox end-to-end; log IPN đã che dữ liệu nhạy cảm; chứng chỉ PDF mẫu; dashboard instructor + admin |
+| 6 | Kết quả load test nhẹ (k6/locust); URL demo chạy trên VPS; bảng tổng hợp test; **rà soát lần cuối toàn bộ kho bằng chứng trước khi đóng băng** |
+| 7 | Không thu nữa — đây là phase tiêu thụ bằng chứng: vẽ sơ đồ, viết 6 chương, làm slide |
 
 ## Văn phong
 

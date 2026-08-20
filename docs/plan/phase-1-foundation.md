@@ -23,6 +23,6 @@
 
 ## Gate cuối phase
 
-- [ ] `docker compose up` → mở được frontend, frontend gọi được backend, backend nối được DB/Redis
-- [ ] CI xanh trên main
-- [ ] Thu bằng chứng vào `docs/report/assets/phase-1/`: ảnh chụp `docker compose ps` đủ service, ảnh CI xanh, `schema.sql` dump sau migration đầu tiên
+- [x] `docker compose up` → mở được frontend, frontend gọi được backend, backend nối được DB/Redis
+- [x] CI xanh trên main
+- [x] Thu bằng chứng vào [`docs/report/assets/phase-1/`](../report/assets/phase-1/README.md): ảnh chụp `docker compose ps` đủ service, ảnh CI xanh, `schema.sql` dump sau migration đầu tiên

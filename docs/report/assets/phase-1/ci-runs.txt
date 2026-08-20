@@ -1,0 +1,8 @@
+$ gh run list --branch main --workflow CI --limit 5
+completed	success	Merge pull request #2 from acquy66666/feature/seed-script	CI	main	push	32348278471	43s	2026-08-20T08:19:55Z
+completed	success	Merge pull request #1 from acquy66666/feature/github-actions-ci	CI	main	push	32347208186	50s	2026-08-20T08:06:52Z
+
+$ gh pr checks 2
+Backend — lint & test	pass	25s	https://github.com/acquy66666/DevPath/actions/runs/32348129440/job/96361171774	
+Frontend — lint & build	pass	34s	https://github.com/acquy66666/DevPath/actions/runs/32348129440/job/96361172132	
+Migrations & seed on an empty database	pass	50s	https://github.com/acquy66666/DevPath/actions/runs/32348129440/job/96361171956	

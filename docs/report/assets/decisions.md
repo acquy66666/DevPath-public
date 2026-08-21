@@ -78,3 +78,5 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Thêm cờ `has_password` vào payload người dùng** — frontend cần biết tài khoản Google-only để không hiện form đổi mật khẩu chắc chắn lỗi 409. Là một boolean *về* tài khoản, không phải thông tin *về* mật khẩu; test rò rỉ được siết lại thành "không có `$2b$` và không có plaintext" thay vì chặn thô theo chuỗi "password".
 
+**Test viết sau hành vi thì phải kiểm bằng đột biến** — bộ test "auth flow" phủ các hành vi đã có sẵn nên nó xanh ngay từ lần chạy đầu, mà xanh ngay thì không chứng minh được gì. Cách kiểm: phá tạm đúng chỗ cần bảo vệ (bỏ kiểm tra tài khoản bị khóa lúc refresh; cho `logout` thu hồi mọi phiên thay vì phiên hiện tại) và xác nhận đúng hai test đó đỏ, rồi khôi phục. Đây là bằng chứng "test có răng" cho chương kiểm thử, rẻ hơn nhiều so với đo độ phủ.
+

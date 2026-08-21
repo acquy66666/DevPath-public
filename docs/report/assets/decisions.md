@@ -64,3 +64,9 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Test phải chạm được đường thật, không chỉ bản giả** — bản giả cắm ở tầng dependency của FastAPI chứng minh route đúng, nhưng vẫn xanh trên một bản build mà PyJWT **không verify nổi RS256**: `cryptography` là extra tùy chọn, thiếu nó thì đăng nhập Google chết ngay lần đầu người thật bấm nút. Chỗ này lộ ra khi dựng thêm một "Google giả" chạy trên `127.0.0.1` (ký RS256 thật, phục vụ JWKS thật) để test đúng đoạn `httpx` → đổi mã → verify chữ ký. Dependency sửa thành `pyjwt[crypto]`.
 
+**`require_role` so khớp chính xác, admin không phải superset** — `require_role("instructor")` không ngầm cho admin qua; endpoint cho cả hai phải viết `require_role("instructor", "admin")`. Phân cấp ngầm tiết kiệm vài ký tự nhưng tạo ra quy tắc không ai nhớ ở endpoint thứ ba mươi, và lúc đó lỗ hổng là im lặng.
+
+**Vai trò đọc từ DB chứ không từ claim trong access token** — token là ảnh chụp lúc phát hành, sống 15 phút; thu hồi quyền mà phải chờ 15 phút mới có hiệu lực là quá lâu. Giá phải trả: mỗi request có thêm một truy vấn `users` — chấp nhận được vì `get_current_user` vốn đã phải tra để biết tài khoản có bị khóa không.
+
+**Nâng cấp giảng viên là self-service, không hàng đợi duyệt** — một mình vận hành thì hàng đợi duyệt chỉ là hàng đợi không ai xử lý. Chốt chặn thật nằm ở chỗ khác: khóa học của giảng viên mới vẫn phải qua trạng thái `pending_review` trước khi công khai. Admin gọi endpoint này bị từ chối 409 thay vì lặng lẽ không làm gì, vì với admin thì đây là **mất** quyền chứ không phải thêm.
+

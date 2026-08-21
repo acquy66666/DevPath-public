@@ -7,7 +7,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.core.exceptions import NotAuthenticatedError
+from app.core.exceptions import NotAuthenticatedError, PermissionDeniedError
 from app.core.security import TokenError, decode_access_token
 from app.models import User
 
@@ -46,4 +46,30 @@ async def get_current_user(
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
-__all__ = ["CurrentUser", "DbSession", "get_current_user", "get_db"]
+
+def require_role(*roles: str):
+    """Dependency factory: let only these roles through.
+
+    Roles are matched exactly -- `require_role("instructor")` does not quietly
+    admit admins. An endpoint meant for both says so: `require_role("instructor",
+    "admin")`. A hierarchy where the top role silently satisfies every check is
+    the kind of rule that is easy to write once and impossible to remember at
+    every endpoint afterwards.
+
+    The role comes from the database row, not from the token claim: taking a
+    role away then takes effect at once instead of whenever the access token
+    happens to expire.
+
+    Authorization *rules* live here, but ownership checks ("is this your
+    course?") stay in the service layer -- they need the thing being touched.
+    """
+
+    async def dependency(current_user: CurrentUser) -> User:
+        if current_user.role not in roles:
+            raise PermissionDeniedError("Bạn không có quyền thực hiện thao tác này")
+        return current_user
+
+    return dependency
+
+
+__all__ = ["CurrentUser", "DbSession", "get_current_user", "get_db", "require_role"]

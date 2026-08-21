@@ -1,6 +1,7 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { GraduationCap, LogOut } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -72,6 +73,16 @@ export function UserMenu({ user }: { user: User }) {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {/* Chỉ học viên mới thấy: giảng viên đã nâng cấp rồi, admin nâng cấp là
+            mất quyền. */}
+        {user.role === "student" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/tro-thanh-giang-vien">
+              <GraduationCap aria-hidden />
+              Trở thành giảng viên
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
         {/* Hồ sơ, khóa học của tôi... thêm khi các trang đó tồn tại. */}
         <DropdownMenuItem onSelect={handleSignOut} disabled={signingOut}>
           <LogOut aria-hidden />

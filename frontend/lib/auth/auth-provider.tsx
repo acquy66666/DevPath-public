@@ -31,6 +31,8 @@ interface AuthContextValue {
   signIn: (input: LoginInput) => Promise<User>;
   signUp: (input: RegisterInput) => Promise<User>;
   signOut: () => Promise<void>;
+  /** Re-read the session from the server, e.g. after the role changed. */
+  refreshSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -117,6 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [startSession],
   );
 
+  const refreshSession = useCallback(async () => {
+    // Anything that changes the user server-side (a promotion to instructor,
+    // say) is picked up here rather than by patching local state, so the UI
+    // can never disagree with the row.
+    startSession(await authApi.refresh());
+  }, [startSession]);
+
   const signOut = useCallback(async () => {
     try {
       await authApi.logout();
@@ -135,8 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn,
       signUp,
       signOut,
+      refreshSession,
     }),
-    [session, status, signIn, signUp, signOut],
+    [session, status, signIn, signUp, signOut, refreshSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

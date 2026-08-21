@@ -54,5 +54,15 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         Index("ix_users_role", "role"),
     )
 
+    @property
+    def has_password(self) -> bool:
+        """Whether this account can be opened with a password at all.
+
+        Derived, never stored: a Google-only account has no hash, and the
+        profile page needs to know that to avoid offering a form that can only
+        fail. Says nothing about the password itself.
+        """
+        return self.password_hash is not None
+
     def __repr__(self) -> str:
         return f"<User {self.email}>"

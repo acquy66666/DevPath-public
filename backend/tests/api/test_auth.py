@@ -65,8 +65,11 @@ async def test_register_creates_a_student_and_returns_an_access_token(
 async def test_register_never_returns_the_password_hash(api_client: AsyncClient) -> None:
     body = (await register(api_client)).json()
 
-    assert "password" not in str(body)
+    # `has_password` is a boolean about the account, which is fine; the hash
+    # itself and the plaintext are what must never appear.
     assert "password_hash" not in body["user"]
+    assert "$2b$" not in str(body)
+    assert VALID["password"] not in str(body)
 
 
 async def test_register_stores_the_password_hashed(

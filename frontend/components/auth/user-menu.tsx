@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, LogOut } from "lucide-react";
+import { GraduationCap, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -16,12 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { User } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth/auth-provider";
-
-const ROLE_LABELS: Record<User["role"], string> = {
-  student: "Học viên",
-  instructor: "Giảng viên",
-  admin: "Quản trị viên",
-};
+import { ROLE_LABELS } from "@/lib/auth/roles";
 
 /** First letters of the name, for the avatar circle. Falls back to the email. */
 function initials(user: User): string {
@@ -73,6 +68,12 @@ export function UserMenu({ user }: { user: User }) {
           </span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/ho-so">
+            <UserRound aria-hidden />
+            Hồ sơ của tôi
+          </Link>
+        </DropdownMenuItem>
         {/* Chỉ học viên mới thấy: giảng viên đã nâng cấp rồi, admin nâng cấp là
             mất quyền. */}
         {user.role === "student" ? (
@@ -83,7 +84,7 @@ export function UserMenu({ user }: { user: User }) {
             </Link>
           </DropdownMenuItem>
         ) : null}
-        {/* Hồ sơ, khóa học của tôi... thêm khi các trang đó tồn tại. */}
+        {/* Khóa học của tôi... thêm khi trang đó tồn tại. */}
         <DropdownMenuItem onSelect={handleSignOut} disabled={signingOut}>
           <LogOut aria-hidden />
           {signingOut ? "Đang đăng xuất…" : "Đăng xuất"}

@@ -134,6 +134,24 @@ async def _revoke_all_sessions(session: AsyncSession, user_id: uuid.UUID) -> Non
     )
 
 
+async def replace_all_sessions(
+    session: AsyncSession,
+    user: User,
+    client: ClientInfo | None = None,
+) -> IssuedTokens:
+    """Revoke every session this user has and open exactly one fresh one.
+
+    What a password change should do: the reason most people change a password
+    is that someone else may have it, so every other device is signed out --
+    while the device doing the changing is not, which would be a strange
+    punishment for doing the right thing.
+
+    Does not commit; the caller owns the transaction.
+    """
+    await _revoke_all_sessions(session, user.id)
+    return await _issue_tokens(session, user, client or ClientInfo())
+
+
 async def register_user(
     session: AsyncSession,
     *,

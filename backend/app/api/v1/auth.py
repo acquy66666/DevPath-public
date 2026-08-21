@@ -18,12 +18,18 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.responses import RedirectResponse
 
+from app.api.v1._transport import (
+    REFRESH_COOKIE_PATH,
+    clear_refresh_cookie,
+    client_info,
+    set_refresh_cookie,
+    token_response,
+)
 from app.core.config import get_settings
 from app.core.deps import CurrentUser, DbSession
 from app.core.exceptions import DomainError
 from app.schemas.auth import LoginIn, RegisterIn, TokenOut, UserOut
 from app.services import auth as auth_service
-from app.services.auth import ClientInfo, IssuedTokens
 from app.services.google_oauth import (
     GoogleAuthError,
     GoogleOAuthClient,
@@ -32,50 +38,10 @@ from app.services.google_oauth import (
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-REFRESH_COOKIE_PATH = "/api/v1/auth"
-
-# users.user_agent is VARCHAR(255); browsers send longer strings than that.
-MAX_USER_AGENT_LENGTH = 255
-
 # Half of the OAuth CSRF check: the other half rides in the URL Google sends
 # the browser back with, and the two have to match.
 STATE_COOKIE_NAME = "devpath_oauth_state"
 STATE_TTL_SECONDS = 10 * 60
-
-
-def _client_info(request: Request) -> ClientInfo:
-    """Device details for the "signed-in devices" list. Informational only."""
-    user_agent = request.headers.get("user-agent")
-    return ClientInfo(
-        user_agent=user_agent[:MAX_USER_AGENT_LENGTH] if user_agent else None,
-        ip_address=request.client.host if request.client else None,
-    )
-
-
-def _set_refresh_cookie(response: Response, raw_token: str) -> None:
-    settings = get_settings()
-    response.set_cookie(
-        key=settings.refresh_cookie_name,
-        value=raw_token,
-        max_age=settings.refresh_token_ttl_days * 24 * 60 * 60,
-        httponly=True,
-        # Off on localhost only: a Secure cookie is never sent over plain http,
-        # which would break the whole flow in development.
-        secure=settings.cookie_secure,
-        # lax, not strict: arriving from a Google search result must not look
-        # like a signed-out user. Not none either -- that invites CSRF.
-        samesite="lax",
-        path=REFRESH_COOKIE_PATH,
-    )
-
-
-def _token_response(response: Response, tokens: IssuedTokens) -> TokenOut:
-    _set_refresh_cookie(response, tokens.refresh_token)
-    return TokenOut(
-        access_token=tokens.access_token,
-        expires_in=tokens.expires_in,
-        user=UserOut.model_validate(tokens.user),
-    )
 
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
@@ -95,9 +61,9 @@ async def register(
         email=payload.email,
         password=payload.password,
         full_name=payload.full_name,
-        client=_client_info(request),
+        client=client_info(request),
     )
-    return _token_response(response, tokens)
+    return token_response(response, tokens)
 
 
 @router.post("/login", response_model=TokenOut)
@@ -115,9 +81,9 @@ async def login(
         session,
         email=payload.email,
         password=payload.password,
-        client=_client_info(request),
+        client=client_info(request),
     )
-    return _token_response(response, tokens)
+    return token_response(response, tokens)
 
 
 @router.post("/refresh", response_model=TokenOut)
@@ -134,15 +100,15 @@ async def refresh(request: Request, response: Response, session: DbSession) -> T
 
     try:
         tokens = await auth_service.rotate_refresh_token(
-            session, raw_token=raw_token, client=_client_info(request)
+            session, raw_token=raw_token, client=client_info(request)
         )
     except auth_service.DomainError:
         # The cookie is spent either way; leaving it in the browser only means
         # the next call fails the same way.
-        response.delete_cookie(settings.refresh_cookie_name, path=REFRESH_COOKIE_PATH)
+        clear_refresh_cookie(response)
         raise
 
-    return _token_response(response, tokens)
+    return token_response(response, tokens)
 
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
@@ -158,7 +124,7 @@ async def logout(request: Request, session: DbSession) -> Response:
     )
 
     response = Response(status_code=status.HTTP_204_NO_CONTENT)
-    response.delete_cookie(settings.refresh_cookie_name, path=REFRESH_COOKIE_PATH)
+    clear_refresh_cookie(response)
     return response
 
 
@@ -242,14 +208,14 @@ async def google_callback(
     try:
         identity = await google.exchange_code(code=code)
         tokens = await auth_service.sign_in_with_google(
-            session, identity=identity, client=_client_info(request)
+            session, identity=identity, client=client_info(request)
         )
     except DomainError as exc:
         return _frontend_error_redirect(exc.code)
 
     settings = get_settings()
     response = RedirectResponse(settings.frontend_url)
-    _set_refresh_cookie(response, tokens.refresh_token)
+    set_refresh_cookie(response, tokens.refresh_token)
     # One state, one use.
     response.delete_cookie(STATE_COOKIE_NAME, path=REFRESH_COOKIE_PATH)
     return response

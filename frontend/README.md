@@ -35,6 +35,7 @@ npm run build
 | `/dang-ky` | Form tạo tài khoản (họ tên, email, mật khẩu) |
 | `/dang-nhap` | Form đăng nhập; đọc `?loi=<CODE>` do callback Google chuyển về |
 | `/tro-thanh-giang-vien` | Tự nâng cấp tài khoản lên giảng viên |
+| `/ho-so` | Hồ sơ: sửa họ tên, đổi mật khẩu |
 
 - `lib/api/auth.ts` — client typed khớp `backend/app/schemas/auth.py`.
 - `lib/auth/auth-provider.tsx` — `AuthProvider` + hook `useAuth()`: `user`, `accessToken`, `status`, `signIn`, `signUp`, `signOut`, `refreshSession`. Đổi vai trò xong thì gọi `refreshSession()` chứ không vá state tại chỗ — giao diện không bao giờ được nói khác hàng trong DB.

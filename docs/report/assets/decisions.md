@@ -70,3 +70,11 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Nâng cấp giảng viên là self-service, không hàng đợi duyệt** — một mình vận hành thì hàng đợi duyệt chỉ là hàng đợi không ai xử lý. Chốt chặn thật nằm ở chỗ khác: khóa học của giảng viên mới vẫn phải qua trạng thái `pending_review` trước khi công khai. Admin gọi endpoint này bị từ chối 409 thay vì lặng lẽ không làm gì, vì với admin thì đây là **mất** quyền chứ không phải thêm.
 
+**Đổi mật khẩu thu hồi mọi phiên khác, nhưng giữ thiết bị vừa đổi** — người ta đổi mật khẩu phần lớn vì nghi có người khác biết nó, nên các thiết bị khác phải văng ra; đăng xuất luôn cả thiết bị vừa làm đúng việc thì lại là một hình phạt vô lý. Endpoint vì thế trả về cặp token mới kèm cookie mới.
+
+**Vẫn đòi mật khẩu hiện tại dù người gọi đã đăng nhập** — access token sống 15 phút và có thể đang nằm trong tay người vừa ngồi xuống chiếc laptop chưa khóa màn hình; mật khẩu là thứ chỉ chủ tài khoản biết. Đây là lý do form đổi mật khẩu ở mọi hệ thống nghiêm túc đều có ô "mật khẩu hiện tại".
+
+**Email không sửa được trong form hồ sơ** — địa chỉ mới phải xác thực xong mới tin được (nó là khóa để gộp tài khoản Google, và là đường khôi phục tài khoản). Đó là một luồng riêng có bước gửi thư, không phải một ô input.
+
+**Thêm cờ `has_password` vào payload người dùng** — frontend cần biết tài khoản Google-only để không hiện form đổi mật khẩu chắc chắn lỗi 409. Là một boolean *về* tài khoản, không phải thông tin *về* mật khẩu; test rò rỉ được siết lại thành "không có `$2b$` và không có plaintext" thay vì chặn thô theo chuỗi "password".
+

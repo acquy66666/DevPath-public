@@ -67,6 +67,8 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 | `GET /api/v1/auth/google/authorize` | Bắt đầu đăng nhập Google (302 sang accounts.google.com) |
 | `GET /api/v1/auth/google/callback` | Google trả trình duyệt về đây, kết thúc bằng 302 về frontend |
 | `POST /api/v1/users/me/instructor` | Tự nâng cấp tài khoản lên `instructor` |
+| `PATCH /api/v1/users/me` | Sửa hồ sơ của chính mình (hiện chỉ `full_name`) |
+| `POST /api/v1/users/me/password` | Đổi mật khẩu, thu hồi mọi phiên khác |
 
 Hai loại token đi hai đường khác nhau:
 
@@ -108,6 +110,16 @@ Ranh giới: quy tắc theo vai trò nằm ở dependency, còn **ownership chec
 
 Tự nâng cấp lên giảng viên là **self-service**, không có hàng đợi duyệt: `POST /users/me/instructor`, không nhận id nên không thể trỏ vào người khác. Gọi hai lần không phải lỗi; tài khoản `admin` thì bị từ chối 409 `ROLE_CHANGE_NOT_ALLOWED` vì nâng cấp sẽ làm **mất** quyền. Cái giữ cho nó an toàn nằm ở phía sau: khóa học của giảng viên mới vẫn ở trạng thái nháp và phải qua duyệt.
 
+### Hồ sơ & đổi mật khẩu
+
+`PATCH /users/me` chỉ nhận `full_name`. **Email cố tình không sửa được ở đây**: địa chỉ mới phải xác thực xong mới tin được, đó là một luồng riêng chứ không phải một ô trong form. `role` cũng không có trong schema — không ai tự thăng chức bằng cách sửa hồ sơ.
+
+`POST /users/me/password` **vẫn đòi mật khẩu hiện tại** dù người gọi đã đăng nhập: access token có thể đã 15 phút tuổi và đang nằm trong tay người vừa ngồi xuống chiếc laptop chưa khóa màn hình, còn mật khẩu là thứ chỉ chủ tài khoản biết.
+
+Đổi xong thì **thu hồi toàn bộ phiên** của user đó rồi cấp lại một phiên mới cho chính thiết bị vừa đổi — lý do phần lớn người ta đổi mật khẩu là nghi có người khác biết nó. Endpoint vì thế trả `TokenOut` kèm cookie mới; không nhận cặp token mới thì thiết bị đang đổi cũng bị đăng xuất theo. Access token cũ vẫn sống tới khi hết hạn (tối đa 15 phút) vì hệ thống không có danh sách đen token — đánh đổi có chủ đích của việc không tra DB mỗi request.
+
+Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) nhận 409 `PASSWORD_NOT_SET`. Payload `UserOut` có cờ `has_password` để frontend biết mà không hiện form vô nghĩa — đây là một boolean về tài khoản, không phải thông tin về mật khẩu.
+
 `JWT_SECRET` phải đặt thật khi `ENV=production` — app từ chối khởi động nếu vẫn còn giá trị mặc định trong `.env.example`.
 
 ## Trạng thái
@@ -128,4 +140,4 @@ Sau khi migration chạy xong, nạp dữ liệu tối thiểu (một tài kho�
 
 Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì. Mật khẩu admin lấy từ `SEED_ADMIN_PASSWORD` (mặc định `devpath-admin` kèm cảnh báo), email từ `SEED_ADMIN_EMAIL`.
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, trang profile và đổi mật khẩu (task kế tiếp của Phase 2), khóa học seed (Phase 2).
+Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (chờ tài khoản Cloudflare R2), khóa học seed (Phase 2).

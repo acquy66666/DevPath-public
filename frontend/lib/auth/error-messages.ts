@@ -27,6 +27,13 @@ const MESSAGES: Record<string, string> = {
   GOOGLE_ACCOUNT_CONFLICT:
     "Email này đã liên kết với một tài khoản Google khác. Dùng mật khẩu để đăng nhập nhé.",
   GOOGLE_OAUTH_NOT_CONFIGURED: "Đăng nhập bằng Google chưa được bật trên máy chủ này.",
+
+  // Hồ sơ & đổi mật khẩu.
+  INVALID_CURRENT_PASSWORD: "Mật khẩu hiện tại không đúng.",
+  PASSWORD_UNCHANGED: "Mật khẩu mới phải khác mật khẩu hiện tại.",
+  PASSWORD_NOT_SET:
+    "Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu để đổi.",
+  ROLE_CHANGE_NOT_ALLOWED: "Tài khoản này không thể tự đổi vai trò.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

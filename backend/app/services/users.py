@@ -4,12 +4,29 @@ from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
+from app.core.security import hash_password, verify_password
 from app.models import User
+from app.services.auth import ClientInfo, IssuedTokens, replace_all_sessions
 
 
 class RoleChangeNotAllowedError(DomainError):
     status_code = status.HTTP_409_CONFLICT
     code = "ROLE_CHANGE_NOT_ALLOWED"
+
+
+class PasswordNotSetError(DomainError):
+    status_code = status.HTTP_409_CONFLICT
+    code = "PASSWORD_NOT_SET"
+
+
+class InvalidCurrentPasswordError(DomainError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "INVALID_CURRENT_PASSWORD"
+
+
+class PasswordUnchangedError(DomainError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "PASSWORD_UNCHANGED"
 
 
 async def promote_to_instructor(session: AsyncSession, user: User) -> User:
@@ -36,3 +53,47 @@ async def promote_to_instructor(session: AsyncSession, user: User) -> User:
     user.role = "instructor"
     await session.commit()
     return user
+
+
+async def update_profile(session: AsyncSession, user: User, *, full_name: str) -> User:
+    """Edit the caller's own profile. Only the fields in the schema can move."""
+    user.full_name = full_name
+    await session.commit()
+    return user
+
+
+async def change_password(
+    session: AsyncSession,
+    user: User,
+    *,
+    current_password: str,
+    new_password: str,
+    client: ClientInfo | None = None,
+) -> IssuedTokens:
+    """Replace the password, then start the sessions over.
+
+    The current password is required even though the caller is already signed
+    in: an access token can be fifteen minutes old and belong to whoever sat
+    down at an unlocked laptop, while the password is something only its owner
+    knows.
+
+    Returns a fresh token pair -- every other session of this user has just
+    been revoked, including the refresh token this device was holding.
+    """
+    if user.password_hash is None:
+        # A Google-only account. There is nothing to verify against, and
+        # setting a first password is a different flow with its own checks.
+        raise PasswordNotSetError(
+            "Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu để đổi"
+        )
+
+    if not verify_password(current_password, user.password_hash):
+        raise InvalidCurrentPasswordError("Mật khẩu hiện tại không đúng")
+
+    if verify_password(new_password, user.password_hash):
+        raise PasswordUnchangedError("Mật khẩu mới phải khác mật khẩu hiện tại")
+
+    user.password_hash = hash_password(new_password)
+    tokens = await replace_all_sessions(session, user, client)
+    await session.commit()
+    return tokens

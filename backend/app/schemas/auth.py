@@ -11,6 +11,22 @@ from app.core.security import MAX_PASSWORD_BYTES
 # reusing something they already have written down.
 MIN_PASSWORD_LENGTH = 8
 
+# users.full_name is VARCHAR(150).
+FULL_NAME_MAX_LENGTH = 150
+
+
+def password_fits_bcrypt(value: str) -> str:
+    """Refuse anything bcrypt would silently truncate.
+
+    Shared with the change-password form: one rule, one place, so the two can
+    never drift into accepting different passwords.
+    """
+    if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
+        raise ValueError(
+            f"Mật khẩu tối đa {MAX_PASSWORD_BYTES} byte (dấu tiếng Việt tính 2–3 byte)"
+        )
+    return value
+
 
 def _normalise_email(value: str) -> str:
     """Trim and lowercase before EmailStr sees it.
@@ -29,17 +45,9 @@ class _EmailIn(BaseModel):
 
 class RegisterIn(_EmailIn):
     password: str = Field(min_length=MIN_PASSWORD_LENGTH)
-    full_name: str = Field(min_length=1, max_length=150)
+    full_name: str = Field(min_length=1, max_length=FULL_NAME_MAX_LENGTH)
 
-    @field_validator("password")
-    @classmethod
-    def must_fit_bcrypt(cls, value: str) -> str:
-        """bcrypt ignores everything past 72 bytes -- refuse rather than truncate."""
-        if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
-            raise ValueError(
-                f"Mật khẩu tối đa {MAX_PASSWORD_BYTES} byte (dấu tiếng Việt tính 2–3 byte)"
-            )
-        return value
+    _fits_bcrypt = field_validator("password")(password_fits_bcrypt)
 
     @field_validator("full_name")
     @classmethod
@@ -67,6 +75,9 @@ class UserOut(BaseModel):
     role: str
     avatar_url: str | None
     created_at: datetime
+    # Whether a password can be used to sign in -- not the password, and not
+    # whether one is any good.
+    has_password: bool
 
 
 class TokenOut(BaseModel):

@@ -8,6 +8,8 @@ export interface User {
   role: "student" | "instructor" | "admin";
   avatar_url: string | null;
   created_at: string;
+  /** Whether a password can open this account — false for Google-only ones. */
+  has_password: boolean;
 }
 
 /**

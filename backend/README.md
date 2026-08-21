@@ -94,6 +94,27 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 
 Mọi endpoint trả danh sách dùng chung phong bì `{items, total, page, page_size}` (`schemas/pagination.py`), `page_size` mặc định 20, tối đa 100.
 
+### Curriculum (chương & bài học)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /courses/{id}/curriculum` | Mục lục — công khai khi khóa học đã xuất bản |
+| `POST /courses/{id}/sections` · `PATCH /sections/{id}` · `DELETE /sections/{id}` | CRUD chương |
+| `PUT /courses/{id}/sections/order` | Sắp xếp lại toàn bộ chương |
+| `POST /sections/{id}/lessons` · `PATCH /lessons/{id}` · `DELETE /lessons/{id}` | CRUD bài học |
+| `PUT /sections/{id}/lessons/order` | Đặt lại **toàn bộ nội dung** một chương, có thể kéo bài từ chương khác sang |
+| `GET /lessons/{id}` | Nội dung đầy đủ một bài học |
+
+**Sắp xếp là "gửi cả danh sách", không phải "gửi lệnh di chuyển".** Client đã biết danh sách trông thế nào sau khi kéo-thả, nên gửi nguyên trạng thái đích: không có chuỗi cập nhật từng phần nào có thể dừng giữa chừng và để lại thứ tự sai. Danh sách phải liệt kê **đúng một lần** mỗi phần tử, thiếu là `400 INVALID_ORDER`.
+
+**Unique `(parent, position)` khai báo `DEFERRABLE INITIALLY DEFERRED`** — một lần sắp xếp lại ghi nhiều dòng, và giữa chừng chắc chắn có hai dòng cùng đòi một vị trí. Deferred nghĩa là Postgres kiểm lúc COMMIT, khi thứ tự cuối cùng đã hình thành. Ràng buộc vẫn còn nguyên hiệu lực — test ép kiểm bằng `SET CONSTRAINTS ALL IMMEDIATE` để chứng minh.
+
+**`position` liền mạch từ 0**: xóa hay chuyển bài đi đều renumber phần còn lại, nên "thêm vào cuối" chỉ là `len(hiện có)`.
+
+**Mục lục không mang nội dung.** `LessonSummary` (trong cây curriculum) và `LessonOut` (bài học đầy đủ) là hai model tách rời, nên không ai thêm nhầm một trường vào model chung rồi lộ nội dung trả phí. Đọc một bài: chủ sở hữu xem được tất, bài `is_preview` của khóa đã xuất bản thì ai cũng đọc được, còn lại `403 LESSON_LOCKED` — **403 chứ không 404**, vì mục lục đã công khai là bài đó tồn tại, người dùng chỉ cần biết là phải đăng ký.
+
+Bảng `video_assets` tạo sẵn trong migration này để `lessons.video_asset_id` có khóa ngoại thật; luồng upload điền vào nó là task kế tiếp.
+
 Hai loại token đi hai đường khác nhau:
 
 - **Access token** — JWT HS256, sống 15 phút, trả trong body JSON. Frontend giữ trong bộ nhớ và gửi qua header `Authorization`. Không thu hồi được, nên thời hạn phải ngắn.

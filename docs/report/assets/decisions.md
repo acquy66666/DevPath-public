@@ -90,3 +90,13 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **`updated_at` do Postgres tính nên phải `refresh()` sau UPDATE** — SQLAlchemy đánh dấu thuộc tính hết hạn sau khi UPDATE có `onupdate=now()`, và đọc lại nó trong ngữ cảnh async ném `MissingGreenlet` chứ không phải lỗi dữ liệu. Mất một SELECT mỗi lần sửa, đổi lại giữ được đồng hồ của DB làm nguồn chân lý thay vì đồng hồ của app.
 
+**Unique `(parent, position)` để DEFERRABLE thay vì né bằng offset tạm** — sắp xếp lại chương/bài ghi nhiều dòng trong một transaction và chắc chắn đi qua trạng thái hai dòng cùng vị trí. Cách phổ biến là cộng tạm 1000 vào tất cả rồi gán lại; cách này để Postgres kiểm lúc COMMIT, đúng ngữ nghĩa "trạng thái cuối mới cần hợp lệ". Trả giá: ràng buộc không báo lỗi ngay tại câu lệnh sai, và trong test (chạy trong savepoint) phải ép bằng `SET CONSTRAINTS ALL IMMEDIATE` mới thấy nó bắn.
+
+**API sắp xếp nhận cả danh sách, không nhận lệnh di chuyển** — client đã biết thứ tự sau khi kéo-thả nên gửi nguyên trạng thái đích; không có chuỗi cập nhật từng phần nào có thể dừng giữa chừng. Danh sách phải đủ và không lặp, thiếu là 400 — vì một danh sách thiếu sẽ để lại những dòng bị bỏ quên ở vị trí cũ.
+
+**Kéo bài học sang chương khác dùng chính endpoint sắp xếp của chương đích** — payload là "toàn bộ nội dung chương này, theo thứ tự này", nên bài đến từ chương khác được nhận nuôi luôn và chương cũ tự renumber. Không cần endpoint "move" riêng, và không có trạng thái trung gian nào mà bài học thuộc về cả hai chương.
+
+**Mục lục và bài học là hai model tách rời** — `LessonSummary` không có `article_content`, nên không ai vô tình thêm một trường vào model dùng chung rồi lộ nội dung trả phí ra trang công khai. Bài không phải preview trả **403 `LESSON_LOCKED`** chứ không 404: mục lục đã công khai là bài đó tồn tại, giấu tiếp chỉ làm người dùng bối rối.
+
+**`video_assets` tạo sớm, dù luồng upload chưa làm** — để `lessons.video_asset_id` có khóa ngoại thật ngay từ migration này thay vì `ALTER TABLE` thêm FK sau. `ON DELETE SET NULL`: mất video thì bài học vẫn còn và giữ nguyên vị trí trong mục lục.
+

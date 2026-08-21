@@ -46,7 +46,7 @@ def _active_courses() -> Select[tuple[Course]]:
     return select(Course).where(Course.deleted_at.is_(None))
 
 
-def _may_manage(course: Course, user: User) -> bool:
+def may_manage(course: Course, user: User) -> bool:
     """Instructors own their courses; admins can act on any of them."""
     return course.instructor_id == user.id or user.role == "admin"
 
@@ -58,7 +58,7 @@ async def _load(session: AsyncSession, course_id: uuid.UUID) -> Course:
     return course
 
 
-async def _load_for_management(
+async def load_for_management(
     session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> Course:
     """Load a course the caller is allowed to change.
@@ -69,7 +69,7 @@ async def _load_for_management(
     is signed in as the wrong account.
     """
     course = await _load(session, course_id)
-    if not _may_manage(course, user):
+    if not may_manage(course, user):
         raise PermissionDeniedError("Khóa học này không thuộc về bạn")
     return course
 
@@ -112,7 +112,7 @@ async def get_course_for_viewer(
 
     if course.status == "published":
         return course
-    if viewer is not None and _may_manage(course, viewer):
+    if viewer is not None and may_manage(course, viewer):
         return course
 
     raise CourseNotFoundError("Không tìm thấy khóa học")
@@ -137,7 +137,7 @@ async def update_course(
     session: AsyncSession, course_id: uuid.UUID, user: User, data: CourseUpdate
 ) -> Course:
     """Edit the fields the schema allows. Status and ownership are not among them."""
-    course = await _load_for_management(session, course_id, user)
+    course = await load_for_management(session, course_id, user)
 
     changes = data.model_dump(exclude_unset=True)
 
@@ -161,7 +161,7 @@ async def delete_course(session: AsyncSession, course_id: uuid.UUID, user: User)
     Soft delete is the whole reason `courses.deleted_at` exists: students who
     already paid keep watching what they bought.
     """
-    course = await _load_for_management(session, course_id, user)
+    course = await load_for_management(session, course_id, user)
     course.deleted_at = datetime.now(tz=UTC)
     await session.commit()
 
@@ -174,7 +174,7 @@ async def submit_for_review(
     The flag stands in for the admin queue that Phase 5 builds. Turning it off
     is what a real review looks like: the course waits in `pending_review`.
     """
-    course = await _load_for_management(session, course_id, user)
+    course = await load_for_management(session, course_id, user)
 
     if course.status not in ("draft", "rejected"):
         raise InvalidCourseStatusError(
@@ -198,7 +198,7 @@ async def submit_for_review(
 
 async def unpublish(session: AsyncSession, course_id: uuid.UUID, user: User) -> Course:
     """published -> draft: off the shelf, back on the workbench."""
-    course = await _load_for_management(session, course_id, user)
+    course = await load_for_management(session, course_id, user)
 
     if course.status != "published":
         raise InvalidCourseStatusError(

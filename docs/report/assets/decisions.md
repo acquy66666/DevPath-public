@@ -80,3 +80,13 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Test viết sau hành vi thì phải kiểm bằng đột biến** — bộ test "auth flow" phủ các hành vi đã có sẵn nên nó xanh ngay từ lần chạy đầu, mà xanh ngay thì không chứng minh được gì. Cách kiểm: phá tạm đúng chỗ cần bảo vệ (bỏ kiểm tra tài khoản bị khóa lúc refresh; cho `logout` thu hồi mọi phiên thay vì phiên hiện tại) và xác nhận đúng hai test đó đỏ, rồi khôi phục. Đây là bằng chứng "test có răng" cho chương kiểm thử, rẻ hơn nhiều so với đo độ phủ.
 
+**Slug khóa học dùng hậu tố ngẫu nhiên, không dùng bộ đếm** — bộ đếm `-2`, `-3` cần một truy vấn để tìm số trống, và hai request cùng lúc vẫn chọn trúng cùng một số; hậu tố 6 ký tự ngẫu nhiên để unique index quyết định, không tốn round trip. Slug **không đổi khi đổi tiêu đề**: URL đã chia sẻ phải còn sống.
+
+**Khóa học nháp trả 404 cho người ngoài, nhưng sửa nhầm khóa của người khác trả 403** — hai câu trả lời khác nhau vì hai mối lo khác nhau: thứ chưa xuất bản thì không nên xác nhận là tồn tại, còn khi người dùng *đã* biết khóa học đó (đang đứng ở trang quản lý, lỡ đăng nhập nhầm tài khoản) thì "không phải của bạn" hữu ích hơn 404 nhiều.
+
+**Soft delete đi qua đúng một hàm dựng truy vấn** — `_active_courses()` là điểm vào duy nhất, nên không thể có truy vấn thứ tám quên `deleted_at IS NULL`. Đây chính là cạm bẫy `database-design.md` cảnh báo khi chốt chỉ `courses` được soft delete.
+
+**Auto-approve là feature flag, không phải code tạm** — `AUTO_APPROVE_COURSES=true` cho Phase 2 demo được vòng đời khóa học mà chưa cần màn duyệt của admin; Phase 5 tắt cờ là luồng `pending_review` chạy thật. Có test cho **cả hai** nhánh nên lúc tắt cờ không phải cầu may.
+
+**`updated_at` do Postgres tính nên phải `refresh()` sau UPDATE** — SQLAlchemy đánh dấu thuộc tính hết hạn sau khi UPDATE có `onupdate=now()`, và đọc lại nó trong ngữ cảnh async ném `MissingGreenlet` chứ không phải lỗi dữ liệu. Mất một SELECT mỗi lần sửa, đổi lại giữ được đồng hồ của DB làm nguồn chân lý thay vì đồng hồ của app.
+

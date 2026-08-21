@@ -70,6 +70,30 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 | `PATCH /api/v1/users/me` | Sửa hồ sơ của chính mình (hiện chỉ `full_name`) |
 | `POST /api/v1/users/me/password` | Đổi mật khẩu, thu hồi mọi phiên khác |
 
+## Khóa học (Phase 2)
+
+| Endpoint | Ai gọi được | Mô tả |
+|---|---|---|
+| `POST /api/v1/courses` | instructor | Tạo khóa học, mở ở trạng thái `draft` |
+| `GET /api/v1/courses/me` | instructor | Khóa học của chính mình, mọi trạng thái, có phân trang |
+| `GET /api/v1/courses/{id}` | ai cũng được | Công khai khi `published`; trước đó chỉ chủ sở hữu và admin |
+| `PATCH /api/v1/courses/{id}` | chủ sở hữu / admin | Sửa nội dung — `status` và `instructor_id` không nằm trong schema |
+| `DELETE /api/v1/courses/{id}` | chủ sở hữu / admin | Soft delete (`deleted_at`) |
+| `POST /api/v1/courses/{id}/submit` | chủ sở hữu | `draft`\|`rejected` → `pending_review` (→ `published` khi bật cờ) |
+| `POST /api/v1/courses/{id}/unpublish` | chủ sở hữu | `published` → `draft` (gỡ khỏi sàn) |
+
+**Phân quyền tách hai tầng:** *ai được gọi endpoint này* là `require_role` ở dependency; *khóa học này của ai* là ownership check ở service — tầng duy nhất có hàng dữ liệu để so.
+
+**Khóa học nháp trả 404 chứ không 403** cho người ngoài: thứ chưa xuất bản thì không nên xác nhận là có tồn tại. Ngược lại, *sửa* khóa học của người khác trả 403 — id là UUID nên không lộ gì, mà "không phải của bạn" dễ xử lý hơn nhiều khi giảng viên lỡ đăng nhập nhầm tài khoản.
+
+**Soft delete đi qua đúng một hàm** (`_active_courses()`), để không có truy vấn nào quên `deleted_at IS NULL`.
+
+**`AUTO_APPROVE_COURSES`** (mặc định `true`): gửi duyệt là xuất bản luôn. Phase 5 tắt cờ này và thay bằng hàng đợi duyệt thật của admin — lúc đó khóa học dừng ở `pending_review`, đúng như test `test_submitting_waits_for_review_when_the_flag_is_off` mô tả.
+
+**Slug** sinh từ tiêu đề (bỏ dấu tiếng Việt, `đ` → `d`) kèm hậu tố ngẫu nhiên 6 ký tự, và **không đổi khi đổi tiêu đề** — URL đã chia sẻ phải còn sống. Hậu tố ngẫu nhiên thay cho bộ đếm `-2`, `-3`: bộ đếm cần một truy vấn để tìm số trống và hai request cùng lúc vẫn chọn trúng nhau.
+
+Mọi endpoint trả danh sách dùng chung phong bì `{items, total, page, page_size}` (`schemas/pagination.py`), `page_size` mặc định 20, tối đa 100.
+
 Hai loại token đi hai đường khác nhau:
 
 - **Access token** — JWT HS256, sống 15 phút, trả trong body JSON. Frontend giữ trong bộ nhớ và gửi qua header `Authorization`. Không thu hồi được, nên thời hạn phải ngắn.

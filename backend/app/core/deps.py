@@ -47,6 +47,29 @@ async def get_current_user(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+async def get_optional_user(
+    session: DbSession,
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
+) -> User | None:
+    """The signed-in user, or None -- for endpoints that serve both.
+
+    A published course is public, but its own instructor sees it before anyone
+    else does, so the route has to know who is asking without demanding it. A
+    broken or expired token reads as "nobody" rather than an error: the page
+    behind it is public either way.
+    """
+    if credentials is None:
+        return None
+
+    try:
+        return await get_current_user(session, credentials)
+    except NotAuthenticatedError:
+        return None
+
+
+OptionalUser = Annotated[User | None, Depends(get_optional_user)]
+
+
 def require_role(*roles: str):
     """Dependency factory: let only these roles through.
 
@@ -72,4 +95,12 @@ def require_role(*roles: str):
     return dependency
 
 
-__all__ = ["CurrentUser", "DbSession", "get_current_user", "get_db", "require_role"]
+__all__ = [
+    "CurrentUser",
+    "DbSession",
+    "OptionalUser",
+    "get_current_user",
+    "get_db",
+    "get_optional_user",
+    "require_role",
+]

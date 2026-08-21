@@ -34,9 +34,10 @@ npm run build
 |---|---|
 | `/dang-ky` | Form tạo tài khoản (họ tên, email, mật khẩu) |
 | `/dang-nhap` | Form đăng nhập; đọc `?loi=<CODE>` do callback Google chuyển về |
+| `/tro-thanh-giang-vien` | Tự nâng cấp tài khoản lên giảng viên |
 
 - `lib/api/auth.ts` — client typed khớp `backend/app/schemas/auth.py`.
-- `lib/auth/auth-provider.tsx` — `AuthProvider` + hook `useAuth()`: `user`, `accessToken`, `status`, `signIn`, `signUp`, `signOut`.
+- `lib/auth/auth-provider.tsx` — `AuthProvider` + hook `useAuth()`: `user`, `accessToken`, `status`, `signIn`, `signUp`, `signOut`, `refreshSession`. Đổi vai trò xong thì gọi `refreshSession()` chứ không vá state tại chỗ — giao diện không bao giờ được nói khác hàng trong DB.
 - `lib/auth/validation.ts` — bản sao quy tắc validate của backend (mật khẩu ≥ 8 ký tự và ≤ 72 **byte**), chỉ để báo lỗi ngay cạnh ô nhập; backend vẫn là nơi quyết định.
 - `lib/auth/error-messages.ts` — ánh xạ `code` của backend sang câu tiếng Việt. Không bao giờ switch theo `message`.
 - `components/auth/google-button.tsx` — link thường (không phải `fetch`: OAuth là điều hướng cả trang), chỉ hiện khi `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true` để không mời người dùng bấm vào thứ chắc chắn lỗi 503.

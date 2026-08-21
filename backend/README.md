@@ -66,6 +66,7 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 | `GET /api/v1/auth/me` | Hồ sơ người đang đăng nhập (`Authorization: Bearer <access_token>`) |
 | `GET /api/v1/auth/google/authorize` | Bắt đầu đăng nhập Google (302 sang accounts.google.com) |
 | `GET /api/v1/auth/google/callback` | Google trả trình duyệt về đây, kết thúc bằng 302 về frontend |
+| `POST /api/v1/users/me/instructor` | Tự nâng cấp tài khoản lên `instructor` |
 
 Hai loại token đi hai đường khác nhau:
 
@@ -97,6 +98,16 @@ Bật tính năng: tạo OAuth client (loại *Web application*) ở [Google Clo
 
 Test không bao giờ gọi Google: `get_google_oauth_client` là dependency của FastAPI nên test thay bằng bản giả (`tests/api/test_google_auth.py`).
 
+### Phân quyền
+
+`require_role("instructor")` trong `core/deps.py` là dependency factory, so khớp **chính xác** — admin **không** tự động qua được cửa của instructor. Endpoint nào cho cả hai thì viết rõ: `require_role("instructor", "admin")`. Phân cấp ngầm kiểu "vai cao hơn thì qua tất" là loại quy tắc viết một lần rồi không ai nhớ ở endpoint thứ ba mươi.
+
+Vai trò đọc từ **hàng trong DB**, không đọc claim trong token: thu hồi quyền có hiệu lực ngay thay vì chờ access token hết hạn. Claim `role` trong token chỉ để frontend vẽ giao diện.
+
+Ranh giới: quy tắc theo vai trò nằm ở dependency, còn **ownership check** ("khóa học này có phải của bạn không") nằm ở service — vì nó cần chính đối tượng đang bị đụng tới.
+
+Tự nâng cấp lên giảng viên là **self-service**, không có hàng đợi duyệt: `POST /users/me/instructor`, không nhận id nên không thể trỏ vào người khác. Gọi hai lần không phải lỗi; tài khoản `admin` thì bị từ chối 409 `ROLE_CHANGE_NOT_ALLOWED` vì nâng cấp sẽ làm **mất** quyền. Cái giữ cho nó an toàn nằm ở phía sau: khóa học của giảng viên mới vẫn ở trạng thái nháp và phải qua duyệt.
+
 `JWT_SECRET` phải đặt thật khi `ENV=production` — app từ chối khởi động nếu vẫn còn giá trị mặc định trong `.env.example`.
 
 ## Trạng thái
@@ -117,4 +128,4 @@ Sau khi migration chạy xong, nạp dữ liệu tối thiểu (một tài kho�
 
 Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì. Mật khẩu admin lấy từ `SEED_ADMIN_PASSWORD` (mặc định `devpath-admin` kèm cảnh báo), email từ `SEED_ADMIN_EMAIL`.
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, `require_role` và trang profile (task kế tiếp của Phase 2), khóa học seed (Phase 2).
+Chưa có: endpoint readiness kiểm tra DB/Redis, trang profile và đổi mật khẩu (task kế tiếp của Phase 2), khóa học seed (Phase 2).

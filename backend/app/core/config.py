@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
 
+    # Phase 5 replaces this with a real admin review queue; until then a
+    # submitted course goes straight to published so the rest of Phase 2 has
+    # something to show.
+    auto_approve_courses: bool = True
+
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"
 

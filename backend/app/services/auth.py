@@ -23,6 +23,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models import RefreshToken, User
+from app.services.google_oauth import GoogleIdentity
 
 
 class EmailAlreadyRegisteredError(DomainError):
@@ -38,6 +39,16 @@ class InvalidCredentialsError(DomainError):
 class AccountLockedError(DomainError):
     status_code = status.HTTP_403_FORBIDDEN
     code = "ACCOUNT_LOCKED"
+
+
+class GoogleEmailNotVerifiedError(DomainError):
+    status_code = status.HTTP_403_FORBIDDEN
+    code = "GOOGLE_EMAIL_NOT_VERIFIED"
+
+
+class GoogleAccountConflictError(DomainError):
+    status_code = status.HTTP_409_CONFLICT
+    code = "GOOGLE_ACCOUNT_CONFLICT"
 
 
 class RefreshTokenMissingError(DomainError):
@@ -240,3 +251,91 @@ async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> Non
 
     row.revoked_at = datetime.now(tz=UTC)
     await session.commit()
+
+
+async def sign_in_with_google(
+    session: AsyncSession,
+    *,
+    identity: GoogleIdentity,
+    client: ClientInfo | None = None,
+) -> IssuedTokens:
+    """Sign in whoever Google just vouched for, creating or linking as needed.
+
+    Three cases, in this order:
+
+    1. `sub` already known -> that account, whatever its address says today.
+       Google's subject identifier is the stable one; an address can be renamed
+       or, on a Workspace domain, handed to a different person entirely.
+    2. address already registered -> link Google to that account, but only if
+       Google has verified the address. Without that check, anyone able to put
+       an unverified address on a Google account could walk into someone else's
+       account here.
+    3. neither -> a new student account with no password.
+    """
+    email = identity.email.strip().lower()
+    now = datetime.now(tz=UTC)
+
+    user = await session.scalar(
+        select(User).where(
+            User.oauth_provider == "google", User.oauth_sub == identity.sub
+        )
+    )
+
+    if user is not None:
+        if user.locked_at is not None:
+            raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
+
+        if user.email != email:
+            # The Google account was renamed. Follow it, unless somebody else
+            # here already holds the new address.
+            clash = await session.scalar(
+                select(User).where(User.email == email, User.id != user.id)
+            )
+            if clash is not None:
+                raise GoogleAccountConflictError(
+                    "Email mới của tài khoản Google đã thuộc về một tài khoản khác"
+                )
+            user.email = email
+    else:
+        if not identity.email_verified:
+            raise GoogleEmailNotVerifiedError(
+                "Google chưa xác thực email này nên không thể dùng để đăng nhập"
+            )
+
+        existing = await session.scalar(select(User).where(User.email == email))
+
+        if existing is not None:
+            if existing.oauth_sub is not None and existing.oauth_sub != identity.sub:
+                raise GoogleAccountConflictError(
+                    "Email này đã liên kết với một tài khoản Google khác"
+                )
+            if existing.locked_at is not None:
+                raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
+
+            # Linking adds a way in; it never touches the password, the name, or
+            # an avatar the user chose for themselves.
+            existing.oauth_provider = "google"
+            existing.oauth_sub = identity.sub
+            existing.email_verified_at = existing.email_verified_at or now
+            existing.avatar_url = existing.avatar_url or identity.picture
+            user = existing
+        else:
+            user = User(
+                email=email,
+                password_hash=None,
+                # full_name is NOT NULL and Google does not always send a name.
+                full_name=identity.full_name or email.split("@")[0],
+                avatar_url=identity.picture,
+                role="student",
+                oauth_provider="google",
+                oauth_sub=identity.sub,
+                # Signing in through Google is the verification.
+                email_verified_at=now,
+            )
+            session.add(user)
+            await session.flush()
+
+    user.last_login_at = now
+    tokens = await _issue_tokens(session, user, client or ClientInfo())
+    await session.commit()
+    return tokens

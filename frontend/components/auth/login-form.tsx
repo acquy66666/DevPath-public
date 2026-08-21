@@ -10,10 +10,12 @@ import { AuthFormField } from "@/components/auth/auth-form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { authErrorMessage } from "@/lib/auth/error-messages";
+import { authErrorMessage, errorMessageForCode } from "@/lib/auth/error-messages";
 import { validateEmail } from "@/lib/auth/validation";
 
-export function LoginForm() {
+/** `errorCode` carries a failure that happened before this page loaded --
+ * today that means the Google callback redirecting back with `?loi=`. */
+export function LoginForm({ errorCode = null }: { errorCode?: string | null }) {
   const router = useRouter();
   const { signIn } = useAuth();
 
@@ -46,9 +48,13 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-      {mutation.isError ? (
+      {mutation.isError || errorCode ? (
         <Alert variant="destructive">
-          <AlertDescription>{authErrorMessage(mutation.error)}</AlertDescription>
+          <AlertDescription>
+            {mutation.isError
+              ? authErrorMessage(mutation.error)
+              : errorMessageForCode(errorCode as string)}
+          </AlertDescription>
         </Alert>
       ) : null}
 

@@ -27,6 +27,14 @@ function baseUrl(): string {
   return process.env.NEXT_PUBLIC_API_BASE_URL ?? FALLBACK_BASE_URL;
 }
 
+/**
+ * Absolute URL of a backend endpoint, for links the browser follows itself.
+ * `fetch` calls go through apiFetch instead and never need this.
+ */
+export function apiUrl(path: string): string {
+  return `${baseUrl()}${path}`;
+}
+
 /** Mirrors the backend envelope: {"detail": {"code", "message"}}. */
 export class ApiError extends Error {
   constructor(

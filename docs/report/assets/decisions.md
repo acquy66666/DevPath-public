@@ -52,3 +52,15 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **URL backend cho trình duyệt phải là `localhost`, không phải `127.0.0.1`** — trình duyệt coi đây là hai site khác nhau, cookie `SameSite=lax` sẽ không được gửi kèm. Biểu hiện rất khó đoán: đăng nhập được nhưng F5 là mất phiên.
 
+**Google OAuth: authorization code phía backend, không dùng Google Identity Services phía trình duyệt** — client secret nằm lại máy chủ, trình duyệt không cầm gì dùng lại được, và cùng một chỗ cấp refresh token như đăng nhập bằng mật khẩu. Trả giá: thêm một vòng chuyển hướng và phải tự lo `state`.
+
+**Callback không nhét token vào URL, mà đặt cookie rồi 302 về frontend** — token trong query string sẽ nằm lại lịch sử trình duyệt, header `Referer` và log server. SPA lấy phiên bằng `/auth/refresh` như mọi lần tải trang khác, nên không có đường đi riêng nào phải bảo trì.
+
+**Gộp tài khoản theo email chỉ khi Google báo `email_verified: true`** — thiếu điều kiện này thì ai tạo được tài khoản Google mang email chưa xác thực là chiếm được tài khoản tương ứng ở đây. Claim thiếu hoặc "truthy nhưng không phải `true`" đều tính là chưa xác thực; đã kiểm bằng test đột biến (nới thành `bool()` là 4 test đỏ).
+
+**Ưu tiên `sub` hơn email khi nhận diện** — email Google đổi tên được, và trên Workspace còn cấp lại cho người khác; `sub` thì không đổi. Nhận theo `sub` trước, email chỉ dùng ở lần liên kết đầu tiên.
+
+**Adapter Google nằm sau `Protocol` + dependency của FastAPI** — test thay bằng bản giả nên không cần mạng, không cần credential; chạy được ở CI của repo private. Cùng khuôn với adapter LLM sẽ làm ở Phase 4.
+
+**Test phải chạm được đường thật, không chỉ bản giả** — bản giả cắm ở tầng dependency của FastAPI chứng minh route đúng, nhưng vẫn xanh trên một bản build mà PyJWT **không verify nổi RS256**: `cryptography` là extra tùy chọn, thiếu nó thì đăng nhập Google chết ngay lần đầu người thật bấm nút. Chỗ này lộ ra khi dựng thêm một "Google giả" chạy trên `127.0.0.1` (ký RS256 thật, phục vụ JWKS thật) để test đúng đoạn `httpx` → đổi mã → verify chữ ký. Dependency sửa thành `pyjwt[crypto]`.
+

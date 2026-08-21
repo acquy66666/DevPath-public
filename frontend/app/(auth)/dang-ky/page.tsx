@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { GoogleButton } from "@/components/auth/google-button";
 import { RegisterForm } from "@/components/auth/register-form";
 import {
   Card,
@@ -23,7 +24,8 @@ export default function RegisterPage() {
           Miễn phí. Học thử, làm bài tập code và được chấm tự động.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-4">
+        <GoogleButton label="Đăng ký bằng Google" />
         <RegisterForm />
       </CardContent>
     </Card>

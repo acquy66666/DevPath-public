@@ -7,7 +7,16 @@ upgrade/downgrade against the dev database.
 
 import pytest
 
-from app.models import Base, Category, Course, RefreshToken, User
+from app.models import (
+    Base,
+    Category,
+    Course,
+    CourseSection,
+    Lesson,
+    RefreshToken,
+    User,
+    VideoAsset,
+)
 
 
 def constraint_names(model: type) -> set[str]:
@@ -19,12 +28,15 @@ def index_names(model: type) -> set[str]:
 
 
 def test_registered_tables_match_the_phases_done_so_far() -> None:
-    """Phase 1 created three tables; Phase 2 auth adds refresh_tokens."""
+    """Phase 1 created three; Phase 2 adds auth sessions and the curriculum."""
     assert set(Base.metadata.tables) == {
         "users",
         "categories",
         "courses",
         "refresh_tokens",
+        "course_sections",
+        "lessons",
+        "video_assets",
     }
 
 
@@ -157,3 +169,48 @@ def test_refresh_token_has_created_at_but_no_updated_at() -> None:
     """
     assert "created_at" in RefreshToken.__table__.c
     assert "updated_at" not in RefreshToken.__table__.c
+
+
+def test_positions_are_unique_per_parent_and_deferrable() -> None:
+    """Reordering rewrites several rows in one transaction.
+
+    With an immediate constraint the second UPDATE collides with the first,
+    before the arrangement the instructor asked for even exists.
+    """
+    for model, name in (
+        (CourseSection, "uq_course_sections_position"),
+        (Lesson, "uq_lessons_position"),
+    ):
+        constraint = next(
+            c for c in model.__table__.constraints if c.name == name
+        )
+        assert constraint.deferrable is True
+        assert constraint.initially == "DEFERRED"
+
+
+def test_deleting_a_course_takes_its_curriculum_with_it() -> None:
+    section_fk = next(iter(CourseSection.__table__.c.course_id.foreign_keys))
+    lesson_fk = next(iter(Lesson.__table__.c.section_id.foreign_keys))
+
+    assert section_fk.ondelete == "CASCADE"
+    assert lesson_fk.ondelete == "CASCADE"
+
+
+def test_losing_a_video_does_not_delete_the_lesson() -> None:
+    """SET NULL: the lesson stays, its slot in the order stays, the video is gone."""
+    fk = next(iter(Lesson.__table__.c.video_asset_id.foreign_keys))
+
+    assert fk.ondelete == "SET NULL"
+
+
+def test_only_video_lessons_may_carry_a_video() -> None:
+    names = {c.name for c in Lesson.__table__.constraints if c.name}
+
+    assert {"ck_lessons_type", "ck_lessons_video_asset_type"} <= names
+
+
+def test_video_assets_are_keyed_by_their_storage_object() -> None:
+    names = {c.name for c in VideoAsset.__table__.constraints if c.name}
+
+    assert "uq_video_assets_storage_key" in names
+    assert "ck_video_assets_status" in names

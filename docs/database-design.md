@@ -130,8 +130,8 @@ Ràng buộc:
 
 | Bảng | Cột | Khóa & ràng buộc bổ sung | ON DELETE | Ghi chú |
 |---|---|---|---|---|
-| `course_sections` | `course_id`, `title`, `position` | `uq_course_sections_position` (`course_id`,`position`) | course → CASCADE | |
-| `lessons` | `section_id`, `title`, `type`, `position`, `is_preview`, `video_asset_id`, `article_content` | `uq_lessons_position` (`section_id`,`position`); `ck_lessons_type` | section → CASCADE, video_asset → SET NULL | `type`: `video`/`article`/`quiz`/`code_exercise`; `video_asset_id` chỉ khác NULL khi `type='video'`; `is_preview` cho xem thử không cần enroll |
+| `course_sections` | `course_id`, `title`, `position` | `uq_course_sections_position` (`course_id`,`position`) — **DEFERRABLE INITIALLY DEFERRED** | course → CASCADE | Sắp xếp lại ghi nhiều dòng trong một transaction, giữa chừng có hai dòng cùng vị trí |
+| `lessons` | `section_id`, `title`, `type`, `position`, `is_preview`, `video_asset_id`, `article_content` | `uq_lessons_position` (`section_id`,`position`) — **DEFERRABLE INITIALLY DEFERRED**; `ck_lessons_type`; `ck_lessons_video_asset_type` | section → CASCADE, video_asset → SET NULL | `type`: `video`/`article`/`quiz`/`code_exercise`; `video_asset_id` chỉ khác NULL khi `type='video'`; `is_preview` cho xem thử không cần enroll |
 | `video_assets` | `storage_key`, `duration_s`, `hls_manifest_key`, `status`, `error_message`, `transcript_key` | `uq_video_assets_storage_key` | — | `error_message` và `transcript_key` là cột **mới**. `transcript_key` trỏ file `.srt`/`.txt` trên R2 — nguồn để pipeline RAG chunk ở Phase 4, bản cũ không có chỗ nào lưu |
 | `reviews` | `course_id`, `user_id`, `rating`, `comment` | `uq_reviews_course_user` (`course_id`,`user_id`); `ck_reviews_rating` CHECK 1–5 | course → CASCADE, user → CASCADE | Ghi/sửa review phải cập nhật `courses.rating_avg` trong cùng transaction |
 
@@ -259,7 +259,8 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 |---|---|---|
 | `users`, `categories`, `courses` | ✅ đã có trong DB | `576c29b76f4e` |
 | `refresh_tokens` | ✅ đã có trong DB | `adab7334f140` |
-| `course_sections`, `lessons`, `video_assets`, `reviews` | ⏳ Phase 2 | |
+| `course_sections`, `lessons`, `video_assets` | ✅ đã có trong DB | `f7d37ee5caf2` |
+| `reviews` | ⏳ Phase 2 (tuần 5) | |
 | Nhóm học tập, bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 
 Hai điểm của `courses` đã có cột nhưng **chưa có hành vi**, làm ở Phase 2 cùng lúc với tính năng dùng tới:

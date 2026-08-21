@@ -13,7 +13,7 @@
 ## Tuần 4 — Quản lý khóa học (instructor)
 
 - [x] CRUD khóa học (draft → pending_review → published; admin duyệt làm ở phase 5, tạm auto-approve có feature flag)
-- [ ] Curriculum builder: section + lesson, sắp xếp kéo-thả (position), loại lesson: video/article
+- [x] Curriculum builder: section + lesson, sắp xếp kéo-thả (position), loại lesson: video/article
 - [ ] Upload video: presigned URL lên R2 → job Celery transcode HLS (ffmpeg) → cập nhật `video_assets.status`
 - [ ] Trang chi tiết khóa học public (SSR, SEO meta) + đánh dấu lesson preview
 

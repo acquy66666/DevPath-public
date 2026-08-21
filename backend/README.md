@@ -94,6 +94,14 @@ Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy t�
 
 Mọi endpoint trả danh sách dùng chung phong bì `{items, total, page, page_size}` (`schemas/pagination.py`), `page_size` mặc định 20, tối đa 100.
 
+### Danh mục
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /categories` | Cây danh mục hai tầng, công khai, không phân trang |
+
+Không phân trang vì đây là bảng phân loại do admin biên tập, cỡ một tá dòng, chứ không phải dữ liệu người dùng sinh ra — con trỏ trang cho mười dòng chỉ là nghi thức. Trả về cây (`children` luôn có mặt, rỗng thì là `[]`) để form dựng `<optgroup>` mà không phải tự ghép lại.
+
 ### Curriculum (chương & bài học)
 
 | Endpoint | Mô tả |

@@ -100,3 +100,17 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **`video_assets` tạo sớm, dù luồng upload chưa làm** — để `lessons.video_asset_id` có khóa ngoại thật ngay từ migration này thay vì `ALTER TABLE` thêm FK sau. `ON DELETE SET NULL`: mất video thì bài học vẫn còn và giữ nguyên vị trí trong mục lục.
 
+**Kéo-thả dùng dnd-kit, không dùng nút lên/xuống** — đây là dependency UI đầu tiên ngoài shadcn, đổi lại được thao tác đúng như giảng viên mong đợi ở một nền tảng kiểu Udemy. Điều kiện kèm theo: phải dùng được bằng bàn phím (tay nắm → phím cách → mũi tên → phím cách) và có thông báo tiếng Việt cho screen reader, vì dnd-kit chỉ kèm sẵn tiếng Anh và đọc ra UUID của phần tử.
+
+**Trong lúc kéo một chương, mọi bài học bị tắt vai trò điểm thả** — chương đang kéo đi ngang qua chính các bài học của nó, mà mỗi bài đều là một droppable, nên mũi tên xuống dừng lại ở từng bài một thay vì nhảy sang chương kế. `disabled: { draggable: false, droppable: true }` theo loại phần tử đang kéo sửa cả đường chuột lẫn đường bàn phím, vì `sortableKeyboardCoordinates` cũng chỉ xét các droppable còn bật.
+
+**Kéo-thả cập nhật lạc quan rồi mới gọi API** — thứ tự mới ghi thẳng vào cache của TanStack Query lúc thả, request đi sau; lỗi thì `invalidate` để sự thật từ server ghi đè và hiện một dòng báo lỗi. Kéo mà phải chờ round trip mới thấy hàng di chuyển là cảm giác của một trang hỏng.
+
+**Trạng thái cây chỉ tồn tại trong lúc kéo** — `dragTree` giữ bản làm việc từ lúc nhấc đến lúc thả (để bài học *nhìn thấy được* là đã rời chương này sang chương kia), ngoài lúc đó cache của query là nguồn chân lý duy nhất. Không đồng bộ server → state bằng `useEffect`: đó là cách chắc chắn nhất để có hai nguồn chân lý cãi nhau.
+
+**Endpoint `GET /categories` sinh ra vì form tạo khóa học cần nó** — không phân trang, trả cả cây hai tầng: đây là bảng phân loại admin biên tập chứ không phải dữ liệu người dùng, và `<optgroup>` cần đúng hình dạng đó.
+
+**Cổng giảng viên ở client loại cả admin** — `require_role("instructor")` khớp chính xác nên admin gọi API quản lý khóa học sẽ ăn 403; cho admin thấy màn hình đó chỉ để họ gặp lỗi ở mọi thao tác. Cổng này là phép lịch sự với người dùng, còn quyền thật vẫn nằm ở backend.
+
+**Cạm bẫy khi test kéo-thả bằng bàn phím** — nếu trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, `KeyboardSensor` của dnd-kit **cuộn trang** thay vì di chuyển phần tử. Với người dùng thật thì trang cuộn vài nhịp rồi mới bắt đầu di chuyển, không sao; với script kiểm thử thì trông y hệt một tính năng hỏng. Cách kiểm đúng: đặt viewport đủ cao để trang hết cuộn.
+

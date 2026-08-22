@@ -134,6 +134,8 @@ docker compose -f infra/docker-compose.yml restart backend worker
 
 Rồi thử upload một video ngắn ở `/giang-day/<id khóa học>` → mở một bài học dạng Video. Trạng thái sẽ đi qua `uploading → processing → ready`; xong là bài học có video phát được.
 
+Luồng này đã chạy thật trên bucket R2 của dự án: video 10 giây → `ready` sau vài giây, manifest và segment tải công khai được, và tải lên lần nữa thì toàn bộ object của video cũ bị dọn khỏi bucket.
+
 Nếu hỏng, xem theo thứ tự:
 
 | Triệu chứng | Nguyên nhân hay gặp |

@@ -27,6 +27,7 @@ class FakeStorage:
     def __init__(self) -> None:
         self.uploaded: list[str] = []
         self.downloaded: list[str] = []
+        self.content_types: dict[str, str | None] = {}
 
     def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
         return f"https://bucket.example/{key}"
@@ -40,6 +41,7 @@ class FakeStorage:
 
     def upload_file(self, source: str, key: str, content_type: str | None = None) -> None:
         self.uploaded.append(key)
+        self.content_types[key] = content_type
 
     def delete_prefix(self, prefix: str) -> None:
         pass
@@ -108,6 +110,21 @@ async def test_every_segment_is_uploaded_next_to_its_manifest(
         f"{prefix}/segment_0001.ts",
     ]
     assert storage.downloaded == [asset.storage_key]
+
+
+async def test_hls_files_are_uploaded_with_the_content_type_a_player_expects(
+    db_session: AsyncSession, fake_ffmpeg: None
+) -> None:
+    """Left to `mimetypes` this varies by operating system -- on Windows `.ts`
+    guesses at TypeScript."""
+    asset = await make_asset(db_session)
+    storage = FakeStorage()
+
+    await transcode(db_session, storage, asset.id)
+
+    prefix = f"videos/{asset.id}/hls"
+    assert storage.content_types[f"{prefix}/index.m3u8"] == "application/vnd.apple.mpegurl"
+    assert storage.content_types[f"{prefix}/segment_0000.ts"] == "video/mp2t"
 
 
 async def test_a_video_ffmpeg_refuses_ends_as_failed_with_a_readable_reason(

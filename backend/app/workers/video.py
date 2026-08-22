@@ -37,6 +37,15 @@ MAX_HEIGHT = 720
 
 MANIFEST_NAME = "index.m3u8"
 
+# Spelled out rather than left to `mimetypes`: the table it consults differs
+# per operating system, and on Windows `.ts` guesses at TypeScript. A segment
+# served as application/octet-stream still plays in hls.js, but Safari's native
+# player is fussier and the header costs nothing to get right.
+HLS_CONTENT_TYPES = {
+    ".m3u8": "application/vnd.apple.mpegurl",
+    ".ts": "video/mp2t",
+}
+
 # The instructor reads this; a full traceback would tell them nothing.
 ERROR_MESSAGE_MAX_LENGTH = 500
 
@@ -156,7 +165,11 @@ async def transcode(
         prefix = hls_prefix(asset.id)
 
         for path in sorted(manifest.parent.iterdir()):
-            storage.upload_file(str(path), f"{prefix}/{path.name}")
+            storage.upload_file(
+                str(path),
+                f"{prefix}/{path.name}",
+                HLS_CONTENT_TYPES.get(path.suffix),
+            )
 
         asset.duration_s = probe_duration_seconds(source)
         asset.hls_manifest_key = f"{prefix}/{MANIFEST_NAME}"

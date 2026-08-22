@@ -14,7 +14,7 @@
 
 - [x] CRUD khóa học (draft → pending_review → published; admin duyệt làm ở phase 5, tạm auto-approve có feature flag)
 - [x] Curriculum builder: section + lesson, sắp xếp kéo-thả (position), loại lesson: video/article
-- [ ] Upload video: presigned URL lên R2 → job Celery transcode HLS (ffmpeg) → cập nhật `video_assets.status` — code xong và đã kiểm chứng end-to-end với MinIO local; **tick sau khi chạy thật trên R2** (chờ bucket + access key, xem [hướng dẫn](../huong-dan-cloudflare-r2.md))
+- [x] Upload video: presigned URL lên R2 → job Celery transcode HLS (ffmpeg) → cập nhật `video_assets.status`
 - [ ] Trang chi tiết khóa học public (SSR, SEO meta) + đánh dấu lesson preview
 
 ## Tuần 5 — Trải nghiệm học viên

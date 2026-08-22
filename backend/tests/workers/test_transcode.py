@@ -230,18 +230,20 @@ async def test_the_workspace_is_cleaned_up(
 def test_ffmpeg_really_produces_a_playable_manifest(tmp_path: Path) -> None:
     """Proves the actual command line works -- the flags are easy to get wrong
     and a fake would happily agree with a broken one."""
+    # Long enough to be cut into several segments, so the segmenting settings
+    # are exercised rather than just the encoder.
     source = tmp_path / "source.mp4"
     subprocess.run(
         [
             "ffmpeg", "-y",
-            "-f", "lavfi", "-i", "testsrc=size=1280x720:rate=25:duration=4",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=4",
+            "-f", "lavfi", "-i", "testsrc=size=1280x720:rate=25:duration=14",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=14",
             "-c:v", "libx264", "-preset", "ultrafast", "-c:a", "aac",
             str(source),
         ],
         capture_output=True,
         check=True,
-        timeout=120,
+        timeout=180,
     )
 
     manifest = worker.run_ffmpeg(source, tmp_path / "hls")
@@ -252,7 +254,18 @@ def test_ffmpeg_really_produces_a_playable_manifest(tmp_path: Path) -> None:
     # VOD playlists are the ones a player can seek in.
     assert "#EXT-X-PLAYLIST-TYPE:VOD" in text
     assert list(manifest.parent.glob("segment_*.ts"))
-    assert worker.probe_duration_seconds(source) == 4
+    assert worker.probe_duration_seconds(source) == 14
+
+    # `-hls_time` alone is a request ffmpeg can only honour on a keyframe, and
+    # libx264's default GOP is ten seconds. Without the forced keyframes this
+    # comes back as 10s + 4s and SEGMENT_SECONDS means nothing.
+    durations = [
+        float(line.removeprefix("#EXTINF:").rstrip(","))
+        for line in text.splitlines()
+        if line.startswith("#EXTINF:")
+    ]
+    assert len(durations) >= 2
+    assert max(durations) <= worker.SEGMENT_SECONDS + 1
 
 
 @pytest.mark.skipif(not HAS_FFMPEG, reason="ffmpeg/ffprobe không có trên máy này")

@@ -115,6 +115,11 @@ def run_ffmpeg(source: Path, output_dir: Path) -> Path:
             "-profile:v", "main",
             "-c:a", "aac",
             "-b:a", "128k",
+            # `-hls_time` can only cut on a keyframe, and libx264 emits one
+            # every 250 frames by default -- ten seconds at 25fps. Without
+            # forcing them the requested six seconds is quietly ignored and
+            # segments come out at whatever the GOP happens to be.
+            "-force_key_frames", f"expr:gte(t,n_forced*{SEGMENT_SECONDS})",
             "-hls_time", str(SEGMENT_SECONDS),
             "-hls_playlist_type", "vod",
             "-hls_segment_filename", str(output_dir / "segment_%04d.ts"),

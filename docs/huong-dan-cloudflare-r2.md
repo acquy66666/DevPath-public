@@ -145,3 +145,4 @@ Nếu hỏng, xem theo thứ tự:
 | `SignatureDoesNotMatch` | Copy nhầm/thiếu ký tự Secret Access Key |
 | Upload xong nhưng kẹt ở `processing` | Worker chưa chạy hoặc ffmpeg lỗi — xem `docker compose logs worker` |
 | `ready` nhưng player không phát | `R2_PUBLIC_BASE_URL` sai, hoặc bước 6 chưa bật public access |
+| Script Python tải `.m3u8` bị **403** nhưng trình duyệt xem được | Cloudflare chặn User-Agent mặc định của `urllib` trên `r2.dev`. Không phải lỗi phân quyền — kiểm bằng `curl` hoặc đặt User-Agent của trình duyệt |

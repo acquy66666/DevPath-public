@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthFormField } from "@/components/auth/auth-form-field";
+import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { apiErrorMessage } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { authErrorMessage } from "@/lib/auth/error-messages";
 import {
   PASSWORD_MIN_LENGTH,
   validateEmail,
@@ -54,11 +54,11 @@ export function RegisterForm() {
     <form onSubmit={handleSubmit} className="space-y-4" noValidate>
       {mutation.isError ? (
         <Alert variant="destructive">
-          <AlertDescription>{authErrorMessage(mutation.error)}</AlertDescription>
+          <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
         </Alert>
       ) : null}
 
-      <AuthFormField
+      <FormField
         label="Họ và tên"
         type="text"
         value={fullName}
@@ -70,7 +70,7 @@ export function RegisterForm() {
         autoFocus
       />
 
-      <AuthFormField
+      <FormField
         label="Email"
         type="email"
         value={email}
@@ -81,7 +81,7 @@ export function RegisterForm() {
         disabled={mutation.isPending}
       />
 
-      <AuthFormField
+      <FormField
         label="Mật khẩu"
         type="password"
         value={password}

@@ -2,7 +2,7 @@
 
 Giao diện web: trang public (SSR cho SEO), trải nghiệm học, dashboard giảng viên và admin.
 
-Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · shadcn/ui (preset `radix-nova`, icon Lucide).
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind v4 · shadcn/ui (preset `radix-nova`, icon Lucide) · TanStack Query · dnd-kit (kéo-thả mục lục).
 
 ## Chạy local
 
@@ -40,12 +40,29 @@ npm run build
 - `lib/api/auth.ts` — client typed khớp `backend/app/schemas/auth.py`.
 - `lib/auth/auth-provider.tsx` — `AuthProvider` + hook `useAuth()`: `user`, `accessToken`, `status`, `signIn`, `signUp`, `signOut`, `refreshSession`. Đổi vai trò xong thì gọi `refreshSession()` chứ không vá state tại chỗ — giao diện không bao giờ được nói khác hàng trong DB.
 - `lib/auth/validation.ts` — bản sao quy tắc validate của backend (mật khẩu ≥ 8 ký tự và ≤ 72 **byte**), chỉ để báo lỗi ngay cạnh ô nhập; backend vẫn là nơi quyết định.
-- `lib/auth/error-messages.ts` — ánh xạ `code` của backend sang câu tiếng Việt. Không bao giờ switch theo `message`.
+- `lib/api/error-messages.ts` — ánh xạ `code` của backend sang câu tiếng Việt cho **toàn** ứng dụng (auth, hồ sơ, khóa học, mục lục). Không bao giờ switch theo `message`.
 - `components/auth/google-button.tsx` — link thường (không phải `fetch`: OAuth là điều hướng cả trang), chỉ hiện khi `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true` để không mời người dùng bấm vào thứ chắc chắn lỗi 503.
 
 **Access token nằm trong bộ nhớ, không ở `localStorage` cũng không ở cookie JS đọc được.** Refresh token là cookie `HttpOnly` của backend, nên F5 xong `AuthProvider` gọi `/auth/refresh` để dựng lại phiên — đó là lúc header hiện ô xám chờ (`status === "loading"`). Đánh đổi: `middleware.ts` của Next không đọc được cookie đó nên guard route phải làm ở client; chưa có route nào cần guard cho tới khi có trang học.
 
 **Cạm bẫy đã gặp: refresh gọi hai lần là mất phiên.** Backend xoay vòng refresh token và coi token đã thu hồi quay lại là bị đánh cắp (thu hồi sạch phiên). React StrictMode chạy effect hai lượt trong dev ⇒ hai request refresh song song ⇒ tự đăng xuất chính mình. `lib/api/auth.ts` vì thế gom mọi lời gọi refresh đang bay vào **một** promise duy nhất. Hệ quả còn lại: mở hai tab cùng lúc sau khi để lâu vẫn có thể chạm vào tình huống này — nếu thành phiền thì thêm khoảng ân hạn (leeway) phía backend.
+
+## Khu vực giảng viên (Phase 2)
+
+| Đường dẫn | Nội dung |
+|---|---|
+| `/giang-day` | Danh sách khóa học của giảng viên, có phân trang |
+| `/giang-day/moi` | Tạo khóa học: chỉ tên + danh mục, xong là vào thẳng trình soạn |
+| `/giang-day/[courseId]` | Mục lục (kéo-thả), thông tin khóa học, trạng thái/xuất bản/xóa |
+
+- `components/instructor/instructor-gate.tsx` chặn ở client cho gọn mắt, **không phải để bảo vệ**: quyền thật nằm ở `require_role("instructor")` trên từng endpoint. Cổng này loại cả tài khoản admin — `require_role` khớp chính xác nên admin vào đây sẽ ăn 403 ở mọi request.
+- `components/curriculum/` — trình soạn mục lục. `lib/curriculum/tree.ts` giữ toàn bộ phép biến đổi cây dưới dạng hàm thuần, nhờ vậy các handler kéo-thả đủ ngắn để đọc.
+
+**Kéo-thả gửi cả danh sách, không gửi lệnh di chuyển.** Thả xong, client biết thứ tự cuối cùng nên gửi nguyên trạng thái đó (`PUT .../order`). Kéo bài học sang chương khác cũng dùng đúng endpoint của chương đích — backend nhận nuôi bài đó và đánh số lại chương cũ, nên **một** request là đủ và không có khoảnh khắc nào bài học thuộc về hai chương.
+
+**Bàn phím dùng được:** chọn tay nắm → phím cách → phím mũi tên → phím cách để thả, kèm thông báo tiếng Việt cho screen reader (dnd-kit chỉ có sẵn tiếng Anh và đọc ra UUID). Trong lúc kéo *chương*, mọi bài học bị tắt vai trò điểm thả (`disabled: { droppable: true }`) — nếu không, mũi tên xuống sẽ dừng ở từng bài học nằm trong chính chương đang kéo.
+
+**Cạm bẫy dnd-kit:** khi trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, mũi tên **cuộn trang** trước rồi mới di chuyển phần tử — đó là hành vi có sẵn của `KeyboardSensor`, không phải lỗi. Test tự động vì thế phải đặt viewport đủ cao để trang hết cuộn.
 
 ## Cấu trúc
 
@@ -53,11 +70,13 @@ npm run build
 app/
 ├── (marketing)/     Trang public: home, danh sách + chi tiết khóa học (SSR, SEO)
 ├── (learn)/         Player, quiz, code editor (client-heavy) — Phase 2+
-└── (dashboard)/     Instructor + admin — Phase 2+
-components/ui/       shadcn/ui (generated, hạn chế sửa tay)
+└── (dashboard)/     Khu vực giảng viên: /giang-day (+ admin ở Phase 5)
+components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea
 components/layout/   site-header, site-footer
-components/<domain>/ course-card, video-player, code-editor... — Phase 2+
+components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
+components/curriculum/ trình soạn mục lục (kéo-thả)
 lib/api/             API client typed, 1 file mỗi domain
+lib/curriculum/      biến đổi cây mục lục (hàm thuần)
 ```
 
 ## Nguyên tắc

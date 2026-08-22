@@ -14,9 +14,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { apiErrorMessage } from "@/lib/api/error-messages";
 import { becomeInstructor } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { authErrorMessage } from "@/lib/auth/error-messages";
 
 const WHAT_YOU_GET = [
   "Tạo khóa học: chương, bài giảng, video",
@@ -121,7 +121,7 @@ export function BecomeInstructorCard() {
 
         {mutation.isError ? (
           <Alert variant="destructive">
-            <AlertDescription>{authErrorMessage(mutation.error)}</AlertDescription>
+            <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
           </Alert>
         ) : null}
 

@@ -1,7 +1,7 @@
 import { ApiError } from "@/lib/api/client";
 
 /**
- * Turn a failed auth call into one sentence a person can act on.
+ * Turn a failed API call into one sentence a person can act on.
  *
  * Keyed by the backend's `code`, never by its message: the message is written
  * for the log, and switching on prose breaks the moment someone rewords it.
@@ -34,6 +34,20 @@ const MESSAGES: Record<string, string> = {
   PASSWORD_NOT_SET:
     "Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu để đổi.",
   ROLE_CHANGE_NOT_ALLOWED: "Tài khoản này không thể tự đổi vai trò.",
+
+  // Khóa học.
+  COURSE_NOT_FOUND: "Không tìm thấy khóa học này. Có thể nó đã bị xóa.",
+  CATEGORY_NOT_FOUND: "Danh mục vừa chọn không còn tồn tại, chọn lại giúp mình nhé.",
+  INVALID_COURSE_STATUS:
+    "Khóa học đang ở trạng thái khác nên không làm được thao tác này. Tải lại trang nhé.",
+  PERMISSION_DENIED: "Bạn không có quyền thực hiện thao tác này.",
+
+  // Mục lục.
+  SECTION_NOT_FOUND: "Chương này không còn tồn tại. Tải lại trang giúp mình nhé.",
+  LESSON_NOT_FOUND: "Bài học này không còn tồn tại. Tải lại trang giúp mình nhé.",
+  LESSON_LOCKED: "Bài học này cần đăng ký khóa học mới xem được.",
+  INVALID_ORDER:
+    "Thứ tự vừa gửi không khớp với nội dung khóa học. Tải lại trang rồi sắp xếp lại nhé.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
@@ -44,7 +58,7 @@ export function errorMessageForCode(code: string): string {
   return MESSAGES[code] ?? UNKNOWN_FAILURE;
 }
 
-export function authErrorMessage(error: unknown): string {
+export function apiErrorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     return MESSAGES[error.code] ?? error.message ?? UNKNOWN_FAILURE;
   }

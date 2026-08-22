@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
-import { AuthFormField } from "@/components/auth/auth-form-field";
+import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,9 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { User } from "@/lib/api/auth";
+import { apiErrorMessage } from "@/lib/api/error-messages";
 import { changePassword } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { authErrorMessage } from "@/lib/auth/error-messages";
 import { PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/auth/validation";
 
 export function PasswordForm({ user }: { user: User }) {
@@ -84,7 +84,7 @@ export function PasswordForm({ user }: { user: User }) {
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
           {mutation.isError ? (
             <Alert variant="destructive">
-              <AlertDescription>{authErrorMessage(mutation.error)}</AlertDescription>
+              <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
             </Alert>
           ) : null}
 
@@ -97,7 +97,7 @@ export function PasswordForm({ user }: { user: User }) {
             </Alert>
           ) : null}
 
-          <AuthFormField
+          <FormField
             label="Mật khẩu hiện tại"
             type="password"
             value={currentPassword}
@@ -107,7 +107,7 @@ export function PasswordForm({ user }: { user: User }) {
             disabled={mutation.isPending}
           />
 
-          <AuthFormField
+          <FormField
             label="Mật khẩu mới"
             type="password"
             value={newPassword}

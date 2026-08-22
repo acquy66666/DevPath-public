@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
-import { AuthFormField } from "@/components/auth/auth-form-field";
+import { FormField } from "@/components/ui/form-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { apiErrorMessage, errorMessageForCode } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { authErrorMessage, errorMessageForCode } from "@/lib/auth/error-messages";
 import { validateEmail } from "@/lib/auth/validation";
 
 /** `errorCode` carries a failure that happened before this page loaded --
@@ -52,13 +52,13 @@ export function LoginForm({ errorCode = null }: { errorCode?: string | null }) {
         <Alert variant="destructive">
           <AlertDescription>
             {mutation.isError
-              ? authErrorMessage(mutation.error)
+              ? apiErrorMessage(mutation.error)
               : errorMessageForCode(errorCode as string)}
           </AlertDescription>
         </Alert>
       ) : null}
 
-      <AuthFormField
+      <FormField
         label="Email"
         type="email"
         value={email}
@@ -70,7 +70,7 @@ export function LoginForm({ errorCode = null }: { errorCode?: string | null }) {
         autoFocus
       />
 
-      <AuthFormField
+      <FormField
         label="Mật khẩu"
         type="password"
         value={password}

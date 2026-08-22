@@ -5,7 +5,7 @@ import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-interface AuthFormFieldProps {
+interface FormFieldProps {
   label: string;
   type: React.HTMLInputTypeAttribute;
   value: string;
@@ -25,7 +25,7 @@ interface AuthFormFieldProps {
  * `aria-describedby` and `aria-invalid` are what make the error reach a screen
  * reader -- red text alone only reaches people who can see it.
  */
-export function AuthFormField({
+export function FormField({
   label,
   type,
   value,
@@ -36,7 +36,7 @@ export function AuthFormField({
   hint,
   disabled,
   autoFocus,
-}: AuthFormFieldProps) {
+}: FormFieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
   const message = error ?? hint;

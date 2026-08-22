@@ -144,7 +144,8 @@ def _delete_quietly(storage: ObjectStorage, prefix: str) -> None:
     would cost the instructor their upload."""
     try:
         storage.delete_prefix(prefix)
-    except Exception:  # noqa: BLE001 -- deliberately not the caller's problem
+    except Exception:
+        # Deliberately swallowed: see the docstring.
         pass
 
 

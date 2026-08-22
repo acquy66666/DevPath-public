@@ -162,7 +162,8 @@ async def transcode(
         asset.hls_manifest_key = f"{prefix}/{MANIFEST_NAME}"
         asset.error_message = None
         asset.status = "ready"
-    except Exception as exc:  # noqa: BLE001 -- the row is the error report
+    except Exception as exc:
+        # Every failure, on purpose: the row is the error report.
         asset.status = "failed"
         asset.error_message = str(exc)[:ERROR_MESSAGE_MAX_LENGTH]
     finally:

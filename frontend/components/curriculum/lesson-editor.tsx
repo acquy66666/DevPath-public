@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { useId, useState } from "react";
 
+import { VideoUpload } from "@/components/curriculum/video-upload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,10 +146,7 @@ function LessonForm({
           />
         </div>
       ) : (
-        <div className="rounded-lg border border-dashed px-3 py-4 text-sm text-muted-foreground">
-          Bài học dạng video. Phần tải video lên và chuyển mã HLS là task kế tiếp —
-          hiện tại bài học vẫn giữ đúng vị trí của nó trong mục lục.
-        </div>
+        <VideoUpload lesson={lesson} />
       )}
 
       <div className="flex items-start gap-2">

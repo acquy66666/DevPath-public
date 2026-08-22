@@ -19,6 +19,10 @@ dependencies = [
     # RS256 signature on Google's id_token and Google sign-in fails at runtime.
     "pyjwt[crypto]>=2.10",
     "httpx>=0.28",
+    # R2 speaks the S3 API. Presigning is pure local computation (HMAC over
+    # a canonical request), so the sync client is fine inside async routes;
+    # the Celery worker uses the same client for real transfers.
+    "boto3>=1.35",
 ]
 
 [project.optional-dependencies]

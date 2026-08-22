@@ -88,9 +88,10 @@ async def _section_for_management(
     return section, course
 
 
-async def _lesson_for_management(
+async def lesson_for_management(
     session: AsyncSession, lesson_id: uuid.UUID, user: User
 ) -> tuple[Lesson, CourseSection, Course]:
+    """A lesson the caller may edit, with the section and course above it."""
     lesson = await session.get(Lesson, lesson_id)
     if lesson is None:
         raise LessonNotFoundError("Không tìm thấy bài học")
@@ -238,7 +239,7 @@ async def create_lesson(
 async def update_lesson(
     session: AsyncSession, lesson_id: uuid.UUID, user: User, data: LessonUpdate
 ) -> Lesson:
-    lesson, _, _ = await _lesson_for_management(session, lesson_id, user)
+    lesson, _, _ = await lesson_for_management(session, lesson_id, user)
 
     for field, value in data.model_dump(exclude_unset=True).items():
         setattr(lesson, field, value)
@@ -249,7 +250,18 @@ async def update_lesson(
 
 
 async def delete_lesson(session: AsyncSession, lesson_id: uuid.UUID, user: User) -> None:
-    lesson, section, _ = await _lesson_for_management(session, lesson_id, user)
+    """Delete a lesson, its video row, and the hole it would have left.
+
+    The video asset goes too: the lesson is the only way to reach one, so a
+    kept row would be unreachable for good. The objects it names are swept
+    separately -- deleting a lesson must keep working on a deployment that has
+    no bucket configured at all.
+    """
+    lesson, section, _ = await lesson_for_management(session, lesson_id, user)
+
+    if lesson.video_asset is not None:
+        await session.delete(lesson.video_asset)
+
     await session.delete(lesson)
     await session.flush()
 

@@ -67,6 +67,16 @@ docker compose -f infra/docker-compose.yml down -v
   ```
 - **Frontend cần hai URL backend.** Server Component gọi `http://backend:8000` (tên service trong mạng compose), còn trình duyệt không phân giải được tên đó nên phải gọi `http://localhost:8000`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía này; `frontend/lib/api/client.ts` chọn theo `typeof window`.
 
+## Ảnh backend có ffmpeg
+
+`worker` chuyển mã video bằng ffmpeg, và `backend`/`worker` dùng chung một image (compose build một lần thay vì hai), nên container API cũng mang theo ffmpeg — thêm khoảng 250 MB, đổi lại không phải bảo trì hai Dockerfile. Thêm dependency Python hay đổi Dockerfile thì phải build lại:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d --build backend worker
+```
+
+Biến `R2_*` truyền từ `infra/.env` vào cả hai service. Để trống thì endpoint upload trả 503 và mọi thứ khác chạy bình thường — xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md). `R2_ENDPOINT_URL` là lối trỏ sang một server S3 khác (MinIO chạy local chẳng hạn) khi cần thử luồng upload mà chưa có tài khoản Cloudflare.
+
 ## Ghi chú vận hành
 
 - Grader cần truy cập Docker daemon để spin sandbox container — đây là quyết định kiến trúc có rủi ro đã biết, xem skill `sandbox-grading` trước khi đụng vào phần mount socket.

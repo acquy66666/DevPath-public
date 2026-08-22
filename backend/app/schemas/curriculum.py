@@ -11,6 +11,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.video import VideoAssetOut
+
 TITLE_MAX_LENGTH = 200
 
 # The builder creates these two. Quizzes and code exercises arrive with their
@@ -88,6 +90,10 @@ class LessonOut(BaseModel):
     article_content: str | None
     created_at: datetime
     updated_at: datetime
+
+    # Filled in by the router. Default None so a lesson still validates when
+    # nobody asked about its video.
+    video: VideoAssetOut | None = None
 
 
 class SectionOut(BaseModel):

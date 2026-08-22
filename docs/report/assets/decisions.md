@@ -114,3 +114,18 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Cạm bẫy khi test kéo-thả bằng bàn phím** — nếu trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, `KeyboardSensor` của dnd-kit **cuộn trang** thay vì di chuyển phần tử. Với người dùng thật thì trang cuộn vài nhịp rồi mới bắt đầu di chuyển, không sao; với script kiểm thử thì trông y hệt một tính năng hỏng. Cách kiểm đúng: đặt viewport đủ cao để trang hết cuộn.
 
+**Video đi thẳng từ trình duyệt lên R2, backend chỉ ký URL** — đẩy vài trăm MB qua FastAPI sẽ giữ chặt một tiến trình suốt thời gian upload và trả tiền băng thông hai lần, trong khi chữ ký đã nói đủ: ai được ghi, ghi vào key nào, trong bao lâu. `Content-Type` nằm trong phần được ký nên một URL đã ký không dùng lại được để tải thứ khác lên cùng tên.
+
+**Luôn chuyển mã lại, không bao giờ `-c copy`** — file từ điện thoại có thể là HEVC, VP9, hoặc mang track âm thanh không trình duyệt nào phát. Phát hiện điều đó lúc phát, trên máy người khác, là chỗ tệ nhất để phát hiện. Trả giá bằng CPU của worker.
+
+**`-pix_fmt yuv420p` là bắt buộc, không phải tùy chọn** — bài học rút ra từ chính test: nguồn 4:4:4 khiến libx264 thoát mã -22 và không sinh ra file nào, vì `-profile:v main` chỉ định nghĩa cho 4:2:0. Đây là loại lỗi mà test giả lập ffmpeg sẽ vui vẻ bỏ qua; chỉ có test chạy ffmpeg thật mới bắt được.
+
+**Trạng thái video là một hàng trong bảng, không phải một exception** — worker bắt mọi lỗi, ghi `failed` kèm `error_message` viết cho giảng viên đọc. Ném exception ra ngoài thì Celery sẽ thử lại một video hỏng mãi mãi, và người duy nhất cần biết lại không bao giờ thấy.
+
+**Job chạy lại không làm hỏng video đã xong** — Celery giao lại task khi worker chết giữa chừng, nên `transcode()` bỏ qua mọi asset không ở trạng thái `processing`. Không có bước này thì một lần restart worker sẽ tái xuất bản video đã hoàn tất.
+
+**`services/storage.py` là Protocol** — cùng khuôn với `google_oauth.py`: router không biết boto3 tồn tại, test không chạm Cloudflare. `R2_ENDPOINT_URL` cho phép trỏ sang server S3 khác, nhờ đó **toàn bộ luồng đã được kiểm chứng end-to-end với MinIO chạy local trước khi có tài khoản R2** — ký URL, trình duyệt PUT, CORS preflight, worker tải về, ffmpeg, tải HLS lên, phát công khai.
+
+**Tải lên lần nữa là thay hẳn video cũ** — hàng cũ bị xóa và object dưới prefix của nó bị dọn. Giữ lại thì bài học phát một video còn bucket trả tiền cho hai. Việc dọn chạy **sau** commit và nuốt lỗi: một object mồ côi tốn dung lượng, còn một lần xóa hỏng sẽ tốn của giảng viên cả lần upload.
+
+**Hỏi trạng thái tạm dừng khi tab bị ẩn** — mặc định của TanStack Query, và đúng ở đây: chuyển mã mất vài phút, giảng viên chuyển tab đi làm việc khác, quay lại là `refetchOnWindowFocus` cho kết quả ngay. Hệ quả cho người viết test: script chạy trong pane không được focus sẽ thấy trạng thái đứng im, trông y hệt tính năng hỏng.

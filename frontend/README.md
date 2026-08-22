@@ -60,6 +60,10 @@ npm run build
 
 **Kéo-thả gửi cả danh sách, không gửi lệnh di chuyển.** Thả xong, client biết thứ tự cuối cùng nên gửi nguyên trạng thái đó (`PUT .../order`). Kéo bài học sang chương khác cũng dùng đúng endpoint của chương đích — backend nhận nuôi bài đó và đánh số lại chương cũ, nên **một** request là đủ và không có khoảnh khắc nào bài học thuộc về hai chương.
 
+**Tải video lên đi thẳng từ trình duyệt tới bucket.** `components/curriculum/video-upload.tsx` xin URL đã ký từ backend, rồi `PUT` file lên R2 **không kèm cookie, không kèm token** — chữ ký trong URL là toàn bộ quyền, và gửi thông tin đăng nhập sang origin khác là cách làm rò rỉ chúng. Dùng `XMLHttpRequest` chứ không phải `fetch` vì tới giờ `fetch` vẫn không báo được tiến độ upload, mà một file 400 MB không có thanh tiến độ trông y hệt trang bị treo.
+
+Sau khi tải xong, màn hình hỏi lại trạng thái mỗi 4 giây trong lúc `processing`. TanStack Query **tạm dừng hỏi khi tab bị ẩn** và hỏi lại ngay lúc tab được focus — đúng thứ ta muốn: giảng viên chuyển tab đi làm việc khác trong lúc chờ chuyển mã, quay lại là thấy kết quả, không có ai hỏi vòng vo suốt mấy phút vào một tab không ai nhìn.
+
 **Bàn phím dùng được:** chọn tay nắm → phím cách → phím mũi tên → phím cách để thả, kèm thông báo tiếng Việt cho screen reader (dnd-kit chỉ có sẵn tiếng Anh và đọc ra UUID). Trong lúc kéo *chương*, mọi bài học bị tắt vai trò điểm thả (`disabled: { droppable: true }`) — nếu không, mũi tên xuống sẽ dừng ở từng bài học nằm trong chính chương đang kéo.
 
 **Cạm bẫy dnd-kit:** khi trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, mũi tên **cuộn trang** trước rồi mới di chuyển phần tử — đó là hành vi có sẵn của `KeyboardSensor`, không phải lỗi. Test tự động vì thế phải đặt viewport đủ cao để trang hết cuộn.

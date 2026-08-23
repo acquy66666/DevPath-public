@@ -3,10 +3,18 @@
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.core.security import hash_password, verify_password
 from app.models import User
+from app.schemas.users import AvatarUploadIn, AvatarUploadTicket
 from app.services.auth import ClientInfo, IssuedTokens, replace_all_sessions
+from app.services.storage import (
+    ObjectStorage,
+    avatar_key,
+    avatar_prefix,
+    delete_quietly,
+)
 
 
 class RoleChangeNotAllowedError(DomainError):
@@ -27,6 +35,13 @@ class InvalidCurrentPasswordError(DomainError):
 class PasswordUnchangedError(DomainError):
     status_code = status.HTTP_400_BAD_REQUEST
     code = "PASSWORD_UNCHANGED"
+
+
+class AvatarKeyNotOwnedError(DomainError):
+    """A confirmed key that points outside the caller's own avatar folder."""
+
+    status_code = status.HTTP_403_FORBIDDEN
+    code = "AVATAR_KEY_NOT_OWNED"
 
 
 async def promote_to_instructor(session: AsyncSession, user: User) -> User:
@@ -97,3 +112,75 @@ async def change_password(
     tokens = await replace_all_sessions(session, user, client)
     await session.commit()
     return tokens
+
+
+def create_avatar_upload_ticket(
+    user: User, storage: ObjectStorage, data: AvatarUploadIn
+) -> AvatarUploadTicket:
+    """Sign a URL the browser may PUT one picture to.
+
+    Nothing is written to the database here, which is what makes this simpler
+    than the video flow: an avatar has no processing to follow, so until the
+    browser says the bytes landed there is no state worth keeping. A ticket
+    nobody uses costs one unreferenced object at worst, and the account goes
+    on wearing the picture it already had.
+    """
+    ttl = get_settings().upload_url_ttl_seconds
+    key = avatar_key(user.id, data.filename)
+    return AvatarUploadTicket(
+        upload_url=storage.presigned_put_url(key, data.content_type, ttl),
+        storage_key=key,
+        expires_in=ttl,
+        content_type=data.content_type,
+    )
+
+
+def _own_avatar_key(user: User, storage: ObjectStorage) -> str | None:
+    """The bucket key of the picture this account wears, when we host it.
+
+    None for a Google picture: that URL belongs to Google, and handing it to
+    our own bucket to delete would be meaningless. None too for anything that
+    does not sit in this account's folder, which is the case worth being
+    careful about -- deleting is not something to do on a guess.
+    """
+    if user.avatar_url is None:
+        return None
+
+    base = storage.public_url("")
+    if not user.avatar_url.startswith(base):
+        return None
+
+    key = user.avatar_url[len(base) :]
+    return key if key.startswith(f"{avatar_prefix(user.id)}/") else None
+
+
+async def set_avatar(
+    session: AsyncSession, user: User, storage: ObjectStorage, *, storage_key: str
+) -> User:
+    """Point the account at a picture the browser has just uploaded.
+
+    The key travels back through the client, so it is checked against the
+    caller's own folder before it is believed. Without that check the endpoint
+    would happily hang any object in the bucket -- somebody else's picture, or
+    a lecture video -- on this account.
+
+    Whether the object really arrived is not checked, for the reason the video
+    flow gives: a HEAD request here would only move a broken image from one
+    place to another, and the browser has just watched its PUT succeed.
+    """
+    prefix = f"{avatar_prefix(user.id)}/"
+    if not storage_key.startswith(prefix) or "/" in storage_key[len(prefix) :]:
+        raise AvatarKeyNotOwnedError("Ảnh này không thuộc về tài khoản của bạn")
+
+    stale_key = _own_avatar_key(user, storage)
+    user.avatar_url = storage.public_url(storage_key)
+    await session.commit()
+    await session.refresh(user)
+
+    if stale_key is not None and stale_key != storage_key:
+        # After the commit, and best effort: the old picture is only garbage
+        # once the new one is really saved, and a bucket that refuses must not
+        # cost the caller the avatar they just uploaded.
+        delete_quietly(storage, stale_key)
+
+    return user

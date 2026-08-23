@@ -21,7 +21,12 @@ from app.core.exceptions import DomainError
 from app.models import Lesson, User, VideoAsset
 from app.schemas.video import VideoAssetOut, VideoUploadRequest, VideoUploadTicket
 from app.services import curriculum as curriculum_service
-from app.services.storage import ObjectStorage, asset_prefix, original_video_key
+from app.services.storage import (
+    ObjectStorage,
+    asset_prefix,
+    delete_quietly,
+    original_video_key,
+)
 from app.services.tasks import TaskQueue
 
 
@@ -127,7 +132,7 @@ async def create_upload_ticket(
     if stale_prefix is not None:
         # After the commit: the objects should only go once the row is really
         # gone, and a failed delete must not cost the instructor their upload.
-        _delete_quietly(storage, stale_prefix)
+        delete_quietly(storage, stale_prefix)
 
     ttl = get_settings().upload_url_ttl_seconds
     return VideoUploadTicket(
@@ -137,16 +142,6 @@ async def create_upload_ticket(
         expires_in=ttl,
         content_type=data.content_type,
     )
-
-
-def _delete_quietly(storage: ObjectStorage, prefix: str) -> None:
-    """Best effort. An orphaned object costs storage; a failed request here
-    would cost the instructor their upload."""
-    try:
-        storage.delete_prefix(prefix)
-    except Exception:
-        # Deliberately swallowed: see the docstring.
-        pass
 
 
 async def load_for_management(

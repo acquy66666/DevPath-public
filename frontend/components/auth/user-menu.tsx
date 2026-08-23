@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { UserAvatar } from "@/components/auth/user-avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -17,17 +18,6 @@ import {
 import type { User } from "@/lib/api/auth";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
-
-/** First letters of the name, for the avatar circle. Falls back to the email. */
-function initials(user: User): string {
-  const source = user.full_name.trim() || user.email;
-  const words = source.split(/\s+/).filter(Boolean);
-  const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]];
-  return letters
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
-}
 
 export function UserMenu({ user }: { user: User }) {
   const router = useRouter();
@@ -49,12 +39,7 @@ export function UserMenu({ user }: { user: User }) {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2 px-2">
-          <span
-            aria-hidden
-            className="flex size-7 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground"
-          >
-            {initials(user)}
-          </span>
+          <UserAvatar user={user} className="size-7 text-xs" />
           <span className="hidden max-w-32 truncate sm:inline">{user.full_name}</span>
         </Button>
       </DropdownMenuTrigger>

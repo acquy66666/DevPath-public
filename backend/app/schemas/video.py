@@ -5,9 +5,11 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.services.storage import ALLOWED_VIDEO_TYPES, MAX_UPLOAD_BYTES
-
-FILENAME_MAX_LENGTH = 255
+from app.services.storage import (
+    ALLOWED_VIDEO_TYPES,
+    FILENAME_MAX_LENGTH,
+    MAX_UPLOAD_BYTES,
+)
 
 
 class VideoUploadRequest(BaseModel):

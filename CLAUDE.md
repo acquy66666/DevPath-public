@@ -55,5 +55,5 @@ Mỗi thư mục cấp 1 có README riêng nêu nguyên tắc và trạng thái 
 
 ## Trạng thái hiện tại
 
-- Giai đoạn: **Phase 1 — Foundation, gần xong.** Đã xong: khảo sát nền tảng tham chiếu, đặc tả CSDL, repo + hook bảo vệ `main`, khung monorepo, backend FastAPI với `/health`, frontend Next.js, `docker compose` dựng đủ stack, migration đầu tiên (`users`/`categories`/`courses`), CI GitHub Actions. Còn lại: seed script và gate cuối phase — xem [docs/plan/phase-1-foundation.md](docs/plan/phase-1-foundation.md).
+- Giai đoạn: **Phase 2 — Core Platform, đang ở tuần 4.** Đã xong: toàn bộ Phase 1 (trừ ruleset bảo vệ `main` — chờ GitHub Pro), auth email/password + JWT access/refresh, OAuth Google, phân quyền `student`/`instructor`/`admin`, trang hồ sơ + đổi mật khẩu, CRUD khóa học, curriculum builder kéo-thả, upload video presigned R2 + worker transcode HLS. Còn lại tuần 4: upload avatar qua R2 presigned, trang chi tiết khóa học public; rồi trải nghiệm học viên ở tuần 5 — xem [docs/plan/phase-2-core-platform.md](docs/plan/phase-2-core-platform.md).
 - Kế hoạch đã tách **Phase 7 — Báo cáo**: trong Phase 1–6 không viết báo cáo, chỉ thu bằng chứng vào `docs/report/assets/phase-N/`.

@@ -5,7 +5,7 @@
 ## Tuần 3 — Auth & user
 
 - [x] Đăng ký/đăng nhập email + password (bcrypt), JWT access + refresh token (refresh lưu httpOnly cookie)
-- [ ] OAuth Google (authorization code flow) — merge account theo email
+- [x] OAuth Google (authorization code flow) — merge account theo email
 - [x] Phân quyền `student`/`instructor`/`admin`; dependency `require_role`; user tự nâng cấp lên instructor qua form đơn giản
 - [ ] Trang profile, đổi mật khẩu, upload avatar (R2 presigned URL — làm luôn để tái dùng cho video)
 - [x] Test: auth flow, refresh, phân quyền

@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type Ref,
+} from "react";
 
 import { NativeSelect } from "@/components/ui/native-select";
 
@@ -30,17 +36,27 @@ function storedSpeed(): number {
  * it is fetched only by a page that actually plays a video, and never on the
  * server, where `window` does not exist.
  */
+/** What the page around the player is allowed to ask of it. */
+export interface PlayerHandle {
+  /** Where the video is right now, in seconds. */
+  currentTime: () => number;
+  /** Jump to a moment — what clicking the timestamp on a note does. */
+  seekTo: (seconds: number) => void;
+}
+
 export function VideoPlayer({
   src,
   startAt,
   onProgress,
   onEnded,
+  ref,
 }: {
   src: string;
   /** Seconds to resume from. Applied once, when the video is ready. */
   startAt: number;
   onProgress: (seconds: number) => void;
   onEnded: () => void;
+  ref?: Ref<PlayerHandle>;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   // Lazy initialiser, not an effect: this component is only ever mounted after
@@ -149,6 +165,19 @@ export function VideoPlayer({
       save();
     };
   }, [src]);
+
+  // Two verbs, no state: the page asks the element directly rather than
+  // mirroring a number that changes thirty times a second into React.
+  useImperativeHandle(ref, () => ({
+    currentTime: () => Math.floor(video.current?.currentTime ?? 0),
+    seekTo: (seconds: number) => {
+      const element = video.current;
+      if (element === null) return;
+      element.currentTime = seconds;
+      // Jumping to a moment means wanting to watch it.
+      void element.play().catch(() => {});
+    },
+  }), []);
 
   function changeSpeed(value: number) {
     setSpeed(value);

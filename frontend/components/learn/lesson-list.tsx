@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, FileText, PlayCircle } from "lucide-react";
+import { Bookmark, Check, FileText, PlayCircle } from "lucide-react";
 
 import type { Curriculum, LessonType } from "@/lib/api/curriculum";
 import { cn } from "@/lib/utils";
@@ -17,11 +17,13 @@ export function LessonList({
   curriculum,
   currentLessonId,
   completedLessonIds,
+  bookmarkedLessonIds,
   onSelect,
 }: {
   curriculum: Curriculum;
   currentLessonId: string | null;
   completedLessonIds: Set<string>;
+  bookmarkedLessonIds: Set<string>;
   onSelect: (lessonId: string) => void;
 }) {
   return (
@@ -53,6 +55,13 @@ export function LessonList({
                       <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
                     )}
                     <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
+
+                    {bookmarkedLessonIds.has(lesson.id) ? (
+                      <Bookmark
+                        className="size-3.5 shrink-0 fill-current text-muted-foreground"
+                        aria-label="Đã đánh dấu"
+                      />
+                    ) : null}
                   </button>
                 </li>
               );

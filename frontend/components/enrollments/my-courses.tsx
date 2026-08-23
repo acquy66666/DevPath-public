@@ -108,11 +108,18 @@ export function MyCourses() {
         {query.data.items.map((item) => (
           <li key={item.course.id} className="flex h-full flex-col gap-2">
             <CourseCard course={item.course} />
-            <p className="px-1 text-xs text-muted-foreground">
-              {item.completed_at
-                ? `Hoàn thành ${formatDate(item.completed_at)}`
-                : `Đăng ký ${formatDate(item.enrolled_at)}`}
-            </p>
+            <div className="flex items-center justify-between gap-3 px-1">
+              <p className="text-xs text-muted-foreground">
+                {item.completed_at
+                  ? `Hoàn thành ${formatDate(item.completed_at)}`
+                  : `Đăng ký ${formatDate(item.enrolled_at)}`}
+              </p>
+              <Button size="sm" variant="outline" asChild>
+                <Link href={`/hoc/${item.course.slug}`}>
+                  {item.completed_at ? "Xem lại" : "Tiếp tục học"}
+                </Link>
+              </Button>
+            </div>
           </li>
         ))}
       </ul>

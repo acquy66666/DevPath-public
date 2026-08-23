@@ -36,9 +36,15 @@ class EnrollmentNotFoundError(DomainError):
     code = "ENROLLMENT_NOT_FOUND"
 
 
-async def _find(
+async def find_for_course(
     session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> Enrollment | None:
+    """The caller's enrolment in one course, or None.
+
+    Shared with the curriculum service, which uses it to decide whether a
+    locked lesson opens, and with the progress service, which cannot record
+    anything without one.
+    """
     return await session.scalar(
         select(Enrollment).where(
             Enrollment.user_id == user.id, Enrollment.course_id == course_id
@@ -101,7 +107,7 @@ async def enrol_free(
 
     await session.commit()
 
-    enrollment = await _find(session, course.id, user)
+    enrollment = await find_for_course(session, course.id, user)
     if enrollment is None:
         # Only reachable if the row vanished between the insert and this read,
         # which nothing in the system does.
@@ -114,7 +120,7 @@ async def get_for_course(
     session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> Enrollment:
     """The caller's enrolment in one course, for a page that asks "am I in?"."""
-    enrollment = await _find(session, course_id, user)
+    enrollment = await find_for_course(session, course_id, user)
     if enrollment is None:
         raise EnrollmentNotFoundError("Bạn chưa đăng ký khóa học này")
     return enrollment

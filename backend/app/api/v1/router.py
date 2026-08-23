@@ -7,6 +7,7 @@ from app.api.v1 import (
     curriculum,
     enrollments,
     health,
+    progress,
     users,
     video,
 )
@@ -19,4 +20,5 @@ api_router.include_router(categories.router)
 api_router.include_router(courses.router)
 api_router.include_router(curriculum.router)
 api_router.include_router(enrollments.router)
+api_router.include_router(progress.router)
 api_router.include_router(video.router)

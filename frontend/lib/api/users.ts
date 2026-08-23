@@ -51,3 +51,46 @@ export function changePassword(
     body: JSON.stringify(input),
   });
 }
+
+export interface AvatarUploadRequest {
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+}
+
+export interface AvatarUploadTicket {
+  upload_url: string;
+  storage_key: string;
+  expires_in: number;
+  /** Must be sent back verbatim as the Content-Type of the PUT: it is signed. */
+  content_type: string;
+}
+
+/**
+ * Ask the backend where to put a new profile picture. Moves no bytes.
+ *
+ * The key it answers with sits inside this account's own folder, and is the
+ * only key the confirm call below will accept.
+ */
+export function createAvatarUpload(
+  accessToken: string,
+  input: AvatarUploadRequest,
+): Promise<AvatarUploadTicket> {
+  return apiFetch<AvatarUploadTicket>("/api/v1/users/me/avatar", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(input),
+  });
+}
+
+/** Tell the backend the bytes arrived, so the account starts wearing them. */
+export function completeAvatarUpload(
+  accessToken: string,
+  storageKey: string,
+): Promise<User> {
+  return apiFetch<User>("/api/v1/users/me/avatar/complete", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify({ storage_key: storageKey }),
+  });
+}

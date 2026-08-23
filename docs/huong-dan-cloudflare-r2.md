@@ -136,6 +136,22 @@ Rồi thử upload một video ngắn ở `/giang-day/<id khóa học>` → mở
 
 Luồng này đã chạy thật trên bucket R2 của dự án: video 10 giây → `ready` sau vài giây, manifest và segment tải công khai được, và tải lên lần nữa thì toàn bộ object của video cũ bị dọn khỏi bucket.
 
+### Ảnh đại diện dùng chung cấu hình này
+
+Upload avatar ở `/ho-so` đi đúng luồng ký URL này, cùng bucket và cùng CORS — không phải cấu hình thêm gì. Khác nhau ở bố cục key và giới hạn:
+
+| | Video bài giảng | Ảnh đại diện |
+|---|---|---|
+| Key | `videos/<video_asset_id>/…` | `avatars/<user_id>/<ngẫu nhiên>.<ext>` |
+| Định dạng | MP4, MOV, MKV, WebM | JPG, PNG, WebP (**không** SVG) |
+| Giới hạn | 2 GB | 5 MB |
+| Sau khi báo xong | worker transcode sang HLS | ghi `users.avatar_url`, xóa ảnh cũ |
+
+Hai chi tiết có lý do:
+
+- **Tên file ngẫu nhiên mỗi lần đổi ảnh.** URL công khai bị CDN và trình duyệt cache; dùng lại `avatar.png` thì người dùng đổi ảnh xong vẫn nhìn thấy ảnh cũ.
+- **Không nhận SVG.** SVG là tài liệu chạy được script, mà bucket trả file về đúng content-type đã ký.
+
 Nếu hỏng, xem theo thứ tự:
 
 | Triệu chứng | Nguyên nhân hay gặp |

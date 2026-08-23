@@ -8,12 +8,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import type { Lesson } from "@/lib/api/curriculum";
+import { uploadToStorage } from "@/lib/api/storage";
 import {
   completeVideoUpload,
   createVideoUpload,
   getVideoAsset,
   retryVideoTranscode,
-  uploadToStorage,
   type VideoAsset,
 } from "@/lib/api/video";
 import { useAuth } from "@/lib/auth/auth-provider";

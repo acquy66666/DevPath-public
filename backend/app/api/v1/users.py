@@ -5,15 +5,26 @@ auth question. Everything a signed-in person does *to their own account* lives
 here.
 """
 
-from fastapi import APIRouter, Request, Response
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Request, Response, status
 
 from app.api.v1._transport import client_info, token_response
 from app.core.deps import CurrentUser, DbSession
 from app.schemas.auth import TokenOut, UserOut
-from app.schemas.users import PasswordChangeIn, ProfileUpdateIn
+from app.schemas.users import (
+    AvatarConfirmIn,
+    AvatarUploadIn,
+    AvatarUploadTicket,
+    PasswordChangeIn,
+    ProfileUpdateIn,
+)
 from app.services import users as users_service
+from app.services.storage import ObjectStorage, get_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+Storage = Annotated[ObjectStorage, Depends(get_storage)]
 
 
 @router.post("/me/instructor", response_model=UserOut)
@@ -68,3 +79,39 @@ async def change_password(
         client=client_info(request),
     )
     return token_response(response, tokens)
+
+
+@router.post(
+    "/me/avatar",
+    response_model=AvatarUploadTicket,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_avatar_upload(
+    payload: AvatarUploadIn, current_user: CurrentUser, storage: Storage
+) -> AvatarUploadTicket:
+    """Ask for somewhere to put a new profile picture. Carries no bytes.
+
+    Like the video routes, this one answers 503 `STORAGE_NOT_CONFIGURED` when
+    no bucket has been set up. That is deliberate: the rest of the profile page
+    goes on working without object storage, and only this button does not.
+    """
+    return users_service.create_avatar_upload_ticket(current_user, storage, payload)
+
+
+@router.post("/me/avatar/complete", response_model=UserOut)
+async def complete_avatar_upload(
+    payload: AvatarConfirmIn,
+    current_user: CurrentUser,
+    session: DbSession,
+    storage: Storage,
+) -> UserOut:
+    """The browser finished its PUT: wear the new picture, drop the old one.
+
+    No id in the path, and the key is checked against the caller's own folder
+    in the service -- so this cannot be aimed at anybody else's account, in
+    either direction.
+    """
+    user = await users_service.set_avatar(
+        session, current_user, storage, storage_key=payload.storage_key
+    )
+    return UserOut.model_validate(user)

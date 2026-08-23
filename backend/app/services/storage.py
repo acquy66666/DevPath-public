@@ -44,6 +44,22 @@ ALLOWED_VIDEO_TYPES = (
 # multipart API, which is a bigger flow than Phase 2 needs.
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 
+# Avatars ride the same signed-PUT path, with their own limits. SVG is
+# deliberately absent: it is a document format that can carry script, and the
+# bucket serves an object back with whatever content type it was handed.
+ALLOWED_IMAGE_TYPES = (
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+)
+
+# 5 MB. An avatar is drawn at 96 px; anything larger is a photo straight off a
+# phone, and the answer to that is to resize it rather than to store it.
+MAX_AVATAR_BYTES = 5 * 1024 * 1024
+
+# Past this a filename is not worth reading. Both upload flows cut it here.
+FILENAME_MAX_LENGTH = 255
+
 
 class StorageNotConfiguredError(DomainError):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
@@ -77,6 +93,27 @@ def asset_prefix(video_asset_id: uuid.UUID) -> str:
 def hls_prefix(video_asset_id: uuid.UUID) -> str:
     """Where ffmpeg's output goes: one manifest and its segments."""
     return f"{asset_prefix(video_asset_id)}/hls"
+
+
+def avatar_prefix(user_id: uuid.UUID) -> str:
+    """Everything one account has ever used as a picture."""
+    return f"avatars/{user_id}"
+
+
+def avatar_key(user_id: uuid.UUID, filename: str) -> str:
+    """Where one uploaded avatar lands.
+
+    A fresh random name every time, rather than a fixed `avatar.png`: this URL
+    is public and gets cached by the CDN and by every browser that has drawn
+    it, so reusing the key would leave people looking at the old picture for as
+    long as the cache lives. The previous object is deleted once the new one is
+    confirmed, so the randomness costs nothing.
+
+    The account id is in the path because it is what the upload is checked
+    against later -- a key outside your own prefix is not yours to claim.
+    """
+    suffix = PurePosixPath(filename).suffix.lower()[:10]
+    return f"{avatar_prefix(user_id)}/{uuid.uuid4().hex}{suffix}"
 
 
 class ObjectStorage(Protocol):
@@ -182,3 +219,17 @@ def build_storage() -> ObjectStorage:
 def get_storage() -> ObjectStorage:
     """FastAPI dependency. Tests override this; nothing else builds a client."""
     return build_storage()
+
+
+def delete_quietly(storage: ObjectStorage, prefix: str) -> None:
+    """Delete objects nobody points at any more, and forgive a failure.
+
+    Best effort on purpose: an orphaned object costs a fraction of a cent of
+    storage, while a raised exception here would cost the caller the upload
+    they just finished.
+    """
+    try:
+        storage.delete_prefix(prefix)
+    except Exception:
+        # Deliberately swallowed: see the docstring.
+        pass

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { AvatarForm } from "@/components/profile/avatar-form";
 import { PasswordForm } from "@/components/profile/password-form";
 import { ProfileForm } from "@/components/profile/profile-form";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ export function ProfileView() {
 
   return (
     <div className="space-y-6">
+      <AvatarForm user={user} />
       <ProfileForm user={user} />
       <PasswordForm user={user} />
     </div>

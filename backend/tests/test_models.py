@@ -9,12 +9,14 @@ import pytest
 
 from app.models import (
     Base,
+    Bookmark,
     Category,
     Course,
     CourseSection,
     Enrollment,
     Lesson,
     LessonProgress,
+    Note,
     RefreshToken,
     User,
     VideoAsset,
@@ -30,7 +32,7 @@ def index_names(model: type) -> set[str]:
 
 
 def test_registered_tables_match_the_phases_done_so_far() -> None:
-    """Phase 1 created three; Phase 2 adds sessions, curriculum, enrolments, progress."""
+    """Phase 1 created three; the rest arrive with the Phase 2 feature that reads them."""
     assert set(Base.metadata.tables) == {
         "users",
         "categories",
@@ -41,6 +43,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "video_assets",
         "enrollments",
         "lesson_progress",
+        "notes",
+        "bookmarks",
     }
 
 
@@ -254,3 +258,27 @@ def test_progress_dies_with_whatever_it_describes() -> None:
     for column in ("enrollment_id", "lesson_id"):
         fk = next(iter(LessonProgress.__table__.c[column].foreign_keys))
         assert fk.ondelete == "CASCADE"
+
+
+def test_notes_and_bookmarks_belong_to_the_person_not_the_enrolment() -> None:
+    """Progress describes one run at a course; a note is the reader's own work."""
+    for model in (Note, Bookmark):
+        columns = set(model.__table__.c.keys())
+        assert "user_id" in columns
+        assert "enrollment_id" not in columns
+        for column in ("user_id", "lesson_id"):
+            fk = next(iter(model.__table__.c[column].foreign_keys))
+            assert fk.ondelete == "CASCADE"
+
+
+def test_a_lesson_holds_many_notes_but_one_bookmark() -> None:
+    assert "uq_bookmarks_user_lesson" in constraint_names(Bookmark)
+    assert {"ix_notes_user_lesson"} == index_names(Note)
+    assert all(not index.unique for index in Note.__table__.indexes)
+
+
+def test_a_note_cannot_be_empty_or_before_the_video_starts() -> None:
+    assert {
+        "ck_notes_content_not_empty",
+        "ck_notes_timestamp_non_negative",
+    } <= constraint_names(Note)

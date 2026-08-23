@@ -11,16 +11,19 @@ from app.models.curriculum import CourseSection, Lesson, VideoAsset
 from app.models.enrollment import Enrollment
 from app.models.progress import LessonProgress
 from app.models.refresh_token import RefreshToken
+from app.models.study import Bookmark, Note
 from app.models.user import User
 
 __all__ = [
     "Base",
+    "Bookmark",
     "Category",
     "Course",
     "CourseSection",
     "Enrollment",
     "Lesson",
     "LessonProgress",
+    "Note",
     "RefreshToken",
     "User",
     "VideoAsset",

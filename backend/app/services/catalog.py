@@ -66,16 +66,23 @@ async def _category_and_children(
 
 
 def _ordering(sort: Sort, q: str | None) -> list[ColumnElement]:
+    """Every ordering ends in the id.
+
+    Not for meaning -- the id is random -- but for determinism. Two courses
+    published in the same transaction share a `published_at`, and an ORDER BY
+    that ties leaves Postgres free to answer differently each time, which is
+    how a row appears on two pages of the same listing, or on none.
+    """
     if sort == "relevance" and q:
-        # Newest breaks ties: two equally relevant courses should not swap
-        # places between page loads.
-        return [_relevance(q).desc(), Course.published_at.desc()]
+        # Newest breaks ties first: two equally relevant courses should not
+        # swap places between page loads.
+        return [_relevance(q).desc(), Course.published_at.desc(), Course.id.desc()]
     if sort == "rating":
         # Count second: 5.00 from one review should not outrank 4.80 from two
         # hundred, and this is the cheap half of that fix. The honest one is a
         # Bayesian average, which needs more reviews than Phase 2 has.
-        return [Course.rating_avg.desc(), Course.rating_count.desc()]
-    return [Course.published_at.desc()]
+        return [Course.rating_avg.desc(), Course.rating_count.desc(), Course.id.desc()]
+    return [Course.published_at.desc(), Course.id.desc()]
 
 
 async def list_published(

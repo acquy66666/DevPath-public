@@ -6,8 +6,8 @@ import { cache } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { CourseCurriculum } from "@/components/courses/course-curriculum";
+import { EnrollButton } from "@/components/courses/enroll-button";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
 import { getCurriculum } from "@/lib/api/curriculum";
@@ -210,12 +210,7 @@ export default async function CourseDetailPage({
             <div className="space-y-4 p-5">
               <p className="text-2xl font-semibold">{formatPrice(course.price)}</p>
 
-              <Button className="w-full" disabled>
-                Đăng ký học
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Tính năng ghi danh đang được hoàn thiện.
-              </p>
+              <EnrollButton course={course} />
 
               <dl className="space-y-1.5 border-t pt-4 text-sm">
                 <div className="flex justify-between gap-3">

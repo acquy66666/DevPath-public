@@ -13,9 +13,18 @@ import { apiErrorMessage, errorMessageForCode } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { validateEmail } from "@/lib/auth/validation";
 
-/** `errorCode` carries a failure that happened before this page loaded --
- * today that means the Google callback redirecting back with `?loi=`. */
-export function LoginForm({ errorCode = null }: { errorCode?: string | null }) {
+/**
+ * `errorCode` carries a failure that happened before this page loaded -- today
+ * that means the Google callback redirecting back with `?loi=`. `next` is where
+ * to go afterwards, already checked to be a path on this site.
+ */
+export function LoginForm({
+  errorCode = null,
+  next = "/",
+}: {
+  errorCode?: string | null;
+  next?: string;
+}) {
   const router = useRouter();
   const { signIn } = useAuth();
 
@@ -26,7 +35,7 @@ export function LoginForm({ errorCode = null }: { errorCode?: string | null }) {
   const mutation = useMutation({
     mutationFn: () => signIn({ email: email.trim(), password }),
     onSuccess: () => {
-      router.push("/");
+      router.push(next);
       // The header is a Client Component reading context, so it updates on its
       // own; refresh is for any Server Component that renders per-user content.
       router.refresh();

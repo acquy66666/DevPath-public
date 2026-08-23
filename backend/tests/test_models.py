@@ -12,6 +12,7 @@ from app.models import (
     Category,
     Course,
     CourseSection,
+    Enrollment,
     Lesson,
     RefreshToken,
     User,
@@ -28,7 +29,7 @@ def index_names(model: type) -> set[str]:
 
 
 def test_registered_tables_match_the_phases_done_so_far() -> None:
-    """Phase 1 created three; Phase 2 adds auth sessions and the curriculum."""
+    """Phase 1 created three; Phase 2 adds sessions, the curriculum, enrolments."""
     assert set(Base.metadata.tables) == {
         "users",
         "categories",
@@ -37,6 +38,7 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "course_sections",
         "lessons",
         "video_assets",
+        "enrollments",
     }
 
 
@@ -214,3 +216,18 @@ def test_video_assets_are_keyed_by_their_storage_object() -> None:
 
     assert "uq_video_assets_storage_key" in names
     assert "ck_video_assets_status" in names
+
+
+def test_enrollments_constraints_match_the_spec() -> None:
+    assert "ck_enrollments_source" in constraint_names(Enrollment)
+    assert "uq_enrollments_user_course" in constraint_names(Enrollment)
+    assert {"ix_enrollments_user_id"} == index_names(Enrollment)
+
+
+def test_an_enrolment_outlives_its_course_but_not_its_owner() -> None:
+    """A course is only soft-deleted, so nothing may cascade from it."""
+    user_fk = next(iter(Enrollment.__table__.c.user_id.foreign_keys))
+    course_fk = next(iter(Enrollment.__table__.c.course_id.foreign_keys))
+
+    assert user_fk.ondelete == "CASCADE"
+    assert course_fk.ondelete == "RESTRICT"

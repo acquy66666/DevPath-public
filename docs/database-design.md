@@ -261,8 +261,10 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `refresh_tokens` | ✅ đã có trong DB | `adab7334f140` |
 | `course_sections`, `lessons`, `video_assets` | ✅ đã có trong DB | `f7d37ee5caf2` |
 | Trigger `courses_search_vector_update` | ✅ đã có trong DB | `0c55c726cc39` |
+| `enrollments` | ✅ đã có trong DB | `991bc02a257b` |
+| `lesson_progress`, `notes`, `bookmarks` | ⏳ Phase 2 (tuần 5) | |
 | `reviews` | ⏳ Phase 2 (tuần 5) | |
-| Nhóm học tập, bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
+| Bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 
 `search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
 
@@ -271,6 +273,11 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 - Trọng số `A`/`B`/`C` cho `title`/`subtitle`/`description`, `ts_rank` xếp hạng theo đó.
 - Chọn trigger thay vì generated column vì `unaccent()` là STABLE chứ không IMMUTABLE, Postgres từ chối nó trong generated column lẫn biểu thức index.
 
-Còn lại một điểm của `courses` có cột nhưng **chưa có hành vi**:
+`students_count` **đã có hành vi** từ revision `991bc02a257b` (ghi danh, Phase 2 tuần 5): tăng bằng `UPDATE ... SET students_count = students_count + 1` trong cùng transaction với dòng `enrollments`, chứ không đọc-sửa-ghi trong Python — hai người ghi danh cùng lúc sẽ mất một lượt. Câu lệnh đó ghim luôn `updated_at` về chính nó, vì cột này là "khóa học đổi lần cuối lúc nào" và người khác đăng ký học không phải là một thay đổi của khóa học.
 
-- `rating_avg`, `rating_count`, `students_count`, `duration_total_s` — mặc định `0`, chờ `reviews` và `enrollments` xuất hiện mới có gì để denormalize.
+Còn lại của `courses` chưa có hành vi:
+
+- `rating_avg`, `rating_count` — chờ `reviews`.
+- `duration_total_s` — chờ tổng thời lượng video được cộng khi asset chuyển `ready`.
+
+Chưa có script `rebuild_course_stats.py` như mục 10 mô tả: nó tính lại cả bốn cột nên chỉ viết được khi cả `reviews` lẫn thời lượng video đã có nguồn.

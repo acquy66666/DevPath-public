@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { GoogleButton } from "@/components/auth/google-button";
 import { LoginForm } from "@/components/auth/login-form";
+import { safeNextPath } from "@/lib/auth/next-path";
 import {
   Card,
   CardContent,
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
  * is a browser navigation, so its errors have to come back as a page.
  */
 export default async function LoginPage({ searchParams }: PageProps<"/dang-nhap">) {
-  const { loi } = await searchParams;
+  const { loi, next } = await searchParams;
   const errorCode = typeof loi === "string" ? loi : null;
 
   return (
@@ -31,7 +32,7 @@ export default async function LoginPage({ searchParams }: PageProps<"/dang-nhap"
       </CardHeader>
       <CardContent className="space-y-4">
         <GoogleButton label="Đăng nhập bằng Google" />
-        <LoginForm errorCode={errorCode} />
+        <LoginForm errorCode={errorCode} next={safeNextPath(next)} />
       </CardContent>
     </Card>
   );

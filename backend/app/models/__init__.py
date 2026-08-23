@@ -9,6 +9,7 @@ from app.models.category import Category
 from app.models.course import Course
 from app.models.curriculum import CourseSection, Lesson, VideoAsset
 from app.models.enrollment import Enrollment
+from app.models.progress import LessonProgress
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
 
@@ -19,6 +20,7 @@ __all__ = [
     "CourseSection",
     "Enrollment",
     "Lesson",
+    "LessonProgress",
     "RefreshToken",
     "User",
     "VideoAsset",

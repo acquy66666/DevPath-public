@@ -142,7 +142,7 @@ Ràng buộc:
 | Bảng | Cột | Khóa & ràng buộc bổ sung | ON DELETE | Ghi chú |
 |---|---|---|---|---|
 | `enrollments` | `user_id`, `course_id`, `source`, `completed_at` | `uq_enrollments_user_course` (`user_id`,`course_id`); `ck_enrollments_source` (`purchase`/`free`) | user → CASCADE, course → RESTRICT | Course bị gỡ chỉ soft delete nên enrollment không mất |
-| `lesson_progress` | `enrollment_id`, `lesson_id`, `last_position_s`, `completed_at` | **`uq_lesson_progress_enrollment_lesson`** (`enrollment_id`,`lesson_id`) — thiếu trong bản cũ | enrollment → CASCADE, lesson → CASCADE | `last_position_s INT NOT NULL DEFAULT 0` |
+| `lesson_progress` | `enrollment_id`, `lesson_id`, `last_position_s`, `completed_at` | **`uq_lesson_progress_enrollment_lesson`** (`enrollment_id`,`lesson_id`) — thiếu trong bản cũ; `ck_lesson_progress_position_non_negative` | enrollment → CASCADE, lesson → CASCADE | `last_position_s INT NOT NULL DEFAULT 0`. Cột bị ghi dày nhất schema (heartbeat vài giây/lần) nên cố tình rẻ: một số nguyên, không lịch sử |
 | `notes` | `user_id`, `lesson_id`, `timestamp_s`, `content` | `ix_notes_user_lesson` (`user_id`,`lesson_id`) | user → CASCADE, lesson → CASCADE | 1 user nhiều note/lesson (không unique) |
 | `bookmarks` | `user_id`, `lesson_id` | **`uq_bookmarks_user_lesson`** — thiếu trong bản cũ | user → CASCADE, lesson → CASCADE | |
 | `certificates` | `enrollment_id`, `code`, `pdf_key`, `issued_at` | **`uq_certificates_code`**, `uq_certificates_enrollment` | enrollment → RESTRICT | `code` là mã công khai trên QR: chuỗi ngẫu nhiên ≥16 ký tự, **không đoán được** |
@@ -214,7 +214,7 @@ Ràng buộc:
 | `submissions.verdict` | `AC`,`WA`,`TLE`,`MLE`,`RE`,`CE`,`SE` | Chỉ khác NULL khi `status='done'` | Worker chấm bài |
 | `orders.status` | `pending`, `paid`, `failed`, `refunded` | pending→paid \| failed; paid→refunded | Chỉ đổi sang `paid` khi verify chữ ký IPN thành công |
 | `reports.status` | `open`, `reviewing`, `resolved`, `dismissed` | open→reviewing→resolved \| dismissed | Admin |
-| `enrollments` | không có cột status | `completed_at` khác NULL = hoàn thành 100% | Service tiến độ |
+| `enrollments` | không có cột status | `completed_at` khác NULL = hoàn thành 100%. **Tính ra chứ không ai khai báo**: `app/services/progress.py` đặt/xóa nó mỗi khi một bài học đổi trạng thái hoàn thành, nên hai con số không bao giờ lệch nhau | Service tiến độ |
 
 `failed` của `video_assets` và bảng giá trị của `reports.status` là hai chỗ bản cũ bỏ trống — không có chúng thì lỗi transcode và hàng đợi báo cáo vi phạm đều không biểu diễn được.
 
@@ -232,7 +232,7 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `ix_courses_category_id` | courses | `category_id` | Lọc theo danh mục | 2 |
 | `ix_courses_instructor_id` | courses | `instructor_id` | Dashboard giảng viên | 2 |
 | `ix_enrollments_user_id` | enrollments | `user_id` | Trang "Khóa học của tôi" | 2 |
-| `ix_lesson_progress_enrollment` | lesson_progress | `enrollment_id` | Tính % hoàn thành | 2 |
+| ~~`ix_lesson_progress_enrollment`~~ | lesson_progress | — | **Không tạo.** `uq_lesson_progress_enrollment_lesson` đã dẫn đầu bằng `enrollment_id` nên index này là bản sao thứ hai của cùng một B-tree, phải trả giá ở mọi lần heartbeat mà không ai đọc | 2 |
 | `ix_submissions_user_exercise` | submissions | (`user_id`,`exercise_id`,`created_at DESC`) | Lịch sử nộp bài | 3 |
 | `ix_submissions_status` | submissions | `status` partial `WHERE status IN ('pending','running')` | Giám sát hàng đợi chấm | 3 |
 | `ix_doc_chunks_embedding` | doc_chunks | HNSW (`embedding` vector_cosine_ops) | Truy vấn top-k RAG | 4 |
@@ -262,7 +262,8 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `course_sections`, `lessons`, `video_assets` | ✅ đã có trong DB | `f7d37ee5caf2` |
 | Trigger `courses_search_vector_update` | ✅ đã có trong DB | `0c55c726cc39` |
 | `enrollments` | ✅ đã có trong DB | `991bc02a257b` |
-| `lesson_progress`, `notes`, `bookmarks` | ⏳ Phase 2 (tuần 5) | |
+| `lesson_progress` | ✅ đã có trong DB | `b6dea13f199c` |
+| `notes`, `bookmarks` | ⏳ Phase 2 (tuần 5) | |
 | `reviews` | ⏳ Phase 2 (tuần 5) | |
 | Bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 

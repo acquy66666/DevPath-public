@@ -21,6 +21,7 @@ from app.core.exceptions import DomainError
 from app.models import Course, CourseSection, Lesson, User
 from app.schemas.curriculum import LessonCreate, LessonUpdate
 from app.services import courses as courses_service
+from app.services import enrollments as enrollments_service
 
 
 class SectionNotFoundError(DomainError):
@@ -117,10 +118,11 @@ async def get_lesson_for_viewer(
 ) -> Lesson:
     """One lesson in full.
 
-    Three answers, and the difference matters: the owner sees anything; a
-    preview lesson of a published course is open to everyone; anything else in
-    a published course is locked (403 -- it exists, enrol to read it), and
-    everything in a course you cannot see is simply not found.
+    Four answers, and the differences matter: the owner sees anything; a
+    preview lesson of a published course is open to everyone; a student who
+    enrolled sees the rest of it; anything else in a published course is locked
+    (403 -- it exists, enrol to read it), and everything in a course you cannot
+    see is simply not found.
     """
     lesson = await session.get(Lesson, lesson_id)
     if lesson is None:
@@ -133,8 +135,15 @@ async def get_lesson_for_viewer(
 
     if viewer is not None and courses_service.may_manage(course, viewer):
         return lesson
+    # Before the enrolment query, because it needs no query at all.
     if lesson.is_preview:
         return lesson
+    if viewer is not None:
+        enrollment = await enrollments_service.find_for_course(
+            session, course.id, viewer
+        )
+        if enrollment is not None:
+            return lesson
 
     raise LessonLockedError("Bài học này cần đăng ký khóa học mới xem được")
 

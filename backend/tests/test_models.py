@@ -14,6 +14,7 @@ from app.models import (
     CourseSection,
     Enrollment,
     Lesson,
+    LessonProgress,
     RefreshToken,
     User,
     VideoAsset,
@@ -29,7 +30,7 @@ def index_names(model: type) -> set[str]:
 
 
 def test_registered_tables_match_the_phases_done_so_far() -> None:
-    """Phase 1 created three; Phase 2 adds sessions, the curriculum, enrolments."""
+    """Phase 1 created three; Phase 2 adds sessions, curriculum, enrolments, progress."""
     assert set(Base.metadata.tables) == {
         "users",
         "categories",
@@ -39,6 +40,7 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "lessons",
         "video_assets",
         "enrollments",
+        "lesson_progress",
     }
 
 
@@ -231,3 +233,24 @@ def test_an_enrolment_outlives_its_course_but_not_its_owner() -> None:
 
     assert user_fk.ondelete == "CASCADE"
     assert course_fk.ondelete == "RESTRICT"
+
+
+def test_lesson_progress_constraints_match_the_spec() -> None:
+    assert "uq_lesson_progress_enrollment_lesson" in constraint_names(LessonProgress)
+    assert "ck_lesson_progress_position_non_negative" in constraint_names(LessonProgress)
+
+
+def test_lesson_progress_needs_no_index_of_its_own() -> None:
+    """The unique constraint already leads with `enrollment_id`.
+
+    docs/database-design.md used to list `ix_lesson_progress_enrollment` as
+    well; a second B-tree on the leading column of an existing one would be
+    paid for on every heartbeat and read by nothing.
+    """
+    assert index_names(LessonProgress) == set()
+
+
+def test_progress_dies_with_whatever_it_describes() -> None:
+    for column in ("enrollment_id", "lesson_id"):
+        fk = next(iter(LessonProgress.__table__.c[column].foreign_keys))
+        assert fk.ondelete == "CASCADE"

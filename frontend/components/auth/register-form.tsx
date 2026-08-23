@@ -18,7 +18,7 @@ import {
   validatePassword,
 } from "@/lib/auth/validation";
 
-export function RegisterForm() {
+export function RegisterForm({ next = "/" }: { next?: string }) {
   const router = useRouter();
   const { signUp } = useAuth();
 
@@ -31,7 +31,7 @@ export function RegisterForm() {
     mutationFn: () =>
       signUp({ email: email.trim(), password, full_name: fullName.trim() }),
     onSuccess: () => {
-      router.push("/");
+      router.push(next);
       router.refresh();
     },
   });

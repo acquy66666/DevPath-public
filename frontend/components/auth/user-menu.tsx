@@ -1,6 +1,6 @@
 "use client";
 
-import { GraduationCap, LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import { BookOpen, GraduationCap, LayoutDashboard, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -54,6 +54,12 @@ export function UserMenu({ user }: { user: User }) {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
+          <Link href="/khoa-hoc-cua-toi">
+            <BookOpen aria-hidden />
+            Khóa học của tôi
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
           <Link href="/ho-so">
             <UserRound aria-hidden />
             Hồ sơ của tôi
@@ -77,7 +83,6 @@ export function UserMenu({ user }: { user: User }) {
             </Link>
           </DropdownMenuItem>
         ) : null}
-        {/* Khóa học của tôi... thêm khi trang đó tồn tại. */}
         <DropdownMenuItem onSelect={handleSignOut} disabled={signingOut}>
           <LogOut aria-hidden />
           {signingOut ? "Đang đăng xuất…" : "Đăng xuất"}

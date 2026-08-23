@@ -20,7 +20,7 @@
 ## Tuần 5 — Trải nghiệm học viên
 
 - [x] Danh sách khóa học: full-text search (tsvector), lọc category/giá/rating, phân trang
-- [ ] Enroll khóa học miễn phí; trang "Khóa học của tôi"
+- [x] Enroll khóa học miễn phí; trang "Khóa học của tôi"
 - [ ] Video player HLS (hls.js): lưu `last_position_s` (heartbeat ~10s), tốc độ phát, đánh dấu lesson hoàn thành
 - [ ] Ghi chú theo timestamp + bookmark lesson
 - [ ] Review & rating khóa học (chỉ khi đã enroll)

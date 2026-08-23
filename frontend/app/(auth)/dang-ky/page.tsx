@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { GoogleButton } from "@/components/auth/google-button";
 import { RegisterForm } from "@/components/auth/register-form";
+import { safeNextPath } from "@/lib/auth/next-path";
 import {
   Card,
   CardContent,
@@ -15,7 +16,9 @@ export const metadata: Metadata = {
   description: "Tạo tài khoản DevPath để bắt đầu học lập trình với chấm bài tự động.",
 };
 
-export default function RegisterPage() {
+export default async function RegisterPage({ searchParams }: PageProps<"/dang-ky">) {
+  const { next } = await searchParams;
+
   return (
     <Card>
       <CardHeader>
@@ -26,7 +29,7 @@ export default function RegisterPage() {
       </CardHeader>
       <CardContent className="space-y-4">
         <GoogleButton label="Đăng ký bằng Google" />
-        <RegisterForm />
+        <RegisterForm next={safeNextPath(next)} />
       </CardContent>
     </Card>
   );

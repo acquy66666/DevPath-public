@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { useAuth } from "@/lib/auth/auth-provider";
  */
 export function EnrollButton({ course }: { course: CourseDetail }) {
   const { user, accessToken, status } = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const free = Number(course.price) === 0;
   const owns = user?.id === course.instructor.id;
@@ -36,6 +38,7 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
     onSuccess: (created) => {
       queryClient.setQueryData(["enrollment", course.id], created);
       queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+      router.push(`/hoc/${course.slug}`);
     },
   });
 
@@ -75,13 +78,13 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
   if (enrollment.data) {
     return (
       <div className="space-y-2">
-        <p className="flex items-center justify-center gap-2 rounded-lg border border-dashed py-2 text-sm">
-          <Check className="size-4" aria-hidden />
+        <Button className="w-full" asChild>
+          <Link href={`/hoc/${course.slug}`}>Vào học</Link>
+        </Button>
+        <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <Check className="size-3.5" aria-hidden />
           Bạn đã đăng ký khóa học này
         </p>
-        <Button className="w-full" variant="outline" asChild>
-          <Link href="/khoa-hoc-cua-toi">Tới khóa học của tôi</Link>
-        </Button>
       </div>
     );
   }

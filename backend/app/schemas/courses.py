@@ -154,3 +154,41 @@ class CourseDetailOut(CourseOut):
 
     instructor: CourseInstructorOut
     category: CategoryOut
+
+
+class CourseCardBase(BaseModel):
+    """The columns of a catalogue card, straight off the row.
+
+    Split from `CourseCardOut` for the same reason `CourseOut` is split from
+    `CourseDetailOut`: this half validates from the ORM object, the other half
+    is joined in by the router.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    slug: str
+    subtitle: str | None
+    thumbnail_url: str | None
+    price: Decimal
+    level: str
+    language: str
+    rating_avg: Decimal
+    rating_count: int
+    students_count: int
+    duration_total_s: int
+    published_at: datetime | None
+
+
+class CourseCardOut(CourseCardBase):
+    """One course as the catalogue draws it.
+
+    Not `CourseOut`: a card shows a title, a price and a picture, and twenty of
+    them carrying a full description each would make the listing response an
+    order of magnitude larger than the page needs. The status is absent too --
+    everything in the catalogue is published by definition.
+    """
+
+    instructor: CourseInstructorOut
+    category: CategoryOut

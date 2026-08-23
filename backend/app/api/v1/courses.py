@@ -6,6 +6,7 @@ check in the service, which is the layer that has the row.
 """
 
 import uuid
+from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -14,6 +15,8 @@ from app.core.deps import CurrentUser, DbSession, OptionalUser, require_role
 from app.models import User
 from app.schemas.categories import CategoryOut
 from app.schemas.courses import (
+    CourseCardBase,
+    CourseCardOut,
     CourseCreate,
     CourseDetailOut,
     CourseInstructorOut,
@@ -21,6 +24,7 @@ from app.schemas.courses import (
     CourseUpdate,
 )
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
+from app.services import catalog as catalog_service
 from app.services import courses as courses_service
 
 router = APIRouter(prefix="/courses", tags=["courses"])
@@ -35,6 +39,56 @@ async def create_course(
     """Start a course. Instructors only; it opens as a draft owned by the caller."""
     course = await courses_service.create_course(session, instructor, payload)
     return CourseOut.model_validate(course)
+
+
+@router.get("", response_model=Page[CourseCardOut])
+async def list_courses(
+    session: DbSession,
+    q: Annotated[
+        str | None,
+        Query(max_length=catalog_service.MAX_QUERY_LENGTH, description="Từ khóa tìm kiếm"),
+    ] = None,
+    category_id: uuid.UUID | None = None,
+    price_min: Annotated[Decimal | None, Query(ge=0)] = None,
+    price_max: Annotated[Decimal | None, Query(ge=0)] = None,
+    rating_min: Annotated[Decimal | None, Query(ge=0, le=5)] = None,
+    sort: catalog_service.Sort | None = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
+) -> Page[CourseCardOut]:
+    """The public catalogue. No sign-in: this is the page people browse first.
+
+    Only published courses appear, whoever is asking -- an instructor's own
+    drafts live on their dashboard, not in a listing anyone can page through.
+
+    `sort` defaults to relevance when `q` is given and to newest otherwise;
+    sorting a search by date would bury the best match on page four.
+    """
+    rows, total = await catalog_service.list_published(
+        session,
+        q=q,
+        category_id=category_id,
+        price_min=price_min,
+        price_max=price_max,
+        rating_min=rating_min,
+        sort=sort,
+        page=page,
+        page_size=page_size,
+    )
+
+    return Page[CourseCardOut](
+        items=[
+            CourseCardOut(
+                **CourseCardBase.model_validate(course).model_dump(),
+                instructor=CourseInstructorOut.model_validate(instructor),
+                category=CategoryOut.model_validate(category),
+            )
+            for course, instructor, category in rows
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.get("/me", response_model=Page[CourseOut])

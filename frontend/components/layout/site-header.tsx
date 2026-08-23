@@ -19,11 +19,18 @@ export function SiteHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          Dev<span className="text-muted-foreground">Path</span>
-        </Link>
+        <div className="flex items-center gap-6">
+          <Link href="/" className="text-lg font-semibold tracking-tight">
+            Dev<span className="text-muted-foreground">Path</span>
+          </Link>
+          <Link
+            href="/khoa-hoc"
+            className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Khóa học
+          </Link>
+        </div>
 
-        {/* Điều hướng khóa học thêm khi có trang danh sách khóa học thật. */}
         <div className="flex items-center gap-2">
           {status === "loading" ? (
             <div className="h-8 w-32 animate-pulse rounded-md bg-muted" aria-hidden />

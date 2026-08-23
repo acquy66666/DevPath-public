@@ -11,6 +11,7 @@ Two rules hold everywhere in this module:
 """
 
 import uuid
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 from fastapi import status
@@ -100,22 +101,62 @@ async def create_course(
     return course
 
 
-async def get_course_for_viewer(
-    session: AsyncSession, course_id: uuid.UUID, viewer: User | None
-) -> Course:
+def _visible_or_404(course: Course, viewer: User | None) -> Course:
     """A published course is public; anything else belongs to its owner.
 
     Answers 404 rather than 403 for a draft: an unpublished course should not
     be confirmed to exist to someone who cannot read it.
     """
-    course = await _load(session, course_id)
-
     if course.status == "published":
         return course
     if viewer is not None and may_manage(course, viewer):
         return course
 
     raise CourseNotFoundError("Không tìm thấy khóa học")
+
+
+async def get_course_for_viewer(
+    session: AsyncSession, course_id: uuid.UUID, viewer: User | None
+) -> Course:
+    """One course by id, if this viewer is allowed to see it."""
+    return _visible_or_404(await _load(session, course_id), viewer)
+
+
+@dataclass(frozen=True, slots=True)
+class CourseDetail:
+    """A course with the two rows the public page shows by name, not by id."""
+
+    course: Course
+    instructor: User
+    category: Category
+
+
+async def get_course_detail(
+    session: AsyncSession, slug: str, viewer: User | None
+) -> CourseDetail:
+    """The public page's course, found the way its URL spells it.
+
+    By slug rather than by id because the id would have to appear in the URL
+    otherwise, and a course address is a thing people share and search engines
+    keep. The slug is unique (`uq_courses_slug`), so there is exactly one row
+    or none.
+    """
+    course = await session.scalar(_active_courses().where(Course.slug == slug))
+    if course is None:
+        raise CourseNotFoundError("Không tìm thấy khóa học")
+
+    _visible_or_404(course, viewer)
+
+    # Only reached for a course this viewer may see, so neither of these can
+    # leak anything the course itself did not already.
+    instructor = await session.get(User, course.instructor_id)
+    category = await session.get(Category, course.category_id)
+    if instructor is None or category is None:
+        # Both foreign keys are ON DELETE RESTRICT, so this means the database
+        # is in a state the schema says is impossible.
+        raise CourseNotFoundError("Không tìm thấy khóa học")
+
+    return CourseDetail(course=course, instructor=instructor, category=category)
 
 
 async def list_own_courses(

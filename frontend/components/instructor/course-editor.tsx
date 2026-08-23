@@ -68,6 +68,18 @@ export function CourseEditor({ courseId }: { courseId: string }) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-semibold tracking-tight">{course.title}</h1>
           <CourseStatusBadge status={course.status} />
+
+          {/* Only once published: before that the public page answers 404 to
+              everyone the server can identify, which is nobody — it renders
+              anonymously. */}
+          {course.status === "published" ? (
+            <Link
+              href={`/khoa-hoc/${course.slug}`}
+              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Xem trang công khai →
+            </Link>
+          ) : null}
         </div>
       </div>
 

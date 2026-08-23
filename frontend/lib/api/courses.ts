@@ -1,3 +1,4 @@
+import type { Category } from "./categories";
 import { apiFetch } from "./client";
 
 export type CourseStatus = "draft" | "pending_review" | "published" | "rejected";
@@ -28,6 +29,22 @@ export interface Course {
   duration_total_s: number;
   created_at: string;
   updated_at: string;
+}
+
+/** Mirrors `CourseInstructorOut` — a name and a face, never an email. */
+export interface CourseInstructor {
+  id: string;
+  full_name: string;
+  avatar_url: string | null;
+}
+
+/**
+ * Mirrors `CourseDetailOut`: the public page's course, with the instructor and
+ * the category embedded so the page renders in one round trip.
+ */
+export interface CourseDetail extends Course {
+  instructor: CourseInstructor;
+  category: Category;
 }
 
 export interface Page<T> {
@@ -109,4 +126,21 @@ export function unpublishCourse(accessToken: string, courseId: string): Promise<
     method: "POST",
     accessToken,
   });
+}
+
+/**
+ * The public course page, by the slug in its URL.
+ *
+ * A token is optional and only matters for a course that is not published yet:
+ * its owner (and an admin) get the page, everyone else gets 404 rather than a
+ * 403 that would confirm the course exists.
+ */
+export function getCourseBySlug(
+  slug: string,
+  accessToken?: string | null,
+): Promise<CourseDetail> {
+  return apiFetch<CourseDetail>(
+    `/api/v1/courses/by-slug/${encodeURIComponent(slug)}`,
+    { accessToken },
+  );
 }

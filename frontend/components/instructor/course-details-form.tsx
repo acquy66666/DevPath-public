@@ -26,12 +26,7 @@ import {
   validatePrice,
   validateSubtitle,
 } from "@/lib/courses/validation";
-
-const LEVELS: Array<{ value: CourseLevel; label: string }> = [
-  { value: "beginner", label: "Người mới bắt đầu" },
-  { value: "intermediate", label: "Trung cấp" },
-  { value: "advanced", label: "Nâng cao" },
-];
+import { LEVEL_LABELS, LEVEL_ORDER } from "@/lib/courses/labels";
 
 export function CourseDetailsForm({ course }: { course: Course }) {
   const { accessToken } = useAuth();
@@ -158,9 +153,9 @@ export function CourseDetailsForm({ course }: { course: Course }) {
                 onChange={(event) => setLevel(event.target.value as CourseLevel)}
                 disabled={mutation.isPending}
               >
-                {LEVELS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
+                {LEVEL_ORDER.map((value) => (
+                  <option key={value} value={value}>
+                    {LEVEL_LABELS[value]}
                   </option>
                 ))}
               </NativeSelect>

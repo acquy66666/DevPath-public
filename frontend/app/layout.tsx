@@ -14,6 +14,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  // Every relative canonical and Open Graph URL below is resolved against this,
+  // so a page never has to know the site's own address. Set explicitly rather
+  // than left to Next's localhost guess, which it warns about at build time.
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  ),
   title: "DevPath — Học lập trình trực tuyến",
   description:
     "Nền tảng học lập trình với chấm bài tự động, gợi ý khóa học và trợ giảng AI.",

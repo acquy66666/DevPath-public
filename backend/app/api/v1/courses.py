@@ -12,7 +12,14 @@ from fastapi import APIRouter, Depends, Query, status
 
 from app.core.deps import CurrentUser, DbSession, OptionalUser, require_role
 from app.models import User
-from app.schemas.courses import CourseCreate, CourseOut, CourseUpdate
+from app.schemas.categories import CategoryOut
+from app.schemas.courses import (
+    CourseCreate,
+    CourseDetailOut,
+    CourseInstructorOut,
+    CourseOut,
+    CourseUpdate,
+)
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.services import courses as courses_service
 
@@ -49,6 +56,24 @@ async def list_my_courses(
         total=total,
         page=page,
         page_size=page_size,
+    )
+
+
+@router.get("/by-slug/{slug}", response_model=CourseDetailOut)
+async def get_course_by_slug(
+    slug: str, viewer: OptionalUser, session: DbSession
+) -> CourseDetailOut:
+    """The public course page, addressed the way its URL spells it.
+
+    Two segments, so this never collides with `/{course_id}`. Sign-in is
+    optional: a search engine, a visitor and the owner previewing a draft all
+    arrive at the same address, and the service decides what each may see.
+    """
+    detail = await courses_service.get_course_detail(session, slug, viewer)
+    return CourseDetailOut(
+        **CourseOut.model_validate(detail.course).model_dump(),
+        instructor=CourseInstructorOut.model_validate(detail.instructor),
+        category=CategoryOut.model_validate(detail.category),
     )
 
 

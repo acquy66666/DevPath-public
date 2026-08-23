@@ -1,9 +1,19 @@
 import type { User } from "@/lib/api/auth";
 import { cn } from "@/lib/utils";
 
+/**
+ * Anyone this circle can stand for.
+ *
+ * Structural rather than `User` because the public course page shows an
+ * instructor, and that payload deliberately carries no email address.
+ */
+export type AvatarSubject = Pick<User, "full_name" | "avatar_url"> & {
+  email?: string;
+};
+
 /** First letters of the name, for when there is no picture. Falls back to the email. */
-function initials(user: User): string {
-  const source = user.full_name.trim() || user.email;
+function initials(user: AvatarSubject): string {
+  const source = user.full_name.trim() || user.email || "?";
   const words = source.split(/\s+/).filter(Boolean);
   const letters = words.length > 1 ? [words[0], words[words.length - 1]] : [words[0]];
   return letters
@@ -22,7 +32,13 @@ function initials(user: User): string {
  * Size comes from the caller through `className` (`size-7`, `size-20`), because
  * the header and the profile page want very different ones.
  */
-export function UserAvatar({ user, className }: { user: User; className?: string }) {
+export function UserAvatar({
+  user,
+  className,
+}: {
+  user: AvatarSubject;
+  className?: string;
+}) {
   const shared = cn(
     "flex shrink-0 items-center justify-center overflow-hidden rounded-full",
     className,

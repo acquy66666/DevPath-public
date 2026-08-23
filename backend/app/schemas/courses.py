@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models.course import LEVELS
+from app.schemas.categories import CategoryOut
 
 TITLE_MAX_LENGTH = 200
 SUBTITLE_MAX_LENGTH = 300
@@ -127,3 +128,29 @@ class CourseOut(BaseModel):
     duration_total_s: int
     created_at: datetime
     updated_at: datetime
+
+
+class CourseInstructorOut(BaseModel):
+    """Just enough of the person to put a name and a face on the page.
+
+    Deliberately not `UserOut`: that one carries the email address, and this
+    object is handed to anybody who opens a published course.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    full_name: str
+    avatar_url: str | None
+
+
+class CourseDetailOut(CourseOut):
+    """What the public course page needs, minus the table of contents.
+
+    The instructor and the category come embedded rather than as ids: this page
+    is server-rendered for search engines, and three round trips to fill in two
+    names would show up in the time to first byte.
+    """
+
+    instructor: CourseInstructorOut
+    category: CategoryOut

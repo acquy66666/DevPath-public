@@ -26,3 +26,21 @@ export function formatPrice(price: string): string {
 export function formatDate(iso: string): string {
   return DATE.format(new Date(iso));
 }
+
+/**
+ * A course length in words: "6 giờ 30 phút", "45 phút".
+ *
+ * Rounded to whole minutes because that is the precision anyone reads it at,
+ * and returns null at zero so a course with no video yet can leave the line out
+ * rather than claim it lasts nothing.
+ */
+export function formatDuration(seconds: number): string | null {
+  const minutes = Math.round(seconds / 60);
+  if (minutes <= 0) return null;
+
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+
+  if (hours === 0) return `${rest} phút`;
+  return rest === 0 ? `${hours} giờ` : `${hours} giờ ${rest} phút`;
+}

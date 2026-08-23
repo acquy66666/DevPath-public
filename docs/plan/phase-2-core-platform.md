@@ -22,7 +22,7 @@
 - [x] Danh sách khóa học: full-text search (tsvector), lọc category/giá/rating, phân trang
 - [x] Enroll khóa học miễn phí; trang "Khóa học của tôi"
 - [x] Video player HLS (hls.js): lưu `last_position_s` (heartbeat ~10s), tốc độ phát, đánh dấu lesson hoàn thành
-- [ ] Ghi chú theo timestamp + bookmark lesson
+- [x] Ghi chú theo timestamp + bookmark lesson
 - [ ] Review & rating khóa học (chỉ khi đã enroll)
 - [ ] Seed data thật: ≥3 khóa học lập trình có video + curriculum đầy đủ
 - [ ] Deploy lần đầu lên VPS (docker compose + nginx + HTTPS)

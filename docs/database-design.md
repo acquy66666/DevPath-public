@@ -143,9 +143,12 @@ Ràng buộc:
 |---|---|---|---|---|
 | `enrollments` | `user_id`, `course_id`, `source`, `completed_at` | `uq_enrollments_user_course` (`user_id`,`course_id`); `ck_enrollments_source` (`purchase`/`free`) | user → CASCADE, course → RESTRICT | Course bị gỡ chỉ soft delete nên enrollment không mất |
 | `lesson_progress` | `enrollment_id`, `lesson_id`, `last_position_s`, `completed_at` | **`uq_lesson_progress_enrollment_lesson`** (`enrollment_id`,`lesson_id`) — thiếu trong bản cũ; `ck_lesson_progress_position_non_negative` | enrollment → CASCADE, lesson → CASCADE | `last_position_s INT NOT NULL DEFAULT 0`. Cột bị ghi dày nhất schema (heartbeat vài giây/lần) nên cố tình rẻ: một số nguyên, không lịch sử |
-| `notes` | `user_id`, `lesson_id`, `timestamp_s`, `content` | `ix_notes_user_lesson` (`user_id`,`lesson_id`) | user → CASCADE, lesson → CASCADE | 1 user nhiều note/lesson (không unique) |
+| `notes` | `user_id`, `lesson_id`, `timestamp_s`, `content` | `ix_notes_user_lesson` (`user_id`,`lesson_id`); `ck_notes_timestamp_non_negative`; `ck_notes_content_not_empty` | user → CASCADE, lesson → CASCADE | 1 user nhiều note/lesson (không unique). `timestamp_s` = 0 với bài không có timeline (article), nghĩa là "cả bài này". Nội dung tối đa 2000 ký tự |
 | `bookmarks` | `user_id`, `lesson_id` | **`uq_bookmarks_user_lesson`** — thiếu trong bản cũ | user → CASCADE, lesson → CASCADE | |
 | `certificates` | `enrollment_id`, `code`, `pdf_key`, `issued_at` | **`uq_certificates_code`**, `uq_certificates_enrollment` | enrollment → RESTRICT | `code` là mã công khai trên QR: chuỗi ngẫu nhiên ≥16 ký tự, **không đoán được** |
+
+
+> **`notes` và `bookmarks` gắn vào `user_id`, không phải `enrollment_id`** — khác `lesson_progress` một cách có chủ ý. Tiến độ mô tả *một lượt học* và đáng bị xóa nếu người ta học lại từ đầu; còn ghi chú là thứ người ta **viết ra**, mất nó vì enrolment bị dựng lại là mất công sức của họ. Quyền viết ghi chú/bookmark cũng chính là quyền *đọc* bài học (chủ khóa học, bài học thử, hoặc đã ghi danh) — không có luật riêng.
 
 ---
 
@@ -263,7 +266,7 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | Trigger `courses_search_vector_update` | ✅ đã có trong DB | `0c55c726cc39` |
 | `enrollments` | ✅ đã có trong DB | `991bc02a257b` |
 | `lesson_progress` | ✅ đã có trong DB | `b6dea13f199c` |
-| `notes`, `bookmarks` | ⏳ Phase 2 (tuần 5) | |
+| `notes`, `bookmarks` | ✅ đã có trong DB | `852a7bf2510b` |
 | `reviews` | ⏳ Phase 2 (tuần 5) | |
 | Bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 

@@ -44,3 +44,22 @@ export function formatDuration(seconds: number): string | null {
   if (hours === 0) return `${rest} phút`;
   return rest === 0 ? `${hours} giờ` : `${hours} giờ ${rest} phút`;
 }
+
+/**
+ * A moment inside a video: "04:05", or "1:04:05" once it passes an hour.
+ *
+ * Different from `formatDuration` on purpose. That one answers "how long is
+ * this course"; this one is a position on a timeline, and a timeline is read
+ * as a clock.
+ */
+export function formatTimestamp(seconds: number): string {
+  const whole = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(whole / 3600);
+  const minutes = Math.floor((whole % 3600) / 60);
+  const rest = whole % 60;
+
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return hours > 0
+    ? `${hours}:${pad(minutes)}:${pad(rest)}`
+    : `${pad(minutes)}:${pad(rest)}`;
+}

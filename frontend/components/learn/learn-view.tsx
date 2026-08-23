@@ -1,13 +1,17 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Loader2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 
 import { LessonList } from "@/components/learn/lesson-list";
-import { VideoPlayer } from "@/components/learn/video-player";
+import { NotesPanel } from "@/components/learn/notes-panel";
+import {
+  VideoPlayer,
+  type PlayerHandle,
+} from "@/components/learn/video-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -15,6 +19,7 @@ import { getCourseBySlug } from "@/lib/api/courses";
 import { getCurriculum, getLesson } from "@/lib/api/curriculum";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getCourseProgress, saveProgress } from "@/lib/api/progress";
+import { listBookmarks, setBookmark } from "@/lib/api/study";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 /**
@@ -57,6 +62,16 @@ export function LearnView({
     enabled: signedIn && courseId !== null,
   });
 
+  const bookmarks = useQuery({
+    queryKey: ["bookmarks", courseId],
+    queryFn: () => listBookmarks(accessToken as string, courseId as string),
+    enabled: signedIn && courseId !== null,
+  });
+
+  // The player is asked things rather than mirrored into state: its position
+  // changes thirty times a second and nothing here needs to re-render for it.
+  const player = useRef<PlayerHandle>(null);
+
   // `?bai=` wins; without it, carry on where this reader stopped.
   const currentId = lessonId ?? progress.data?.resume_lesson_id ?? null;
 
@@ -68,6 +83,16 @@ export function LearnView({
 
   const current = progress.data?.lessons.find((row) => row.lesson_id === currentId);
   const finished = current?.completed_at != null;
+  const bookmarkedIds = new Set(bookmarks.data?.lesson_ids ?? []);
+  const flagged = currentId !== null && bookmarkedIds.has(currentId);
+
+  const toggleBookmark = useMutation({
+    mutationFn: (next: boolean) =>
+      setBookmark(accessToken as string, currentId as string, next),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks", courseId] });
+    },
+  });
 
   // The heartbeat writes constantly and must not make the page flicker, so it
   // invalidates nothing. Only a change of completion refreshes the ticks.
@@ -191,6 +216,7 @@ export function LearnView({
                 lesson.data.video?.hls_url ? (
                   <VideoPlayer
                     key={lesson.data.id}
+                    ref={player}
                     src={lesson.data.video.hls_url}
                     startAt={current?.last_position_s ?? 0}
                     onProgress={handleProgress}
@@ -232,12 +258,38 @@ export function LearnView({
                   )}
                 </Button>
 
+                <Button
+                  variant="outline"
+                  onClick={() => toggleBookmark.mutate(!flagged)}
+                  disabled={toggleBookmark.isPending}
+                  aria-pressed={flagged}
+                >
+                  {flagged ? (
+                    <>
+                      <BookmarkCheck aria-hidden />
+                      Bỏ đánh dấu
+                    </>
+                  ) : (
+                    <>
+                      <Bookmark aria-hidden />
+                      Đánh dấu để xem lại
+                    </>
+                  )}
+                </Button>
+
                 {setCompleted.isError ? (
                   <p className="text-sm text-destructive">
                     {apiErrorMessage(setCompleted.error)}
                   </p>
                 ) : null}
               </div>
+
+              <NotesPanel
+                lessonId={lesson.data.id}
+                timed={lesson.data.type === "video"}
+                currentTime={() => player.current?.currentTime() ?? 0}
+                onSeek={(seconds) => player.current?.seekTo(seconds)}
+              />
             </>
           ) : (
             <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />
@@ -249,6 +301,7 @@ export function LearnView({
             curriculum={curriculum.data}
             currentLessonId={currentId}
             completedLessonIds={completedIds}
+            bookmarkedLessonIds={bookmarkedIds}
             onSelect={selectLesson}
           />
         </aside>

@@ -142,7 +142,11 @@ async def list_for_user(
         .join(User, User.id == Course.instructor_id)
         .join(Category, Category.id == Course.category_id)
         .where(mine)
-        .order_by(Enrollment.created_at.desc())
+        # The id breaks ties. `created_at` defaults to `now()`, which in
+        # Postgres is the transaction's start time, so two rows written
+        # together carry the same instant -- and an ORDER BY that ties has no
+        # fixed answer, which is how a row shows up on two pages or on none.
+        .order_by(Enrollment.created_at.desc(), Enrollment.id.desc())
         .offset((page - 1) * page_size)
         .limit(page_size)
     )

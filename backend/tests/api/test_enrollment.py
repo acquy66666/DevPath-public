@@ -6,12 +6,12 @@ nothing.
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -319,6 +319,17 @@ async def test_my_courses_is_newest_first(
 
     await api_client.post(enroll_url(first), headers=headers)
     await api_client.post(enroll_url(second), headers=headers)
+
+    # Both rows carry the same `created_at`: the column defaults to `now()`,
+    # which is the transaction's start time, and this whole test is one
+    # transaction. Backdating one is what makes "newest first" mean anything
+    # here -- in production the two calls are two transactions and two instants.
+    await db_session.execute(
+        update(Enrollment)
+        .where(Enrollment.course_id == first.id)
+        .values(created_at=datetime.now(UTC) - timedelta(hours=1))
+    )
+    await db_session.flush()
 
     body = (await api_client.get("/api/v1/enrollments/me", headers=headers)).json()
 

@@ -113,7 +113,7 @@ Ràng buộc & index:
 | `rating_count` | INT | ✗ | `0` | |
 | `students_count` | INT | ✗ | `0` | Denormalize từ `enrollments` |
 | `duration_total_s` | INT | ✗ | `0` | Tổng thời lượng video, cập nhật khi asset `ready` |
-| `search_vector` | TSVECTOR | ✓ | | `title` + `subtitle` + `description` |
+| `search_vector` | TSVECTOR | ✓ | | `title` (A) + `subtitle` (B) + `description` (C), cấu hình `simple` trên văn bản đã `unaccent`; trigger tự ghi |
 | `deleted_at` | TIMESTAMPTZ | ✓ | | Soft delete |
 | `created_at` / `updated_at` | TIMESTAMPTZ | ✗ | `now()` | |
 
@@ -260,10 +260,17 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `users`, `categories`, `courses` | ✅ đã có trong DB | `576c29b76f4e` |
 | `refresh_tokens` | ✅ đã có trong DB | `adab7334f140` |
 | `course_sections`, `lessons`, `video_assets` | ✅ đã có trong DB | `f7d37ee5caf2` |
+| Trigger `courses_search_vector_update` | ✅ đã có trong DB | `0c55c726cc39` |
 | `reviews` | ⏳ Phase 2 (tuần 5) | |
 | Nhóm học tập, bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 
-Hai điểm của `courses` đã có cột nhưng **chưa có hành vi**, làm ở Phase 2 cùng lúc với tính năng dùng tới:
+`search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
 
-- `search_vector` — cột và index GIN đã tạo, nhưng trigger cập nhật thì chưa. Trigger cần chốt cấu hình FTS tiếng Việt (`unaccent` + trọng số cho `title`/`subtitle`/`description`), là việc của tính năng tìm kiếm. Đến lúc đó cột vẫn NULL và index rỗng.
+- Trigger `courses_search_vector_update` chạy `BEFORE INSERT OR UPDATE OF title, subtitle, description`, gọi hàm `courses_search_vector_refresh()`.
+- Cấu hình FTS: `to_tsvector('simple', unaccent(...))` — `simple` vì văn bản là tiếng Việt, cấu hình `english` sẽ stem sai; `unaccent` để người gõ "lap trinh" vẫn ra "Lập trình". **Phía truy vấn bắt buộc dùng đúng cặp này** (`websearch_to_tsquery('simple', unaccent(q))`, xem `app/services/catalog.py`), lệch một bên là không bao giờ khớp.
+- Trọng số `A`/`B`/`C` cho `title`/`subtitle`/`description`, `ts_rank` xếp hạng theo đó.
+- Chọn trigger thay vì generated column vì `unaccent()` là STABLE chứ không IMMUTABLE, Postgres từ chối nó trong generated column lẫn biểu thức index.
+
+Còn lại một điểm của `courses` có cột nhưng **chưa có hành vi**:
+
 - `rating_avg`, `rating_count`, `students_count`, `duration_total_s` — mặc định `0`, chờ `reviews` và `enrollments` xuất hiện mới có gì để denormalize.

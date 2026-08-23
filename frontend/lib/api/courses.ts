@@ -47,6 +47,42 @@ export interface CourseDetail extends Course {
   category: Category;
 }
 
+/**
+ * Mirrors `CourseCardOut`: what the catalogue draws. Deliberately narrower than
+ * `Course` — no description, no status — so a page of twenty stays small.
+ */
+export interface CourseCard {
+  id: string;
+  title: string;
+  slug: string;
+  subtitle: string | null;
+  thumbnail_url: string | null;
+  price: string;
+  level: CourseLevel;
+  language: string;
+  rating_avg: string;
+  rating_count: number;
+  students_count: number;
+  duration_total_s: number;
+  published_at: string | null;
+  instructor: CourseInstructor;
+  category: Category;
+}
+
+export type CatalogSort = "relevance" | "newest" | "rating";
+
+/** Every filter the catalogue understands. Absent keys are simply not sent. */
+export interface CatalogQuery {
+  q?: string;
+  category_id?: string;
+  price_min?: string;
+  price_max?: string;
+  rating_min?: string;
+  sort?: CatalogSort;
+  page?: number;
+  page_size?: number;
+}
+
 export interface Page<T> {
   items: T[];
   total: number;
@@ -143,4 +179,31 @@ export function getCourseBySlug(
     `/api/v1/courses/by-slug/${encodeURIComponent(slug)}`,
     { accessToken },
   );
+}
+
+/**
+ * Turn a filter object into a query string, dropping anything empty.
+ *
+ * Empty keys are dropped rather than sent blank because a GET form posts every
+ * field it has, and `?q=&sort=` would otherwise become part of the URL people
+ * share and the crawler indexes.
+ */
+export function catalogSearchParams(query: CatalogQuery): URLSearchParams {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null) continue;
+    const text = String(value).trim();
+    if (text === "") continue;
+    params.set(key, text);
+  }
+
+  return params;
+}
+
+/** The public catalogue. No token: this endpoint only ever shows published courses. */
+export function listCourses(query: CatalogQuery = {}): Promise<Page<CourseCard>> {
+  const params = catalogSearchParams(query);
+  const suffix = params.size > 0 ? `?${params}` : "";
+  return apiFetch<Page<CourseCard>>(`/api/v1/courses${suffix}`);
 }

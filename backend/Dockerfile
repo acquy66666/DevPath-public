@@ -7,6 +7,13 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
+# ffmpeg is the transcoder the Celery worker shells out to. Backend and
+# worker share one image (compose builds it once), so the API container
+# carries it too -- ~250 MB for one build instead of maintaining two.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Dependencies install in their own layer so editing source does not reinstall

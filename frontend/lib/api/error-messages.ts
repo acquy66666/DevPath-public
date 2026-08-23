@@ -48,6 +48,15 @@ const MESSAGES: Record<string, string> = {
   LESSON_LOCKED: "Bài học này cần đăng ký khóa học mới xem được.",
   INVALID_ORDER:
     "Thứ tự vừa gửi không khớp với nội dung khóa học. Tải lại trang rồi sắp xếp lại nhé.",
+
+  // Video.
+  STORAGE_NOT_CONFIGURED:
+    "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",
+  STORAGE_ERROR: "Kho lưu trữ đang trục trặc. Thử lại sau ít phút.",
+  VIDEO_ASSET_NOT_FOUND: "Không tìm thấy video này. Có thể nó đã được thay bằng video khác.",
+  LESSON_NOT_VIDEO: "Chỉ bài học dạng video mới gắn được video.",
+  INVALID_VIDEO_STATUS:
+    "Video đang ở trạng thái khác nên không làm được thao tác này. Tải lại trang nhé.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

@@ -38,6 +38,24 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/v1/auth/google/callback"
 
+    # Cloudflare R2 (S3-compatible). Empty until someone creates a bucket and
+    # an API token; `storage_enabled` is what the upload routes check.
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket: str = "devpath-media"
+    # Override for anything else that speaks S3 -- a local MinIO while
+    # developing, or a self-hosted bucket later. Empty means "derive the R2
+    # endpoint from the account id", which is the normal case.
+    r2_endpoint_url: str = ""
+    # Where the browser reads finished files from: the bucket's r2.dev
+    # subdomain in development, a custom domain once there is one. Kept
+    # separate from the S3 endpoint, which is for signing, not for playback.
+    r2_public_base_url: str = ""
+    # How long a signed upload URL stays valid. Long enough for a slow upload
+    # of a lecture video, short enough that a leaked URL stops working.
+    upload_url_ttl_seconds: int = 3600
+
     # Phase 5 replaces this with a real admin review queue; until then a
     # submitted course goes straight to published so the rest of Phase 2 has
     # something to show.
@@ -75,6 +93,25 @@ class Settings(BaseSettings):
     def google_oauth_enabled(self) -> bool:
         """Both halves or neither -- a client id without its secret cannot sign in."""
         return bool(self.google_client_id and self.google_client_secret)
+
+    @property
+    def storage_enabled(self) -> bool:
+        """Somewhere to talk to, and a key pair to talk with. All or nothing --
+        an account id without keys cannot sign anything."""
+        return bool(
+            (self.r2_account_id or self.r2_endpoint_url)
+            and self.r2_access_key_id
+            and self.r2_secret_access_key
+        )
+
+    @property
+    def storage_endpoint_url(self) -> str:
+        """The S3 API endpoint: the override if there is one, otherwise the
+        one R2 derives from the account id."""
+        return (
+            self.r2_endpoint_url
+            or f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
+        )
 
     @property
     def cookie_secure(self) -> bool:

@@ -2,8 +2,8 @@
 
     celery -A app.workers.celery_app worker
 
-Task modules are registered here as they appear (grading in Phase 3,
-embedding and mail later); for now the queue only needs to prove itself.
+Task modules are registered in `include` below as they appear -- video
+transcoding now, grading in Phase 3, embedding and mail later.
 """
 
 from celery import Celery
@@ -16,6 +16,10 @@ celery_app = Celery(
     "devpath",
     broker=settings.redis_url,
     backend=settings.redis_url,
+    # Task modules the worker imports on start. A task that is never imported
+    # is never registered, and Celery answers the enqueue with
+    # "unregistered task" long after the code looked correct.
+    include=["app.workers.video"],
 )
 
 celery_app.conf.update(

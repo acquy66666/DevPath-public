@@ -11,6 +11,7 @@ import uuid
 from fastapi import APIRouter, status
 
 from app.core.deps import CurrentUser, DbSession, OptionalUser
+from app.models import Lesson
 from app.schemas.curriculum import (
     CurriculumOut,
     LessonCreate,
@@ -25,8 +26,21 @@ from app.schemas.curriculum import (
     SectionWithLessons,
 )
 from app.services import curriculum as curriculum_service
+from app.services import video as video_service
 
 router = APIRouter(tags=["curriculum"])
+
+
+def lesson_out(lesson: Lesson) -> LessonOut:
+    """One lesson, with its video attached when it has one.
+
+    Built here rather than by `model_validate` alone: the playback URL is
+    derived from configuration, not stored on the row.
+    """
+    out = LessonOut.model_validate(lesson)
+    if lesson.video_asset is not None:
+        out.video = video_service.video_out(lesson.video_asset)
+    return out
 
 
 # --- Reading ---------------------------------------------------------------
@@ -59,7 +73,7 @@ async def get_lesson(
 ) -> LessonOut:
     """One lesson in full: the owner's to edit, or a preview for everyone."""
     lesson = await curriculum_service.get_lesson_for_viewer(session, lesson_id, viewer)
-    return LessonOut.model_validate(lesson)
+    return lesson_out(lesson)
 
 
 # --- Sections --------------------------------------------------------------
@@ -135,7 +149,7 @@ async def create_lesson(
     lesson = await curriculum_service.create_lesson(
         session, section_id, current_user, payload
     )
-    return LessonOut.model_validate(lesson)
+    return lesson_out(lesson)
 
 
 @router.patch("/lessons/{lesson_id}", response_model=LessonOut)
@@ -148,7 +162,7 @@ async def update_lesson(
     lesson = await curriculum_service.update_lesson(
         session, lesson_id, current_user, payload
     )
-    return LessonOut.model_validate(lesson)
+    return lesson_out(lesson)
 
 
 @router.delete("/lessons/{lesson_id}", status_code=status.HTTP_204_NO_CONTENT)

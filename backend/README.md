@@ -121,7 +121,28 @@ Không phân trang vì đây là bảng phân loại do admin biên tập, cỡ 
 
 **Mục lục không mang nội dung.** `LessonSummary` (trong cây curriculum) và `LessonOut` (bài học đầy đủ) là hai model tách rời, nên không ai thêm nhầm một trường vào model chung rồi lộ nội dung trả phí. Đọc một bài: chủ sở hữu xem được tất, bài `is_preview` của khóa đã xuất bản thì ai cũng đọc được, còn lại `403 LESSON_LOCKED` — **403 chứ không 404**, vì mục lục đã công khai là bài đó tồn tại, người dùng chỉ cần biết là phải đăng ký.
 
-Bảng `video_assets` tạo sẵn trong migration này để `lessons.video_asset_id` có khóa ngoại thật; luồng upload điền vào nó là task kế tiếp.
+### Video
+
+| Endpoint | Mô tả |
+|---|---|
+| `POST /lessons/{id}/video` | Xin một URL đã ký để trình duyệt tự tải video lên |
+| `POST /video-assets/{id}/complete` | Trình duyệt báo đã tải xong → `processing` + đẩy job Celery |
+| `POST /video-assets/{id}/retry` | Xử lý lại một video `failed` — tệp vẫn còn trong bucket |
+| `GET /video-assets/{id}` | Trạng thái xử lý — màn hình upload hỏi lại theo chu kỳ |
+
+Vòng đời: `uploading → processing → ready`, nhánh hỏng là `failed` kèm `error_message` viết cho giảng viên đọc, không phải cho log. `failed → processing` là đường quay lại: phần lớn lỗi không phải tại tệp mà tại bucket chớp nháy hay worker bị giết giữa chừng, và bắt tải lên nửa gigabyte lần nữa là câu trả lời sai.
+
+**Worker bắt mọi lỗi thay vì ném ra ngoài.** Ném thì Celery sẽ thử lại một video hỏng mãi mãi và người duy nhất cần biết lại không bao giờ thấy. Job giao lại cũng an toàn: `transcode()` bỏ qua asset không ở trạng thái `processing`, nên một lần restart worker không tái xuất bản video đã xong.
+
+**Byte không đi qua backend.** Trình duyệt `PUT` thẳng lên R2 bằng URL đã ký; API chỉ ký rồi đứng ngoài. Đẩy vài trăm MB qua FastAPI sẽ giữ chặt một tiến trình suốt thời gian upload và trả tiền băng thông hai lần, đổi lại chẳng được gì — chữ ký đã nói rõ ai được ghi và ghi vào đúng key nào. `Content-Type` nằm trong phần được ký, nên URL đó không dùng lại được để tải thứ khác lên cùng tên.
+
+**Chưa cấu hình bucket thì trả 503 `STORAGE_NOT_CONFIGURED`**, giống hệt Google OAuth: phần còn lại của hệ thống chạy bình thường, test vẫn xanh, chỉ ba endpoint này ngừng. Cách tạo bucket + khóa: [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
+
+**`services/storage.py` là Protocol, không phải boto3 rải khắp nơi.** Router không biết boto3 tồn tại, test không chạm Cloudflare — cùng khuôn với `google_oauth.py`. `R2_ENDPOINT_URL` cho phép trỏ sang bất kỳ server nào nói giao thức S3 (MinIO chẳng hạn), để trống thì endpoint suy ra từ `R2_ACCOUNT_ID`.
+
+**Tải lên lần nữa là thay hẳn video cũ:** hàng cũ bị xóa và toàn bộ object dưới prefix của nó bị dọn. Giữ lại thì bài học phát một video trong khi bucket trả tiền cho hai. Xóa bài học cũng xóa hàng `video_assets` của nó — bài học là đường duy nhất tới một video, giữ hàng lại là giữ thứ không ai chạm tới được nữa.
+
+Bảng `video_assets` đã có sẵn từ migration mục lục, nên task này **không cần migration mới**.
 
 Hai loại token đi hai đường khác nhau:
 
@@ -193,4 +214,4 @@ Sau khi migration chạy xong, nạp dữ liệu tối thiểu (một tài kho�
 
 Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì. Mật khẩu admin lấy từ `SEED_ADMIN_PASSWORD` (mặc định `devpath-admin` kèm cảnh báo), email từ `SEED_ADMIN_EMAIL`.
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (chờ tài khoản Cloudflare R2), khóa học seed (Phase 2).
+Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (dùng lại `services/storage.py`, chỉ thiếu endpoint), khóa học seed (Phase 2), job dọn object mồ côi (Phase 6 — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới).

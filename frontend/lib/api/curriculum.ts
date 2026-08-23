@@ -1,4 +1,5 @@
 import { apiFetch } from "./client";
+import type { VideoAsset } from "./video";
 
 /**
  * The curriculum, in the two shapes the backend keeps apart on purpose:
@@ -24,6 +25,8 @@ export interface Lesson extends LessonSummary {
   article_content: string | null;
   created_at: string;
   updated_at: string;
+  /** The video and how far its processing got. Null until one is uploaded. */
+  video: VideoAsset | null;
 }
 
 export interface Section {

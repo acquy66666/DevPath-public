@@ -20,7 +20,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
@@ -114,6 +114,10 @@ class Lesson(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UUID(as_uuid=True), ForeignKey("video_assets.id", ondelete="SET NULL")
     )
     article_content: Mapped[str | None] = mapped_column(Text)
+
+    # selectin, not lazy="select": reading a lesson in an async session must
+    # not trigger IO on attribute access, which is what MissingGreenlet is.
+    video_asset: Mapped["VideoAsset | None"] = relationship(lazy="selectin")
 
     __table_args__ = (
         CheckConstraint(

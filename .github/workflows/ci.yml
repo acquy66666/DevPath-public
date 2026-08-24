@@ -208,6 +208,7 @@ jobs:
             -v "$PWD/infra/nginx/templates:/etc/nginx/templates:ro" \
             -v "$PWD/infra/nginx/snippets:/etc/nginx/snippets:ro" \
             -e DOMAIN=devpath.example.com \
+            -e NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
             --entrypoint sh nginx:1.27-alpine -c '
               set -e
               apk add --no-cache openssl >/dev/null

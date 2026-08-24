@@ -182,6 +182,10 @@ services:
       # and writes the result into conf.d. It substitutes only names that are
       # actually exported, so nginx's own $host and $remote_addr survive.
       DOMAIN: ${DOMAIN}
+      # Opt-in: the image's 15-local-resolvers script returns early unless this
+      # is set, and without it ${NGINX_LOCAL_RESOLVERS} reaches the config
+      # unsubstituted and nginx dies on a resolver it cannot parse.
+      NGINX_ENTRYPOINT_LOCAL_RESOLVERS: "1"
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro

@@ -187,9 +187,10 @@ services:
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - letsencrypt:/etc/letsencrypt:ro
       - certbot_webroot:/var/www/certbot:ro
-    depends_on:
-      frontend:
-        condition: service_healthy
+    # No depends_on: the upstreams are resolved per request, not at config
+    # load, so nginx comes up on its own and answers 502 until they arrive.
+    # That is what lets scripts/init-tls.sh get a certificate on a fresh
+    # server before the application images have even been built.
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
       interval: 30s

@@ -6,11 +6,13 @@ import { cache } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { CourseCurriculum } from "@/components/courses/course-curriculum";
+import { CourseReviews } from "@/components/courses/course-reviews";
 import { EnrollButton } from "@/components/courses/enroll-button";
 import { Badge } from "@/components/ui/badge";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
 import { getCurriculum } from "@/lib/api/curriculum";
+import { listCourseReviews } from "@/lib/api/reviews";
 import { LEVEL_LABELS, languageLabel } from "@/lib/courses/labels";
 import { formatDate, formatDuration, formatPrice } from "@/lib/format";
 
@@ -105,7 +107,12 @@ export default async function CourseDetailPage({
   const course = await loadCourse(slug);
   if (course === null) notFound();
 
-  const curriculum = await getCurriculum(course.id);
+  // Both in one round trip rather than one after the other: neither needs the
+  // other's answer, and the page cannot paint until it has both.
+  const [curriculum, reviews] = await Promise.all([
+    getCurriculum(course.id),
+    listCourseReviews(course.id),
+  ]);
   const duration = formatDuration(course.duration_total_s);
   const rated = course.rating_count > 0;
 
@@ -190,6 +197,11 @@ export default async function CourseDetailPage({
             <h2 className="text-xl font-semibold tracking-tight">Nội dung khóa học</h2>
             <CourseCurriculum curriculum={curriculum} />
           </section>
+
+          {/* Server-rendered first page, then a Client Component takes over:
+              the reviews are worth crawling, the form behind them needs a
+              token the server never sees. */}
+          <CourseReviews course={course} initial={reviews} />
         </div>
 
         <aside className="lg:sticky lg:top-8 lg:self-start">

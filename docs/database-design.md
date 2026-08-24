@@ -267,7 +267,7 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `enrollments` | ✅ đã có trong DB | `991bc02a257b` |
 | `lesson_progress` | ✅ đã có trong DB | `b6dea13f199c` |
 | `notes`, `bookmarks` | ✅ đã có trong DB | `852a7bf2510b` |
-| `reviews` | ⏳ Phase 2 (tuần 5) | |
+| `reviews` | ✅ đã có trong DB | `7b60984bf439` |
 | Bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
 
 `search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
@@ -279,9 +279,15 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 
 `students_count` **đã có hành vi** từ revision `991bc02a257b` (ghi danh, Phase 2 tuần 5): tăng bằng `UPDATE ... SET students_count = students_count + 1` trong cùng transaction với dòng `enrollments`, chứ không đọc-sửa-ghi trong Python — hai người ghi danh cùng lúc sẽ mất một lượt. Câu lệnh đó ghim luôn `updated_at` về chính nó, vì cột này là "khóa học đổi lần cuối lúc nào" và người khác đăng ký học không phải là một thay đổi của khóa học.
 
+`rating_avg`, `rating_count` **đã có hành vi** từ revision `7b60984bf439` (đánh giá khóa học, Phase 2 tuần 5), xem `app/services/reviews.py`:
+
+- **Tính lại, không cộng dồn.** `students_count` cộng `+ 1` được vì ghi danh chỉ đi một chiều; điểm trung bình đổi cả hai chiều khi người dùng sửa hoặc xóa đánh giá, nên mỗi lần ghi đều chạy lại `round(avg(rating), 2)` và `count(*)` trên toàn bộ `reviews` của khóa học đó.
+- **Khóa dòng `courses` trước khi tính lại** (`SELECT ... FOR UPDATE`). Hai người đánh giá cùng lúc nếu không khóa sẽ mỗi người tính trung bình trên một ảnh chụp chưa thấy dòng của người kia, và lượt ghi sau xóa lượt ghi trước khỏi tổng. Tranh chấp chỉ trong phạm vi một khóa học và vùng khóa dài đúng hai câu lệnh.
+- Câu `UPDATE` ghim `updated_at` về chính nó, cùng lý do như `students_count`: người khác đánh giá không phải là một thay đổi của khóa học.
+- Quyền ghi: chỉ học viên **đã ghi danh** (403 `NOT_ENROLLED`), và giảng viên không đánh giá được khóa của chính mình (409 `CANNOT_REVIEW_OWN_COURSE`). Khóa học không nhìn thấy được trả 404 trước mọi kiểm tra khác, để endpoint này không thành cách dò khóa học nháp.
+
 Còn lại của `courses` chưa có hành vi:
 
-- `rating_avg`, `rating_count` — chờ `reviews`.
 - `duration_total_s` — chờ tổng thời lượng video được cộng khi asset chuyển `ready`.
 
-Chưa có script `rebuild_course_stats.py` như mục 10 mô tả: nó tính lại cả bốn cột nên chỉ viết được khi cả `reviews` lẫn thời lượng video đã có nguồn.
+Chưa có script `rebuild_course_stats.py` như mục 10 mô tả: nó tính lại cả bốn cột nên chỉ viết được khi `duration_total_s` đã có nguồn.

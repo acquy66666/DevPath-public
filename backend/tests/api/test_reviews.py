@@ -8,12 +8,12 @@ those columns are what the catalogue sorts and filters on.
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
 from httpx import AsyncClient
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
@@ -311,6 +311,17 @@ async def test_reviews_come_back_newest_first(
         json={"rating": 5, "comment": "Sau đó"},
         headers=await sign_in(api_client, other),
     )
+
+    # Everything a test writes shares one transaction, and `now()` in Postgres
+    # is the transaction's start time -- so both rows carry the same instant and
+    # there is nothing for an ORDER BY to sort. Backdating one gives the query
+    # the gap it always has outside a test.
+    await db_session.execute(
+        update(Review)
+        .where(Review.course_id == course.id, Review.user_id == student.id)
+        .values(created_at=datetime.now(UTC) - timedelta(hours=1))
+    )
+    db_session.expire_all()
 
     body = (await api_client.get(f"/api/v1/courses/{course.id}/reviews")).json()
 

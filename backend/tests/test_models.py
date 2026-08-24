@@ -18,6 +18,7 @@ from app.models import (
     LessonProgress,
     Note,
     RefreshToken,
+    Review,
     User,
     VideoAsset,
 )
@@ -45,6 +46,7 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "lesson_progress",
         "notes",
         "bookmarks",
+        "reviews",
     }
 
 
@@ -282,3 +284,19 @@ def test_a_note_cannot_be_empty_or_before_the_video_starts() -> None:
         "ck_notes_content_not_empty",
         "ck_notes_timestamp_non_negative",
     } <= constraint_names(Note)
+
+
+def test_a_review_belongs_to_one_person_and_one_course() -> None:
+    """Unlike an enrolment, a review dies with the course: it is *about* it."""
+    for column in ("course_id", "user_id"):
+        fk = next(iter(Review.__table__.c[column].foreign_keys))
+        assert fk.ondelete == "CASCADE"
+
+    assert "uq_reviews_course_user" in constraint_names(Review)
+
+
+def test_a_review_is_one_to_five_stars_and_never_a_blank_comment() -> None:
+    assert {
+        "ck_reviews_rating",
+        "ck_reviews_comment_not_blank",
+    } <= constraint_names(Review)

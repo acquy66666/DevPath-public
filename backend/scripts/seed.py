@@ -5,8 +5,8 @@ CI, on a teammate's machine, and after every `alembic upgrade head`.
 
     python -m scripts.seed
 
-Course content is not seeded here -- real courses arrive in Phase 2, together
-with the features that display them.
+The courses themselves live in `scripts/seed_courses.py`, which is where the
+four of them and their curricula are written out.
 """
 
 import asyncio
@@ -19,6 +19,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import Category, User
+from scripts.seed_courses import (
+    DEFAULT_INSTRUCTOR_PASSWORD,
+    sample_hls_url,
+    seed_courses,
+)
 
 DEFAULT_ADMIN_EMAIL = "admin@devpath.local"
 DEFAULT_ADMIN_PASSWORD = "devpath-admin"
@@ -95,26 +100,47 @@ async def seed_categories(session: AsyncSession) -> int:
                 )
                 created += 1
 
+    # SessionLocal sets autoflush=False, so without this the rows just added are
+    # still pending and the course seeding below -- which finds its category by
+    # slug -- would not see a single one of them on a fresh database.
+    await session.flush()
+
     return created
 
 
 async def main() -> None:
     using_default_password = "SEED_ADMIN_PASSWORD" not in os.environ
 
+    using_default_instructor_password = "SEED_INSTRUCTOR_PASSWORD" not in os.environ
+
     async with SessionLocal() as session:
         admin, admin_created = await seed_admin(session)
         categories_created = await seed_categories(session)
+        # After the categories: every course points at one of them by slug.
+        instructors_created, courses_created = await seed_courses(session)
         await session.commit()
 
     status = "created" if admin_created else "already existed"
     print(f"admin      : {admin.email} ({status})")
     print(f"categories : {categories_created} created")
+    print(f"instructors: {instructors_created} created")
+    print(f"courses    : {courses_created} created")
+    print(f"sample HLS : {sample_hls_url()}")
 
+    weak = []
     if admin_created and using_default_password:
+        weak.append(f"admin ({DEFAULT_ADMIN_PASSWORD!r}, SEED_ADMIN_PASSWORD)")
+    if instructors_created and using_default_instructor_password:
+        weak.append(
+            f"instructor ({DEFAULT_INSTRUCTOR_PASSWORD!r}, SEED_INSTRUCTOR_PASSWORD)"
+        )
+
+    if weak:
         print(
-            f"\nWARNING: admin password is the built-in default "
-            f"({DEFAULT_ADMIN_PASSWORD!r}). Set SEED_ADMIN_PASSWORD before "
-            f"seeding anything that is reachable from the internet.",
+            "\nWARNING: these accounts have built-in default passwords: "
+            + "; ".join(weak)
+            + ". Set the environment variables named above before seeding "
+            "anything reachable from the internet.",
             file=sys.stderr,
         )
 

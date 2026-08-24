@@ -206,12 +206,21 @@ Migration: `576c29b76f4e` tạo `users`, `categories`, `courses` cùng ba extens
 .venv\Scripts\python.exe -m alembic upgrade head
 ```
 
-Sau khi migration chạy xong, nạp dữ liệu tối thiểu (một tài khoản admin, 8 danh mục 2 cấp):
+Sau khi migration chạy xong, nạp dữ liệu (một tài khoản admin, 8 danh mục 2 cấp, 2 giảng viên và 4 khóa học lập trình có mục lục đầy đủ):
 
 ```bash
 .venv\Scripts\python.exe -m scripts.seed
 ```
 
-Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì. Mật khẩu admin lấy từ `SEED_ADMIN_PASSWORD` (mặc định `devpath-admin` kèm cảnh báo), email từ `SEED_ADMIN_EMAIL`.
+Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đi không tạo thêm gì; một khóa học đã có thì bỏ qua nguyên vẹn, kể cả khi ai đó đã sửa tay.
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (dùng lại `services/storage.py`, chỉ thiếu endpoint), khóa học seed (Phase 2), job dọn object mồ côi (Phase 6 — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới).
+| Biến môi trường | Mặc định | Dùng cho |
+|---|---|---|
+| `SEED_ADMIN_EMAIL` | `admin@devpath.local` | Tài khoản quản trị |
+| `SEED_ADMIN_PASSWORD` | `devpath-admin` (kèm cảnh báo) | Mật khẩu quản trị |
+| `SEED_INSTRUCTOR_PASSWORD` | `devpath-instructor` (kèm cảnh báo) | Mật khẩu 2 tài khoản giảng viên |
+| `SEED_SAMPLE_HLS_URL` | luồng demo công khai của hls.js | Video cho mọi bài học dạng video |
+
+Nội dung khóa học nằm ở `scripts/seed_courses.py`. **Video là của người khác:** mọi bài học video đều trỏ vào một luồng HLS mẫu công khai, nên khóa học seed phát được cả trên máy chưa cấu hình R2 — đặt `SEED_SAMPLE_HLS_URL` để trỏ sang manifest của bạn. Seed không upload gì lên bucket; upload thật đi qua luồng presigned URL và worker transcode.
+
+Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (dùng lại `services/storage.py`, chỉ thiếu endpoint), job dọn object mồ côi (Phase 6 — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới).

@@ -24,7 +24,7 @@
 - [x] Video player HLS (hls.js): lưu `last_position_s` (heartbeat ~10s), tốc độ phát, đánh dấu lesson hoàn thành
 - [x] Ghi chú theo timestamp + bookmark lesson
 - [x] Review & rating khóa học (chỉ khi đã enroll)
-- [ ] Seed data thật: ≥3 khóa học lập trình có video + curriculum đầy đủ
+- [x] Seed data thật: ≥3 khóa học lập trình có video + curriculum đầy đủ
 - [ ] Deploy lần đầu lên VPS (docker compose + nginx + HTTPS)
 
 ## Gate cuối phase

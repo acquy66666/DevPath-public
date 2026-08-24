@@ -52,9 +52,18 @@ def public_media_url(key: str | None) -> str | None:
 
     Returns None when no public base URL is configured, rather than raising:
     a missing playback host must not stop a lesson from being read.
+
+    A key that is already an absolute URL is handed back untouched. Only seeded
+    demo content arrives that way -- it points at a manifest somebody else is
+    hosting, so the sample courses play on a machine with no bucket at all. The
+    transcode worker never writes one: every key it produces is relative to the
+    bucket, which is what lets the bucket and the CDN host change.
     """
     if key is None:
         return None
+
+    if key.startswith(("http://", "https://")):
+        return key
 
     base = get_settings().r2_public_base_url.rstrip("/")
     return f"{base}/{key}" if base else None

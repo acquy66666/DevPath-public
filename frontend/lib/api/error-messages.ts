@@ -49,6 +49,11 @@ const MESSAGES: Record<string, string> = {
   INVALID_ORDER:
     "Thứ tự vừa gửi không khớp với nội dung khóa học. Tải lại trang rồi sắp xếp lại nhé.",
 
+  // Đánh giá khóa học.
+  NOT_ENROLLED: "Bạn cần đăng ký khóa học này trước khi đánh giá.",
+  CANNOT_REVIEW_OWN_COURSE: "Bạn là giảng viên của khóa học này nên không đánh giá được.",
+  REVIEW_NOT_FOUND: "Đánh giá này không còn tồn tại. Tải lại trang giúp mình nhé.",
+
   // Video.
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",

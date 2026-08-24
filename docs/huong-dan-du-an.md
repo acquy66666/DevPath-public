@@ -8,8 +8,9 @@ Tài liệu này dành cho người phải **giải thích và sửa được** 
 
 Làm theo thứ tự này, đừng bỏ bước nào:
 
-- [ ] **Stack chạy được.** `docker compose -f infra/docker-compose.yml up -d` rồi mở http://localhost:3000. Đây là rủi ro lớn nhất — xem mục 3 nếu Docker đang hỏng.
-- [ ] **Có dữ liệu.** Trang `/khoa-hoc` phải hiện 4 khóa học. Chưa có thì chạy seed (mục 3.4).
+- [ ] **Docker chạy được.** Khởi động bằng `start-docker.ps1`, không bấm icon — xem mục 3.2, đây là rủi ro lớn nhất.
+- [ ] **Stack lên đủ.** `docker compose -f infra/docker-compose.yml up -d` rồi mở http://localhost:3000.
+- [ ] **Có dữ liệu.** Trang `/khoa-hoc` phải hiện 4 khóa học. Chưa có thì chạy seed (mục 3.5).
 - [ ] **Đăng nhập được** bằng tài khoản seed, vào được một khóa học, video chạy.
 - [ ] **Sửa thử một chỗ** theo mục 5 rồi hoàn tác (`git checkout -- <file>`), để chắc chắn hot reload hoạt động trên máy bạn.
 - [ ] **Biết mình đang ở đâu trong kế hoạch:** đọc lại `docs/plan/phase-2-core-platform.md`, các checkbox là trạng thái thật.
@@ -87,13 +88,23 @@ Lần đầu mất vài phút để build. Sau đó:
 | http://localhost:8000/docs | Tài liệu API tự sinh (Swagger) — **mở cái này cho giáo viên xem, nó gây ấn tượng tốt** |
 | localhost:5432 | Postgres |
 
-### 3.2 Nếu Docker đang hỏng
+### 3.2 Máy dev này: chạy Docker bằng script, đừng bấm icon
 
-Máy này hiện **không chạy được Docker Desktop**. Đây là rủi ro số một cho buổi bảo vệ — sửa nó trước mọi thứ khác. Nếu đến sát ngày vẫn chưa xong, đường vòng là cài Postgres 16 trực tiếp lên Windows:
+Máy này có một lỗi ở tầng hệ thống file Windows: **file socket AF_UNIX Docker tạo ra thì sau đó không xóa được nữa** (lỗi 1920). Mỗi lần máy ngủ, Docker bị giết và để lại socket; lần bật sau nó phải xóa socket cũ trước khi bind lại, xóa không được nên backend crash ngay.
 
-1. Cài PostgreSQL 16 + extension `pgvector` (migration đầu tiên tạo `vector`, `unaccent`, `pg_trgm`; hai cái sau có sẵn trong bản cài chuẩn, `pgvector` phải cài thêm).
-2. Tạo database `devpath`, user `devpath`, mật khẩu `devpath`.
-3. Chạy backend từ venv:
+Vì vậy hãy khởi động Docker bằng:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File C:\Users\Admin\start-docker.ps1
+```
+
+Script dọn socket cũ rồi mới bật Docker và chờ daemon sẵn sàng. **Sau mỗi lần máy ngủ hoặc khởi động lại đều phải chạy nó** — bấm icon Docker Desktop sẽ ra màn hình lỗi đỏ.
+
+Chữa tận gốc cần quyền Administrator và một lần khởi động lại: mở PowerShell as administrator, chạy `chkdsk C: /f`, gõ `Y` để hẹn lịch, rồi khởi động lại máy và để nó chạy xong. **Nên làm việc này trước ngày bảo vệ**, đừng để phụ thuộc vào script.
+
+### 3.3 Không có Docker thì sao
+
+Đường vòng nếu Docker vẫn không lên: cài PostgreSQL 16 trực tiếp lên Windows kèm extension `pgvector` (migration đầu tiên tạo `vector`, `unaccent`, `pg_trgm`; hai cái sau có sẵn trong bản cài chuẩn). Tạo database `devpath`, user `devpath`, mật khẩu `devpath`, rồi chạy backend và frontend trực tiếp:
 
 ```bash
 cd backend && .venv\Scripts\python.exe -m alembic upgrade head
@@ -103,23 +114,21 @@ cd backend && .venv\Scripts\python.exe -m alembic upgrade head
 cd backend && .venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-4. Chạy frontend riêng:
-
 ```bash
 cd frontend && npm run dev
 ```
 
 Redis chỉ cần cho Celery (chuyển mã video). Không có Redis thì mọi thứ khác vẫn chạy, chỉ upload video mới hỏng.
 
-### 3.3 Chạy test
+### 3.4 Chạy test
 
 ```bash
 cd backend && .venv\Scripts\python.exe -m pytest -q
 ```
 
-Không có Postgres thì các test chạm database sẽ **skip** chứ không fail — đó là chủ ý, xem `backend/tests/conftest.py`. Trên CI thì ngược lại: không kết nối được là fail, để một service container hỏng không bao giờ hiện ra thành build xanh.
+Với stack đang chạy, kết quả là **471 passed, 2 skipped**. Không có Postgres thì các test chạm database sẽ **skip** chứ không fail — đó là chủ ý, xem `backend/tests/conftest.py`. Trên CI thì ngược lại: không kết nối được là fail, để một service container hỏng không bao giờ hiện ra thành build xanh.
 
-### 3.4 Nạp dữ liệu mẫu
+### 3.5 Nạp dữ liệu mẫu
 
 ```bash
 cd backend && .venv\Scripts\python.exe -m scripts.seed

@@ -1,6 +1,6 @@
 # Hướng dẫn dự án DevPath — vận hành, cấu trúc, và cách sửa
 
-Tài liệu này dành cho người phải **giải thích và sửa được** hệ thống này tại chỗ. Mỗi đường dẫn file đều kèm số dòng đã kiểm chứng tại thời điểm viết; nếu bạn sửa code thì số dòng lệch đi, nhưng tên hàm và tên hằng thì vẫn tìm được bằng `Ctrl+Shift+F`.
+Tài liệu này dành cho người phải **giải thích và sửa được** hệ thống này tại chỗ. Phần chạy trang web từng bước, cấu trúc file và vai trò của Docker nằm ở [huong-dan-chay-va-docker.md](huong-dan-chay-va-docker.md). Mỗi đường dẫn file đều kèm số dòng đã kiểm chứng tại thời điểm viết; nếu bạn sửa code thì số dòng lệch đi, nhưng tên hàm và tên hằng thì vẫn tìm được bằng `Ctrl+Shift+F`.
 
 ---
 

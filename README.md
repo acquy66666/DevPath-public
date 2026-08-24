@@ -53,7 +53,10 @@ Nạp dữ liệu mẫu (một admin, 8 danh mục, 2 giảng viên, 4 khóa h�
 cd backend && .venv\Scripts\python.exe -m scripts.seed
 ```
 
-Chi tiết vận hành, cách sửa từng phần của giao diện, và những chỗ dễ vấp: [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md).
+Hai tài liệu đi kèm:
+
+- [docs/huong-dan-chay-va-docker.md](docs/huong-dan-chay-va-docker.md) — chạy trang web từng bước, cấu trúc file, và vai trò của Docker trong dự án
+- [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md) — sửa từng phần của giao diện, luồng một request, và những chỗ dễ vấp
 
 ## Trạng thái
 

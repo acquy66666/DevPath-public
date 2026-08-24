@@ -26,8 +26,11 @@ if [[ "${1:-}" == "--staging" ]]; then
     echo "==> Staging CA: the certificate will not be trusted by browsers."
 fi
 
-# shellcheck disable=SC1091
-set -a; source .env.prod; set +a
+# Export everything the file sets, so DOMAIN and ACME_EMAIL below come from it.
+set -a
+# shellcheck disable=SC1091  # .env.prod exists on the server, not in the repo.
+source .env.prod
+set +a
 
 : "${DOMAIN:?set DOMAIN in .env.prod}"
 : "${ACME_EMAIL:?set ACME_EMAIL in .env.prod}"

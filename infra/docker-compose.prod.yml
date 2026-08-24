@@ -1,0 +1,224 @@
+# Production stack for the VPS.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# A separate file rather than an override of docker-compose.yml. An override
+# can add to a list but never remove from one, and the two things that must be
+# gone in production -- the published Postgres/Redis ports and the source bind
+# mounts -- are exactly the entries an override cannot take away.
+#
+# What changes from development, and why:
+#
+#   * only nginx publishes ports. Postgres, Redis, the API and Next are
+#     reachable on the compose network and nowhere else, so the firewall has
+#     two ports to think about instead of six.
+#   * every service restarts unless it was stopped on purpose, so a reboot of
+#     the VPS brings the site back without anybody logging in.
+#   * images are built from the `production` target: no reloader, no test
+#     tooling, and Next served from a standalone build rather than `next dev`.
+#   * no bind mounts. What is running is what was built, which is the only way
+#     a rollback means anything.
+name: devpath
+
+x-backend-env: &backend-env
+  ENV: production
+  DEBUG: "false"
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  REDIS_URL: redis://redis:6379/0
+  # No default: the app refuses to start in production with the dev secret, and
+  # compose refuses to start without this set at all.
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env.prod}
+  GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+  GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+  GOOGLE_REDIRECT_URI: https://${DOMAIN:?set DOMAIN in .env.prod}/api/v1/auth/google/callback
+  FRONTEND_URL: https://${DOMAIN}
+  AUTO_APPROVE_COURSES: ${AUTO_APPROVE_COURSES:-true}
+  R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET: ${R2_BUCKET:-devpath-media}
+  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
+  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  # One origin, and it is the site's own. The browser calls /api on the same
+  # host it loaded the page from, so this only ever matters if something else
+  # is pointed at this API on purpose.
+  CORS_ORIGINS: https://${DOMAIN}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ../backend
+      target: production
+    image: devpath-backend:prod
+    restart: unless-stopped
+    # Two workers on a small VPS: enough that one slow request does not block
+    # the health check, few enough to leave room for Postgres and the worker.
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --workers
+      - "${UVICORN_WORKERS:-2}"
+      # Behind nginx, so the client address arrives in X-Forwarded-For. Only
+      # the proxy is trusted to set it.
+      - --proxy-headers
+      - --forwarded-allow-ips
+      - "*"
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  worker:
+    build:
+      context: ../backend
+      target: production
+    image: devpath-backend:prod
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.workers.celery_app
+      - worker
+      - --loglevel=info
+      # One transcode at a time: ffmpeg will use whatever CPU it is given, and
+      # two of them on a small VPS starve the API instead of finishing sooner.
+      - --concurrency=${CELERY_CONCURRENCY:-1}
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ../frontend
+      target: production
+      args:
+        # Baked into the client bundle at build time, which is why the domain
+        # has to be known here. Same origin as the page itself: nginx routes
+        # /api to the backend, so the browser never makes a cross-site request
+        # and the refresh cookie is not third-party.
+        NEXT_PUBLIC_API_BASE_URL: https://${DOMAIN}
+        NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
+    image: devpath-frontend:prod
+    restart: unless-stopped
+    environment:
+      # Server Components stay inside the compose network; only the browser
+      # goes out through nginx.
+      API_BASE_URL_INTERNAL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://localhost:3000').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # The image's entrypoint runs envsubst over /etc/nginx/templates/*.template
+      # and writes the result into conf.d. It substitutes only names that are
+      # actually exported, so nginx's own $host and $remote_addr survive.
+      DOMAIN: ${DOMAIN}
+      # Opt-in: the image's 15-local-resolvers script returns early unless this
+      # is set, and without it ${NGINX_LOCAL_RESOLVERS} reaches the config
+      # unsubstituted and nginx dies on a resolver it cannot parse.
+      NGINX_ENTRYPOINT_LOCAL_RESOLVERS: "1"
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+      - letsencrypt:/etc/letsencrypt:ro
+      - certbot_webroot:/var/www/certbot:ro
+    # No depends_on: the upstreams are resolved per request, not at config
+    # load, so nginx comes up on its own and answers 502 until they arrive.
+    # That is what lets scripts/init-tls.sh get a certificate on a fresh
+    # server before the application images have even been built.
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Wakes up twice a day, renews anything inside 30 days of expiry, and does
+  # nothing the rest of the time. nginx picks a new certificate up on reload,
+  # which the deploy script does after a successful renewal.
+  certbot:
+    image: certbot/certbot:latest
+    restart: unless-stopped
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+      - certbot_webroot:/var/www/certbot
+    entrypoint: >-
+      sh -c "trap exit TERM;
+      while :; do
+        certbot renew --webroot --webroot-path /var/www/certbot --quiet;
+        sleep 12h & wait $${!};
+      done"
+
+volumes:
+  postgres_data:
+  redis_data:
+  letsencrypt:
+  certbot_webroot:

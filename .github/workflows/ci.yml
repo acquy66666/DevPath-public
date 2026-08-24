@@ -151,3 +151,100 @@ jobs:
         run: |
           python -m scripts.seed
           python -m scripts.seed
+
+  deploy-config:
+    name: Deploy config — compose, nginx, production images
+    runs-on: ubuntu-latest
+
+    # The VPS is the one thing CI cannot stand in for, so it checks everything
+    # that comes before it: that the compose file merges, that nginx accepts
+    # the config with a certificate in place, and that both production images
+    # actually build. A broken Dockerfile found here costs a minute; found on
+    # the server it costs the deploy.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fill in the secrets compose refuses to start without
+        working-directory: infra
+        run: |
+          sed -e 's/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=ci-not-a-real-password/' \
+              -e 's/^JWT_SECRET=$/JWT_SECRET=ci-not-a-real-secret/' \
+              .env.prod.example > .env.prod
+
+      - name: Compose file is valid
+        working-directory: infra
+        run: docker compose -f docker-compose.prod.yml --env-file .env.prod config -q
+
+      # The two mistakes worth failing the build over: a database port left
+      # published to the internet, and a source bind mount left in, which would
+      # make the running code something other than the code that was built.
+      - name: Only nginx publishes ports, and nothing is bind-mounted
+        working-directory: infra
+        run: |
+          rendered="$(docker compose -f docker-compose.prod.yml --env-file .env.prod config)"
+
+          published="$(printf '%s' "$rendered" | grep -c 'published:' || true)"
+          if [ "$published" -ne 2 ]; then
+            echo "Expected exactly two published ports (80 and 443), found $published:" >&2
+            printf '%s' "$rendered" | grep -n -B 8 'published:' >&2
+            exit 1
+          fi
+
+          if printf '%s' "$rendered" | grep -qE 'source: .*/(backend|frontend)$'; then
+            echo "A source tree is bind-mounted into a production container." >&2
+            exit 1
+          fi
+
+      - name: Shell scripts
+        run: shellcheck infra/scripts/*.sh
+
+      # Runs the image's own entrypoint, so envsubst fills the template exactly
+      # as it will on the server. The self-signed certificate mirrors what
+      # init-tls.sh puts there first -- without one nginx cannot load the config
+      # at all, which is the chicken-and-egg that script exists to break.
+      - name: nginx accepts the rendered config
+        run: |
+          docker run --rm \
+            -v "$PWD/infra/nginx/templates:/etc/nginx/templates:ro" \
+            -v "$PWD/infra/nginx/snippets:/etc/nginx/snippets:ro" \
+            -e DOMAIN=devpath.example.com \
+            -e NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1 \
+            --entrypoint sh nginx:1.27-alpine -c '
+              set -e
+              apk add --no-cache openssl >/dev/null
+              mkdir -p /etc/letsencrypt/live/devpath.example.com
+              openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+                -keyout /etc/letsencrypt/live/devpath.example.com/privkey.pem \
+                -out /etc/letsencrypt/live/devpath.example.com/fullchain.pem \
+                -subj /CN=devpath.example.com 2>/dev/null
+              /docker-entrypoint.sh nginx -t
+            '
+
+      - name: Backend production image builds
+        run: docker build --target production -t devpath-backend:ci backend
+
+      # With the build argument, because NEXT_PUBLIC_* is inlined into the
+      # bundle by `next build` and a missing one fails quietly at runtime
+      # rather than loudly here.
+      - name: Frontend production image builds
+        run: |
+          docker build --target production \
+            --build-arg NEXT_PUBLIC_API_BASE_URL=https://devpath.example.com \
+            -t devpath-frontend:ci frontend
+
+      # The standalone server has to be in the image and has to start. It
+      # cannot render a page without the API, so answering at all is the test.
+      - name: Frontend image starts and serves
+        run: |
+          docker run -d --name devpath-fe -p 3000:3000 devpath-frontend:ci
+          for _ in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:3000/dang-nhap; then
+              echo "Next is serving."
+              docker rm -f devpath-fe >/dev/null
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Next did not answer within 60s:" >&2
+          docker logs devpath-fe >&2
+          exit 1

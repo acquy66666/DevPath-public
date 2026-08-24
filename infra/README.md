@@ -5,11 +5,15 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ## Cấu trúc
 
 ```
-docker-compose.yml       postgres (pgvector), redis, backend, worker, frontend
-docker-compose.prod.yml  override cho VPS (nginx, HTTPS, restart policy) — chưa có
+docker-compose.yml       Máy dev: postgres (pgvector), redis, backend, worker, frontend
+docker-compose.prod.yml  VPS: thêm nginx + certbot, bỏ cổng DB, bỏ bind mount
+.env.prod.example        Mẫu biến môi trường cho VPS
 postgres/init/           SQL chạy một lần khi volume rỗng (CREATE EXTENSION)
-nginx/                   reverse proxy, cấu hình TLS
-scripts/                 deploy, backup DB (pg_dump → R2), restore
+nginx/templates/         vhost, `${DOMAIN}` do entrypoint của image điền bằng envsubst
+nginx/snippets/          Header proxy và header bảo mật dùng chung
+scripts/init-tls.sh      Xin chứng chỉ Let's Encrypt lần đầu
+scripts/deploy.sh        Build → migrate → khởi động → đợi healthy
+scripts/                 backup DB (pg_dump → R2), restore — Phase 6
 ```
 
 ## Chạy stack ở máy dev
@@ -83,8 +87,85 @@ Biến `R2_*` truyền từ `infra/.env` vào cả hai service. Để trống th
 - Secrets đi qua `.env` (đã gitignore), không bao giờ commit. Mỗi service có `.env.example` liệt kê biến cần thiết.
 - Backup DB tự động là task của [Phase 6](../docs/plan/phase-6-hardening-deploy.md); script restore phải được thử khôi phục thật ít nhất một lần.
 
+## Deploy lên VPS
+
+Stack production là **file riêng**, không phải override. Override chỉ thêm được vào danh sách chứ không bỏ bớt, mà hai thứ bắt buộc phải biến mất trên VPS — cổng Postgres/Redis publish ra ngoài và bind mount mã nguồn — lại đúng là những mục không gỡ được bằng override.
+
+Khác biệt so với máy dev:
+
+- **Chỉ nginx mở cổng.** Postgres, Redis, API và Next chỉ nhìn thấy nhau trong mạng compose, nên tường lửa chỉ phải nghĩ về 2 cổng thay vì 6.
+- **Image dựng từ target `production`:** không reloader, không pytest/ruff, Next chạy bản `next build` standalone chứ không phải `next dev`.
+- **Không bind mount.** Thứ đang chạy đúng là thứ đã build — điều kiện để rollback có ý nghĩa.
+- `restart: unless-stopped` khắp nơi, nên VPS khởi động lại là site tự lên.
+
+### Yêu cầu trước
+
+| Thứ | Ghi chú |
+|---|---|
+| VPS Ubuntu 22.04+ | 2 vCPU / 4 GB là vừa cho cấu hình mặc định trong `.env.prod.example` |
+| Docker Engine + plugin compose | Bản chính chủ của Docker, không phải `docker.io` của distro |
+| Tên miền | Bản ghi A trỏ về IP VPS **trước khi** xin chứng chỉ |
+| Cổng 80 và 443 mở | ACME là một request HTTP đi vào từ Let's Encrypt; không có gì thay thế được |
+
+### Lần đầu
+
+```bash
+git clone https://github.com/acquy66666/DevPath.git && cd DevPath/infra
+```
+
+```bash
+cp .env.prod.example .env.prod && chmod 600 .env.prod
+```
+
+Điền `DOMAIN`, `ACME_EMAIL`, `POSTGRES_PASSWORD`, `JWT_SECRET` (hai cái sau sinh bằng `openssl rand`, đừng tự nghĩ ra). Compose từ chối khởi động nếu thiếu, và backend từ chối khởi động nếu `JWT_SECRET` vẫn là giá trị dev.
+
+```bash
+./scripts/init-tls.sh --staging
+```
+
+Chạy `--staging` trước: CA thử nghiệm của Let's Encrypt không giới hạn số lần, nên nếu DNS chưa kịp lan hoặc tường lửa còn chặn thì thử lại thoải mái. Trình duyệt sẽ báo chứng chỉ không tin cậy — đúng như mong đợi. Khi thấy nó chạy trót lọt thì chạy lại **không có** `--staging` để lấy chứng chỉ thật.
+
+```bash
+./scripts/deploy.sh --seed
+```
+
+`--seed` chỉ dùng lần đầu: nó tạo admin, 8 danh mục và 4 khóa học mẫu. Nhớ đặt `SEED_ADMIN_PASSWORD` và `SEED_INSTRUCTOR_PASSWORD` trong môi trường trước khi chạy, nếu không mật khẩu mặc định sẽ nằm trên một máy có mặt trên Internet.
+
+### Những lần sau
+
+```bash
+git fetch origin && git log --oneline HEAD..origin/main
+```
+
+```bash
+git merge --ff-only origin/main && ./scripts/deploy.sh
+```
+
+`deploy.sh` cố tình **không** tự `git pull`: chọn commit nào lên production là một quyết định, script tự fetch là lấy mất quyết định đó. Thứ tự bên trong là build → migrate → khởi động → đợi healthy, và nó thoát với mã lỗi kèm `docker compose ps` nếu sau 3 phút còn service chưa healthy.
+
+Thứ tự "migrate trước, khởi động sau" hợp với loại thay đổi dự án này hay làm (thêm bảng, thêm cột nullable). Migration **xóa hoặc đổi tên** thì phải đi hai bước: deploy code chịu được cả hai hình dạng trước, rồi mới migrate.
+
+### Chứng chỉ tự gia hạn
+
+Service `certbot` dậy 12 tiếng một lần, gia hạn thứ gì còn dưới 30 ngày và không làm gì trong phần lớn thời gian còn lại. nginx nhận chứng chỉ mới khi reload — deploy lần kế tiếp là đủ, hoặc chủ động:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec nginx nginx -s reload
+```
+
+### Kiểm tra khi có sự cố
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+```
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail 100 backend
+```
+
+Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không phải phỏng đoán — `running (unhealthy)` nghĩa là container sống nhưng không làm được việc, và đó thường là biến môi trường sai chứ không phải code hỏng.
+
 ## Chưa có gì ở đây
 
-- `docker-compose.prod.yml` và cấu hình `nginx/` — viết khi deploy VPS ở [Phase 2](../docs/plan/phase-2-core-platform.md).
 - Service `grader` — thêm ở [Phase 3](../docs/plan/phase-3-code-grading.md) cùng lúc với code grader, qua checklist skill `sandbox-grading`.
 - `scripts/` backup và restore DB — [Phase 6](../docs/plan/phase-6-hardening-deploy.md).

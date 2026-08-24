@@ -100,7 +100,9 @@ powershell -ExecutionPolicy Bypass -File C:\Users\Admin\start-docker.ps1
 
 Script dọn socket cũ rồi mới bật Docker và chờ daemon sẵn sàng. **Sau mỗi lần máy ngủ hoặc khởi động lại đều phải chạy nó** — bấm icon Docker Desktop sẽ ra màn hình lỗi đỏ.
 
-Chữa tận gốc cần quyền Administrator và một lần khởi động lại: mở PowerShell as administrator, chạy `chkdsk C: /f`, gõ `Y` để hẹn lịch, rồi khởi động lại máy và để nó chạy xong. **Nên làm việc này trước ngày bảo vệ**, đừng để phụ thuộc vào script.
+Đây **không phải hỏng ổ đĩa**: reparse tag của các file đó đọc ra `0x80000023` — đúng chuẩn `IO_REPARSE_TAG_AF_UNIX`, dữ liệu hoàn toàn lành. `chkdsk` không giúp gì. Vấn đề là Windows không cho mở file socket đó bằng bất kỳ cờ nào, kể cả `FILE_FLAG_OPEN_REPARSE_POINT`, nên không tiến trình nào ở tầng người dùng xóa nổi nó. Di chuyển cả thư mục thì được — và đó chính là việc script làm.
+
+Nói cách khác: **script không phải giải pháp tạm, nó là cách vận hành Docker trên máy này.** Chỉ cần nhớ chạy nó sau mỗi lần máy ngủ.
 
 ### 3.3 Không có Docker thì sao
 

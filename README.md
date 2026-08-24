@@ -32,9 +32,34 @@ Khóa luận tốt nghiệp: nền tảng e-learning kiểu Udemy tích hợp AI
 - [Kế hoạch 14 tuần](docs/plan/00-overview.md) — trạng thái dự án nằm ở checkbox trong các file phase
 - [Workflow phát triển](docs/workflow.md)
 
+## Chạy toàn bộ hệ thống
+
+```bash
+cp infra/.env.example infra/.env
+```
+
+```bash
+docker compose -f infra/docker-compose.yml up -d
+```
+
+| Địa chỉ | Nội dung |
+|---|---|
+| http://localhost:3000 | Giao diện |
+| http://localhost:8000/docs | Tài liệu API tự sinh |
+
+Nạp dữ liệu mẫu (một admin, 8 danh mục, 2 giảng viên, 4 khóa học có mục lục đầy đủ):
+
+```bash
+cd backend && .venv\Scripts\python.exe -m scripts.seed
+```
+
+Chi tiết vận hành, cách sửa từng phần của giao diện, và những chỗ dễ vấp: [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md).
+
 ## Trạng thái
 
-**Phase 1 — Foundation.** Backend FastAPI và frontend Next.js đều chạy được, frontend gọi được `/api/v1/health` của backend — xem [backend/README.md](backend/README.md) và [frontend/README.md](frontend/README.md). Kế tiếp: `docker compose`, migration đầu tiên và CI, theo [phase-1-foundation.md](docs/plan/phase-1-foundation.md). Hướng dẫn chạy cả hệ thống bằng một lệnh sẽ bổ sung vào đây khi `infra/docker-compose.yml` xong.
+**Phase 2 — Core Platform, tuần 5.** Đã chạy được đầu-cuối: đăng ký/đăng nhập (email + Google), phân quyền 3 vai trò, giảng viên tạo khóa học và dựng mục lục kéo-thả, upload video lên R2 kèm worker chuyển mã HLS, tìm kiếm toàn văn tiếng Việt, ghi danh khóa miễn phí, trình phát nhớ vị trí, ghi chú theo mốc thời gian, đánh dấu bài, đánh giá & xếp hạng. Hạ tầng deploy (compose production, nginx, HTTPS) đã viết và được CI kiểm chứng nhưng **chưa deploy lên máy chủ thật**.
+
+Kế tiếp: Phase 3 — chấm mã nguồn tự động trong Docker sandbox. Trạng thái chi tiết nằm ở checkbox trong [docs/plan/phase-2-core-platform.md](docs/plan/phase-2-core-platform.md).
 
 ## Quy ước
 

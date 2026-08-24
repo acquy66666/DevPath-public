@@ -1,0 +1,106 @@
+# The one vhost. `${DOMAIN}` is filled in by the nginx image's entrypoint,
+# which runs envsubst over this directory at container start -- it only
+# substitutes names that are actually exported, so nginx's own $host,
+# $remote_addr and friends below come through untouched.
+#
+# Two server blocks: port 80 exists to answer ACME and to send everyone to
+# HTTPS, port 443 is the site.
+
+# A WebSocket upgrade needs `Connection: upgrade`, an ordinary request needs
+# `Connection: close`, and this is the standard way to say "whichever applies".
+# conf.d is included inside `http`, which is the only level a map is allowed at.
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${DOMAIN};
+
+    # Let's Encrypt writes its proof here through the shared webroot volume.
+    # Must stay reachable over plain HTTP: renewal happens while the old
+    # certificate is still installed, but the challenge never uses TLS.
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
+    # For the container health check, which has no certificate to trust.
+    location = /healthz {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 "ok\n";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    http2 on;
+    server_name ${DOMAIN};
+
+    ssl_certificate /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    include /etc/nginx/snippets/security-headers.conf;
+
+    # Uploads do not come through here. A video or an avatar goes from the
+    # browser straight to R2 with a presigned URL, so the largest body nginx
+    # ever carries is a JSON form.
+    client_max_body_size 2m;
+
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types
+        application/javascript
+        application/json
+        application/manifest+json
+        image/svg+xml
+        text/css
+        text/plain
+        text/xml;
+
+    # The API. Same origin as the page, which is what keeps the refresh cookie
+    # first-party and the browser from ever sending a preflight.
+    location /api/ {
+        include /etc/nginx/snippets/proxy.conf;
+        proxy_pass http://backend:8000;
+
+        # Nothing streams yet; Phase 3 sends grading verdicts back live and
+        # this is what a WebSocket upgrade needs when it does.
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+
+        # A transcode kick-off or a slow query should not turn into a 504
+        # while the browser is still waiting.
+        proxy_read_timeout 120s;
+    }
+
+    # Next's build output is content-hashed, so it can be cached hard and
+    # forever. Everything else Next decides for itself.
+    location /_next/static/ {
+        include /etc/nginx/snippets/proxy.conf;
+        proxy_pass http://frontend:3000;
+        proxy_cache_valid 200 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    location / {
+        include /etc/nginx/snippets/proxy.conf;
+        proxy_pass http://frontend:3000;
+    }
+}

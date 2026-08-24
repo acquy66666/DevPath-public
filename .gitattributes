@@ -1,0 +1,9 @@
+# The deploy scripts run on the VPS. A CRLF checkout on a Windows machine
+# would travel into the repo and break the shebang on Linux, so these are
+# pinned to LF regardless of core.autocrlf.
+*.sh text eol=lf
+
+# Same reasoning: read inside a Linux container, never by a Windows tool.
+*.template text eol=lf
+Dockerfile text eol=lf
+*.conf text eol=lf

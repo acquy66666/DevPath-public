@@ -1,6 +1,8 @@
 # Development stack — `docker compose up` from this directory brings up
-# everything the platform needs. Production overrides (nginx, TLS, restart
-# policies) land in docker-compose.prod.yml when the VPS deploy happens.
+# everything the platform needs. The VPS runs docker-compose.prod.yml instead,
+# which is a separate file rather than an override: this one publishes database
+# ports and bind-mounts source, and an override can add to a list but never
+# take something off one.
 name: devpath
 
 x-backend-env: &backend-env
@@ -77,6 +79,7 @@ services:
   backend:
     build:
       context: ../backend
+      target: development
     image: devpath-backend:dev
     command:
       ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -106,6 +109,7 @@ services:
     # compiling the layers twice.
     build:
       context: ../backend
+      target: development
     image: devpath-backend:dev
     command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info"]
     environment: *backend-env
@@ -123,6 +127,7 @@ services:
   frontend:
     build:
       context: ../frontend
+      target: development
     image: devpath-frontend:dev
     environment:
       # Two URLs on purpose. Server Components resolve the compose hostname;

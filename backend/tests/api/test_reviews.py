@@ -321,7 +321,6 @@ async def test_reviews_come_back_newest_first(
         .where(Review.course_id == course.id, Review.user_id == student.id)
         .values(created_at=datetime.now(UTC) - timedelta(hours=1))
     )
-    db_session.expire_all()
 
     body = (await api_client.get(f"/api/v1/courses/{course.id}/reviews")).json()
 

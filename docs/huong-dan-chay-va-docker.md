@@ -60,6 +60,44 @@ Cả 5 dòng phải ghi `(healthy)`. Chữ `(health: starting)` nghĩa là còn 
 | http://localhost:8000/docs | Tài liệu API tự sinh — **đáng mở cho giáo viên xem** |
 | http://localhost:8000/api/v1/health | Kiểm tra backend sống, trả JSON |
 
+## 1.2b Ba cách chạy, chọn cách nào cũng được
+
+Bốn bước ở trên là cách gõ lệnh. Có hai cách khác làm đúng những việc đó mà không phải gõ gì.
+
+### Cách A — Nhấp đôi chuột
+
+`C:\Users\Admin\chay-devpath.bat`
+
+Kéo ra Desktop (giữ **Alt** khi kéo để tạo shortcut) rồi nhấp đôi. Nó bật Docker, dựng 5 container, đợi tất cả healthy rồi tự mở trình duyệt. Hợp lý nhất khi chỉ cần **chạy trang web để xem**, không sửa code.
+
+### Cách B — Trong VS Code
+
+Mở thư mục dự án bằng VS Code rồi bấm **Ctrl+Shift+P** → gõ `Run Task` → chọn:
+
+| Task | Việc |
+|---|---|
+| ▶ Chạy tất cả | Bật Docker → dựng stack → mở trình duyệt |
+| 3 · Nạp database | Migration + dữ liệu mẫu |
+| Trạng thái container | Xem service nào healthy |
+| Xem log backend | Log chảy theo thời gian thực |
+| Chạy test backend | pytest |
+| ⏹ Dừng stack | Tắt, giữ nguyên dữ liệu |
+| ⚠ Xóa sạch dữ liệu | `down -v`, **mất hết**, phải nạp lại |
+
+Task "▶ Chạy tất cả" là task build mặc định nên còn có phím tắt riêng: **Ctrl+Shift+B**.
+
+### Debug bằng VS Code — thứ mà terminal không làm được
+
+Bấm **F5** rồi chọn cấu hình:
+
+- **Backend: uvicorn có debugger** — chạy backend ngoài Docker nhưng vẫn dùng Postgres và Redis trong Docker. Đặt breakpoint bằng cách bấm vào lề trái số dòng; khi có request chạy tới đó chương trình **dừng lại** và xem được giá trị mọi biến. Stack phải đang chạy trước; cấu hình tự dừng container backend để nhường cổng 8000.
+- **Backend: chạy test có debugger** — dừng ngay tại dòng test đang fail.
+- **Frontend: mở Chrome có debugger** — breakpoint trong Client Component, xem state React.
+
+Đây là lý do đáng dùng VS Code nhất: đọc log chỉ cho biết chuyện đã xảy ra, còn breakpoint cho **dừng lại giữa chừng và nhìn vào bên trong**.
+
+Cấu hình nằm trong `.vscode/` — `tasks.json`, `launch.json`, `settings.json` và `extensions.json`. Thư mục này nằm trong `.gitignore` nên là cấu hình riêng của máy, không lên GitHub.
+
 ## 1.3 Dừng lại
 
 ```bash

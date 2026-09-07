@@ -16,7 +16,7 @@ npm run dev
 
 Mở `http://localhost:3000`. Trang chủ hiển thị thẻ trạng thái backend — muốn thấy "Hoạt động" thì chạy backend trước (xem [backend/README.md](../backend/README.md)), nếu không nó hiện "Không kết nối được" mà trang vẫn sống.
 
-Địa chỉ backend đọc từ `NEXT_PUBLIC_API_BASE_URL`, mặc định `http://127.0.0.1:8000` — copy [.env.example](.env.example) thành `.env.local` nếu cần đổi.
+Địa chỉ backend đọc từ `NEXT_PUBLIC_API_BASE_URL`, mặc định `http://localhost:8000` — copy [.env.example](.env.example) thành `.env.local` nếu cần đổi. Phải là `localhost` chứ không phải `127.0.0.1`: trình duyệt coi hai tên đó là hai site khác nhau, mà cookie refresh đặt `SameSite=lax` nên sẽ bị bỏ im lặng — biểu hiện là đăng nhập xong F5 phát là mất phiên.
 
 Kiểm tra trước khi commit:
 

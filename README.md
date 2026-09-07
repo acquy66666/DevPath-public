@@ -53,10 +53,11 @@ Nạp dữ liệu mẫu (một admin, 8 danh mục, 2 giảng viên, 4 khóa h�
 cd backend && .venv\Scripts\python.exe -m scripts.seed
 ```
 
-Hai tài liệu đi kèm:
+Ba tài liệu đi kèm:
 
 - [docs/huong-dan-chay-va-docker.md](docs/huong-dan-chay-va-docker.md) — chạy trang web từng bước, cấu trúc file, và vai trò của Docker trong dự án
 - [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md) — sửa từng phần của giao diện, luồng một request, và những chỗ dễ vấp
+- [docs/huong-dan-demo-truoc-giao-vien.md](docs/huong-dan-demo-truoc-giao-vien.md) — chuỗi lệnh chạy thủ công kèm giải thích, kịch bản demo 9 chặng, và câu trả lời cho những câu chắc chắn bị hỏi
 
 ## Trạng thái
 

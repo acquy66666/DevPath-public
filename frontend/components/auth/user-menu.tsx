@@ -38,8 +38,8 @@ export function UserMenu({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2 px-2">
-          <UserAvatar user={user} className="size-7 text-xs" />
+        <Button variant="ghost" size="sm" className="gap-2 px-2 text-[1.12rem] h-10">
+          <UserAvatar user={user} className="size-10 text-sm" />
           <span className="hidden max-w-32 truncate sm:inline">{user.full_name}</span>
         </Button>
       </DropdownMenuTrigger>

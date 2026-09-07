@@ -9,6 +9,7 @@ which is CI, or a teammate's first afternoon on the project.
 
 import pytest
 
+from app.schemas.auth import LoginIn
 from scripts.seed import CATEGORY_TREE
 from scripts.seed_courses import COURSES, INSTRUCTORS
 
@@ -110,3 +111,22 @@ def test_a_course_knows_how_long_it_is() -> None:
         )
         assert course.duration_total_s == expected
         assert course.duration_total_s > 0
+
+
+def test_every_seeded_account_can_be_typed_into_the_login_form() -> None:
+    """The seed writes users straight into the table, so nothing on the way in
+    checks the address against the rule `/auth/login` applies on the way back.
+
+    `.local` is on email-validator's special-use list, and a seed that uses it
+    hands you three accounts the API answers 422 for -- found by deploying the
+    production stack and trying to sign in as the seeded instructor, which is
+    Chặng 8 of the demo script.
+    """
+    from scripts.seed import DEFAULT_ADMIN_EMAIL
+
+    addresses = [DEFAULT_ADMIN_EMAIL] + [
+        instructor.email for instructor in INSTRUCTORS
+    ]
+
+    for address in addresses:
+        LoginIn(email=address, password="whatever-the-password-is")

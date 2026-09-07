@@ -25,7 +25,13 @@ from scripts.seed_courses import (
     seed_courses,
 )
 
-DEFAULT_ADMIN_EMAIL = "admin@devpath.local"
+# `.example` and not `.local`: the login endpoint validates the address with
+# email-validator, which rejects `.local` as a special-use name. The seed
+# writes users straight into the table and so never noticed -- the accounts
+# existed and answered 422 the moment anybody tried to sign in with one.
+# `.example` is reserved for documentation by RFC 2606, so it validates and
+# can never belong to anybody either.
+DEFAULT_ADMIN_EMAIL = "admin@devpath.example"
 DEFAULT_ADMIN_PASSWORD = "devpath-admin"
 
 # Two levels, matching the constraint the service layer enforces: a parent has

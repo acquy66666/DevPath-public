@@ -90,8 +90,8 @@ class CourseSpec:
 
 # `users` has no profile text yet, so an instructor here is a name and an
 # account -- the course page shows exactly those two things.
-KHOA = InstructorSpec(email="khoa.tran@devpath.local", full_name="Trần Minh Khoa")
-MAI_ANH = InstructorSpec(email="mai.anh@devpath.local", full_name="Nguyễn Mai Anh")
+KHOA = InstructorSpec(email="khoa.tran@devpath.example", full_name="Trần Minh Khoa")
+MAI_ANH = InstructorSpec(email="mai.anh@devpath.example", full_name="Nguyễn Mai Anh")
 
 INSTRUCTORS = [KHOA, MAI_ANH]
 

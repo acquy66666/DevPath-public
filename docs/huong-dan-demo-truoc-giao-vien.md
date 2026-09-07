@@ -113,9 +113,9 @@ Tài khoản có sẵn (mật khẩu hard-code trong seed, chỉ dùng ở máy 
 
 | Email | Mật khẩu | Vai trò | Dùng để |
 |---|---|---|---|
-| `khoa.tran@devpath.local` | `devpath-instructor` | instructor | Chặng 8 — khu giảng viên |
-| `mai.anh@devpath.local` | `devpath-instructor` | instructor | Dự phòng |
-| `admin@devpath.local` | `devpath-admin` | admin | **Không dùng để demo** — chưa có giao diện quản trị, đăng nhập vào thì màn hình y hệt khách vãng lai |
+| `khoa.tran@devpath.example` | `devpath-instructor` | instructor | Chặng 8 — khu giảng viên |
+| `mai.anh@devpath.example` | `devpath-instructor` | instructor | Dự phòng |
+| `admin@devpath.example` | `devpath-admin` | admin | **Không dùng để demo** — chưa có giao diện quản trị, đăng nhập vào thì màn hình y hệt khách vãng lai |
 
 Học viên thì tự đăng ký tại chỗ — chính nó là màn diễn luồng đăng ký.
 
@@ -140,7 +140,7 @@ Giải thích: nhịp tim 10 giây một lần, cộng với lưu khi pause, khi
 
 **Chặng 7 · Ghi chú, bookmark, đánh giá (2 phút).** Vẫn ở trang học: gõ một ghi chú, nó hiện kèm nhãn `mm:ss`; tua video đi chỗ khác rồi **bấm vào nhãn thời gian** — video nhảy về đúng giây đó và tự phát. Bấm "Đánh dấu để xem lại", rồi "Đánh dấu hoàn thành" → thanh tiến độ nhích lên dạng `2/12 bài · 17%`. Quay lại trang chi tiết khóa học, cuộn xuống mục Đánh giá: vì đã ghi danh nên form hiện ra — chọn sao, gõ nhận xét, gửi. F5 thấy điểm trung bình ở đầu trang đã đổi.
 
-**Chặng 8 · Khu giảng viên (3 phút).** Bấm avatar → Đăng xuất. Đăng nhập `khoa.tran@devpath.local` / `devpath-instructor` → menu avatar mọc thêm mục **"Khóa học tôi dạy"** → `/giang-day` đã có sẵn 2 khóa để nói chuyện. Mở một khóa, tới thẻ "Nội dung khóa học": **giữ chuột vào tay nắm 6 chấm và kéo một bài học sang chương khác** — thứ tự lưu ngay, không có nút Lưu. Diễn thêm bản bàn phím: chọn tay nắm, bấm Space, mũi tên lên/xuống, Space lần nữa — có thông báo tiếng Việt cho trình đọc màn hình. Cuối cùng bấm "Gửi duyệt" ở thẻ Trạng thái → badge nhảy sang "đã xuất bản" và mọc link "Xem trang công khai →".
+**Chặng 8 · Khu giảng viên (3 phút).** Bấm avatar → Đăng xuất. Đăng nhập `khoa.tran@devpath.example` / `devpath-instructor` → menu avatar mọc thêm mục **"Khóa học tôi dạy"** → `/giang-day` đã có sẵn 2 khóa để nói chuyện. Mở một khóa, tới thẻ "Nội dung khóa học": **giữ chuột vào tay nắm 6 chấm và kéo một bài học sang chương khác** — thứ tự lưu ngay, không có nút Lưu. Diễn thêm bản bàn phím: chọn tay nắm, bấm Space, mũi tên lên/xuống, Space lần nữa — có thông báo tiếng Việt cho trình đọc màn hình. Cuối cùng bấm "Gửi duyệt" ở thẻ Trạng thái → badge nhảy sang "đã xuất bản" và mọc link "Xem trang công khai →".
 
 **Chặng 9 · Tài liệu API (1 phút).** Mở `http://localhost:8000/docs` — Swagger sinh tự động từ Pydantic v2, 11 nhóm endpoint. Bấm "Try it out" trên `POST /api/v1/auth/login` để gọi API sống ngay tại chỗ. Câu chốt: tài liệu này không bao giờ lệch code, vì nó **là** code.
 

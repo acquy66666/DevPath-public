@@ -1,0 +1,170 @@
+# Đưa DevPath lên VPS
+
+Từng bước cho lần deploy đầu tiên, và cho mọi lần cập nhật sau đó. Viết để làm theo được lúc đang mệt, không phải để đọc hiểu.
+
+Cấu hình trong `infra/` đã được **tổng duyệt trọn vẹn trên máy dev**: đúng `docker-compose.prod.yml`, đúng image target `production`, đúng nginx + TLS, chạy từ volume trắng tới trang web phục vụ được và luồng học viên đi hết. Xem `docs/report/assets/phase-2/README.md` để biết cái gì đã được chứng minh và cái gì chỉ máy chủ thật mới chứng minh được.
+
+---
+
+## 0. Cần có trước khi bắt đầu
+
+| Thứ | Ghi chú |
+|---|---|
+| VPS Linux, 2 vCPU / 4 GB RAM trở lên | Cấu hình trong `.env.prod` (2 uvicorn worker, 1 luồng transcode) đặt theo mức này |
+| Tên miền, bản ghi **A** đã trỏ về IP của VPS | Bắt buộc **trước** khi xin chứng chỉ: Let's Encrypt xác thực bằng cách gọi HTTP ngược về máy này |
+| Cổng 80 và 443 mở | Cổng 80 không bỏ được — thử thách ACME luôn đi qua HTTP, kể cả khi gia hạn |
+| Docker Engine + plugin Compose trên VPS | `curl -fsSL https://get.docker.com \| sh` |
+
+Kiểm tra DNS đã lan xong chưa, làm từ máy bất kỳ:
+
+```bash
+dig +short devpath.example.com
+```
+
+Ra đúng IP của VPS thì mới đi tiếp. Sai bước này thì bước 3 sẽ thất bại và đốt một lượt trong hạn mức 5 lần/tuần của Let's Encrypt cho mỗi tên miền.
+
+---
+
+## 1. Lấy mã nguồn về máy chủ
+
+```bash
+git clone https://github.com/<tài-khoản>/E-learning.git devpath
+```
+
+```bash
+cd devpath/infra
+```
+
+Deploy chạy **đúng commit đang checkout**, không phải `origin/main` — `scripts/deploy.sh` cố tình không `git pull` (xem mục 6).
+
+## 2. Điền biến môi trường
+
+```bash
+cp .env.prod.example .env.prod && chmod 600 .env.prod
+```
+
+Mở `.env.prod` và điền. Bốn giá trị bắt buộc, phần còn lại có mặc định dùng được:
+
+| Biến | Cách lấy |
+|---|---|
+| `DOMAIN` | Tên miền trần, không `https://`, không dấu `/` cuối |
+| `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
+| `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
+| `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev |
+
+`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` và `NEXT_PUBLIC_API_BASE_URL` **nướng vào bundle lúc build**, nên đổi hai thứ đó là phải build lại image frontend, không phải chỉ restart.
+
+Redirect URI đăng ký ở Google Cloud Console phải khớp từng ký tự:
+
+```
+https://<DOMAIN>/api/v1/auth/google/callback
+```
+
+## 3. Xin chứng chỉ lần đầu
+
+```bash
+./scripts/init-tls.sh
+```
+
+Script phá thế bí "nginx không khởi động được khi thiếu file chứng chỉ, mà certbot cần nginx đang chạy để trả lời thử thách": đặt một chứng chỉ tự ký sống 1 ngày, dựng nginx trên nó, gọi Let's Encrypt lấy chứng chỉ thật, rồi reload.
+
+Muốn thử nháp trước cho chắc — hạn mức thoải mái, chứng chỉ trình duyệt không tin:
+
+```bash
+./scripts/init-tls.sh --staging
+```
+
+Chạy nháp xong thì **xóa chứng chỉ nháp đi** trước khi xin bản thật, nếu không certbot thấy đã có chứng chỉ và bỏ qua:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm --entrypoint sh certbot -c 'rm -rf /etc/letsencrypt/live /etc/letsencrypt/archive /etc/letsencrypt/renewal'
+```
+
+Từ đây gia hạn là tự động: service `certbot` dậy hai lần mỗi ngày, gia hạn thứ gì còn dưới 30 ngày, còn lại thì ngủ tiếp.
+
+## 4. Deploy
+
+```bash
+./scripts/deploy.sh --seed
+```
+
+Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script làm theo thứ tự: build → `alembic upgrade head` bằng một container dùng một lần trên image mới → khởi động → đợi **healthcheck** của từng service, không phải đợi `sleep`.
+
+`--seed` chỉ dùng cho lần đầu. Seed idempotent nên chạy lại không hỏng gì, nhưng cũng chẳng để làm gì.
+
+> **Đổi mật khẩu mặc định của tài khoản seed trước khi seed lên máy chủ công khai.** Seed sẽ in cảnh báo này ra màn hình:
+>
+> ```bash
+> SEED_ADMIN_PASSWORD='...' SEED_INSTRUCTOR_PASSWORD='...' ./scripts/deploy.sh --seed
+> ```
+>
+> Không đặt thì admin của trang có mật khẩu `devpath-admin`, và mật khẩu đó nằm trong repo.
+
+## 5. Nghiệm thu
+
+```bash
+curl -s https://<DOMAIN>/api/v1/health
+```
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps
+```
+
+Bảy service, tất cả `healthy` (riêng `certbot` không có healthcheck nên cột trạng thái trống — đúng như vậy).
+
+Kiểm bằng mắt, theo đúng thứ tự của gate Phase 2:
+
+1. `https://<DOMAIN>` mở được, ổ khóa xanh, không cảnh báo chứng chỉ
+2. `http://<DOMAIN>` tự nhảy sang HTTPS
+3. `/khoa-hoc` hiện 4 khóa học đã seed
+4. Đăng ký một tài khoản → enroll một khóa miễn phí → xem video vài giây → **tải lại trang** → player quay về đúng chỗ đang dở
+5. `https://<DOMAIN>/api/docs` trả **404** — tài liệu API tự tắt khi `ENV=production`
+
+Chụp màn hình các bước trên vào `docs/report/assets/phase-2/`; đó là bằng chứng cho chương 4 và chương 5 của báo cáo.
+
+---
+
+## 6. Cập nhật một bản mới
+
+Xem trước cái gì sắp lên, rồi mới đưa lên:
+
+```bash
+git fetch origin && git log --oneline HEAD..origin/main
+```
+
+```bash
+git merge --ff-only origin/main && ./scripts/deploy.sh
+```
+
+`deploy.sh` cố tình không tự `pull`: chọn commit nào lên production là một quyết định, và script tự lấy về sẽ giành mất quyền đó.
+
+**Migration chạy trước khi container mới khởi động.** Đúng cho loại thay đổi dự án này hay làm (thêm bảng, thêm cột nullable). Migration **xóa hoặc đổi tên** thì phải đi hai nhịp: deploy code chịu được cả hai hình dạng schema trước, migrate sau.
+
+## 7. Khi có sự cố
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
+```
+
+| Triệu chứng | Chỗ nhìn trước |
+|---|---|
+| Trang trả 502 | `backend` hoặc `frontend` chưa healthy — `ps` rồi `logs` của đúng service đó. nginx cố ý vẫn sống và trả 502 thay vì chết theo |
+| Cảnh báo chứng chỉ | `init-tls.sh` dừng giữa chừng, chứng chỉ đang là bản tự ký. Kiểm tra DNS rồi chạy lại |
+| 503 khi upload video | `R2_*` còn trống trong `.env.prod` |
+| 503 ở nút đăng nhập Google | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` còn trống |
+| Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định |
+| Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |
+
+Quay về bản trước:
+
+```bash
+git checkout <commit-cũ> && ./scripts/deploy.sh
+```
+
+Chỉ đúng khi bản mới không kèm migration phá vỡ tương thích. Có migration như vậy thì phải khôi phục cả database, và script backup/restore là việc của Phase 6.
+
+## 8. Những thứ cố ý không có ở đây
+
+- **Backup định kỳ** (`pg_dump` → R2) — Phase 6.
+- **Giám sát và cảnh báo** — Phase 6. Hiện tại `restart: unless-stopped` cộng healthcheck đã lo được phần lớn: container chết thì Docker dựng lại, VPS reboot thì cả stack tự lên.
+- **CI tự deploy** — cố ý không làm. Với một khóa luận, việc bấm deploy bằng tay là tính năng, không phải thiếu sót.

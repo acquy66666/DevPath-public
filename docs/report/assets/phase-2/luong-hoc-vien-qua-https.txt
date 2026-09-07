@@ -1,0 +1,15 @@
+# Luong hoc vien chay qua nginx + HTTPS tren stack production
+# 2026-09-07 07:14 UTC | docker-compose.prod.yml, image target production, DOMAIN=localhost, chung chi tu ky
+
+0. GET  /health                      -> 200
+1. POST /auth/register               -> 201  hocvien1788765294@devpath.example
+2. GET  /courses                     -> 200  4 khoa da seed, 3 mien phi
+                                        chon: Xây dựng REST API với FastAPI
+3. POST /courses/{id}/enroll         -> 201
+4. GET  /courses/{id}/curriculum     -> 200  bai video: FastAPI trong 10 phút
+5. PUT  /lessons/{id}/progress       -> 200  luu vi tri 137s
+6. GET  /courses/{id}/progress       -> 200  last_position_s=137, resume_lesson_id khop = True
+7. GET  /enrollments/me              -> 200  1 khoa
+8. POST /auth/login (instructor seed)-> 200
+
+Cookie refresh do server dat: [('devpath_refresh', 'HttpOnly', 'Secure')]

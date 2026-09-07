@@ -26,9 +26,10 @@
 - [x] Review & rating khóa học (chỉ khi đã enroll)
 - [x] Seed data thật: ≥3 khóa học lập trình có video + curriculum đầy đủ
 - [ ] Deploy lần đầu lên VPS (docker compose + nginx + HTTPS)
+  - Cấu hình đã tổng duyệt trọn vẹn bằng chính `docker-compose.prod.yml` trên máy dev (bằng chứng: `docs/report/assets/phase-2/`). Còn chờ VPS + tên miền để chạy `docs/huong-dan-deploy-vps.md`; hai thứ chưa chứng minh được nếu không có máy chủ thật là chứng chỉ Let's Encrypt và lần reboot đầu tiên.
 
 ## Gate cuối phase
 
 - [ ] Demo end-to-end trên VPS: đăng ký Google → tìm khóa học → enroll → xem video → thoát → vào lại đúng vị trí cũ
-- [ ] Test pass: auth, course CRUD, enroll, progress
+- [x] Test pass: auth, course CRUD, enroll, progress — 472 passed, 2 skipped (`docs/report/assets/phase-2/pytest.txt`)
 - [ ] Thu bằng chứng vào `docs/report/assets/phase-2/`: screenshot luồng đăng ký/đăng nhập Google, tạo khóa học, player đang phát + tiến độ; ghi 1–2 dòng cho mỗi quyết định kỹ thuật đáng nhớ vào `decisions.md` (nguyên liệu chương 4, **chưa viết báo cáo**)

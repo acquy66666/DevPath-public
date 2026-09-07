@@ -140,9 +140,9 @@ Chạy lại bao nhiêu lần cũng được, lần thứ hai trở đi không t
 
 | Email | Mật khẩu | Vai trò |
 |---|---|---|
-| `admin@devpath.local` | `devpath-admin` | admin |
-| `khoa.tran@devpath.local` | `devpath-instructor` | instructor |
-| `mai.anh@devpath.local` | `devpath-instructor` | instructor |
+| `admin@devpath.example` | `devpath-admin` | admin |
+| `khoa.tran@devpath.example` | `devpath-instructor` | instructor |
+| `mai.anh@devpath.example` | `devpath-instructor` | instructor |
 
 Học viên thì tự đăng ký một tài khoản mới khi demo — nó cũng chính là màn trình diễn luồng đăng ký.
 
@@ -331,7 +331,7 @@ Hơn 470 test pytest cho backend, chạy trên CI cùng với ruff (linter), mig
 
 Docker Compose trên VPS, nginx làm reverse proxy và kết thúc TLS, chứng chỉ Let's Encrypt tự gia hạn. File `infra/docker-compose.prod.yml` tách riêng khỏi file dev — vì override chỉ **thêm** được vào danh sách chứ không bỏ bớt, mà hai thứ bắt buộc phải biến mất trên production lại là cổng database publish ra ngoài và bind mount mã nguồn.
 
-**Trạng thái thật:** cấu hình deploy đã viết và đã được CI kiểm chứng, nhưng **chưa deploy lên máy chủ thật** vì chưa có VPS và tên miền. Nói đúng như vậy — checkbox trong `docs/plan/phase-2-core-platform.md` cũng đang để trống đúng như thế.
+**Trạng thái thật:** cấu hình deploy đã viết, đã được CI kiểm chứng, và đã **tổng duyệt trọn vẹn bằng chính file compose production trên máy dev** — build image target `production`, migrate từ database trắng, nginx + TLS, rồi đi hết luồng đăng ký → enroll → lưu tiến độ qua HTTPS (bằng chứng ở `docs/report/assets/phase-2/`). Nhưng **chưa deploy lên máy chủ thật** vì chưa có VPS và tên miền: chứng chỉ Let's Encrypt và lần reboot đầu tiên là hai thứ chỉ máy chủ thật mới chứng minh được. Nói đúng như vậy — checkbox trong `docs/plan/phase-2-core-platform.md` cũng đang để trống đúng như thế. Các bước deploy: [huong-dan-deploy-vps.md](huong-dan-deploy-vps.md).
 
 ---
 

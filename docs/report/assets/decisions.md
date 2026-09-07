@@ -129,3 +129,11 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Tải lên lần nữa là thay hẳn video cũ** — hàng cũ bị xóa và object dưới prefix của nó bị dọn. Giữ lại thì bài học phát một video còn bucket trả tiền cho hai. Việc dọn chạy **sau** commit và nuốt lỗi: một object mồ côi tốn dung lượng, còn một lần xóa hỏng sẽ tốn của giảng viên cả lần upload.
 
 **Hỏi trạng thái tạm dừng khi tab bị ẩn** — mặc định của TanStack Query, và đúng ở đây: chuyển mã mất vài phút, giảng viên chuyển tab đi làm việc khác, quay lại là `refetchOnWindowFocus` cho kết quả ngay. Hệ quả cho người viết test: script chạy trong pane không được focus sẽ thấy trạng thái đứng im, trông y hệt tính năng hỏng.
+
+**Tổng duyệt stack production trên máy dev trước khi có VPS** — chạy đúng `docker-compose.prod.yml`, image target `production`, nginx và TLS thật, chỉ thay tên miền bằng `localhost` và chứng chỉ Let's Encrypt bằng chứng chỉ tự ký. Đổi lại vài giờ, được cái chắc chắn rằng khi có máy chủ thì chỉ còn đúng hai ẩn số là DNS và ACME. Nó đã trả công ngay: bắt được lỗi tài khoản seed không đăng nhập được.
+
+**Email seed dùng `.example` chứ không phải `.local`** — seed ghi thẳng vào bảng `users` nên không đi qua kiểm tra nào, còn `/auth/login` kiểm địa chỉ bằng `EmailStr` và `email-validator` từ chối `.local` như một tên miền dành riêng. Ba tài khoản tồn tại mà không đăng nhập được, kể cả tài khoản giảng viên mà kịch bản demo yêu cầu. `.example` (RFC 2606) vừa hợp lệ vừa không thể thuộc về ai. Bài học đáng viết vào báo cáo: lỗi nằm ở khe giữa hai đường ghi vào cùng một bảng, nên không test đơn vị nào của một trong hai đường bắt được — chỉ có chạy thật mới thấy.
+
+**Deploy bằng tay, không nối vào CI** — với một khóa luận, việc bấm deploy là quyết định chứ không phải thao tác lặp. `scripts/deploy.sh` cố tình không `git pull`: người deploy phải tự chọn commit nào lên production.
+
+**nginx không `depends_on` backend** — upstream được phân giải theo từng request qua biến, nên nginx sống một mình và trả 502 trong lúc chờ. Nhờ đó `init-tls.sh` xin được chứng chỉ trên máy chủ chưa build image lần nào, và một container ứng dụng khởi động lại với IP mới không cần restart nginx. Trả giá bằng một truy vấn DNS nội bộ mỗi request, có `valid=10s` chặn.

@@ -1,0 +1,35 @@
+# docker compose -f docker-compose.prod.yml ps  —  2026-09-07 07:01 UTC
+
+NAME                          IMAGE                    COMMAND                  SERVICE    CREATED         STATUS                   PORTS
+devpath-prodtest-backend-1    devpath-backend:prod     "uvicorn app.main:ap…"   backend    3 minutes ago   Up 3 minutes (healthy)   8000/tcp
+devpath-prodtest-certbot-1    certbot/certbot:latest   "sh -c 'trap exit TE…"   certbot    3 minutes ago   Up 3 minutes             80/tcp, 443/tcp
+devpath-prodtest-frontend-1   devpath-frontend:prod    "docker-entrypoint.s…"   frontend   3 minutes ago   Up 3 minutes (healthy)   3000/tcp
+devpath-prodtest-nginx-1      nginx:1.27-alpine        "/docker-entrypoint.…"   nginx      3 minutes ago   Up 3 minutes (healthy)   0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+devpath-prodtest-postgres-1   pgvector/pgvector:pg16   "docker-entrypoint.s…"   postgres   4 minutes ago   Up 4 minutes (healthy)   5432/tcp
+devpath-prodtest-redis-1      redis:7-alpine           "docker-entrypoint.s…"   redis      4 minutes ago   Up 4 minutes (healthy)   6379/tcp
+devpath-prodtest-worker-1     devpath-backend:prod     "celery -A app.worke…"   worker     3 minutes ago   Up 3 minutes (healthy)   8000/tcp
+
+# restart policy
+worker-1                         unless-stopped
+frontend-1                       unless-stopped
+backend-1                        unless-stopped
+nginx-1                          unless-stopped
+certbot-1                        unless-stopped
+redis-1                          unless-stopped
+postgres-1                       unless-stopped
+
+# cong publish ra ngoai
+devpath-prodtest-nginx-1	0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+
+# bind mount (chi nginx config + postgres init, deu read-only)
+worker-1                         0 bind
+frontend-1                       0 bind
+backend-1                        0 bind
+nginx-1                          2 bind
+certbot-1                        0 bind
+redis-1                          0 bind
+postgres-1                       1 bind
+
+# kich thuoc image production
+devpath-backend:prod	1.05GB
+devpath-frontend:prod	398MB

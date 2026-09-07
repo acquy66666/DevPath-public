@@ -1,0 +1,21 @@
+# Header va dinh tuyen nginx tren stack production — 2026-09-07 07:15 UTC
+
+$ curl -I http://localhost/khoa-hoc   (cong 80 phai chuyen huong)
+HTTP/1.1 301 Moved Permanently
+Server: nginx/1.27.5
+Date: Mon, 07 Sep 2026 07:15:16 GMT
+
+$ curl -I https://localhost/
+HTTP/1.1 200 OK
+Strict-Transport-Security: max-age=63072000; includeSubDomains
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Content-Security-Policy: frame-ancestors 'none'
+Referrer-Policy: strict-origin-when-cross-origin
+Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+$ curl http://localhost/healthz   (healthcheck cua container nginx, khong can chung chi)
+ok
+
+$ curl -o /dev/null -w '%{http_code}' https://localhost/api/docs   (tai lieu API phai tat o production)
+404

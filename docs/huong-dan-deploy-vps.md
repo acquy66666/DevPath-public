@@ -23,6 +23,72 @@ dig +short devpath.example.com
 
 Ra đúng IP của VPS thì mới đi tiếp. Sai bước này thì bước 3 sẽ thất bại và đốt một lượt trong hạn mức 5 lần/tuần của Let's Encrypt cho mỗi tên miền.
 
+### 0b. Chọn máy chủ — bốn điều kiện không thương lượng
+
+| Điều kiện | Vì sao dự án này cần |
+|---|---|
+| **Ảo hóa KVM**, không phải OpenVZ/LXC | Phase 3 chấm bài bằng cách chạy container Docker cách ly cho mã nguồn của người lạ. Trên VPS dạng container, Docker lồng trong đó hoặc không chạy, hoặc chạy mà không cách ly thật — tức là mất luôn điểm nhấn của khóa luận. Hỏi thẳng nhà cung cấp trước khi trả tiền |
+| **4 GB RAM**, không phải 2 | `deploy.sh` build image **ngay trên máy chủ**, và `next build` một mình đã ngốn khoảng 2 GB. Máy 2 GB sẽ bị OOM killer giết giữa lúc build |
+| **Ubuntu 24.04 LTS** | Mọi lệnh trong tài liệu này viết cho nó |
+| Băng thông không cần lớn | Video HLS đi thẳng từ Cloudflare R2 tới trình duyệt, không qua VPS. Cái chạy trên VPS chỉ là HTML và JSON |
+
+Đĩa 40–50 GB là thừa đủ. Không cần IPv6, không cần load balancer, không cần snapshot trả phí.
+
+### 0c. Chuẩn bị máy chủ vừa mua
+
+Đăng nhập lần đầu bằng `ssh root@<IP>` với mật khẩu nhà cung cấp gửi, rồi làm một lượt:
+
+```bash
+adduser devpath && usermod -aG sudo devpath
+```
+
+Chép khóa SSH của máy bạn lên (chạy **ở máy Windows**, không phải trên VPS):
+
+```powershell
+type $env:USERPROFILE\.ssh\id_ed25519.pub | ssh devpath@<IP> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+```
+
+Chưa có khóa thì `ssh-keygen -t ed25519` trước. Sau đó tắt đăng nhập bằng mật khẩu — quét mật khẩu SSH là việc diễn ra liên tục trên mọi IP công khai:
+
+```bash
+sudo sed -i 's/^#\?PasswordAuthentication.*/PasswordAuthentication no/; s/^#\?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config && sudo systemctl restart ssh
+```
+
+> Mở **một cửa sổ SSH mới** kiểm tra vào được bằng khóa **trước khi** đóng cửa sổ đang mở. Sai file cấu hình mà đã thoát hết phiên thì chỉ còn console cứu hộ của nhà cung cấp.
+
+Tường lửa — đúng ba cổng:
+
+```bash
+sudo ufw allow OpenSSH && sudo ufw allow 80,443/tcp && sudo ufw --force enable
+```
+
+Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sudo sh && sudo usermod -aG docker devpath
+```
+
+Đăng xuất, đăng nhập lại để nhóm `docker` có hiệu lực, rồi kiểm: `docker run --rm hello-world`.
+
+Swap 2 GB — bảo hiểm cho lúc build, gần như không dùng tới lúc chạy:
+
+```bash
+sudo fallocate -l 2G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile && echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+```
+
+Đặt múi giờ cho log dễ đọc khi đối chiếu với lúc demo:
+
+```bash
+sudo timedatectl set-timezone Asia/Ho_Chi_Minh
+```
+
+### 0d. Nếu tên miền đặt ở Cloudflare
+
+Để bản ghi A ở chế độ **DNS only** (đám mây xám), **không** bật proxy (đám mây cam) — ít nhất cho tới khi có chứng chỉ:
+
+- Bật proxy thì chứng chỉ trình duyệt nhìn thấy là của Cloudflare, không phải của bạn; `init-tls.sh` vẫn có thể xin được nhưng thêm một tầng có thể hỏng ngay hôm bảo vệ.
+- Chế độ SSL **Flexible** của Cloudflare cộng với header HSTS mà nginx đang gửi sẽ tạo vòng lặp chuyển hướng. Nếu sau này muốn bật proxy thì phải đặt SSL mode là **Full (strict)**.
+
 ---
 
 ## 1. Lấy mã nguồn về máy chủ

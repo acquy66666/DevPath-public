@@ -4,6 +4,19 @@ Từng bước cho lần deploy đầu tiên, và cho mọi lần cập nhật s
 
 Cấu hình trong `infra/` đã được **tổng duyệt trọn vẹn trên máy dev**: đúng `docker-compose.prod.yml`, đúng image target `production`, đúng nginx + TLS, chạy từ volume trắng tới trang web phục vụ được và luồng học viên đi hết. Xem `docs/report/assets/phase-2/README.md` để biết cái gì đã được chứng minh và cái gì chỉ máy chủ thật mới chứng minh được.
 
+## Trả bao nhiêu tiền cho việc này: 0đ
+
+Kế hoạch đã chốt **không thuê máy chủ** cho tới Phase 6 ([lý do ở 00-overview.md, nguyên tắc 4](plan/00-overview.md)). Hai chặng, cả hai đều miễn phí:
+
+| Chặng | Dùng gì | Được gì | Không được gì |
+|---|---|---|---|
+| Phase 2–5 | **Cloudflare Quick Tunnel** trỏ vào stack chạy trên máy dev | URL `https://….trycloudflare.com` có chứng chỉ thật, không cần tài khoản, không cần tên miền | URL đổi sau mỗi lần khởi động, chỉ sống khi máy dev bật, giới hạn 200 request đồng thời. Đăng nhập Google không chạy được vì redirect URI phải cố định |
+| Phase 6 | **GitHub Student Developer Pack**: $200 credit DigitalOcean + tên miền `.me` miễn phí 1 năm | Đúng mọi thứ trong tài liệu này, tên miền thật, chứng chỉ Let's Encrypt thật | Phải nộp hồ sơ sinh viên và chờ duyệt vài ngày — nộp sớm |
+
+Cùng cái pack đó còn cho GitHub Pro, thứ đang chặn ruleset bảo vệ `main` từ Phase 1. Một lần đăng ký gỡ được ba nút thắt.
+
+Tài liệu này viết cho chặng thứ hai. Mọi bước đều không phụ thuộc nhà cung cấp — DigitalOcean, VPS Việt Nam hay máy nào khác đều chạy y hệt, chỉ khác chỗ bấm nút tạo máy.
+
 ---
 
 ## 0. Cần có trước khi bắt đầu

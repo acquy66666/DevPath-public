@@ -69,7 +69,7 @@ docker compose -f infra/docker-compose.yml down -v
   ```bash
   docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes frontend
   ```
-- **Frontend cần hai URL backend.** Server Component gọi `http://backend:8000` (tên service trong mạng compose), còn trình duyệt không phân giải được tên đó nên phải gọi `http://localhost:8000`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía này; `frontend/lib/api/client.ts` chọn theo `typeof window`.
+- **Frontend cần hai URL backend — ở máy dev.** Server Component gọi `http://backend:8000` (tên service trong mạng compose), còn trình duyệt không phân giải được tên đó nên phải gọi `http://localhost:8000`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía này; `frontend/lib/api/client.ts` chọn theo `typeof window`. Ở `docker-compose.prod.yml` thì phía trình duyệt để rỗng: nginx đưa `/api` về backend trên cùng origin, nên bundle không chứa tên miền nào.
 
 ## Ảnh backend có ffmpeg
 

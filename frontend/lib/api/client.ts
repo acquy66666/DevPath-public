@@ -6,29 +6,51 @@
 const FALLBACK_BASE_URL = "http://localhost:8000";
 
 /**
- * Server and browser reach the backend by different names. Under Docker
- * Compose a Server Component resolves the service hostname `backend`, which
- * means nothing in the user's browser -- the browser has to use the port
- * published on the host. Outside Docker both sides collapse to the same URL.
+ * Where the browser sends API calls.
  *
- * The browser URL must stay on `localhost`, not `127.0.0.1`: those count as
- * different sites, and the refresh cookie is `SameSite=lax`, so the browser
- * would silently drop it on every call from a page served at localhost:3000.
+ * An empty `NEXT_PUBLIC_API_BASE_URL` is an answer, not a missing value: it
+ * means *the origin the page came from*. In production nginx routes /api to
+ * the backend on that same origin, so the browser needs no host at all -- and
+ * the image stops carrying the domain it was built for. One build then serves
+ * a tunnel URL, a custom domain, or a bare IP, which matters because the
+ * value is inlined at build time and cannot be changed by restarting.
+ *
+ * Unset is a different thing and keeps the local default, so `next dev`
+ * against a backend on port 8000 still works with no configuration.
+ *
+ * When it is set, it must stay on `localhost` rather than `127.0.0.1`: those
+ * count as different sites, and the refresh cookie is `SameSite=lax`, so the
+ * browser would silently drop it on every call from a page at localhost:3000.
  */
-function baseUrl(): string {
-  if (typeof window === "undefined") {
-    return (
-      process.env.API_BASE_URL_INTERNAL ??
-      process.env.NEXT_PUBLIC_API_BASE_URL ??
-      FALLBACK_BASE_URL
-    );
-  }
-
-  return process.env.NEXT_PUBLIC_API_BASE_URL ?? FALLBACK_BASE_URL;
+function browserBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL;
+  return configured === undefined ? FALLBACK_BASE_URL : configured;
 }
 
 /**
- * Absolute URL of a backend endpoint, for links the browser follows itself.
+ * Where a Server Component sends them -- never same-origin, because a
+ * relative URL inside Node has no origin to be relative to. Hence `||` rather
+ * than `??`: an empty public value is meant for the browser and must fall
+ * through to something absolute here.
+ *
+ * Under Docker Compose that is the service hostname `backend`, which resolves
+ * on the compose network and means nothing in the user's browser.
+ */
+function serverBaseUrl(): string {
+  return (
+    process.env.API_BASE_URL_INTERNAL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    FALLBACK_BASE_URL
+  );
+}
+
+function baseUrl(): string {
+  return typeof window === "undefined" ? serverBaseUrl() : browserBaseUrl();
+}
+
+/**
+ * URL of a backend endpoint, for links the browser follows itself. Same-origin
+ * deployments get a root-relative path, which is exactly what an `href` wants.
  * `fetch` calls go through apiFetch instead and never need this.
  */
 export function apiUrl(path: string): string {

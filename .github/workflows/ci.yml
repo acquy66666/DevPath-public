@@ -223,14 +223,11 @@ jobs:
       - name: Backend production image builds
         run: docker build --target production -t devpath-backend:ci backend
 
-      # With the build argument, because NEXT_PUBLIC_* is inlined into the
-      # bundle by `next build` and a missing one fails quietly at runtime
-      # rather than loudly here.
+      # No API URL argument: the production image is served behind nginx and
+      # calls /api on its own origin, so it is built without a domain.
+      # Building it the way production does is the point of this step.
       - name: Frontend production image builds
-        run: |
-          docker build --target production \
-            --build-arg NEXT_PUBLIC_API_BASE_URL=https://devpath.example.com \
-            -t devpath-frontend:ci frontend
+        run: docker build --target production -t devpath-frontend:ci frontend
 
       # The standalone server has to be in the image and has to start. It
       # cannot render a page without the API, so answering at all is the test.

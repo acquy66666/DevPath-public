@@ -30,10 +30,16 @@ FROM deps AS build
 ENV NODE_ENV=production
 
 # NEXT_PUBLIC_* are inlined into the client bundle by `next build`, so they are
-# build arguments, not runtime environment. Changing the public API URL means
-# rebuilding this image -- there is no way around that short of shipping the
-# value in a served file and reading it at boot.
-ARG NEXT_PUBLIC_API_BASE_URL
+# build arguments, not runtime environment: changing one means rebuilding this
+# image, with no way around it short of shipping the value in a served file and
+# reading it at boot.
+#
+# Which is why the API URL defaults to empty, meaning "same origin as the
+# page". Behind nginx that is true by construction -- /api goes to the backend
+# on the very host the page was served from -- so the image carries no domain
+# and the same build runs on a tunnel URL, a real domain, or an IP. Set it only
+# for a deployment where the API lives somewhere else.
+ARG NEXT_PUBLIC_API_BASE_URL=
 ARG NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=false
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
     NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=$NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED

@@ -255,7 +255,9 @@ Vì vậy chuỗi kết nối trong `docker-compose.yml` viết là `@postgres:5
 - Server Component chạy **bên trong** container → gọi `http://backend:8000`
 - Trình duyệt chạy **trên máy bạn** → không phân giải nổi tên `backend`, phải gọi `http://localhost:8000`
 
-Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía đó; `frontend/lib/api/client.ts` chọn theo `typeof window`. Trên VPS thì gộp làm một vì nginx đưa cả hai về chung một domain.
+Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía đó; `frontend/lib/api/client.ts` chọn theo `typeof window`.
+
+Trên máy chủ thì **trình duyệt không cần địa chỉ nào cả**: nginx định tuyến `/api` về backend ngay trên origin của trang, nên `NEXT_PUBLIC_API_BASE_URL` để rỗng và client gọi đường dẫn tương đối. Nhờ vậy image frontend không mang tên miền nào — cùng một bản build chạy được trên URL tunnel, tên miền thật, hay một địa chỉ IP trần.
 
 ## 3.4 Dữ liệu sống ở đâu
 

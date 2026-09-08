@@ -11,6 +11,7 @@ Mục đích: mọi lỗi cấu hình lộ ra ở đây thay vì lộ ra trên V
 | `prod-stack-ps.txt` | 7 service healthy; chính sách restart; danh sách cổng publish; đếm bind mount; kích thước image production | 4 — Xây dựng hệ thống |
 | `nginx-tls-headers.txt` | Chuyển hướng 80 → 443, 6 header bảo mật, `/healthz`, tài liệu API trả 404 ở production | 4 và 6 — Bảo mật |
 | `luong-hoc-vien-qua-https.txt` | Đăng ký → tìm khóa học → enroll → lưu tiến độ → đọc lại đúng vị trí, tất cả qua nginx + HTTPS | 4 và 5 — Kiểm thử |
+| `bundle-khong-ten-mien.txt` | Bundle production không chứa địa chỉ backend nào; cùng một image phục vụ hai host khác nhau; đối chứng với bundle dev vẫn gọi tuyệt đối | 4 — Xây dựng hệ thống |
 
 ### Đã chứng minh được
 

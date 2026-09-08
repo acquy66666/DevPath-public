@@ -131,7 +131,7 @@ Mở `.env.prod` và điền. Bốn giá trị bắt buộc, phần còn lại c
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
 | `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev |
 
-`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` và `NEXT_PUBLIC_API_BASE_URL` **nướng vào bundle lúc build**, nên đổi hai thứ đó là phải build lại image frontend, không phải chỉ restart.
+`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Riêng địa chỉ API thì không: trình duyệt gọi `/api` cùng origin với trang, nên image không mang tên miền nào và đổi tên miền không cần build lại.
 
 Redirect URI đăng ký ở Google Cloud Console phải khớp từng ký tự:
 

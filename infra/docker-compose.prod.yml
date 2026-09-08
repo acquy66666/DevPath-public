@@ -145,11 +145,14 @@ services:
       context: ../frontend
       target: production
       args:
-        # Baked into the client bundle at build time, which is why the domain
-        # has to be known here. Same origin as the page itself: nginx routes
-        # /api to the backend, so the browser never makes a cross-site request
-        # and the refresh cookie is not third-party.
-        NEXT_PUBLIC_API_BASE_URL: https://${DOMAIN}
+        # No API URL on purpose: empty means "same origin as the page", and
+        # nginx routes /api to the backend on that origin. So the browser never
+        # makes a cross-site request, the refresh cookie is not third-party,
+        # and -- because NEXT_PUBLIC_* is inlined at build time -- the image
+        # carries no domain and need not be rebuilt when the domain changes.
+        #
+        # This one does have to be right at build time, and a rebuild is the
+        # only way to change it.
         NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
     image: devpath-frontend:prod
     restart: unless-stopped

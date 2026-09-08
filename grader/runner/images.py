@@ -19,6 +19,11 @@ IMAGES_DIR = Path(__file__).resolve().parents[1] / "images"
 
 PYTHON_IMAGE = "devpath-sandbox-python:v1"
 
+# The unprivileged user every sandbox image runs as. Named here rather than in
+# the Dockerfile alone because the runner passes it to `--user` as well, and
+# the worker will need it again when it decides who owns the files it mounts.
+SANDBOX_UID = 10001
+
 # tag -> build context. One entry per language: v1 supports Python only, and
 # this map is what makes adding Java later a new line rather than a new design.
 IMAGES: dict[str, Path] = {PYTHON_IMAGE: IMAGES_DIR / "python"}

@@ -155,3 +155,19 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Test khẳng định từ bên trong container đang chạy, không đọc `docker inspect`** — inspect chỉ nói image *khai báo* gì; chỉ chạy một chương trình mới biết nhân *cho phép* gì. Mỗi test đều được đối chứng với `python:3.12-slim` nguyên bản trước khi tin: một test mà image thường cũng qua là một test không kiểm gì cả (bảng đối chứng ở `docs/report/assets/phase-3/sandbox-image.txt`).
 
 **Thiếu Docker: skip trên máy dev, fail trong CI** — cùng quy tắc mà bộ test backend đã dùng cho Postgres. Một bộ test sandbox bị skip im lặng biến "chưa bao giờ kiểm sandbox" thành một dấu tick xanh, đúng cái kết cục mà bộ test này sinh ra để chặn.
+
+**`--init` là bắt buộc, vì PID 1 nuốt tín hiệu** — nhân không áp dụng hành vi mặc định của tín hiệu cho PID 1, nên bài nộp chạy làm PID 1 sẽ bỏ qua SIGXCPU và giới hạn CPU mềm trở thành vô nghĩa. Đo được: cùng `--ulimit cpu=1:2`, không `--init` thì exit 137 sau 2.72s (giới hạn cứng giết), có `--init` thì exit 152 sau 1.88s (giới hạn mềm, đúng hạn). Hệ quả kép: giới hạn trong bắn đúng hạn, **và** mã thoát 152 phân biệt được "quá giờ" với "crash" — thứ mà bước gán verdict sắp cần.
+
+**Đồng hồ tường suy ra từ ngân sách CPU, không chọn rời** — `wall = (cpu_seconds + 1) / cpus + grace`. Container được nửa nhân cần hai giây tường cho mỗi giây CPU; chọn 5s tường cho 5s CPU (phỏng đoán tự nhiên nhất) thì lớp ngoài luôn bắn trước, lớp trong không bao giờ áp dụng, và thời gian một bài được chạy lặng lẽ trở thành hàm của việc máy chủ đang bận đến đâu. Cộng thêm 1 giây CPU vì đó là khoảng ân hạn của chính nhân giữa SIGXCPU và SIGKILL.
+
+**Runner trả về *sự việc*, không trả về verdict** — `Outcome` nói chương trình kết thúc bằng đường nào (thoát, hết giờ CPU, hết giờ tường, hết bộ nhớ, lỗi hệ thống). Ánh xạ sang AC/WA/TLE/MLE/RE/CE/SE là việc của bước sau. Nhờ ranh giới này, luật verdict test được mà không cần container, còn container test được mà không cần khái niệm "đáp án đúng".
+
+**Đọc output có trần bằng luồng riêng, không đọc hết rồi cắt** — bao nhiêu byte được in ra là quyết định của bài nộp, nên nếu đọc hết thì bài nộp quyết định worker tốn bao nhiêu RAM. Vẫn phải **tiếp tục đọc và vứt** phần vượt trần: dừng đọc hẳn thì chương trình kẹt ở pipe đầy, không tốn CPU nữa, giới hạn CPU không còn tác dụng và chỉ còn đồng hồ tường kết thúc được nó.
+
+**`write_bytes` chứ không `write_text` khi ghi mã nguồn và stdin** — trên Windows `write_text` đổi `\n` thành `\r\n`, thêm carriage return vào cuối mỗi dòng input của test case. Một bài đúng sẽ bị chấm sai vì một ký tự không nhìn thấy được, và lỗi này chỉ lộ ra ở máy dev Windows chứ không lộ trên VPS Linux — đúng loại lỗi mà "chạy được trên máy tôi" nói ngược.
+
+**Thư mục mount chỉ chứa đúng `main.py`** — file stdin và mọi thứ khác của runner nằm ngoài mount. Để chung thì bài nộp vừa đọc được input đáng lẽ phải giải mù, vừa có thể `import` bất cứ thứ gì nó thấy ở đó.
+
+**Container không dùng `--rm`, mà `create` → `start` → `inspect` → `rm --force`** — `--rm` xóa container trước khi kịp đọc `State.OOMKilled`, mà đó là câu trả lời duy nhất phân biệt "bị nhân giết vì hết bộ nhớ" với "bị giết vì lý do khác" (cả hai đều exit 137). Tách `create` khỏi `start` còn làm cho lỗi tạo container (thiếu image, daemon chết) không thể bị nhầm thành mã thoát của bài nộp.
+
+**Mọi container mang nhãn `devpath.grading=1`** — worker chết giữa chừng thì đống container còn lại tìm và dọn được bằng một lệnh không thể quét trúng thứ gì khác trên máy chủ.

@@ -9,6 +9,7 @@
 ```
 runner/            Điều phối container, so sánh output, tổng hợp verdict
 runner/images.py   Tên tag của các image sandbox — nguồn duy nhất, và lệnh build
+runner/sandbox.py  Chạy 1 file + 1 stdin trong 1 container dùng một lần, đủ giới hạn
 images/python/     Dockerfile sandbox cho Python (v1 chỉ hỗ trợ Python)
 tests/fixtures/    Code mẫu tái hiện từng verdict + các ca tấn công
 ```

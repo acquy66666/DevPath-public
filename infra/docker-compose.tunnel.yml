@@ -1,0 +1,54 @@
+# A public HTTPS URL for the production stack, without a server or a domain.
+#
+#   ./scripts/tunnel.sh
+#
+# An overlay this time rather than a third file, because it only *adds* a
+# service -- and adding is the one thing an overlay does well. Compose reads it
+# after docker-compose.prod.yml:
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.tunnel.yml \
+#     --env-file .env.prod up -d cloudflared
+#
+# What this is for: from Phase 2 to Phase 5 the project needs a link somebody
+# else can open -- a supervisor, a phone, a laptop that is not this one -- and
+# it does not yet need a server that stays up on its own. A quick tunnel gives
+# exactly that and nothing more. The real host arrives in Phase 6.
+#
+# What you are getting, stated plainly:
+#
+#   * the URL is random and changes every time this container restarts. There
+#     is no way to pin it without a Cloudflare account and a domain, at which
+#     point you are better off with the real deploy.
+#   * it lives only while this machine is on and this container is running.
+#   * Cloudflare caps a quick tunnel at 200 concurrent requests and says in its
+#     own documentation not to use one for production. For one viewer at a time
+#     that is not a limit anybody will meet.
+#   * Google sign-in will not work through it. The redirect URI has to be
+#     registered ahead of time and this URL is not knowable ahead of time.
+#     Password sign-in carries the whole demo.
+#
+# Why it points at nginx rather than at Next directly: /api has to reach the
+# backend on the same origin as the page, and nginx is the thing that makes
+# that true. Pointing at frontend:3000 would serve pages that 404 on every API
+# call.
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command:
+      - tunnel
+      - --no-autoupdate
+      # Quick tunnel: no account, no credentials file, no DNS record. The URL
+      # is printed to the log at startup and nowhere else, which is what
+      # scripts/tunnel.sh goes looking for.
+      - --url
+      - https://nginx:443
+      # The certificate on nginx is either self-signed or issued for a domain
+      # this stack is not being reached by, and neither matters: this hop is
+      # inside the compose network, and the TLS the visitor sees is the one
+      # Cloudflare terminates at its edge.
+      - --no-tls-verify
+    depends_on:
+      nginx:
+        condition: service_healthy

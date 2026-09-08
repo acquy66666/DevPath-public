@@ -12,6 +12,14 @@ Mục đích: mọi lỗi cấu hình lộ ra ở đây thay vì lộ ra trên V
 | `nginx-tls-headers.txt` | Chuyển hướng 80 → 443, 6 header bảo mật, `/healthz`, tài liệu API trả 404 ở production | 4 và 6 — Bảo mật |
 | `luong-hoc-vien-qua-https.txt` | Đăng ký → tìm khóa học → enroll → lưu tiến độ → đọc lại đúng vị trí, tất cả qua nginx + HTTPS | 4 và 5 — Kiểm thử |
 | `bundle-khong-ten-mien.txt` | Bundle production không chứa địa chỉ backend nào; cùng một image phục vụ hai host khác nhau; đối chứng với bundle dev vẫn gọi tuyệt đối | 4 — Xây dựng hệ thống |
+| `luong-gate-qua-tunnel.txt` | Đúng luồng gate Phase 2 chạy qua URL công khai, xác thực TLS bật | 4 và 5 — Kiểm thử |
+| `phase2-01-trang-chu-tunnel.png` | Trang chủ trên URL công khai | 4 |
+| `phase2-02-danh-sach-khoa-hoc-tunnel.png` | Danh sách khóa học có tìm kiếm và bộ lọc | 4 |
+| `phase2-03-khoa-hoc-cua-toi-tunnel.png` | "Khóa học của tôi" sau khi enroll | 4 |
+| `phase2-04-player-tunnel.png` | **Player quay lại đúng 5:12 = 312 giây đã lưu** — bằng chứng của yêu cầu "thoát rồi vào lại đúng vị trí cũ" | 4 và 5 |
+| `phase2-05-dang-ky-tunnel.png` | Form đăng ký | 4 |
+| `phase2-06-khu-giang-vien-tunnel.png` | Khu giảng viên, đăng nhập bằng tài khoản seed | 4 |
+| `phase2-07-tao-khoa-hoc-tunnel.png` | Form tạo khóa học mới | 4 |
 
 ### Đã chứng minh được
 
@@ -23,11 +31,29 @@ Mục đích: mọi lỗi cấu hình lộ ra ở đây thay vì lộ ra trên V
 - Backend chạy được với `R2_*` và `GOOGLE_*` để trống — đúng trạng thái của một VPS mới dựng.
 - Image production: frontend 398 MB (Next standalone), backend không có pytest/ruff (đã kiểm: `python -m pytest` trong container trả "No module named pytest").
 
+## URL công khai qua Cloudflare Quick Tunnel (08/09/2026)
+
+Cùng stack production ấy, thêm một service `cloudflared` (`infra/docker-compose.tunnel.yml`), cho ra một URL Internet thật: `https://<ngẫu nhiên>.trycloudflare.com`, chứng chỉ do **Google Trust Services** cấp cho `trycloudflare.com`, đi qua edge Cloudflare Hong Kong. Mọi lệnh kiểm tra dưới đây **bật xác thực TLS** — không có `-k`, không bỏ qua chứng chỉ.
+
+Đủ để đóng gate demo của Phase 2 mà không tốn đồng nào và không cần tên miền. Chi tiết được và không được: header của `infra/docker-compose.tunnel.yml`.
+
+### Đã chứng minh được
+
+- Luồng gate chạy trọn qua URL công khai: đăng ký → tìm khóa học → enroll → lưu tiến độ 312s → vào lại đúng vị trí (`luong-gate-qua-tunnel.txt`).
+- **Trên trình duyệt thật**, không phải chỉ bằng script: đăng nhập bằng form, player quay lại đúng 5:12, khu giảng viên mở được bằng tài khoản seed.
+- Cookie refresh đặt trên chính host của tunnel, `HttpOnly` + `Secure` — hệ quả trực tiếp của việc bundle không còn mang tên miền.
+- Console trình duyệt chỉ có một lỗi, và là lỗi đúng: `401` từ `/api/v1/auth/refresh` với khách chưa đăng nhập. Nó cũng là bằng chứng trình duyệt gọi API trên origin của tunnel.
+
 ### Chỉ máy chủ thật mới chứng minh được
 
-- Xin chứng chỉ Let's Encrypt qua thử thách HTTP-01, và vòng gia hạn tự động — đều cần một tên miền công khai gọi ngược về được.
+- Xin chứng chỉ Let's Encrypt qua thử thách HTTP-01, và vòng gia hạn tự động — đều cần một tên miền công khai gọi ngược về được. Tunnel dùng chứng chỉ của Cloudflare nên không chạm tới đường này.
 - Cả stack tự dậy sau khi máy chủ reboot. Chính sách `unless-stopped` đã đặt đúng trên cả 7 container, nhưng chưa reboot thật lần nào.
-- Ảnh chụp màn hình trang chạy trên URL công khai. Chưa chụp: bằng chứng có giá trị cho báo cáo là trang chạy trên tên miền thật với ổ khóa xanh, không phải `https://localhost` kèm cảnh báo chứng chỉ tự ký.
+- Đăng nhập Google: redirect URI phải đăng ký trước, mà URL tunnel là ngẫu nhiên.
+- URL ổn định. Tunnel đổi URL sau mỗi lần khởi động và chỉ sống khi máy này bật — đủ cho một link gửi đi xem, không đủ cho buổi bảo vệ.
+
+### Một chỗ chưa đúng, đã biết
+
+`frontend/app/layout.tsx` đặt `metadataBase` từ `NEXT_PUBLIC_SITE_URL`, mặc định `http://localhost:3000`. Trên tunnel thì canonical và thẻ Open Graph trỏ về localhost. Chỉ ảnh hưởng metadata SEO, không ảnh hưởng chức năng; sửa khi có tên miền thật ở Phase 6.
 
 ### Lỗi phát hiện được nhờ buổi tổng duyệt
 

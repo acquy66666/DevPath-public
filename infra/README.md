@@ -7,12 +7,14 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ```
 docker-compose.yml       Máy dev: postgres (pgvector), redis, backend, worker, frontend
 docker-compose.prod.yml  VPS: thêm nginx + certbot, bỏ cổng DB, bỏ bind mount
+docker-compose.tunnel.yml  Overlay: thêm cloudflared, cho stack production một URL công khai
 .env.prod.example        Mẫu biến môi trường cho VPS
 postgres/init/           SQL chạy một lần khi volume rỗng (CREATE EXTENSION)
 nginx/templates/         vhost, `${DOMAIN}` do entrypoint của image điền bằng envsubst
 nginx/snippets/          Header proxy và header bảo mật dùng chung
 scripts/init-tls.sh      Xin chứng chỉ Let's Encrypt lần đầu
 scripts/deploy.sh        Build → migrate → khởi động → đợi healthy
+scripts/tunnel.sh        Bật/tắt URL công khai tạm, in URL ra màn hình
 scripts/                 backup DB (pg_dump → R2), restore — Phase 6
 ```
 
@@ -86,6 +88,26 @@ Biến `R2_*` truyền từ `infra/.env` vào cả hai service. Để trống th
 - Grader cần truy cập Docker daemon để spin sandbox container — đây là quyết định kiến trúc có rủi ro đã biết, xem skill `sandbox-grading` trước khi đụng vào phần mount socket.
 - Secrets đi qua `.env` (đã gitignore), không bao giờ commit. Mỗi service có `.env.example` liệt kê biến cần thiết.
 - Backup DB tự động là task của [Phase 6](../docs/plan/phase-6-hardening-deploy.md); script restore phải được thử khôi phục thật ít nhất một lần.
+
+## URL công khai không cần máy chủ
+
+Từ Phase 2 tới Phase 5, dự án cần một link người khác mở được nhưng **chưa cần** một máy chủ đứng suốt ngày. Cloudflare Quick Tunnel cho đúng chừng đó, miễn phí, không tài khoản, không tên miền:
+
+```bash
+./scripts/deploy.sh
+```
+
+```bash
+./scripts/tunnel.sh
+```
+
+Script in ra `https://<ngẫu nhiên>.trycloudflare.com`. Chứng chỉ là của Cloudflare và hợp lệ thật — trình duyệt không cảnh báo gì.
+
+`./scripts/tunnel.sh --url` in lại URL của tunnel đang chạy, `--stop` tắt tunnel mà giữ nguyên stack.
+
+Tunnel trỏ vào **nginx**, không trỏ thẳng vào Next: `/api` phải về backend trên cùng origin với trang, và nginx chính là thứ làm điều đó đúng. Trỏ vào `frontend:3000` sẽ ra một trang mở được nhưng 404 ở mọi lời gọi API.
+
+Ba giới hạn, biết trước thì không bực: URL đổi sau mỗi lần container khởi động lại; tunnel sống đúng bằng thời gian máy này bật; đăng nhập Google không chạy vì redirect URI phải đăng ký trước. Đăng nhập bằng mật khẩu gánh được cả buổi demo.
 
 ## Deploy lên VPS
 

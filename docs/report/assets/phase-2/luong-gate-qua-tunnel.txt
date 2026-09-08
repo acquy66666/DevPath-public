@@ -1,0 +1,16 @@
+# Gate Phase 2 chay qua URL cong khai (Cloudflare Quick Tunnel)
+# 2026-09-08 10:27 UTC
+# https://remain-barnes-mention-deborah.trycloudflare.com
+# Chung chi: Google Trust Services / CN=trycloudflare.com -- xac thuc TLS BAT, khong dung -k
+# Stack: docker-compose.prod.yml + docker-compose.tunnel.yml, image target production
+
+1. dang ky bang email        -> 201  gvhd1788863237@devpath.example
+2. tim khoa hoc 'python'     -> 200  2 ket qua
+3. chon khoa mien phi        -> 200  Xây dựng REST API với FastAPI
+4. enroll                    -> 201
+5. mo chuong trinh hoc       -> 200  bai video: FastAPI trong 10 phút
+6. xem video, luu 312s       -> 200
+7. thoat roi vao lai         -> 200  last_position_s=312, resume dung bai = True
+8. Khoa hoc cua toi          -> 200  1 khoa
+
+Cookie refresh: [('devpath_refresh', 'remain-barnes-mention-deborah.trycloudflare.com', 'HttpOnly', 'Secure')]

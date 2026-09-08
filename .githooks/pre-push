@@ -2,10 +2,15 @@
 #
 # Blocks force-push and deletion of protected branches.
 #
-# GitHub branch protection is unavailable for this repo (private repo on the
-# Free plan), so this hook is the local stand-in. It is bypassable with
-# --no-verify and only protects this working copy -- it is a safety net for
-# accidents, not a server-side guarantee.
+# The server-side rule is the guarantee: a repository ruleset on `main` with
+# `deletion` and `non_fast_forward`, no bypass actors, added once the Student
+# Developer Pack turned the account Pro and rulesets became available on a
+# private repo.
+#
+# This hook stays anyway, for the one thing the server cannot do: fail in a
+# tenth of a second instead of after a push has uploaded everything. It is
+# bypassable with --no-verify and protects only this working copy, so it is a
+# faster no, never the only one.
 #
 # Enabled via: git config core.hooksPath .githooks
 

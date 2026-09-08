@@ -12,8 +12,8 @@
 ## Khung dự án
 
 - [x] `git init`, tạo repo GitHub, branch protection main — repo private trên gói Free nên GitHub chặn cả ruleset lẫn branch protection (HTTP 403); thay bằng git hook `.githooks/pre-push` chặn force-push và xóa nhánh `main`
-- [ ] Bật ruleset bảo vệ `main` trên GitHub sau khi có Pro — rules: `non_fast_forward` + `deletion`, không bypass actor
-  - Chặn bởi việc đăng ký GitHub Student Developer Pack, nay là một task của [Phase 2 tuần 5](phase-2-core-platform.md) vì cùng cái pack đó còn mở khóa credit máy chủ và tên miền miễn phí
+- [x] Bật ruleset bảo vệ `main` trên GitHub sau khi có Pro — rules: `non_fast_forward` + `deletion`, không bypass actor
+  - Xong 08/09/2026 bằng Student Developer Pack. Ruleset `protect-main`, `enforcement: active`, `bypass_actors: []`, `current_user_can_bypass: never`. Hook `.githooks/pre-push` giữ lại làm lớp báo lỗi nhanh ở máy, không còn là lớp bảo vệ duy nhất
 - [x] Monorepo skeleton: `backend/`, `frontend/`, `grader/`, `infra/` theo cấu trúc trong CLAUDE.md
 - [x] Backend: FastAPI + SQLAlchemy async + Alembic + pytest chạy được; endpoint `/health`; cấu hình bằng pydantic-settings (`.env`)
 - [x] Frontend: Next.js + TypeScript + Tailwind + shadcn/ui; layout khung (header/footer); gọi được `/health`

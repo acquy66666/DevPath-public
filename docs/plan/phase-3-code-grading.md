@@ -6,7 +6,7 @@
 
 ## Tuần 6 — Sandbox MVP
 
-- [ ] Image sandbox Python: user không đặc quyền, tối giản (python:slim + user nobody)
+- [x] Image sandbox Python: user không đặc quyền, tối giản (python:slim + user nobody)
 - [ ] Runner core: chạy 1 file code + 1 stdin trong container với đủ giới hạn (network none, memory, cpus, pids, read-only, no-new-privileges, cap-drop ALL, tmpfs /tmp, timeout 2 lớp)
 - [ ] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
 - [ ] Bộ test verdict: AC / WA / TLE / MLE / RE / CE / SE — fixture cho từng loại trong `grader/tests/fixtures/`

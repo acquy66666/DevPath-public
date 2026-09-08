@@ -152,6 +152,35 @@ jobs:
           python -m scripts.seed
           python -m scripts.seed
 
+  grader:
+    name: Grader — sandbox image
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: grader
+
+    # The one job that runs code the way a student's submission will run: it
+    # builds the sandbox image and then makes assertions from inside a
+    # container, because what matters is what the kernel allows, not what the
+    # Dockerfile claims. `CI` is set for every GitHub run, and the suite turns
+    # a missing Docker daemon into a failure rather than a skip when it is --
+    # a silently skipped sandbox test is worse than a red one.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the test tooling
+        run: pip install "pytest>=8.3" "ruff>=0.8"
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Pytest
+        run: pytest -q
+
   deploy-config:
     name: Deploy config — compose, nginx, production images
     runs-on: ubuntu-latest

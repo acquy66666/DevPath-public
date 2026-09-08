@@ -1,0 +1,76 @@
+BẰNG CHỨNG PHASE 3 — IMAGE SANDBOX PYTHON
+Ngày chạy: 08/09/2026   Máy: dev (Docker Desktop, WSL2)
+Nguồn: grader/images/python/Dockerfile — test: grader/tests/test_python_image.py
+==============================================================================
+
+1. IMAGE ĐÃ BUILD
+------------------------------------------------------------------------------
+User=sandbox
+WorkingDir=/sandbox
+Cmd=[python3 --version]
+Env=
+  PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  LANG=C.UTF-8
+  GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305
+  PYTHON_VERSION=3.12.14
+  PYTHON_SHA256=5c8462af5790baf43a321a1559dbe0db06d1be4300fb85fb53c40060668e548a
+  PYTHONIOENCODING=utf-8
+  PYTHONUNBUFFERED=1
+  PYTHONDONTWRITEBYTECODE=1
+  PYTHONHASHSEED=0
+  HOME=/tmp
+
+devpath-sandbox-python:v1  187MB
+python:3.12-slim-bookworm  189MB
+
+Kích thước gần bằng base: cái được rút gọn ở đây là NỘI DUNG (thư viện, quyền,
+danh tính), không phải dung lượng — phần lớn 187 MB là chính bản Python.
+
+2. ĐỐI CHỨNG: BASE python:3.12-slim-bookworm  ↔  IMAGE SANDBOX
+------------------------------------------------------------------------------
+Cùng một đoạn code, cùng một bộ cờ container. Cột trái là thứ sẽ xảy ra nếu
+chấm bài bằng image Python thông thường.
+
+• Chạy dưới uid/gid nào (không truyền --user)
+    base    : 0 0
+    sandbox : 10001 10001
+• Thư mục làm việc
+    base    : /
+    sandbox : /sandbox
+• pip trên PATH / module ensurepip
+    base    : /usr/local/bin/pip True
+    sandbox : None False
+• Gói bên thứ ba cài sẵn
+    base    : ['pip']
+    sandbox : []
+• Ghi vào /usr/local/lib khi CÓ --read-only
+    base    : EROFS
+    sandbox : EROFS
+• Ghi vào /usr/local/lib khi BỎ --read-only
+    base    : GHI ĐƯỢC
+    sandbox : EACCES
+• Output in ra rồi thoát bằng os._exit (không flush)
+    base    : 
+    sandbox : dòng đã in
+• hash('devpath') — chạy hai lần liên tiếp
+    base    : 4562430851089317239 / -4360033887283379753
+    sandbox : -6433446586248150867 / -6433446586248150867
+• Encoding của stdout
+    base    : utf-8
+    sandbox : utf-8
+
+• Binary có bit setuid/setgid còn sót trong image
+    base    : ['/usr/bin/chage', '/usr/bin/chfn', '/usr/bin/chsh', '/usr/bin/expiry', '/usr/bin/gpasswd', '/usr/bin/mount', '/usr/bin/newgrp', '/usr/bin/passwd', '/usr/bin/su', '/usr/bin/umount', '/usr/sbin/unix_chkpwd']
+    sandbox : []
+
+3. BỘ TEST
+------------------------------------------------------------------------------
+$ ruff check .
+All checks passed!
+
+$ python -m pytest -q
+............                                                             [100%]
+12 passed in 6.40s
+
+Mỗi test đều khẳng định từ BÊN TRONG container đang chạy. `docker inspect` chỉ
+nói image khai báo gì; chỉ chạy một chương trình mới biết nhân cho phép gì.

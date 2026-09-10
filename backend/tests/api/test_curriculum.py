@@ -266,12 +266,34 @@ async def test_a_video_lesson_starts_without_a_video(
     assert lesson["video_asset_id"] is None
 
 
-@pytest.mark.parametrize("lesson_type", ["quiz", "code_exercise", "khong-ton-tai"])
-async def test_only_video_and_article_can_be_created_here(
+async def test_a_code_exercise_lesson_starts_as_an_empty_shell(
+    api_client: AsyncClient, course: dict, owner: dict[str, str]
+) -> None:
+    """Buildable here, filled in elsewhere.
+
+    The statement, the limits and the answer key belong to the grading
+    endpoints -- the test cases especially, which must never travel through a
+    schema the whole curriculum is rendered with."""
+    section = await add_section(api_client, course, owner, "Mở đầu")
+
+    lesson = await add_lesson(
+        api_client, section, owner, "Bài tập: tổng hai số", type="code_exercise"
+    )
+
+    assert lesson["type"] == "code_exercise"
+    assert lesson["article_content"] is None
+
+
+@pytest.mark.parametrize("lesson_type", ["quiz", "khong-ton-tai"])
+async def test_a_lesson_type_without_a_feature_behind_it_cannot_be_created(
     api_client: AsyncClient, course: dict, owner: dict[str, str], lesson_type: str
 ) -> None:
-    """Quizzes and code exercises arrive with their own features in Phase 3–4,
-    each with fields this form knows nothing about."""
+    """A lesson type is buildable once the feature that fills it exists.
+
+    `code_exercise` became buildable in Phase 3, when the exercise, its limits
+    and its test cases got endpoints of their own. `quiz` waits for Phase 4 on
+    the same terms: an empty shell nothing can fill is a dead end in the
+    curriculum, not a feature."""
     section = await add_section(api_client, course, owner, "Mở đầu")
 
     response = await api_client.post(

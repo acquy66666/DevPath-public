@@ -6,6 +6,7 @@ from app.api.v1 import (
     courses,
     curriculum,
     enrollments,
+    grading,
     health,
     progress,
     reviews,
@@ -22,6 +23,7 @@ api_router.include_router(categories.router)
 api_router.include_router(courses.router)
 api_router.include_router(curriculum.router)
 api_router.include_router(enrollments.router)
+api_router.include_router(grading.router)
 api_router.include_router(progress.router)
 api_router.include_router(reviews.router)
 api_router.include_router(study.router)

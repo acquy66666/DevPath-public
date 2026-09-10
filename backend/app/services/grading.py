@@ -1,0 +1,426 @@
+"""Code exercises, test cases, and taking a submission in.
+
+Two audiences with opposite rights meet on the same four tables, and every
+function here starts by deciding which one is asking:
+
+* the instructor who owns the course writes the exercise, its limits, and the
+  answer key. Ownership is checked by walking up to the course, exactly as the
+  curriculum service does -- there is no second definition of "your course".
+* the student reads the statement and the sample cases, and submits. What they
+  may read is what they may read of the *lesson*: preview, enrolled, or the
+  owner. There is no separate rule for exercises, because an exercise a
+  student cannot open a lesson to reach should not be reachable by knowing its
+  id either.
+
+Grading itself is not here. This module takes a submission in and leaves it
+`pending`; the queue and the worker that move it along are the next task, and
+keeping the boundary sharp is what lets the API be tested without Docker.
+"""
+
+import uuid
+
+from fastapi import status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.core.exceptions import DomainError
+from app.models import CodeExercise, Submission, SubmissionResult, TestCase, User
+from app.schemas.grading import (
+    CodeExerciseCreate,
+    CodeExerciseUpdate,
+    TestCaseCreate,
+    TestCaseUpdate,
+)
+from app.services import curriculum as curriculum_service
+
+
+class ExerciseNotFoundError(DomainError):
+    status_code = status.HTTP_404_NOT_FOUND
+    code = "EXERCISE_NOT_FOUND"
+
+
+class ExerciseExistsError(DomainError):
+    """One lesson, one exercise -- the unique constraint, said in advance."""
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "EXERCISE_EXISTS"
+
+
+class LessonNotCodeExerciseError(DomainError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "LESSON_NOT_CODE_EXERCISE"
+
+
+class TestCaseNotFoundError(DomainError):
+    status_code = status.HTTP_404_NOT_FOUND
+    code = "TEST_CASE_NOT_FOUND"
+
+
+class InvalidOrderError(DomainError):
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "INVALID_ORDER"
+
+
+class SubmissionNotFoundError(DomainError):
+    status_code = status.HTTP_404_NOT_FOUND
+    code = "SUBMISSION_NOT_FOUND"
+
+
+class ExerciseNotReadyError(DomainError):
+    """No test cases, so there is nothing a submission could be judged against.
+
+    Rejecting the submission is the honest answer. Accepting it would queue
+    work whose only possible outcome is a system error, and charge the wait to
+    a student who did nothing wrong.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "EXERCISE_NOT_READY"
+
+
+# --- Loading and permissions ----------------------------------------------
+
+
+async def _cases_of(session: AsyncSession, exercise_id: uuid.UUID) -> list[TestCase]:
+    rows = await session.scalars(
+        select(TestCase)
+        .where(TestCase.exercise_id == exercise_id)
+        .order_by(TestCase.position)
+    )
+    return list(rows)
+
+
+async def _load_exercise(session: AsyncSession, exercise_id: uuid.UUID) -> CodeExercise:
+    exercise = await session.get(CodeExercise, exercise_id)
+    if exercise is None:
+        raise ExerciseNotFoundError("Không tìm thấy bài tập code")
+    return exercise
+
+
+async def exercise_for_management(
+    session: AsyncSession, exercise_id: uuid.UUID, user: User
+) -> CodeExercise:
+    """An exercise the caller may edit, or a 403/404 explaining why not."""
+    exercise = await _load_exercise(session, exercise_id)
+    await curriculum_service.lesson_for_management(session, exercise.lesson_id, user)
+    return exercise
+
+
+async def exercise_for_viewer(
+    session: AsyncSession, exercise_id: uuid.UUID, viewer: User | None
+) -> CodeExercise:
+    """An exercise the caller may read, judged by the lesson it belongs to."""
+    exercise = await _load_exercise(session, exercise_id)
+    await curriculum_service.get_lesson_for_viewer(session, exercise.lesson_id, viewer)
+    return exercise
+
+
+async def may_manage_exercise(
+    session: AsyncSession, exercise: CodeExercise, user: User | None
+) -> bool:
+    """Whether this caller is the one who wrote the exercise.
+
+    Used to decide *which view* of a thing to return, so it answers with a
+    boolean rather than raising: for a student the answer is "no", not an
+    error. It asks the same question `exercise_for_management` asks and
+    swallows the refusal, so there is still exactly one definition of "your
+    course" -- a second one written as a join here is how the two drift apart.
+    """
+    if user is None:
+        return False
+    try:
+        await curriculum_service.lesson_for_management(session, exercise.lesson_id, user)
+    except DomainError:
+        return False
+    return True
+
+
+# --- Exercises -------------------------------------------------------------
+
+
+async def get_exercise_of_lesson(
+    session: AsyncSession, lesson_id: uuid.UUID, viewer: User | None
+) -> CodeExercise:
+    """The exercise behind a lesson, if the lesson may be opened at all."""
+    await curriculum_service.get_lesson_for_viewer(session, lesson_id, viewer)
+
+    exercise = await session.scalar(
+        select(CodeExercise).where(CodeExercise.lesson_id == lesson_id)
+    )
+    if exercise is None:
+        raise ExerciseNotFoundError("Bài học này chưa có bài tập code")
+    return exercise
+
+
+async def create_exercise(
+    session: AsyncSession,
+    lesson_id: uuid.UUID,
+    user: User,
+    payload: CodeExerciseCreate,
+) -> CodeExercise:
+    lesson, _, _ = await curriculum_service.lesson_for_management(
+        session, lesson_id, user
+    )
+    if lesson.type != "code_exercise":
+        raise LessonNotCodeExerciseError(
+            "Chỉ bài học kiểu 'code_exercise' mới gắn được bài tập code"
+        )
+
+    existing = await session.scalar(
+        select(CodeExercise).where(CodeExercise.lesson_id == lesson_id)
+    )
+    if existing is not None:
+        raise ExerciseExistsError("Bài học này đã có bài tập code")
+
+    exercise = CodeExercise(
+        lesson_id=lesson.id,
+        statement_md=payload.statement_md,
+        language=payload.language,
+        starter_code=payload.starter_code,
+        time_limit_ms=payload.time_limit_ms,
+        memory_limit_mb=payload.memory_limit_mb,
+    )
+    session.add(exercise)
+    await session.commit()
+    await session.refresh(exercise)
+    return exercise
+
+
+async def update_exercise(
+    session: AsyncSession,
+    exercise_id: uuid.UUID,
+    user: User,
+    payload: CodeExerciseUpdate,
+) -> CodeExercise:
+    exercise = await exercise_for_management(session, exercise_id, user)
+
+    # exclude_unset, not exclude_none: `starter_code: null` is how an
+    # instructor clears the starter code, and it must not read as "unchanged".
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(exercise, field, value)
+
+    await session.commit()
+    await session.refresh(exercise)
+    return exercise
+
+
+async def delete_exercise(
+    session: AsyncSession, exercise_id: uuid.UUID, user: User
+) -> None:
+    """Delete the exercise, its test cases, and every submission to it.
+
+    A hard delete, and it takes real student work with it through the
+    cascades. That is the instructor's call to make about their own lesson --
+    the alternative, orphan submissions to an exercise that no longer states
+    what they were answering, is worse than nothing.
+    """
+    exercise = await exercise_for_management(session, exercise_id, user)
+    await session.delete(exercise)
+    await session.commit()
+
+
+# --- Test cases ------------------------------------------------------------
+
+
+async def list_test_cases(
+    session: AsyncSession, exercise_id: uuid.UUID, user: User
+) -> list[TestCase]:
+    """Every case with its answer key. Owner only."""
+    await exercise_for_management(session, exercise_id, user)
+    return await _cases_of(session, exercise_id)
+
+
+async def list_test_cases_for_viewer(
+    session: AsyncSession, exercise_id: uuid.UUID, viewer: User | None
+) -> list[TestCase]:
+    """Every case a student is allowed to know *about*.
+
+    Hidden cases are included, and that is on purpose: knowing there are eight
+    of them, and what they are worth, tells a student how the exercise is
+    marked without telling them any answer. The router renders these through
+    `TestCaseSample`, which has nowhere to put an input or an expected output.
+    """
+    await exercise_for_viewer(session, exercise_id, viewer)
+    return await _cases_of(session, exercise_id)
+
+
+async def create_test_case(
+    session: AsyncSession,
+    exercise_id: uuid.UUID,
+    user: User,
+    payload: TestCaseCreate,
+) -> TestCase:
+    await exercise_for_management(session, exercise_id, user)
+    existing = await _cases_of(session, exercise_id)
+
+    case = TestCase(
+        exercise_id=exercise_id,
+        input=payload.input,
+        expected_output=payload.expected_output,
+        is_hidden=payload.is_hidden,
+        score_weight=payload.score_weight,
+        position=len(existing),
+    )
+    session.add(case)
+    await session.commit()
+    await session.refresh(case)
+    return case
+
+
+async def _case_for_management(
+    session: AsyncSession, test_case_id: uuid.UUID, user: User
+) -> TestCase:
+    case = await session.get(TestCase, test_case_id)
+    if case is None:
+        raise TestCaseNotFoundError("Không tìm thấy test case")
+    await exercise_for_management(session, case.exercise_id, user)
+    return case
+
+
+async def update_test_case(
+    session: AsyncSession,
+    test_case_id: uuid.UUID,
+    user: User,
+    payload: TestCaseUpdate,
+) -> TestCase:
+    case = await _case_for_management(session, test_case_id, user)
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(case, field, value)
+
+    await session.commit()
+    await session.refresh(case)
+    return case
+
+
+async def delete_test_case(
+    session: AsyncSession, test_case_id: uuid.UUID, user: User
+) -> None:
+    case = await _case_for_management(session, test_case_id, user)
+    exercise_id = case.exercise_id
+
+    await session.delete(case)
+    await session.flush()
+
+    for index, remaining in enumerate(await _cases_of(session, exercise_id)):
+        remaining.position = index
+    await session.commit()
+
+
+async def reorder_test_cases(
+    session: AsyncSession,
+    exercise_id: uuid.UUID,
+    user: User,
+    test_case_ids: list[uuid.UUID],
+) -> list[TestCase]:
+    """Set the order of every case at once, as it looks after a drag.
+
+    Whole-list, like the curriculum: the client sends the arrangement it wants
+    rather than a move instruction, and a list that is not exactly the current
+    set is rejected rather than half-applied.
+    """
+    await exercise_for_management(session, exercise_id, user)
+    cases = await _cases_of(session, exercise_id)
+
+    by_id = {case.id: case for case in cases}
+    if len(test_case_ids) != len(by_id) or set(test_case_ids) != set(by_id):
+        raise InvalidOrderError("Danh sách test case phải chứa đúng các case hiện có")
+
+    for index, case_id in enumerate(test_case_ids):
+        by_id[case_id].position = index
+    await session.commit()
+
+    return await _cases_of(session, exercise_id)
+
+
+# --- Submissions -----------------------------------------------------------
+
+
+async def create_submission(
+    session: AsyncSession, exercise_id: uuid.UUID, user: User, code: str
+) -> Submission:
+    """Take a submission in and leave it waiting to be graded.
+
+    The row is `pending` and carries no verdict; the database will not let it
+    carry one until it is `done`. Enqueueing it is the next task, and until
+    then a submission simply sits here -- which is the honest state of the
+    system rather than a fake result.
+    """
+    exercise = await exercise_for_viewer(session, exercise_id, user)
+
+    cases = await _cases_of(session, exercise_id)
+    if not cases:
+        raise ExerciseNotReadyError("Bài tập chưa có test case nào để chấm")
+
+    submission = Submission(
+        user_id=user.id,
+        exercise_id=exercise.id,
+        code=code,
+        # From the exercise, not from the client: what language a submission is
+        # graded as is not the submitter's decision.
+        language=exercise.language,
+        status="pending",
+    )
+    session.add(submission)
+    await session.commit()
+    await session.refresh(submission)
+    return submission
+
+
+async def list_submissions(
+    session: AsyncSession,
+    exercise_id: uuid.UUID,
+    user: User,
+    *,
+    page: int,
+    page_size: int,
+) -> tuple[list[Submission], int]:
+    """Your own attempts at one exercise, newest first.
+
+    Only your own, even for the instructor who owns the exercise: reading
+    another student's submissions is a different feature with a different
+    audience, and it is not this one.
+    """
+    await exercise_for_viewer(session, exercise_id, user)
+
+    mine = (Submission.exercise_id == exercise_id) & (Submission.user_id == user.id)
+    total = await session.scalar(select(func.count()).select_from(Submission).where(mine))
+
+    rows = await session.scalars(
+        select(Submission)
+        .where(mine)
+        # id as the tiebreaker: two submissions in the same millisecond would
+        # otherwise have no fixed order, which is how a row appears on two
+        # pages or on none.
+        .order_by(Submission.created_at.desc(), Submission.id.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    return list(rows), total or 0
+
+
+async def get_submission(
+    session: AsyncSession, submission_id: uuid.UUID, user: User
+) -> tuple[Submission, list[tuple[SubmissionResult, TestCase]]]:
+    """One submission and its per-case results.
+
+    Readable by the student who sent it and by the instructor who owns the
+    exercise -- the second is what makes "why was I marked wrong?" answerable.
+    Anyone else gets a 404 rather than a 403: that a given submission id
+    exists is not something a stranger should learn.
+    """
+    submission = await session.get(Submission, submission_id)
+    if submission is None:
+        raise SubmissionNotFoundError("Không tìm thấy bài nộp")
+
+    if submission.user_id != user.id:
+        exercise = await _load_exercise(session, submission.exercise_id)
+        if not await may_manage_exercise(session, exercise, user):
+            raise SubmissionNotFoundError("Không tìm thấy bài nộp")
+
+    rows = await session.execute(
+        select(SubmissionResult, TestCase)
+        .join(TestCase, TestCase.id == SubmissionResult.test_case_id)
+        .where(SubmissionResult.submission_id == submission.id)
+        .order_by(TestCase.position)
+    )
+    return submission, [(result, case) for result, case in rows]

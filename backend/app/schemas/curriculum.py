@@ -15,9 +15,12 @@ from app.schemas.video import VideoAssetOut
 
 TITLE_MAX_LENGTH = 200
 
-# The builder creates these two. Quizzes and code exercises arrive with their
-# own features in Phase 3-4, each carrying fields this form knows nothing about.
-BuildableLessonType = Literal["video", "article"]
+# What the curriculum builder can create. A `code_exercise` lesson is an empty
+# shell until the exercise is attached to it -- statement, limits and test
+# cases have their own endpoints, because they are a form of their own and
+# because the answer key must never travel through a curriculum schema.
+# Quizzes join this list in Phase 4, on the same terms.
+BuildableLessonType = Literal["video", "article", "code_exercise"]
 
 
 def _strip_title(value: str) -> str:

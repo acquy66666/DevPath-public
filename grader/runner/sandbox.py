@@ -25,6 +25,7 @@ import tempfile
 import threading
 import time
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
@@ -42,6 +43,40 @@ HARD_LIMIT_MARGIN_SECONDS = 1
 
 SOURCE_FILENAME = "main.py"
 MOUNT_POINT = "/sandbox"
+
+# The program travels as argv, never as a shell command line, so there is
+# nothing for a filename or a piece of code to break out of.
+#
+# By its bare name, from a working directory set to the mount: a traceback
+# names the file it was raised in, and "File "main.py", line 2" is a sentence
+# about the student's own file, while "File "/sandbox/main.py"" is a sentence
+# about our container. Same file, same line, one of them readable by the
+# person who has to fix it.
+RUN_COMMAND = ("python3", SOURCE_FILENAME)
+
+# Compiles the submission without running a line of it, and says why if it
+# cannot. Python has no compile step of its own, which is exactly why this
+# exists: without it a syntax error would arrive as a runtime error on every
+# test case, each one paying for a container, and the student would be told
+# their program failed a case it never reached.
+#
+# Read as bytes and handed to `compile` whole, because that is what the
+# interpreter does -- it is what makes an encoding declaration, a BOM, or a
+# broken one behave here exactly as it would locally. The file is named
+# `main.py` in the message rather than by its path inside the container:
+# students should read a message about their file, not about our mount. And
+# only the exception is printed, not the traceback, so the checker's own frame
+# never appears in it.
+_COMPILE_CHECKER = """\
+import sys, traceback
+try:
+    with open(sys.argv[1], "rb") as source:
+        compile(source.read(), "main.py", "exec")
+except (SyntaxError, ValueError) as exc:
+    sys.stderr.write("".join(traceback.format_exception_only(type(exc), exc)))
+    raise SystemExit(1)
+"""
+COMPILE_COMMAND = ("python3", "-c", _COMPILE_CHECKER, SOURCE_FILENAME)
 
 # 128 + SIGXCPU(24): the CPU limit's soft signal, whose default action is to
 # terminate the process -- provided the process is not PID 1. See `--init`.
@@ -130,8 +165,15 @@ def execute(
     stdin: str = "",
     limits: Limits = DEFAULT_LIMITS,
     image: str = PYTHON_IMAGE,
+    command: Sequence[str] = RUN_COMMAND,
 ) -> Execution:
-    """Run `source` against `stdin` in a fresh container and clean up after it."""
+    """Run `source` against `stdin` in a fresh container and clean up after it.
+
+    `command` is what the container is told to do with the file; it is ours,
+    never the submission's. The compile check is the same cell with the same
+    limits and a different verb, which is the point -- checking a hostile
+    file's syntax is still running a parser over a hostile file.
+    """
     workspace = Path(tempfile.mkdtemp(prefix="devpath-grading-"))
     container = f"devpath-grading-{uuid.uuid4().hex}"
 
@@ -161,11 +203,7 @@ def execute(
             "create",
             *_container_flags(container, code_dir, limits),
             image,
-            # The program travels as argv. There is no shell in this command
-            # line, so there is nothing for a filename or a piece of code to
-            # break out of.
-            "python3",
-            f"{MOUNT_POINT}/{SOURCE_FILENAME}",
+            *command,
         )
         if created.returncode != 0:
             return _system_error(created.stderr or created.stdout, image)
@@ -226,6 +264,10 @@ def _container_flags(container: str, code_dir: Path, limits: Limits) -> list[str
         # the host's disk with a log nobody will ever read.
         "--log-driver", "none",
         "--mount", f"type=bind,source={code_dir},target={MOUNT_POINT},readonly",
+        # So the submission is named by the name the student gave it, in
+        # tracebacks and in the compile message alike. Read-only, like the
+        # mount it is: a working directory is not somewhere to write.
+        "--workdir", MOUNT_POINT,
     ]
 
 

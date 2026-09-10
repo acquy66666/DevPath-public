@@ -8,6 +8,7 @@ Image mà mã nguồn của người lạ sẽ chạy trong đó: `grader/images
 |---|---|---|
 | `sandbox-image.txt` | Cấu hình image đã build; **bảng đối chứng image thường ↔ image sandbox** trên 9 phép thử; kết quả ruff + 12 test | 4 — Xây dựng hệ thống, và 6 — Bảo mật |
 | `runner-core.txt` | Giới hạn đọc từ **bên trong** container; hai lớp timeout đo bằng số thật; **phát hiện PID 1 nuốt tín hiệu**; OOM / crash / cắt output / SE; kiểm tra rò container; chi phí một lần chấm | 4 — Xây dựng hệ thống, và 6 — Bảo mật |
+| `verdicts.txt` | **Log demo đủ 7 verdict** sinh từ 10 bài nộp thật; thứ tự ưu tiên; thông báo lỗi cú pháp và lỗi hệ thống nguyên văn; kết quả ruff + 30 test | 4 — Xây dựng hệ thống |
 | `output-comparison.txt` | **Bảng đối chứng so sánh thô ↔ so sánh có chuẩn hóa** trên 14 ca; lý do không dùng `splitlines()`; luật output bị cắt không bao giờ AC; kết quả ruff + 18 test | 4 — Xây dựng hệ thống |
 
 ### Đã chứng minh được
@@ -84,3 +85,31 @@ b` sẽ bằng nhau — một bài in ra ký tự điều khiển được chấ
 ### Việc phụ đã làm cùng
 
 Fixture Docker trong `grader/tests/conftest.py` từ `autouse` chuyển thành **xin mới có** (`pytestmark = pytest.mark.usefixtures("sandbox_images")` ở hai module chạy container). Trước đó mọi test đều phải chờ build image, và trên máy không bật Docker thì cả bộ test chính sách chấm điểm — thứ không cần Docker chút nào — bị skip im lặng.
+
+## Bộ verdict (10/09/2026)
+
+`grader/runner/verdict.py` — nơi hai nửa gặp nhau: `sandbox` nói tiến trình kết thúc thế nào và từ chối phán xét, `compare` nói output có đúng không và không biết gì về tiến trình.
+
+`verdicts.txt` là **log demo đủ 7 verdict** mà gate cuối phase yêu cầu: 10 bài nộp thật, 10/10 khớp verdict mong đợi, không letter nào còn thiếu.
+
+### Thứ tự ưu tiên — chỗ dễ sai nhất
+
+Ba luật, xếp theo đúng thứ tự này, mỗi luật bảo vệ học viên khỏi một câu trả lời sai về chính chương trình họ viết:
+
+1. **Lỗi phía mình không bao giờ tính vào học viên.** SE đè mọi letter khác, cả trong một case lẫn trên cả bài nộp — kể cả khi output tình cờ khớp.
+2. **Bài bị giới hạn giết không phải là WA.** Nó chưa chạy xong, nên thứ nó in ra chưa từng là câu trả lời. So output trước sẽ báo "sai đáp án" cho một bài đang in đúng thì bị cắt ngang, và chỉ học viên sai chỗ: lỗi ở độ phức tạp chứ không ở logic.
+3. **Bài chết giữa chừng không đậu, dù đã in đúng.** Fixture `right_answer_then_crash.py` in y hệt đáp án rồi mới chết — so sánh output đơn thuần sẽ chấm AC.
+
+Verdict của cả bài lấy theo **case hỏng đầu tiên**, không phải case "nặng nhất": test case do giảng viên xếp thứ tự, dễ trước, nên "case 3 quá giờ" là câu học viên hành động được.
+
+### Đã chứng minh được
+
+- **Cả 7 letter đều đã tận mắt thấy hệ thống sinh ra**, mỗi cái từ một fixture riêng trong `grader/tests/fixtures/`. Hai letter có hai đường sinh khác nhau: TLE từ giới hạn CPU *bên trong* (`burn_cpu.py`, 2.23s) và từ đồng hồ tường *bên ngoài* (`sleep_forever.py`, 6.11s).
+- **CE chặn ở pha compile, không case nào chạy**: nộp bài sai cú pháp kèm 5 test case → 0 container chạy bài, tổng 0.64s. Python không có bước biên dịch riêng, nên pha này là một lần `compile()` trong đúng sandbox đó; thiếu nó thì lỗi cú pháp sẽ về dưới dạng RE trên *từng* test case, mỗi case tốn một container.
+- **Thông báo lỗi nói về tệp của học viên, không nói về hạ tầng của mình**: `File "main.py", line 3` chứ không phải `/sandbox/main.py`, ở cả CE lẫn traceback lúc chạy.
+- **Mỗi test case một container riêng**, nên tiến trình sót, tệp ghi vào `/tmp` hay interpreter đã "nóng máy" không thể chạy từ case này sang case kia — nếu không, verdict sẽ phụ thuộc vào thứ tự case.
+- Chạy **hết mọi case**, không dừng ở case hỏng đầu tiên: học viên cần biết "đúng 2/3" chứ không phải "trượt", và điểm thành phần cần con số đó.
+
+### Lỗi bắt được trong lúc làm
+
+Traceback lúc chạy ghi `File "/sandbox/main.py"` — đường dẫn nội bộ của hệ thống dán vào thông báo lỗi của học viên, trong khi pha compile đã ghi đúng `main.py`. Đặt `--workdir` vào chỗ mount **không đủ**: từ Python 3.11 đường dẫn script luôn được tuyệt đối hóa. Phải cắt tiền tố ở tầng trình bày — và **chỉ trên stderr**: stdout là thứ đem đi chấm, sửa nó thì verdict thôi không còn nói về việc chương trình đã làm gì.

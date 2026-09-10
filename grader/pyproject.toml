@@ -8,6 +8,10 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+# The one file in the repo that must not parse: it is the fixture that
+# provokes a compile error, and a linter that could read it would mean the
+# grader had nothing to reject.
+extend-exclude = ["tests/fixtures/syntax_error.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]

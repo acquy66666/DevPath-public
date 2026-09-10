@@ -8,6 +8,7 @@ Image mà mã nguồn của người lạ sẽ chạy trong đó: `grader/images
 |---|---|---|
 | `sandbox-image.txt` | Cấu hình image đã build; **bảng đối chứng image thường ↔ image sandbox** trên 9 phép thử; kết quả ruff + 12 test | 4 — Xây dựng hệ thống, và 6 — Bảo mật |
 | `runner-core.txt` | Giới hạn đọc từ **bên trong** container; hai lớp timeout đo bằng số thật; **phát hiện PID 1 nuốt tín hiệu**; OOM / crash / cắt output / SE; kiểm tra rò container; chi phí một lần chấm | 4 — Xây dựng hệ thống, và 6 — Bảo mật |
+| `attack-tests.txt` | **7 ca tấn công thật, 43 lần bị chặn, 0 ca thoát**; báo cáo do chính chương trình tấn công in ra từ bên trong container; 4 lớp phòng thủ độc lập | 6 — Bảo mật (chương chính) |
 | `verdicts.txt` | **Log demo đủ 7 verdict** sinh từ 10 bài nộp thật; thứ tự ưu tiên; thông báo lỗi cú pháp và lỗi hệ thống nguyên văn; kết quả ruff + 30 test | 4 — Xây dựng hệ thống |
 | `output-comparison.txt` | **Bảng đối chứng so sánh thô ↔ so sánh có chuẩn hóa** trên 14 ca; lý do không dùng `splitlines()`; luật output bị cắt không bao giờ AC; kết quả ruff + 18 test | 4 — Xây dựng hệ thống |
 
@@ -113,3 +114,48 @@ Verdict của cả bài lấy theo **case hỏng đầu tiên**, không phải c
 ### Lỗi bắt được trong lúc làm
 
 Traceback lúc chạy ghi `File "/sandbox/main.py"` — đường dẫn nội bộ của hệ thống dán vào thông báo lỗi của học viên, trong khi pha compile đã ghi đúng `main.py`. Đặt `--workdir` vào chỗ mount **không đủ**: từ Python 3.11 đường dẫn script luôn được tuyệt đối hóa. Phải cắt tiền tố ở tầng trình bày — và **chỉ trên stderr**: stdout là thứ đem đi chấm, sửa nó thì verdict thôi không còn nói về việc chương trình đã làm gì.
+
+## Bộ test tấn công sandbox (10/09/2026)
+
+`grader/tests/test_sandbox_attacks.py` + 7 fixture `attack_*.py`. Mỗi ca tấn công **tự kết luận từ bên trong container**: `docker inspect` chỉ nói mình đã *yêu cầu* gì, còn các file này nói kernel thực sự *cho phép* gì.
+
+### Kết quả
+
+| Ca tấn công | Chặn bằng | Thoát được? | Số lần bị chặn |
+|---|---|---|---|
+| Gọi ra ngoài mạng (4 đích TCP, DNS, raw socket) | `--network none`, `--cap-drop ALL` | không | 6 |
+| Đọc file ngoài chỗ mount (17 đường dẫn) | không bind mount gì khác + uid 10001 + Docker che `/proc` | không | 17 |
+| Ghi vào rootfs (7 đích) | `--read-only`, mount code read-only | không | 7 |
+| Fork bomb | `--pids-limit 64` | không | 2 |
+| Leo thang đặc quyền (9 lối) | `--cap-drop ALL`, `no-new-privileges`, `USER 10001` | không | 9 |
+| Làm đầy ổ đĩa máy chấm | `--tmpfs /tmp size=64m` | không | 2 |
+| Tự giết container của chính mình | PID namespace riêng | không (chỉ hại chính nó) | — |
+
+**Tổng: 43 lần một bức tường nói không, 0 ca thoát.**
+
+### Vài con số đáng trích vào chương 6
+
+- Mạng trả về **`ENETUNREACH`** chứ không phải timeout — kernel *không có tuyến* để đi, đúng nghĩa `--network none`. Timeout sẽ ám chỉ có một tường lửa ở đâu đó, mà tường lửa thì cấu hình sai được. Interface duy nhất nhìn thấy: `['lo']`.
+- **`/var/run/docker.sock` không tồn tại.** Đây là ca quan trọng nhất cả bộ: đọc được socket của daemon thì không cần thoát sandbox nữa, chỉ cần xin daemon một container không giới hạn.
+- Fork bomb dừng ở **62 tiến trình con** (giới hạn 64, trừ init và tiến trình cha), lỗi `EAGAIN`. Máy chạy test không hề hấn gì.
+- Ghi `/tmp` dừng đúng ở **64 MB**, `ENOSPC`.
+- `/etc/shadow` có tồn tại nhưng **đọc bị từ chối** — bằng chứng trực tiếp rằng bài nộp không chạy bằng root.
+- Kernel tự trả lời: `Uid: 10001`, `CapEff/CapPrm/CapBnd: 0000000000000000`, `NoNewPrivs: 1`.
+
+### Lớp phòng thủ thứ ba và thứ tư (không do mình cấu hình)
+
+Bộ test lộ ra hai lớp không nằm trong Dockerfile lẫn cờ của runner:
+
+- **Docker che `/proc`**: `/proc/kcore` mở được nhưng rỗng — nó bị bind mount đè bằng `/dev/null`, chứng minh bằng `st_rdev` trùng khít `1,3` của `/dev/null`.
+- **Seccomp bật sẵn**: `/proc/self/status` báo `Seccomp: 2` (chế độ lọc), tức profile mặc định của Docker đang chặn hàng chục syscall trước khi capability kịp có ý kiến.
+
+### Hai lần fixture báo động giả — và vì sao vẫn giữ lại chuyện đó
+
+Lần chạy đầu, hai ca báo `ESCAPED`. Cả hai đều là **fixture kết luận sai**, không phải tường thủng, và cách phân biệt mới là điều đáng ghi vào báo cáo:
+
+1. `/proc/kcore` mở được → tưởng đọc được bộ nhớ kernel. Thực tế đọc ra 0 byte vì đã bị che bằng `/dev/null`. Bài học: *mở được* không đồng nghĩa với *đọc được*; phải kiểm tra nội dung, và ở đây là kiểm tra cả số hiệu thiết bị.
+2. `os.kill(1, 9)` **trả về thành công** → tưởng giết được init. Thực tế PID 1 (`docker-init`) vẫn sống, trạng thái `S`: kernel bảo vệ init của một PID namespace khỏi tín hiệu do chính con cháu nó gửi. Bài học: *syscall được phép gọi* không đồng nghĩa với *syscall có tác dụng*; phải đo hậu quả chứ không đọc mã trả về.
+
+### Hạn chế đã biết, nói thẳng
+
+Bài nộp **giết được container của chính nó** bằng `SIGTERM` gửi tới PID 1 (`docker-init` có handler cho tín hiệu này). Không chặn được, và cũng không cần chặn: tín hiệu không đi ra khỏi PID namespace nên không bài nộp nào khác bị ảnh hưởng, container thoát mã 143 ≠ 0 nên verdict là RE. Học viên chỉ có thể vứt bỏ chính bài của mình. Có fixture và test riêng cho việc này thay vì giấu đi.

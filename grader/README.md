@@ -13,7 +13,7 @@ runner/sandbox.py  Chạy 1 file + 1 stdin trong 1 container dùng một lần, 
 runner/compare.py  Chuẩn hóa và so sánh output — chính sách "thế nào là đúng", không cần Docker
 runner/verdict.py  Compile 1 lần, chạy từng test case, đặt tên verdict cho cả bài nộp
 images/python/     Dockerfile sandbox cho Python (v1 chỉ hỗ trợ Python)
-tests/fixtures/    Code mẫu tái hiện từng verdict + các ca tấn công
+tests/fixtures/    Code mẫu tái hiện từng verdict + 7 ca tấn công (`attack_*.py`)
 ```
 
 ## Chạy

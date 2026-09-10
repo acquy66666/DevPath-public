@@ -1,0 +1,175 @@
+==============================================================================
+BO TEST TAN CONG SANDBOX
+==============================================================================
+
+Image  : devpath-sandbox-python:v1
+Gioi han: cpu 5s, 0.5 core, 256MB, 64 pids, tmpfs 64MB, output 1000000 byte
+
+Moi dong bat dau bang BLOCKED / MASKED / ALLOWED la ket luan do CHINH
+CHUONG TRINH TAN CONG in ra tu BEN TRONG container. ESCAPED nghia la mot
+buc tuong da thung - khong dong nao duoi day co tu do.
+
+==============================================================================
+GOI RA NGOAI MANG
+==============================================================================
+  fixture   : tests/fixtures/attack_network.py
+  vi sao    : Mo socket duoc la lay duoc de bai an, tai duoc loi giai, hoac bien may cham bai thanh proxy cho nguoi khac.
+  chan bang : --network none
+  ket thuc  : exited, exit 0, 0.95s
+
+    BLOCKED  TCP 8.8.8.8:53 (DNS resolver)      OSError: ENETUNREACH Network is unreachable
+    BLOCKED  TCP 1.1.1.1:80 (web)               OSError: ENETUNREACH Network is unreachable
+    BLOCKED  TCP 172.17.0.1:22 (docker host)    OSError: ENETUNREACH Network is unreachable
+    BLOCKED  TCP 10.0.0.1:80 (private range)    OSError: ENETUNREACH Network is unreachable
+    BLOCKED  DNS lookup of example.com          gaierror: -3 Temporary failure in name resolution
+    BLOCKED  raw socket (needs CAP_NET_RAW)     PermissionError: EPERM Operation not permitted
+
+    INFO     interfaces visible: ['lo']
+
+==============================================================================
+DOC FILE NGOAI CHO MOUNT
+==============================================================================
+  fixture   : tests/fixtures/attack_read_outside_mount.py
+  vi sao    : Doc duoc /var/run/docker.sock thi khong can thoat sandbox nua: xin daemon mot container khac la xong.
+  chan bang : khong bind mount gi ngoai thu muc code + user 10001 + Docker che /proc
+  ket thuc  : exited, exit 0, 0.92s
+
+    BLOCKED  /var/run/docker.sock       does not exist
+    BLOCKED  /run/docker.sock           does not exist
+    BLOCKED  /dev/sda                   does not exist
+    BLOCKED  /dev/vda                   does not exist
+    BLOCKED  /dev/mem                   does not exist
+    BLOCKED  /dev/kmsg                  does not exist
+    MASKED   /proc/kcore                replaced by /dev/null, nothing to read
+    BLOCKED  /proc/sysrq-trigger        PermissionError: Permission denied
+    BLOCKED  /etc/shadow                PermissionError: Permission denied
+    BLOCKED  /host                      does not exist
+    BLOCKED  /mnt/host                  does not exist
+    BLOCKED  /media                     an empty directory: []
+    BLOCKED  /app/.env                  does not exist
+    BLOCKED  /backend/.env              does not exist
+    BLOCKED  /sandbox/stdin             does not exist
+    BLOCKED  /sandbox/../stdin          does not exist
+    BLOCKED  /sandbox/expected          does not exist
+
+    INFO     contents of the mount: ['main.py']
+    INFO     environment: ['GPG_KEY', 'HOME', 'HOSTNAME', 'LANG', 'PATH', 'PYTHONDONTWRITEBYTECODE', 'PYTHONHASHSEED', 'PYTHONIOENCODING', 'PYTHONUNBUFFERED', 'PYTHON_SHA256', 'PYTHON_VERSION']
+    INFO     environment variables that are not image furniture: []
+    INFO     processes visible: [1, 7]
+
+==============================================================================
+GHI VAO ROOTFS
+==============================================================================
+  fixture   : tests/fixtures/attack_write_rootfs.py
+  vi sao    : Ghi duoc vao thu vien chuan la moi bai nop sau do deu import code cua ke tan cong. Phan thuong khong phai lan chay nay, ma lan chay sau.
+  chan bang : --read-only, mount code read-only, chi /tmp la tmpfs ghi duoc
+  ket thuc  : exited, exit 0, 1.28s
+
+    BLOCKED  append to the image's user list          PermissionError: Permission denied
+    BLOCKED  create a file at the root of /etc        OSError: Read-only file system
+    BLOCKED  create a file at /                       OSError: Read-only file system
+    BLOCKED  poison the standard library              PermissionError: Permission denied
+    BLOCKED  replace the interpreter                  PermissionError: Permission denied
+    BLOCKED  rewrite the source that was graded       OSError: Read-only file system
+    BLOCKED  plant a module beside the source         OSError: Read-only file system
+    ALLOWED  write to /tmp (must be allowed)          as designed
+
+==============================================================================
+FORK BOMB
+==============================================================================
+  fixture   : tests/fixtures/attack_fork_bomb.py
+  vi sao    : Tu choi dich vu khong can mot y tuong thong minh nao: cu fork. Het bang tien trinh cua host thi ca may dung, ke ca API va sshd.
+  chan bang : --pids-limit 64
+  ket thuc  : exited, exit 0, 0.75s
+
+    BLOCKED  fork bomb stopped after 62 children
+    BLOCKED  the kernel refused with BlockingIOError: Resource temporarily unavailable
+
+==============================================================================
+LEO THANG DAC QUYEN
+==============================================================================
+  fixture   : tests/fixtures/attack_escalate_privileges.py
+  vi sao    : Gia dinh ma moi test con lai dua vao: bai nop la user thuong, khong co capability nao.
+  chan bang : --cap-drop ALL, --security-opt no-new-privileges, USER 10001 trong image
+  ket thuc  : exited, exit 0, 1.30s
+
+    INFO     running as uid=10001 gid=10001 euid=10001
+
+    BLOCKED  become root with setuid(0)             PermissionError: [Errno 1] Operation not permitted
+    BLOCKED  become root with setgid(0)             PermissionError: [Errno 1] Operation not permitted
+    BLOCKED  become root with setresuid(0,0,0)      PermissionError: [Errno 1] Operation not permitted
+    BLOCKED  chroot('/') (needs CAP_SYS_CHROOT)     PermissionError: [Errno 1] Operation not permitted: '/'
+    BLOCKED  mount a tmpfs (needs CAP_SYS_ADMIN)    PermissionError: [Errno 1] Operation not permitted
+    BLOCKED  mknod a block device (CAP_MKNOD)       PermissionError: [Errno 1] Operation not permitted
+    BLOCKED  raise the CPU limit that binds us      ValueError: not allowed to raise maximum limit
+    BLOCKED  write to /proc/sys/kernel/hostname     OSError: [Errno 30] Read-only file system: '/proc/sys/kernel/hostname'
+    BLOCKED  SIGKILL to PID 1 of this container     allowed, ignored: PID 1 (docker-init) is still running
+
+    INFO     Uid:	10001	10001	10001	10001
+    INFO     Gid:	10001	10001	10001	10001
+    INFO     CapPrm:	0000000000000000
+    INFO     CapEff:	0000000000000000
+    INFO     CapBnd:	0000000000000000
+    INFO     NoNewPrivs:	1
+    INFO     Seccomp:	2
+
+==============================================================================
+LAM DAY O DIA MAY CHAM BAI
+==============================================================================
+  fixture   : tests/fixtures/attack_fill_tmpfs.py
+  vi sao    : /tmp buoc phai ghi duoc, nen no la canh cua duy nhat con mo - va mot canh cua la du neu sau no la o dia that.
+  chan bang : --tmpfs /tmp size=64m
+  ket thuc  : exited, exit 0, 1.30s
+
+    BLOCKED  ran out of room after 64 MB written to /tmp
+    BLOCKED  the kernel refused with OSError: No space left on device
+
+==============================================================================
+TU GIET CONTAINER CUA CHINH MINH
+==============================================================================
+  fixture   : tests/fixtures/attack_kill_own_container.py
+  vi sao    : Han che thanh that: khong chan duoc. Dieu quan trong la ban kinh anh huong, khong phai viec no xay ra hay khong.
+  chan bang : PID namespace rieng - tin hieu khong di ra ngoai duoc
+  ket thuc  : exited, exit 143, 1.81s
+
+    still here, about to signal PID 1
+
+==============================================================================
+TONG KET
+==============================================================================
+
+Ca tan cong                             thoat duoc?  so lan bi chan
+-------------------------------------------------------------------
+GOI RA NGOAI MANG                             KHONG               6
+DOC FILE NGOAI CHO MOUNT                      KHONG              17
+GHI VAO ROOTFS                                KHONG               7
+FORK BOMB                                     KHONG               2
+LEO THANG DAC QUYEN                           KHONG               9
+LAM DAY O DIA MAY CHAM BAI                    KHONG               2
+TU GIET CONTAINER CUA CHINH MINH              KHONG               0
+
+Tong so lan mot buc tuong noi khong: 43
+So ca thoat duoc: 0
+
+Khong ca nao thoat.
+
+==============================================================================
+BO TEST
+==============================================================================
+
+$ python -m ruff check .
+All checks passed!
+
+$ python -m pytest tests/test_sandbox_attacks.py -v
+tests/test_sandbox_attacks.py::test_the_network_is_not_there_at_all PASSED [ 14%]
+tests/test_sandbox_attacks.py::test_nothing_outside_the_mount_can_be_read PASSED [ 28%]
+tests/test_sandbox_attacks.py::test_a_submission_can_only_throw_its_own_run_away PASSED [ 42%]
+tests/test_sandbox_attacks.py::test_the_filesystem_cannot_be_changed_except_for_tmp PASSED [ 57%]
+tests/test_sandbox_attacks.py::test_a_fork_bomb_stops_at_the_pid_limit PASSED [ 71%]
+tests/test_sandbox_attacks.py::test_the_submission_cannot_become_root_or_gain_a_capability PASSED [ 85%]
+tests/test_sandbox_attacks.py::test_the_one_writable_place_cannot_fill_the_hosts_disk PASSED [100%]
+============================= 7 passed in 16.78s ==============================
+
+$ python -m pytest -q   (ca bo grader)
+............                                                             [100%]
+84 passed in 154.50s (0:02:34)

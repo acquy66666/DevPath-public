@@ -8,7 +8,7 @@
 
 - [x] Image sandbox Python: user không đặc quyền, tối giản (python:slim + user nobody)
 - [x] Runner core: chạy 1 file code + 1 stdin trong container với đủ giới hạn (network none, memory, cpus, pids, read-only, no-new-privileges, cap-drop ALL, tmpfs /tmp, timeout 2 lớp)
-- [ ] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
+- [x] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
 - [ ] Bộ test verdict: AC / WA / TLE / MLE / RE / CE / SE — fixture cho từng loại trong `grader/tests/fixtures/`
 - [ ] **Bộ test bảo mật:** thử network, đọc file ngoài mount, ghi rootfs, fork bomb → tất cả bị chặn (lưu output test vào `docs/report/assets/phase-3/attack-tests.txt`)
 

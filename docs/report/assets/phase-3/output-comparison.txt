@@ -1,0 +1,83 @@
+==============================================================================
+SO SANH OUTPUT - grader/runner/compare.py
+==============================================================================
+
+Cot 'tho'   = actual == expected (so sanh byte, khong chuan hoa)
+Cot 'chuan' = outputs_match() cua he thong
+Cot 'dung?' = ket qua dung ve mat su pham
+
+Truong hop                            tho  chuan  dung?
+-------------------------------------------------------
+thieu newline cuoi file             False   True   True
+thua newline cuoi file              False   True   True
+dong cuoi chi co khoang trang       False   True   True
+khoang trang cuoi dong              False   True   True
+tab cuoi dong                       False   True   True
+CRLF tu bai nop                     False   True   True
+CRLF tu de bai cua giang vien       False   True   True
+in ra toan khoang trang, cho rong   False   True   True
+thut dau dong (thua)                False  False  False
+khoang trang giua dong              False  False  False
+thieu dong trong o giua             False  False  False
+sai hoa thuong                      False  False  False
+sai thu tu dong                     False  False  False
+form feed thay vi xuong dong        False  False  False
+
+So truong hop so sanh tho tra ket qua KHAC chinh sach: 8/14
+Tat ca deu la bai LAM DUNG bi cham SAI. Khong co chieu nguoc lai:
+khong truong hop nao bai sai duoc chuan hoa thanh dung.
+
+==============================================================================
+VI SAO KHONG CHUAN HOA BANG str.splitlines()
+==============================================================================
+
+splitlines() cat dong tren 11 ky tu chu khong phai 1. Neu dung no, mot bai
+in ra ky tu dieu khien se duoc coi nhu da xuong dong va an diem oan:
+
+  vertical tab       splitlines() coi la bang: True    he thong: False
+  form feed          splitlines() coi la bang: True    he thong: False
+  NEL (U+0085)       splitlines() coi la bang: True    he thong: False
+  LINE SEPARATOR     splitlines() coi la bang: True    he thong: False
+
+=> chuan hoa chi tach tren LF, sau khi quy CRLF va CR ve LF.
+
+==============================================================================
+CHUAN HOA - DAU VAO / DAU RA
+==============================================================================
+
+  goc        : '  a \r\n\r\nb\t\n\n\n'
+  chuan hoa  : '  a\n\nb'
+  chuan lan 2: '  a\n\nb'    (idempotent: True)
+
+Giu lai : thut dau dong, khoang trang giua dong, dong trong o giua,
+          thu tu dong, hoa thuong.
+Bo di   : CR cua Windows, space/tab cuoi dong, dong trong o cuoi output.
+
+==============================================================================
+OUTPUT BI CAT (> 1 MB) KHONG BAO GIO LA AC
+==============================================================================
+
+Runner doc output co tran - Limits.output_bytes = 1_000_000 byte - va bao lai
+bang co stdout_truncated. Qua tran, thu giu duoc chi la doan dau cua output:
+
+  outputs_match(dap an dung, truncated=False) -> True
+  outputs_match(dap an dung, truncated=True ) -> False
+
+Khong co luat nay thi mot bai in dung dap an roi in them 500 MB rac van AC,
+va tran output - thu giu worker khoi bi mot bai nop quyet dinh dung bao nhieu
+bo nho - lai tro thanh mot lo hong cham diem.
+
+==============================================================================
+BO TEST
+==============================================================================
+
+$ python -m ruff check .
+All checks passed!
+
+$ python -m pytest tests/test_output_comparison.py -q   (khong can Docker)
+..................                                                       [100%]
+18 passed in 0.02s
+
+$ python -m pytest -q   (ca bo grader: image + runner + so sanh)
+...............................................                          [100%]
+47 passed in 39.64s

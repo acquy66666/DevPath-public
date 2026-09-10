@@ -21,6 +21,10 @@ import pytest
 from runner.images import PYTHON_IMAGE
 from runner.sandbox import GRADING_LABEL, Limits, Outcome, execute
 
+# Every test in this module starts a container, so the images have to exist
+# and Docker has to be running.
+pytestmark = pytest.mark.usefixtures("sandbox_images")
+
 FIXTURES = Path(__file__).parent / "fixtures"
 
 

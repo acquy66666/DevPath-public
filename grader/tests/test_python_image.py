@@ -16,7 +16,13 @@ from __future__ import annotations
 import subprocess
 import textwrap
 
+import pytest
+
 from runner.images import PYTHON_IMAGE
+
+# Every test in this module starts a container, so the images have to exist
+# and Docker has to be running.
+pytestmark = pytest.mark.usefixtures("sandbox_images")
 
 # The flags the grading worker will put on every submission, from the security
 # invariants in the `sandbox-grading` skill. Deliberately no `--user`: the

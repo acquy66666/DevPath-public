@@ -11,7 +11,7 @@ app/
 ├── models/<domain>.py     SQLAlchemy models
 ├── schemas/<domain>.py    Pydantic: <Entity>Create / Update / Out
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
-└── workers/               Celery tasks: embedding, mail, chứng chỉ PDF
+└── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
 scripts/                   seed.py, eval_recommender.py, rebuild_course_stats.py
 ```
@@ -195,6 +195,26 @@ Tự nâng cấp lên giảng viên là **self-service**, không có hàng đợ
 Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) nhận 409 `PASSWORD_NOT_SET`. Payload `UserOut` có cờ `has_password` để frontend biết mà không hiện form vô nghĩa — đây là một boolean về tài khoản, không phải thông tin về mật khẩu.
 
 `JWT_SECRET` phải đặt thật khi `ENV=production` — app từ chối khởi động nếu vẫn còn giá trị mặc định trong `.env.example`.
+
+## Chấm bài (Phase 3)
+
+`POST /code-exercises/{id}/submissions` ghi một dòng `pending` rồi đẩy job vào hàng đợi `grading`. Worker ở `app/workers/grading.py` nhận job, gọi runner trong `grader/` (sandbox Docker), rồi ghi verdict, điểm và kết quả từng test case.
+
+**Thứ tự commit rồi mới enqueue là bắt buộc, không phải thói quen.** Worker nhanh hơn nhiều so với phần còn lại của request: enqueue trước commit thì nó được đưa một id chưa có trong cơ sở dữ liệu. Cái giá của thứ tự này là một hàng nộp bài tồn tại trong lúc Redis chết — nên trường hợp đó được ghi vào chính hàng đó (`status = error`) rồi trả 503 `GRADING_UNAVAILABLE`, thay vì trả 201 cho một bài không ai chấm.
+
+**Chỉ SE mới thử lại.** Sai (WA), chạy lỗi (RE), quá giờ (TLE), tràn bộ nhớ (MLE), không biên dịch được (CE) đều là câu trả lời *về bài nộp*: chạy lại chỉ tốn gấp ba để nhận cùng một câu. SE là lỗi phía mình (daemon chết, image chưa build) nên thử lại 3 lần, giãn 15s rồi 30s.
+
+**Dead letter là một dòng trong bảng, không phải một hàng đợi.** Redis không có chỗ để một message không ai xử lý được, và một dòng log thì học viên lẫn giảng viên đều không thấy. Hết lượt thử, hàng nộp bài chuyển `status = error`, `verdict` vẫn NULL — không có gì được chấm — kèm `message` bằng tiếng Việt. Câu lỗi kỹ thuật ở lại trong log worker: "bind source path does not exist" chỉ khiến học viên đi đọc lại code đúng của mình.
+
+**Ràng buộc CSDL đứng sau cả hai đường:** `ck_submissions_verdict_requires_done` không cho một hàng mang verdict trước khi `done`, nên cả đường retry lẫn đường dead letter đều không thể vô tình đóng một bài nộp lại bằng một chữ cái.
+
+Điểm tính theo **trọng số**, không theo số test case: `round(100 × tổng trọng số các case AC / tổng trọng số)`. Một bài khởi động 1 điểm không đáng bằng case mà cả bài tập nói về.
+
+`run_time_ms` là case chậm nhất chứ không phải tổng — giới hạn thời gian nói về một lần chạy. `peak_memory_mb` để NULL: sandbox báo *bị giết vì bộ nhớ*, không bao giờ báo *đã dùng bao nhiêu*, và một con số bịa ra ở đây sẽ bị đọc như một phép đo.
+
+Output của test case ẩn **không được ghi xuống** (`stdout_trunc` NULL). API đã từ chối trả nó; đây là lớp trước đó, vì một cột không bao giờ được điền thì không endpoint nào viết sau này làm rò được.
+
+`judge()` là chỗ duy nhất trong backend biết kiểu dữ liệu của runner tồn tại, và nó import bên trong hàm: container API chỉ enqueue nên không cần grader lẫn Docker để khởi động được.
 
 ## Trạng thái
 

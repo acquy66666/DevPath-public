@@ -19,7 +19,14 @@ from pathlib import Path
 import pytest
 
 from runner.images import PYTHON_IMAGE
-from runner.sandbox import GRADING_LABEL, Limits, Outcome, execute
+from runner.sandbox import (
+    GRADING_LABEL,
+    WORKSPACE_ROOT_ENV,
+    Limits,
+    Outcome,
+    execute,
+    workspace_root,
+)
 
 # Every test in this module starts a container, so the images have to exist
 # and Docker has to be running.
@@ -245,3 +252,34 @@ def test_the_wall_clock_is_derived_from_the_cpu_budget_not_guessed(cpu_seconds, 
     SIGKILL.
     """
     assert Limits(cpu_seconds=cpu_seconds, cpus=cpus).wall_seconds == expected
+
+
+def test_the_workspace_root_defaults_to_the_system_temp_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unset is the right answer on a developer machine and in CI.
+
+    It matters only where the runner is itself inside a container: the daemon
+    resolves the sandbox's bind mount on the host, so the directory holding a
+    submission has to exist on both sides under the same name. The worker sets
+    this; nothing else does.
+    """
+    monkeypatch.delenv(WORKSPACE_ROOT_ENV, raising=False)
+    assert workspace_root() is None
+
+    monkeypatch.setenv(WORKSPACE_ROOT_ENV, "/var/lib/devpath-grading")
+    assert workspace_root() == "/var/lib/devpath-grading"
+
+
+def test_a_submission_is_written_where_the_workspace_root_says(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """And the directory is gone again afterwards, wherever it was."""
+    root = tmp_path / "workspaces"
+    root.mkdir()
+    monkeypatch.setenv(WORKSPACE_ROOT_ENV, str(root))
+
+    execution = execute("print('xin chào')")
+
+    assert execution.stdout.strip() == "xin chào"
+    assert list(root.iterdir()) == []

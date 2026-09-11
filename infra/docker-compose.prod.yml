@@ -127,6 +127,10 @@ services:
       # One transcode at a time: ffmpeg will use whatever CPU it is given, and
       # two of them on a small VPS starve the API instead of finishing sooner.
       - --concurrency=${CELERY_CONCURRENCY:-1}
+      # Named queues, not the default one: grading has a queue of its own and
+      # its own worker below.
+      - -Q
+      - media,celery
     environment: *backend-env
     depends_on:
       redis:
@@ -135,6 +139,74 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # The only container on this host that can talk to the Docker daemon.
+  #
+  # It holds the socket because starting a sandbox container is what grading
+  # is, and a socket is not a permission system: this container can start any
+  # container it likes here. That is the trade this design makes, and the
+  # mitigations are that it runs nothing else, serves no traffic, is not
+  # reachable from outside the compose network, and never executes submitted
+  # code itself -- every line of that runs in the throwaway container it
+  # starts, with no network, no privileges and a read-only filesystem.
+  #
+  # Before the first submission, build the sandbox image on this host:
+  #     docker build -t devpath-sandbox-python:v1 grader/images/python
+  # The runner starts containers with `--pull never`, so a missing image is a
+  # loud system error rather than a silent download.
+  grading-worker:
+    build:
+      context: ../backend
+      target: grading-production
+    image: devpath-grading:prod
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.workers.celery_app
+      - worker
+      - -Q
+      - grading
+      - --loglevel=info
+      # How many submissions are graded at once, and the number to change when
+      # the VPS changes. Each one holds a container with half a core and
+      # 256 MB, so two is the ceiling on the 2 vCPU / 4 GB box this is sized
+      # for -- with the other half core left for Postgres, Redis and the API.
+      - --concurrency=${GRADING_CONCURRENCY:-2}
+    environment:
+      <<: *backend-env
+      PYTHONPATH: /grader
+      # Has to name the same directory here and on the host: the daemon
+      # resolves the sandbox's bind mount outside this container. See volumes.
+      DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+    volumes:
+      # The grader is a sibling project, mounted rather than installed -- the
+      # same way its own tests import it. Read-only: this container runs it.
+      - ../grader:/grader:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Same path on both sides. A submission's source file lives here for the
+      # seconds it takes to grade, and the runner deletes it afterwards.
+      - /var/lib/devpath-grading:/var/lib/devpath-grading
+    # uid 10001 cannot open a socket owned by root:docker. The host's docker
+    # group id goes here -- `getent group docker | cut -d: -f3` on the VPS --
+    # rather than running this container as root.
+    group_add:
+      - "${DOCKER_GID:-999}"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Itself by name: with two workers on one broker, a plain inspect ping is
+      # answered by the other one and this container stays healthy while dead.
+      test:
+        - CMD-SHELL
+        - celery -A app.workers.celery_app inspect ping -d celery@$$(hostname) > /dev/null
       interval: 60s
       timeout: 15s
       retries: 3

@@ -122,7 +122,7 @@ Deploy chạy **đúng commit đang checkout**, không phải `origin/main` — 
 cp .env.prod.example .env.prod && chmod 600 .env.prod
 ```
 
-Mở `.env.prod` và điền. Bốn giá trị bắt buộc, phần còn lại có mặc định dùng được:
+Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại có mặc định dùng được:
 
 | Biến | Cách lấy |
 |---|---|
@@ -130,6 +130,7 @@ Mở `.env.prod` và điền. Bốn giá trị bắt buộc, phần còn lại c
 | `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
 | `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev |
+| `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. Worker chấm bài chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker |
 
 `GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Riêng địa chỉ API thì không: trình duyệt gọi `/api` cùng origin với trang, nên image không mang tên miền nào và đổi tên miền không cần build lại.
 
@@ -138,6 +139,28 @@ Redirect URI đăng ký ở Google Cloud Console phải khớp từng ký tự:
 ```
 https://<DOMAIN>/api/v1/auth/google/callback
 ```
+
+## 2b. Build image sandbox chấm bài
+
+Chỉ làm một lần cho mỗi máy chủ, và phải làm **trước** bài nộp đầu tiên:
+
+```bash
+docker build -t devpath-sandbox-python:v1 grader/images/python
+```
+
+Runner khởi động sandbox với `--pull never` — cố ý: giữa lúc chấm bài mà đi tải
+image từ mạng là thứ không bao giờ nên xảy ra. Thiếu image thì mọi bài nộp nhận
+lỗi hệ thống, thử lại 3 lần rồi dừng ở trạng thái `error` kèm lời nhắn cho học
+viên, và log worker nói rõ thiếu image.
+
+Kiểm tra worker chấm bài thấy được daemon:
+
+```bash
+docker compose -f docker-compose.prod.yml exec grading-worker docker version
+```
+
+Báo `permission denied` là `DOCKER_GID` sai — sửa trong `.env.prod` rồi
+`docker compose -f docker-compose.prod.yml up -d grading-worker`.
 
 ## 3. Xin chứng chỉ lần đầu
 

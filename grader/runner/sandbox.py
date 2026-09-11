@@ -19,6 +19,7 @@ Two rules shape everything here:
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import tempfile
@@ -43,6 +44,24 @@ HARD_LIMIT_MARGIN_SECONDS = 1
 
 SOURCE_FILENAME = "main.py"
 MOUNT_POINT = "/sandbox"
+
+# Where the per-run workspace is created. Unset means the system temp
+# directory, which is right everywhere except inside a container.
+#
+# The path in `--mount source=` is resolved by the daemon, on the host. A
+# runner running *in* a container therefore asks for a directory that only
+# exists inside itself, and Docker answers "bind source path does not exist"
+# -- our own failure, reported as SYSTEM_ERROR, on every single submission.
+# The fix is a directory both sides can see under the same name: the worker
+# bind-mounts one host path onto the identical path inside itself and points
+# this at it. Nothing else changes, and on a developer machine running the
+# tests directly this stays unset.
+WORKSPACE_ROOT_ENV = "DEVPATH_GRADING_WORKSPACE"
+
+
+def workspace_root() -> str | None:
+    """Read per call, not at import: a worker sets it, the tests do not."""
+    return os.environ.get(WORKSPACE_ROOT_ENV) or None
 
 # The program travels as argv, never as a shell command line, so there is
 # nothing for a filename or a piece of code to break out of.
@@ -174,7 +193,7 @@ def execute(
     limits and a different verb, which is the point -- checking a hostile
     file's syntax is still running a parser over a hostile file.
     """
-    workspace = Path(tempfile.mkdtemp(prefix="devpath-grading-"))
+    workspace = Path(tempfile.mkdtemp(prefix="devpath-grading-", dir=workspace_root()))
     container = f"devpath-grading-{uuid.uuid4().hex}"
 
     try:

@@ -5,7 +5,7 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ## Cấu trúc
 
 ```
-docker-compose.yml       Máy dev: postgres (pgvector), redis, backend, worker, frontend
+docker-compose.yml       Máy dev: postgres (pgvector), redis, backend, worker, grading-worker, frontend
 docker-compose.prod.yml  VPS: thêm nginx + certbot, bỏ cổng DB, bỏ bind mount
 docker-compose.tunnel.yml  Overlay: thêm cloudflared, cho stack production một URL công khai
 .env.prod.example        Mẫu biến môi trường cho VPS
@@ -37,7 +37,7 @@ Lần đầu mất vài phút để build image. Sau đó:
 | localhost:5432 | Postgres — dùng cho Alembic chạy từ venv trên host |
 | localhost:6379 | Redis |
 
-Cả năm service đều có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
+Cả sáu service đều có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
 
 Mã nguồn `backend/` và `frontend/` được bind mount nên sửa file là reload, không cần build lại. Chỉ build lại khi đổi `pyproject.toml`, `package.json` hoặc `Dockerfile`:
 
@@ -83,9 +83,48 @@ docker compose -f infra/docker-compose.yml up -d --build backend worker
 
 Biến `R2_*` truyền từ `infra/.env` vào cả hai service. Để trống thì endpoint upload trả 503 và mọi thứ khác chạy bình thường — xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md). `R2_ENDPOINT_URL` là lối trỏ sang một server S3 khác (MinIO chạy local chẳng hạn) khi cần thử luồng upload mà chưa có tài khoản Cloudflare.
 
+## Worker chấm bài, và cái socket nó cầm
+
+`grading-worker` là service duy nhất trong stack nói chuyện được với Docker daemon, vì chấm bài **chính là** việc khởi động container. Nó dùng image riêng (`grading-development` / `grading-production`) vì chỉ nó cần Docker CLI.
+
+**Đây là chỗ rủi ro nhất của cả kiến trúc, nói thẳng:** một container cầm `/var/run/docker.sock` khởi động được container tùy ý trên host, kể cả container mount cả ổ đĩa. Socket không phải hệ thống phân quyền, và không có cờ nào làm nó thành "chỉ đọc" theo nghĩa có ích. Những gì làm được để thu hẹp thiệt hại:
+
+- chỉ một container cầm nó, và đó là container không phục vụ HTTP, không publish cổng, không ai từ ngoài gọi tới được;
+- **code người nộp không bao giờ chạy trong container này** — mọi dòng của nó chạy trong container dùng một lần mà worker tạo ra, với `--network none`, `--read-only`, `--cap-drop ALL`, uid 10001;
+- image production chạy uid 10001 chứ không phải root, nên còn phải cho vào nhóm `docker` của host mới chạm được socket (`group_add`). Chạy bằng root sẽ ngắn hơn một dòng và mở hơn rất nhiều.
+
+Hướng làm chặt hơn (chưa làm, ghi để nhắc): đặt một proxy socket chỉ cho phép `create`/`start`/`wait`/`rm` thay vì đưa nguyên socket.
+
+### Trước lần chấm đầu tiên: build image sandbox
+
+Runner khởi động container với `--pull never`, nên thiếu image là một lỗi hệ thống kêu to chứ không phải một lần tải ngầm:
+
+```bash
+docker build -t devpath-sandbox-python:v1 grader/images/python
+```
+
+### Hai hàng đợi, hai worker
+
+| Service | Hàng đợi | Concurrency | Vì sao tách |
+|---|---|---|---|
+| `worker` | `media,celery` | `CELERY_CONCURRENCY` (mặc định 1) | Một lần chuyển mã ffmpeg ăn trọn một core hàng chục phút |
+| `grading-worker` | `grading` | `GRADING_CONCURRENCY` (mặc định 2) | Bài nộp ngắn, và có người đang ngồi nhìn màn hình chờ |
+
+Chung một hàng đợi thì một bài giảng vừa upload sẽ chặn mọi bài nộp phía sau. **`GRADING_CONCURRENCY` là con số phải sửa khi đổi VPS:** mỗi bài chấm giữ một container 0.5 CPU / 256 MB, nên 2 là trần của máy 2 vCPU — phần còn lại dành cho Postgres, Redis và API.
+
+### Một đường dẫn phải giống nhau ở hai phía
+
+`DEVPATH_GRADING_WORKSPACE=/var/lib/devpath-grading`, và đúng đường dẫn đó được bind-mount 1:1 vào worker. Lý do: daemon phân giải `--mount source=` **trên host**, nên thư mục chứa bài nộp phải tồn tại ở cả hai nơi dưới cùng một tên. Thiếu nó thì mọi bài nộp đều hỏng với `bind source path does not exist` — đã gặp thật, xem `docs/report/assets/phase-3/grading-queue.txt`.
+
+Trên VPS còn cần `DOCKER_GID` trong `.env.prod`:
+
+```bash
+getent group docker | cut -d: -f3
+```
+
 ## Ghi chú vận hành
 
-- Grader cần truy cập Docker daemon để spin sandbox container — đây là quyết định kiến trúc có rủi ro đã biết, xem skill `sandbox-grading` trước khi đụng vào phần mount socket.
+- Grader cần truy cập Docker daemon để spin sandbox container — xem mục trên và skill `sandbox-grading` trước khi đụng vào phần mount socket.
 - Secrets đi qua `.env` (đã gitignore), không bao giờ commit. Mỗi service có `.env.example` liệt kê biến cần thiết.
 - Backup DB tự động là task của [Phase 6](../docs/plan/phase-6-hardening-deploy.md); script restore phải được thử khôi phục thật ít nhất một lần.
 

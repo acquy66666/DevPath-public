@@ -33,6 +33,25 @@ from app.schemas.grading import (
 )
 from app.services import curriculum as curriculum_service
 
+# The message left on the row when the queue would not take the job. It is
+# read by a student, so it says what to do rather than what broke.
+QUEUE_DOWN_MESSAGE = (
+    "Hệ thống chấm bài đang bận hoặc tạm ngừng. Bài của bạn chưa được đưa vào "
+    "hàng đợi — vui lòng nộp lại sau ít phút."
+)
+
+
+def enqueue_grading(submission_id: uuid.UUID) -> None:
+    """Ask a worker to grade this submission.
+
+    A function of its own so a test can replace it: importing Celery does not
+    need a broker, but calling `.delay()` does, and no API test should need
+    Redis running to check that a submission was accepted.
+    """
+    from app.workers.grading import grade_submission
+
+    grade_submission.delay(str(submission_id))
+
 
 class ExerciseNotFoundError(DomainError):
     status_code = status.HTTP_404_NOT_FOUND
@@ -64,6 +83,18 @@ class InvalidOrderError(DomainError):
 class SubmissionNotFoundError(DomainError):
     status_code = status.HTTP_404_NOT_FOUND
     code = "SUBMISSION_NOT_FOUND"
+
+
+class GradingUnavailableError(DomainError):
+    """The submission was taken but nothing can be told to grade it.
+
+    Redis is down, or the queue refused the job. Returning 201 here would be
+    the dishonest answer: the student would watch a row that no worker will
+    ever pick up.
+    """
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "GRADING_UNAVAILABLE"
 
 
 class ExerciseNotReadyError(DomainError):
@@ -338,12 +369,13 @@ async def reorder_test_cases(
 async def create_submission(
     session: AsyncSession, exercise_id: uuid.UUID, user: User, code: str
 ) -> Submission:
-    """Take a submission in and leave it waiting to be graded.
+    """Take a submission in and hand it to the grading queue.
 
-    The row is `pending` and carries no verdict; the database will not let it
-    carry one until it is `done`. Enqueueing it is the next task, and until
-    then a submission simply sits here -- which is the honest state of the
-    system rather than a fake result.
+    The row is committed as `pending` **before** the job is queued, and that
+    order is the whole of it: a worker is fast and would otherwise be handed
+    an id that is not in the database yet. The cost of this order is a row
+    that exists while the queue is down, which is why the failure below is
+    written into the row rather than swallowed.
     """
     exercise = await exercise_for_viewer(session, exercise_id, user)
 
@@ -363,6 +395,20 @@ async def create_submission(
     session.add(submission)
     await session.commit()
     await session.refresh(submission)
+
+    try:
+        enqueue_grading(submission.id)
+    except Exception as exc:
+        # Park it immediately rather than leaving a pending row nothing will
+        # ever pick up. The student is told now, while they are still looking
+        # at the page.
+        submission.status = "error"
+        submission.message = QUEUE_DOWN_MESSAGE
+        await session.commit()
+        raise GradingUnavailableError(
+            "Hàng đợi chấm bài không nhận được bài nộp"
+        ) from exc
+
     return submission
 
 

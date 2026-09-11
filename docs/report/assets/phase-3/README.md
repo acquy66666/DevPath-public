@@ -185,3 +185,39 @@ Bài nộp **giết được container của chính nó** bằng `SIGTERM` gửi
 - **Ô “Ẩn với học viên” tự về mặc định ẩn sau mỗi lần thêm**, không giữ lựa chọn trước đó. Quên ô này một lần là đáp án nằm trên trang, nên giá trị an toàn phải là giá trị phải chủ động bỏ chọn mỗi lần.
 - **Chính sách so sánh output được nói ngay dưới ô nhập đáp án**: bỏ khoảng trắng cuối dòng và dòng trống cuối, giữ khoảng trắng giữa dòng. Giảng viên biết luật trước khi viết đáp án thì không mất buổi tối đi truy một WA không có thật.
 - Trang học của học viên tạm thời nói thẳng “trang nộp bài đang được xây dựng”. Nếu không sửa, bài tập code rơi vào nhánh bài đọc và hiện “Bài học này chưa có nội dung” — một câu sai, vì bài học có nội dung, chỉ là chưa có chỗ nộp (tuần 8).
+
+## Hàng đợi chấm bài (12/09/2026)
+
+`grading-queue.txt` — nộp bài thật qua API, worker Celery thật, sandbox Docker thật. Sáu chương trình, sáu verdict, không mock chỗ nào.
+
+| Chương trình nộp | Verdict | Điểm | run_time_ms |
+|---|---|---|---|
+| Đọc hai số, in tổng | AC | 100 | 420 |
+| `print(0)` | WA | 0 | 424 |
+| `while True: pass` | TLE | 0 | 4288 |
+| `raise ValueError` | RE | 0 | 419 |
+| `def broken(:` | CE | 0 | (chưa từng chạy) |
+| `[0] * 100_000_000` | MLE | 0 | 920 |
+
+### Ba điều số liệu này nói
+
+- **Test case ẩn có verdict, không có output.** Bài AC và bài WA đều được chấm đủ hai case; `stdout_trunc` của case mẫu có nội dung, của case ẩn là `None`. Đây là luật "test case ẩn không rời server" ở tầng ghi dữ liệu — API đã từ chối trả nó, còn đây là lớp trước đó: cột không bao giờ được điền.
+- **Điểm tính theo trọng số**, không theo số case đúng.
+- **CE không có `run_time_ms`** vì chương trình chưa bao giờ chạy, và thông điệp trả về là `File "main.py", line 1` — nói về file của học viên chứ không về mount của hệ thống.
+
+### Bằng chứng có giá trị nhất trong file này là một sự cố thật
+
+Lần chạy đầu tiên **cả 6 bài đều hỏng**. Runner tạo thư mục tạm bên trong container worker rồi bảo daemon bind-mount nó; daemon phân giải đường dẫn trên host, nơi thư mục đó không tồn tại. Lỗi chỉ lộ ra khi chạy thật — không một test đơn vị nào bắt được, vì trên máy dev runner chạy ngoài container và đường dẫn luôn đúng.
+
+Đường xử lý thất bại chạy đúng như thiết kế, và đó là phần đáng viết vào báo cáo:
+
+- ba lần thử, giãn 15s rồi 30s;
+- **không bài nào bị gán verdict**, không dòng `submission_results` nào được ghi;
+- hết lượt thì hàng nộp bài "đỗ" lại ở `status = error`, `verdict = NULL`, `message` là câu tiếng Việt cho học viên;
+- câu lỗi kỹ thuật (`bind source path does not exist`) chỉ nằm trong log worker.
+
+Bất biến "lỗi của mình không đổ lên đầu học viên" vì thế được kiểm chứng bằng một sự cố có thật chứ không bằng một test giả lập.
+
+### Đánh đổi kiến trúc đã ghi rõ
+
+`grading-worker` là container duy nhất cầm `/var/run/docker.sock`, vì chấm bài **chính là** khởi động container. Socket không phải hệ thống phân quyền: container cầm nó khởi động được container tùy ý trên host. Thu hẹp thiệt hại bằng cách nó không phục vụ HTTP, không publish cổng, chạy uid 10001 trên production, và **không bao giờ tự chạy code người nộp** — mọi dòng đó chạy trong container dùng một lần có `--network none`, `--read-only`, `--cap-drop ALL`. Hướng làm chặt hơn (chưa làm): proxy socket chỉ cho `create`/`start`/`wait`/`rm`.

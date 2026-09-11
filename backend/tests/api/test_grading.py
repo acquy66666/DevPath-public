@@ -32,6 +32,7 @@ from app.models import (
     TestCase,
     User,
 )
+from app.services import grading as grading_service
 
 PASSWORD = "mật-khẩu-đủ-dài"
 COURSES = "/api/v1/courses"
@@ -60,6 +61,20 @@ async def sign_in(client: AsyncClient, user: User) -> dict[str, str]:
         "/api/v1/auth/login", json={"email": user.email, "password": PASSWORD}
     )
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture(autouse=True)
+def queued(monkeypatch: pytest.MonkeyPatch) -> list:
+    """Submissions are handed to Celery; these tests are not about Celery.
+
+    Autouse, and replacing the function rather than the broker URL: without it
+    every submission test would need a running Redis, and on a developer
+    machine that has one it would enqueue real jobs against rows this
+    transaction is about to roll back.
+    """
+    ids: list = []
+    monkeypatch.setattr(grading_service, "enqueue_grading", ids.append)
+    return ids
 
 
 @pytest.fixture
@@ -425,7 +440,11 @@ async def test_someone_who_has_not_enrolled_cannot_read_the_exercise(
 
 
 async def test_a_submission_arrives_pending_with_no_verdict(
-    api_client: AsyncClient, exercise: dict, owner: dict[str, str], student: dict[str, str]
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    queued: list,
 ):
     """Nothing grades it yet, and the API says so rather than inventing one."""
     await add_case(api_client, exercise, owner)
@@ -444,6 +463,54 @@ async def test_a_submission_arrives_pending_with_no_verdict(
     # From the exercise, not from the client: what a submission is graded as
     # is not the submitter's decision.
     assert body["language"] == "python"
+
+    # And it is on its way: the row is committed first, then queued, so the
+    # worker cannot be handed an id the database has not seen yet.
+    assert queued == [uuid.UUID(body["id"])]
+
+
+async def test_a_queue_that_refuses_the_job_does_not_report_success(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A 201 would leave a student watching a row no worker will ever pick up.
+
+    The row is kept -- as `error`, with a message -- rather than deleted: it is
+    the record that they did submit, and deleting it would make the failure
+    disappear from the one place anybody looks.
+    """
+    await add_case(api_client, exercise, owner)
+
+    def refuse(submission_id):
+        raise ConnectionError("redis is down")
+
+    monkeypatch.setattr(grading_service, "enqueue_grading", refuse)
+
+    response = await api_client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/submissions",
+        json={"code": "print(1)"},
+        headers=student,
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"]["code"] == "GRADING_UNAVAILABLE"
+
+    # Scoped to this exercise: the suite runs against the development database,
+    # where a submission made by hand is a row like any other.
+    parked = (
+        await db_session.scalars(
+            select(Submission).where(
+                Submission.exercise_id == uuid.UUID(exercise["id"])
+            )
+        )
+    ).all()
+    assert [row.status for row in parked] == ["error"]
+    assert parked[0].verdict is None
+    assert parked[0].message
 
 
 async def test_an_exercise_with_no_test_cases_refuses_submissions(

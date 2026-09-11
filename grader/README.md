@@ -29,6 +29,17 @@ nhân dành cho nó, không mock được. Thiếu Docker thì test **skip** tr�
 và **fail** trong CI (biến `CI`) — một bộ test sandbox bị skip im lặng còn tệ
 hơn một bộ test đỏ.
 
+## Một biến môi trường: `DEVPATH_GRADING_WORKSPACE`
+
+Không đặt thì runner dùng thư mục tạm của hệ thống — đúng ở máy dev và trong CI.
+
+Chỉ cần khi **runner chạy bên trong một container** (worker chấm bài). Đường dẫn
+trong `--mount source=` do Docker daemon phân giải, tức là phân giải trên host:
+một runner nằm trong container sẽ xin mount thư mục chỉ tồn tại bên trong chính
+nó, và Docker đáp "bind source path does not exist" trên **mọi** bài nộp. Worker
+vì thế bind-mount một thư mục của host vào đúng đường dẫn ấy bên trong nó rồi
+trỏ biến này vào đó — cùng một cái tên ở cả hai phía.
+
 ## Bất biến bảo mật (tóm tắt — bản đầy đủ ở skill)
 
 - `--network none`, `--read-only`, `--cap-drop ALL`, `--security-opt no-new-privileges`

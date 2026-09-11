@@ -43,10 +43,14 @@ flowchart LR
 ### 1. Chấm mã nguồn (⭐ điểm nhấn 1)
 
 ```
-Submit code → API validate + tạo submission(pending) → Celery queue
+Submit code → API validate + tạo submission(pending) → Celery queue "grading"
 → Grader worker → docker run (image theo ngôn ngữ, cô lập hoàn toàn)
 → chạy từng test case → verdict per test → update DB
 → Redis pub/sub → client nhận realtime (WebSocket, fallback polling)
+
+Lỗi phía hệ thống (SE) được thử lại 3 lần rồi "đỗ" hàng nộp bài lại ở trạng thái
+`error` kèm lý do — không bao giờ ghi thành verdict. Sai, chậm, tràn bộ nhớ là
+câu trả lời về bài nộp nên không thử lại.
 ```
 
 ### 2. Chatbot RAG (⭐ điểm nhấn 3)
@@ -78,3 +82,4 @@ Query: câu hỏi học viên → embed → similarity search top-k (lọc theo 
 | Postgres FTS thay vì Elasticsearch | Như trên |
 | WebSocket cho kết quả chấm, fallback polling | Realtime là điểm demo ăn tiền |
 | Python-only grading ở v1 | Image per-language thiết kế sẵn chỗ mở rộng |
+| Worker chấm bài giữ socket Docker, và là container duy nhất được giữ | Chấm bài *là* việc khởi động container, nên tiến trình chấm phải nói chuyện được với daemon. Socket không phải hệ thống phân quyền: container nào cầm nó cũng khởi động được container tùy ý trên host. Đổi lại, nó không phục vụ HTTP, không mở ra ngoài, và không tự chạy dòng code nào của người nộp — mọi dòng đó chạy trong container dùng một lần mà nó tạo ra |

@@ -35,6 +35,7 @@ from app.models import (
 )
 from app.services import grading as grading_service
 from app.services.rate_limit import get_rate_limiter
+from app.workers.grading import CaseOutcome, GradingOutcome, run_grading
 from tests.api.fakes import MemoryRateLimiter
 
 PASSWORD = "mật-khẩu-đủ-dài"
@@ -45,6 +46,9 @@ COURSES = "/api/v1/courses"
 # by name.
 SECRET_ANSWER = "SECRET-ANSWER-DO-NOT-LEAK"
 SECRET_INPUT = "SECRET-INPUT-DO-NOT-LEAK"
+# What a program printed when it was fed the secret input. It describes that
+# input one round trip later, so it is on the same list.
+SECRET_STDOUT = "SECRET-STDOUT-DO-NOT-LEAK"
 
 
 async def make_user(session: AsyncSession, role: str, email: str | None = None) -> User:
@@ -437,6 +441,164 @@ async def test_someone_who_has_not_enrolled_cannot_read_the_exercise(
 
     assert response.status_code == 403
     assert response.json()["detail"]["code"] == "LESSON_LOCKED"
+
+
+# --- The same rule, one layer further out ----------------------------------
+#
+# The tests above are about the endpoint that lists test cases. These are
+# about every other way the answer key could get out: the routes that return
+# `TestCaseOut` in full, and the results of a grading run -- which is where a
+# hidden case stops being a row in a table and becomes something a student is
+# shown.
+
+
+ANSWER_KEY_ROUTES = [
+    ("POST", "/api/v1/code-exercises/{exercise}/test-cases"),
+    ("PATCH", "/api/v1/test-cases/{case}"),
+    ("DELETE", "/api/v1/test-cases/{case}"),
+    ("PUT", "/api/v1/code-exercises/{exercise}/test-cases/order"),
+]
+
+
+@pytest.mark.parametrize(("method", "path"), ANSWER_KEY_ROUTES)
+async def test_no_authoring_route_hands_a_student_the_answer_key(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    method: str,
+    path: str,
+):
+    """Every route that answers with `TestCaseOut` refuses a student.
+
+    The list endpoint chooses a model by who is asking; these four have only
+    one model, the one with the answers in it, so the caller is refused
+    instead. An enrolled student is the caller that matters here -- they can
+    read the exercise legitimately, so nothing but the ownership check stands
+    between them and the key.
+    """
+    case = await add_case(
+        api_client, exercise, owner, input=SECRET_INPUT, expected_output=SECRET_ANSWER
+    )
+
+    response = await api_client.request(
+        method,
+        path.format(exercise=exercise["id"], case=case["id"]),
+        json={"input": "1 2\n", "expected_output": "3\n", "test_case_ids": [case["id"]]},
+        headers=student,
+    )
+
+    assert response.status_code == 403, response.text
+    assert response.json()["detail"]["code"] == "PERMISSION_DENIED"
+    assert SECRET_ANSWER not in response.text
+    assert SECRET_INPUT not in response.text
+
+
+async def graded_submission(
+    client: AsyncClient,
+    session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+) -> str:
+    """One submission, graded for real by the worker's own code path.
+
+    The judge is faked -- Docker is not what is under test here -- but
+    everything that decides what is written down is the code that runs in
+    production.
+    """
+    await add_case(
+        client, exercise, owner, input="1 2\n", expected_output="3\n", is_hidden=False
+    )
+    await add_case(
+        client, exercise, owner, input=SECRET_INPUT, expected_output=SECRET_ANSWER
+    )
+
+    created = await client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/submissions",
+        json={"code": "print(1)"},
+        headers=student,
+    )
+    assert created.status_code == 201, created.text
+
+    def judge(code, cases, **limits):
+        # Both cases print the secret. If any of it survives to an endpoint,
+        # the assertions below find it wherever it ended up.
+        return GradingOutcome(
+            verdict="WA",
+            cases=(
+                CaseOutcome(verdict="AC", run_time_ms=11, stdout="3\n"),
+                CaseOutcome(verdict="WA", run_time_ms=12, stdout=SECRET_STDOUT),
+            ),
+        )
+
+    await run_grading(session, uuid.UUID(created.json()["id"]), judge=judge)
+    return created.json()["id"]
+
+
+async def test_a_graded_hidden_case_gives_up_its_verdict_and_nothing_else(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    """What a program printed on a secret input describes the secret input.
+
+    The verdict is not the leak -- knowing case 2 failed is how marking works.
+    The output is, and it is absent from the row as well as from the response.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    response = await api_client.get(
+        f"/api/v1/submissions/{submission_id}", headers=student
+    )
+    body = response.text
+    results = response.json()["results"]
+
+    assert response.status_code == 200
+    assert SECRET_STDOUT not in body
+    assert SECRET_ANSWER not in body
+    assert SECRET_INPUT not in body
+
+    sample, hidden = results
+    # The sample case is the control: without it this test would pass on an
+    # endpoint that returned no results at all.
+    assert sample["is_hidden"] is False
+    assert sample["stdout_trunc"] == "3\n"
+    # And the hidden one is still marked, and still says so.
+    assert hidden["is_hidden"] is True
+    assert hidden["verdict"] == "WA"
+    assert hidden["stdout_trunc"] is None
+
+
+async def test_the_owner_reading_a_submission_gets_no_hidden_output_either(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    """Stricter than it strictly needs to be, deliberately.
+
+    The instructor wrote the hidden case, so showing them what a submission
+    printed on it would leak nothing they do not know. It is still not shown:
+    the worker never stored it, so there is no path that depends on the API
+    remembering who is asking.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    response = await api_client.get(
+        f"/api/v1/submissions/{submission_id}", headers=owner
+    )
+
+    assert response.status_code == 200
+    assert SECRET_STDOUT not in response.text
+    assert response.json()["results"][1]["stdout_trunc"] is None
 
 
 # --- Submitting ------------------------------------------------------------

@@ -252,3 +252,48 @@ Cả hai là **lệnh đơn của Redis**, không phải đọc-rồi-ghi: API c
 ### Một lỗi chỉ có test mới thấy
 
 Nếu tiến trình chết đúng giữa `INCR` và `EXPIRE`, khóa đếm nằm lại **không có TTL** — người đó bị chặn vĩnh viễn, và triệu chứng chỉ xuất hiện vài ngày sau, trông y như tài khoản hỏng. Bộ đếm vì thế tự vá: thấy TTL âm thì đặt lại hạn. Có test riêng cho tình huống này.
+
+## API kết quả: test case ẩn (12/09/2026)
+
+`hidden-tests.txt` — không đọc code rồi khẳng định. Một bài nộp **cố tình tấn công** đi qua đúng đường một bài nộp thật đi:
+
+```python
+import sys
+print(sys.stdin.read())
+```
+
+Chương trình in lại đúng stdin của nó, nên trên test case ẩn **output của nó chính là input bí mật**. Nếu hệ thống lưu hoặc trả output của case ẩn ở bất kỳ đâu, bí mật lộ nguyên văn.
+
+```
+case 0 (mẫu) -> WA   stdout_trunc='1 2\n\n'     ← nhóm đối chứng
+case 1 (ẩn ) -> WA   stdout_trunc=None          ← bí mật không tồn tại để mà rò
+```
+
+Sau đó **9 bề mặt API** được gọi lại và thân phản hồi thô bị tìm chuỗi bí mật: 7 lần với tư cách học viên (4 lần đọc → 200, 3 route soạn đề → 403), 2 lần với tư cách giảng viên. **Không lần nào của học viên có bí mật.**
+
+### Dòng đáng giá nhất của bảng là dòng đối chứng
+
+`stdout_trunc='1 2\n\n'` ở case mẫu. Không có nó, cả bảng vẫn "không rò rỉ" kể cả khi endpoint hỏng và không trả gì cả. Case mẫu chứng minh API thật sự có trả output — cái bị giữ lại là output của case **ẩn**, không phải mọi output.
+
+Dòng cuối cùng **có** bí mật, và phải như vậy: giảng viên sở hữu bài tập đọc danh sách test case thì nhận đủ đáp án. Nếu dòng ấy ghi "không" thì phép thử đang đo nhầm thứ gì đó.
+
+### Bốn lớp, không lớp nào là lớp duy nhất đúng
+
+| Lớp | Cơ chế |
+|---|---|
+| Worker | Không ghi `stdout_trunc` cho case ẩn — cột không bao giờ được điền |
+| Schema | `TestCaseSample` **không có trường** `expected_output` để dữ liệu chui qua |
+| API | `result_out()` vẫn xóa lần nữa dù worker đã không ghi |
+| Quyền | 4 route trả `TestCaseOut` đầy đủ không chọn model theo người gọi — chúng từ chối người gọi (403) |
+
+Bộ test mới đi hết từng route đó với tư cách một học viên **đã ghi danh** — người duy nhất mà chỉ còn mỗi lớp kiểm tra quyền đứng chắn giữa họ và đáp án.
+
+### Hạn chế đã biết: verdict là một oracle
+
+Trả verdict cho từng case ẩn cho học viên một oracle nhị phân — nộp chương trình kiểu "nếu input bắt đầu bằng 'A' thì in đáp án đúng" rồi đọc AC/WA để dò dần. Đúng với mọi hệ thống chấm báo kết quả theo test case, kể cả Codeforces. Không tuyên bố đã chặn: chặn nó là bỏ luôn kết quả theo từng case, tức bỏ thứ làm việc chấm bài có ích.
+
+Cái làm nó không đáng bỏ công là **rate limit vừa làm ở task trước**: 10 giây/lần cùng một bài và 40 bài/giờ, nên dò một input 20 ký tự cần hàng chục giờ — và mỗi bước đều để lại một dòng mang tên tài khoản trong bảng `submissions`.
+
+### Một lỗ thật tìm thấy khi rà
+
+`submissions.message` (lời trình biên dịch cho CE) **không bị cắt**: trần của nó là 1 MB của runner, và cột này được đọc lại trong **mọi trang** lịch sử nộp bài. Đã cắt về cùng hạn mức với output từng case, kèm test.

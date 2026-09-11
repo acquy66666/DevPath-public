@@ -245,7 +245,10 @@ def _record(
     # never how much was used. A number invented here would be read as a
     # measurement.
     submission.peak_memory_mb = None
-    submission.message = outcome.message or None
+    # Capped like the per-case output, and for the same reason: the compiler's
+    # words arrive through the sandbox's 1 MB ceiling, and this column is read
+    # back in every page of a student's submission history.
+    submission.message = outcome.message[:STORED_OUTPUT_LIMIT] or None
 
 
 async def park_submission(

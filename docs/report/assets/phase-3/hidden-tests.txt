@@ -1,0 +1,104 @@
+TEST CASE ẨN KHÔNG BAO GIỜ RỜI MÁY CHỦ — RÀ SOÁT TOÀN BỘ BỀ MẶT API
+Ngày chạy: 12/09/2026 · stack thật: API + Redis + worker chấm + sandbox Docker
+
+Cách kiểm
+---------
+Không đọc code rồi khẳng định. Một bài nộp **cố tình tấn công** được đưa qua
+đúng đường một bài nộp thật đi:
+
+    import sys
+    print(sys.stdin.read())
+
+Chương trình này in lại đúng stdin của nó. Trên test case ẩn, **output của nó
+chính là input bí mật** — nghĩa là nếu hệ thống lưu hay trả output của case ẩn
+ở bất kỳ đâu, bí mật sẽ lộ nguyên văn. Sau khi chấm xong, mọi endpoint có thể
+mang dữ liệu ấy được gọi lại và **thân phản hồi thô** được tìm chuỗi bí mật.
+
+Bốn lớp chặn, xếp từ trong ra ngoài
+-----------------------------------
+1. Worker không ghi. `stdout_trunc` của case ẩn là NULL trong cơ sở dữ liệu —
+   cột không bao giờ được điền thì không endpoint nào viết sau này làm rò được.
+2. Schema không có chỗ chứa. Học viên nhận `TestCaseSample`, model này **không
+   có trường** `expected_output`; trả nhầm model là lỗi có hình dạng chứ không
+   phải rò rỉ im lặng.
+3. API chặn lần nữa. `result_out()` vẫn xóa `stdout_trunc` của case ẩn dù worker
+   đã không ghi — hai lớp cùng nói một điều, không lớp nào là lớp duy nhất đúng.
+4. Bốn route soạn đề (POST/PATCH/DELETE test case, PUT thứ tự) trả `TestCaseOut`
+   đầy đủ nên chúng không chọn model theo người gọi — chúng **từ chối** người
+   gọi: học viên nhận 403.
+
+================================================================================
+BÀI NỘP TẤN CÔNG, CHẤM THẬT, RỒI QUÉT LẠI MỌI ENDPOINT
+================================================================================
+
+Test case ẩn: input='SECRET-INPUT-ea6f'  đáp án='SECRET-ANSWER-ea6f'
+Bài nộp: 'import sys\nprint(sys.stdin.read())\n'
+  -> chương trình in lại đúng stdin của nó, nên trên case ẩn, output CHÍNH LÀ input bí mật.
+
+Chấm xong: verdict=WA  điểm=0
+  case 0 (mẫu) -> WA   stdout_trunc='1 2\n\n'
+  case 1 (ẩn ) -> WA   stdout_trunc=None
+
+Quét mọi bề mặt API có thể mang dữ liệu của case ẩn:
+
+Ai                Đường dẫn                                            HTTP  Rò rỉ?
+--------------------------------------------------------------------------------------------
+học viên   GET    /lessons/a62fc5dc-76c3-4889-8709-d647a2dfc8bd/cod...  200  KHÔNG
+học viên   GET    /code-exercises/e1b322b2-286f-4bc2-8a52-c984ff1c9...  200  KHÔNG
+học viên   GET    /code-exercises/e1b322b2-286f-4bc2-8a52-c984ff1c9...  200  KHÔNG
+học viên   GET    /submissions/57c4f9d2-8616-48ce-99e8-4ac88638be05     200  KHÔNG
+học viên   POST   /code-exercises/e1b322b2-286f-4bc2-8a52-c984ff1c9...  403  KHÔNG
+học viên   PATCH  /test-cases/eea1fc8f-a210-4079-98d5-0a4bd17cb636      403  KHÔNG
+học viên   PUT    /code-exercises/e1b322b2-286f-4bc2-8a52-c984ff1c9...  403  KHÔNG
+giảng viên GET    /submissions/57c4f9d2-8616-48ce-99e8-4ac88638be05     200  KHÔNG
+giảng viên GET    /code-exercises/e1b322b2-286f-4bc2-8a52-c984ff1c9...  200  CÓ: input ẩn, đáp án ẩn
+
+Số lần bí mật lọt ra ngoài: 2
+(Giảng viên đọc danh sách test case thì thấy đáp án — đó là quyền của người viết đề,
+ nên dòng cuối cùng phải là CÓ; mọi dòng của học viên phải là KHÔNG.)
+
+Dọn dẹp: xóa khóa học demo -> 204
+
+================================================================================
+ĐỌC KỸ
+================================================================================
+
+- **Dòng đáng giá nhất là `case 0 (mẫu) -> stdout_trunc='1 2\n\n'`.** Không có
+  nó, cả bảng trên vẫn "KHÔNG rò rỉ" kể cả khi endpoint hỏng và không trả gì.
+  Case mẫu là nhóm đối chứng: nó chứng minh API thật sự có trả output, và cái
+  bị giữ lại là output của case ẩn chứ không phải mọi output.
+
+- **Case ẩn vẫn trả verdict.** "Case 1 sai" là cách chấm điểm, không phải cách
+  qua bài. Giấu luôn verdict thì học viên không biết mình sai ở đâu mà sửa, còn
+  giảng viên mất luôn lý do để đánh trọng số cho từng case.
+
+- **Dòng cuối cùng CÓ rò rỉ, và phải như vậy.** Giảng viên sở hữu bài tập đọc
+  danh sách test case thì nhận đủ đáp án — họ là người viết ra nó. Nếu dòng ấy
+  ghi KHÔNG thì bài kiểm tra này đang đo nhầm thứ gì đó (ví dụ token sai), chứ
+  không phải hệ thống an toàn hơn.
+
+- **Giảng viên cũng không thấy output của học viên trên case ẩn.** Chặt hơn mức
+  cần thiết một cách có chủ đích: worker không ghi nó, nên không tồn tại một
+  đường nào phụ thuộc vào việc API nhớ kiểm tra người gọi là ai.
+
+================================================================================
+HẠN CHẾ ĐÃ BIẾT, NÓI THẲNG: VERDICT LÀ MỘT ORACLE
+================================================================================
+
+Trả verdict cho từng case ẩn nghĩa là học viên có một **oracle nhị phân**: nộp
+một chương trình kiểu "nếu input bắt đầu bằng 'A' thì in đáp án đúng, ngược lại
+in rác", rồi đọc AC/WA của từng case để dò dần input ẩn. Điều này đúng với mọi
+hệ thống chấm có báo kết quả theo từng test case, kể cả Codeforces hay LeetCode
+— nó là cái giá của việc chấm điểm minh bạch.
+
+Ba thứ làm cho nó không đáng bỏ công:
+
+1. **Rate limit**: 10 giây giữa hai lần nộp cùng một bài và 40 bài/giờ. Dò một
+   input 20 ký tự theo kiểu này cần hàng trăm lần nộp, tức hàng chục giờ.
+2. Mỗi lần nộp là một dòng trong `submissions` mang tên tài khoản — hành vi dò
+   để lại dấu vết đầy đủ, và đây là dữ liệu giảng viên xem được.
+3. Phần thưởng nhỏ: biết input ẩn của một test case không cho biết lời giải,
+   chỉ cho phép hard-code một case trong nhiều case.
+
+Không tuyên bố đã chặn được oracle này. Chặn nó đồng nghĩa với không trả kết
+quả theo từng test case, và như thế thì mất thứ làm cho việc chấm bài có ích.

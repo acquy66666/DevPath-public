@@ -392,3 +392,22 @@ def test_a_time_limit_in_milliseconds_becomes_whole_cpu_seconds(
     instructor set, which is the one direction this must never fail in.
     """
     assert cpu_seconds_for(time_limit_ms) == cpu_seconds
+
+
+async def test_the_compiler_message_is_capped_too(db_session: AsyncSession) -> None:
+    """It is read back in every page of a submission history.
+
+    The runner's ceiling is a megabyte, which is a ceiling against a flood
+    rather than a size anyone wants stored in a column and sent to a browser.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(
+        db_session,
+        submission.id,
+        judge=judging("CE", message="x" * (STORED_OUTPUT_LIMIT * 3)),
+    )
+
+    await db_session.refresh(submission)
+    assert len(submission.message) == STORED_OUTPUT_LIMIT

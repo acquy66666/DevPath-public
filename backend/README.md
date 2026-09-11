@@ -214,6 +214,12 @@ Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) nhận 409 `PA
 
 Output của test case ẩn **không được ghi xuống** (`stdout_trunc` NULL). API đã từ chối trả nó; đây là lớp trước đó, vì một cột không bao giờ được điền thì không endpoint nào viết sau này làm rò được.
 
+`message` cũng bị cắt về cùng hạn mức: lời trình biên dịch đi qua trần 1 MB của sandbox, và cột này được đọc lại trong mọi trang lịch sử nộp bài.
+
+Bốn route trả `TestCaseOut` đầy đủ (`POST`/`PATCH`/`DELETE` test case và `PUT .../order`) không chọn model theo người gọi — chúng **từ chối** người gọi. Học viên đã ghi danh nhận 403, và đó là người duy nhất mà chỉ còn mỗi lớp kiểm tra quyền đứng chắn giữa họ và đáp án; có test đi hết từng route.
+
+**Verdict của case ẩn vẫn trả về, và đó là một oracle đã biết:** nộp chương trình kiểu "nếu input bắt đầu bằng 'A' thì in đáp án đúng" rồi đọc AC/WA là dò được input ẩn. Đúng với mọi hệ thống chấm báo kết quả theo từng test case. Không chặn, vì chặn nghĩa là bỏ luôn kết quả theo case; thứ làm nó không đáng bỏ công là rate limit — dò một input 20 ký tự cần hàng chục giờ, và mỗi bước để lại một dòng mang tên tài khoản trong `submissions`.
+
 `judge()` là chỗ duy nhất trong backend biết kiểu dữ liệu của runner tồn tại, và nó import bên trong hàm: container API chỉ enqueue nên không cần grader lẫn Docker để khởi động được.
 
 ### Không quá nhanh

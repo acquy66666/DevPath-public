@@ -22,6 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models import (
     Category,
@@ -33,6 +34,8 @@ from app.models import (
     User,
 )
 from app.services import grading as grading_service
+from app.services.rate_limit import get_rate_limiter
+from tests.api.fakes import MemoryRateLimiter
 
 PASSWORD = "mật-khẩu-đủ-dài"
 COURSES = "/api/v1/courses"
@@ -669,6 +672,186 @@ async def test_a_stranger_is_told_the_submission_does_not_exist(
     assert response.status_code == 404
     assert response.json()["detail"]["code"] == "SUBMISSION_NOT_FOUND"
 
+
+# --- Not too fast ----------------------------------------------------------
+#
+# Grading is the most expensive thing a student can ask this platform to do:
+# one submission is several containers and several seconds of a core. The
+# limit exists to keep one person in a loop from being paid for by everyone
+# waiting behind them.
+
+
+@pytest.fixture
+def limiter(app, api_client: AsyncClient) -> MemoryRateLimiter:
+    """The real rules on a clock the test moves, instead of the allow-all one.
+
+    Depends on `api_client` so it is always installed *after* the allow-all
+    override that fixture sets up -- otherwise the order would decide which
+    limiter is in play, and a test expecting a refusal would quietly get one
+    that never refuses.
+    """
+    limiter = MemoryRateLimiter()
+    app.dependency_overrides[get_rate_limiter] = lambda: limiter
+    return limiter
+
+
+async def submit(client: AsyncClient, exercise: dict, headers: dict[str, str]):
+    return await client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/submissions",
+        json={"code": "print(1)"},
+        headers=headers,
+    )
+
+
+async def test_a_second_submission_straight_away_is_refused(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    await add_case(api_client, exercise, owner)
+    assert (await submit(api_client, exercise, student)).status_code == 201
+
+    response = await submit(api_client, exercise, student)
+
+    assert response.status_code == 429
+    body = response.json()["detail"]
+    assert body["code"] == "SUBMISSION_RATE_LIMITED"
+    # Both places, on purpose: the header is what a proxy or curl already
+    # understands, the body field is for the page that draws a countdown.
+    assert response.headers["Retry-After"] == str(body["retry_after"])
+    assert 0 < body["retry_after"] <= 60
+
+
+async def test_a_refused_submission_reaches_neither_the_table_nor_the_queue(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    queued: list,
+    limiter: MemoryRateLimiter,
+):
+    """The whole point. A 429 that still wrote a row and still queued a job
+    would cost exactly what it was meant to save."""
+    await add_case(api_client, exercise, owner)
+    await submit(api_client, exercise, student)
+
+    await submit(api_client, exercise, student)
+
+    rows = (
+        await db_session.scalars(
+            select(Submission).where(
+                Submission.exercise_id == uuid.UUID(exercise["id"])
+            )
+        )
+    ).all()
+    assert len(rows) == 1
+    assert len(queued) == 1
+
+
+async def test_the_wait_ends(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    await add_case(api_client, exercise, owner)
+    await submit(api_client, exercise, student)
+
+    limiter.now += get_settings().submission_cooldown_seconds
+
+    assert (await submit(api_client, exercise, student)).status_code == 201
+
+
+async def test_one_student_waiting_does_not_make_another_wait(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    lesson: dict,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    await add_case(api_client, exercise, owner)
+    await submit(api_client, exercise, student)
+
+    other = await make_user(db_session, "student")
+    db_session.add(
+        Enrollment(user_id=other.id, course_id=uuid.UUID(lesson["course_id"]))
+    )
+    await db_session.flush()
+    classmate = await sign_in(api_client, other)
+
+    assert (await submit(api_client, exercise, classmate)).status_code == 201
+
+
+async def test_the_cooldown_is_per_exercise(
+    api_client: AsyncClient,
+    lesson: dict,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    """Waiting on one problem is what the cooldown is for; being unable to
+    start a different one is not. Moving to another exercise is not the
+    behaviour this guards against -- the hourly quota below is."""
+    await add_case(api_client, exercise, owner)
+    await submit(api_client, exercise, student)
+
+    section = (
+        await api_client.get(f"/api/v1/lessons/{lesson['id']}", headers=owner)
+    ).json()["section_id"]
+    second_lesson = (
+        await api_client.post(
+            f"/api/v1/sections/{section}/lessons",
+            json={"title": "Bài tập 2", "type": "code_exercise"},
+            headers=owner,
+        )
+    ).json()
+    second = (
+        await api_client.post(
+            f"/api/v1/lessons/{second_lesson['id']}/code-exercise",
+            json={"statement_md": "Bài tập thứ hai."},
+            headers=owner,
+        )
+    ).json()
+    await add_case(api_client, second, owner)
+
+    assert (await submit(api_client, second, student)).status_code == 201
+
+
+async def test_the_hourly_quota_stops_a_script_that_waits_the_cooldown_out(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    """A cooldown alone is only a speed limit; patience walks around it.
+
+    Two here instead of the real forty so the test is three requests rather
+    than forty-one -- the rule under test is the same one.
+    """
+    monkeypatch.setattr(get_settings(), "submission_hourly_limit", 2)
+    await add_case(api_client, exercise, owner)
+
+    for _ in range(2):
+        assert (await submit(api_client, exercise, student)).status_code == 201
+        limiter.now += get_settings().submission_cooldown_seconds
+
+    response = await submit(api_client, exercise, student)
+
+    assert response.status_code == 429
+    body = response.json()["detail"]
+    assert body["code"] == "SUBMISSION_RATE_LIMITED"
+    # An hour, near enough: what matters is that it is not the ten seconds of
+    # the cooldown, so the message cannot be telling them the wrong thing.
+    assert body["retry_after"] > 60
 
 # --- What the database refuses, whatever the worker sends ------------------
 

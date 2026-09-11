@@ -22,6 +22,11 @@ jobs:
     # so the suite needs Postgres from here on. tests/conftest.py skips the
     # database tests when it cannot connect *and* CI is unset -- in CI it fails
     # instead, so a broken service container can never show up as a green run.
+    #
+    # Redis is here for the same reason and on the same terms: the rate limiter
+    # is tested against a dictionary for its rules and against a real Redis for
+    # the four commands it sends. A skipped integration test is a green run
+    # that proved nothing.
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -37,8 +42,19 @@ jobs:
           --health-timeout 5s
           --health-retries 12
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
     env:
       DATABASE_URL: postgresql+asyncpg://devpath:devpath@localhost:5432/devpath
+      REDIS_URL: redis://localhost:6379/0
 
     steps:
       - uses: actions/checkout@v4

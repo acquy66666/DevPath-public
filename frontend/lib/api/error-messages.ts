@@ -74,6 +74,11 @@ const MESSAGES: Record<string, string> = {
   EXERCISE_NOT_READY:
     "Bài tập chưa có test case nào nên chưa nhận bài nộp được.",
   SUBMISSION_NOT_FOUND: "Không tìm thấy bài nộp này.",
+  // Kèm `retry_after` (giây) trong detail — trang nộp bài dùng số đó để đếm
+  // ngược thay vì hiện câu chung chung này.
+  SUBMISSION_RATE_LIMITED: "Bạn nộp bài hơi nhanh. Đợi một chút rồi thử lại nhé.",
+  GRADING_UNAVAILABLE:
+    "Hệ thống chấm bài đang bận hoặc tạm ngừng. Thử lại sau ít phút nhé.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

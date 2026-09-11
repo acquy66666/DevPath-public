@@ -11,7 +11,7 @@ for everyone else, which has no field an answer key could travel in.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.core.deps import CurrentUser, DbSession, OptionalUser
 from app.models import SubmissionResult, TestCase
@@ -31,8 +31,13 @@ from app.schemas.grading import (
 )
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.services import grading as grading_service
+from app.services.rate_limit import RateLimiter, get_rate_limiter
 
 router = APIRouter(tags=["grading"])
+
+#: Redis-backed, and overridden in tests. Only the submit route takes it: it is
+#: the one endpoint here that puts work on a queue.
+RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
 def sample_out(case: TestCase) -> TestCaseSample:
@@ -217,16 +222,17 @@ async def create_submission(
     payload: SubmissionCreate,
     current_user: CurrentUser,
     session: DbSession,
+    limiter: RateLimit,
 ) -> SubmissionOut:
     """Submit an answer. Comes back `pending`, with no verdict yet.
 
-    Nothing grades it at this point: the queue and the worker are the next
-    task. The row waiting in the table is the true state of the system, and
-    reporting it honestly is what lets the queue be added underneath without
-    the API changing shape.
+    The row is committed here and graded by a worker; `pending` is the true
+    state of the system at this moment rather than a placeholder. Submitting
+    too fast answers 429 with `Retry-After` -- grading is expensive enough
+    that one person in a loop is felt by everyone else in the queue.
     """
     submission = await grading_service.create_submission(
-        session, exercise_id, current_user, payload.code
+        session, exercise_id, current_user, payload.code, limiter
     )
     return SubmissionOut.model_validate(submission)
 

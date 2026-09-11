@@ -221,3 +221,34 @@ Bất biến "lỗi của mình không đổ lên đầu học viên" vì thế 
 ### Đánh đổi kiến trúc đã ghi rõ
 
 `grading-worker` là container duy nhất cầm `/var/run/docker.sock`, vì chấm bài **chính là** khởi động container. Socket không phải hệ thống phân quyền: container cầm nó khởi động được container tùy ý trên host. Thu hẹp thiệt hại bằng cách nó không phục vụ HTTP, không publish cổng, chạy uid 10001 trên production, và **không bao giờ tự chạy code người nộp** — mọi dòng đó chạy trong container dùng một lần có `--network none`, `--read-only`, `--cap-drop ALL`. Hướng làm chặt hơn (chưa làm): proxy socket chỉ cho `create`/`start`/`wait`/`rm`.
+
+## Rate limit nộp bài (12/09/2026)
+
+`rate-limit.txt` — bấm "Nộp" 10 lần trong 0.1 giây trên stack thật.
+
+```
+10 lần bấm trong 0.1s -> nhận 1, từ chối 9
+Số bài nộp thật sự được tạo trong CSDL: 1
+```
+
+Chín lần bị chặn **trước khi** ghi dòng nào và **trước khi** đẩy job nào. Chặn sau thì cái giá đã trả rồi và mã 429 chỉ còn là lời nói.
+
+### Hai cửa, hai kiểu lạm dụng
+
+| Cửa | Khóa Redis | Lệnh | Chặn được gì |
+|---|---|---|---|
+| Cooldown 10s mỗi (học viên, bài tập) | `rl:submit:cooldown:<user>:<bài>` | `SET NX EX` | Nút bấm hai lần, script quay vòng một bài |
+| 40 bài/giờ mỗi học viên | `rl:submit:hour:<user>` | `INCR` + `EXPIRE` | Script kiên nhẫn ngồi đợi hết cooldown |
+
+Cả hai là **lệnh đơn của Redis**, không phải đọc-rồi-ghi: API chạy nhiều tiến trình, hai request của cùng một cú double-click rơi vào hai worker, cả hai cùng đọc "chưa có gì" rồi cùng đi tiếp.
+
+### Bốn quyết định đáng bảo vệ trước hội đồng
+
+- **Lần bị từ chối không đẩy lùi hạn chờ.** Bấm thêm 9 lần vẫn hết hạn sau đúng 10 giây kể từ lần nộp thành công — cooldown để giãn nhịp, không để phạt người bấm nhầm.
+- **`Retry-After` ở cả header lẫn thân phản hồi.** Header là thứ trình duyệt và proxy đọc sẵn; trường `retry_after` là để trang web vẽ đồng hồ đếm ngược. Một 429 không nói khi nào quay lại thì chỉ có thể trả lời bằng một request nữa.
+- **Khóa theo user id, không theo IP.** Cả phòng máy của trường ngồi sau một IP NAT; chặn theo IP là chặn nhầm cả lớp vì một người. Đổi lại nó không chống được kẻ tạo hàng loạt tài khoản — việc đó thuộc về giới hạn đăng ký.
+- **Redis chết thì cho qua.** Redis cũng là broker của Celery: lúc nó chết, bài nộp vừa được cho qua cũng không vào được hàng đợi và API trả 503 ngay sau đó. Từ chối ở đây là đổi "hàng đợi hở một lúc" lấy "không ai nộp được bài", để bảo vệ một hàng đợi vốn đang không chạy.
+
+### Một lỗi chỉ có test mới thấy
+
+Nếu tiến trình chết đúng giữa `INCR` và `EXPIRE`, khóa đếm nằm lại **không có TTL** — người đó bị chặn vĩnh viễn, và triệu chứng chỉ xuất hiện vài ngày sau, trông y như tài khoản hỏng. Bộ đếm vì thế tự vá: thấy TTL âm thì đặt lại hạn. Có test riêng cho tình huống này.

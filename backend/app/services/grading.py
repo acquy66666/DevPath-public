@@ -23,6 +23,7 @@ from fastapi import status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase, User
 from app.schemas.grading import (
@@ -32,6 +33,7 @@ from app.schemas.grading import (
     TestCaseUpdate,
 )
 from app.services import curriculum as curriculum_service
+from app.services.rate_limit import RateLimiter
 
 # The message left on the row when the queue would not take the job. It is
 # read by a student, so it says what to do rather than what broke.
@@ -39,6 +41,49 @@ QUEUE_DOWN_MESSAGE = (
     "Hệ thống chấm bài đang bận hoặc tạm ngừng. Bài của bạn chưa được đưa vào "
     "hàng đợi — vui lòng nộp lại sau ít phút."
 )
+
+
+# Keys are prefixed so they are greppable in a Redis that also holds the Celery
+# queue, and carry the user id so one person's limit is theirs alone.
+COOLDOWN_KEY = "rl:submit:cooldown:{user}:{exercise}"
+HOURLY_KEY = "rl:submit:hour:{user}"
+HOUR_SECONDS = 3600
+
+
+async def enforce_submission_limits(
+    limiter: RateLimiter, user_id: uuid.UUID, exercise_id: uuid.UUID
+) -> None:
+    """Two gates, cheapest first, both before anything is written or queued.
+
+    The cooldown is per exercise: iterating on one problem is what the wait is
+    for, and a student switching to another exercise is not the abuse this
+    guards against. The hourly quota is per person across every exercise,
+    which is the only one of the two a patient script cannot walk around.
+    """
+    settings = get_settings()
+
+    wait = await limiter.claim(
+        COOLDOWN_KEY.format(user=user_id, exercise=exercise_id),
+        settings.submission_cooldown_seconds,
+    )
+    if wait:
+        raise SubmissionRateLimitedError(
+            f"Bạn vừa nộp bài cho bài tập này. Đợi {wait} giây rồi nộp lại nhé.",
+            retry_after=wait,
+        )
+
+    wait = await limiter.count(
+        HOURLY_KEY.format(user=user_id),
+        settings.submission_hourly_limit,
+        HOUR_SECONDS,
+    )
+    if wait:
+        minutes = wait // 60 + 1
+        raise SubmissionRateLimitedError(
+            f"Bạn đã nộp {settings.submission_hourly_limit} bài trong một giờ — "
+            f"quá nhiều so với bình thường. Thử lại sau khoảng {minutes} phút.",
+            retry_after=wait,
+        )
 
 
 def enqueue_grading(submission_id: uuid.UUID) -> None:
@@ -83,6 +128,21 @@ class InvalidOrderError(DomainError):
 class SubmissionNotFoundError(DomainError):
     status_code = status.HTTP_404_NOT_FOUND
     code = "SUBMISSION_NOT_FOUND"
+
+
+class SubmissionRateLimitedError(DomainError):
+    """Too many submissions, too fast.
+
+    Carries `retry_after` so the answer says when to come back; a 429 without
+    it can only be answered by guessing, which is another request.
+    """
+
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    code = "SUBMISSION_RATE_LIMITED"
+
+    def __init__(self, message: str, *, retry_after: int):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class GradingUnavailableError(DomainError):
@@ -367,7 +427,11 @@ async def reorder_test_cases(
 
 
 async def create_submission(
-    session: AsyncSession, exercise_id: uuid.UUID, user: User, code: str
+    session: AsyncSession,
+    exercise_id: uuid.UUID,
+    user: User,
+    code: str,
+    limiter: RateLimiter,
 ) -> Submission:
     """Take a submission in and hand it to the grading queue.
 
@@ -382,6 +446,11 @@ async def create_submission(
     cases = await _cases_of(session, exercise_id)
     if not cases:
         raise ExerciseNotReadyError("Bài tập chưa có test case nào để chấm")
+
+    # Last of the refusals and first of the work: everything above is about
+    # whether this submission is possible at all, and a caller who cannot see
+    # the exercise should not learn about our rate limits instead of a 404.
+    await enforce_submission_limits(limiter, user.id, exercise.id)
 
     submission = Submission(
         user_id=user.id,

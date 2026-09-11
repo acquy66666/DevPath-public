@@ -10,6 +10,8 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.main import create_app
+from app.services.rate_limit import get_rate_limiter
+from tests.api.fakes import AllowAllRateLimiter
 
 
 @pytest.fixture
@@ -90,6 +92,10 @@ async def api_client(
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    # No Redis in an API test, and no cooldown either: a test that submits
+    # twice is testing something else. The tests that *are* about the limit
+    # override this again with one that counts.
+    app.dependency_overrides[get_rate_limiter] = AllowAllRateLimiter
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client

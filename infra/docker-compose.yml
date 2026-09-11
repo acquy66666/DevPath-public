@@ -22,6 +22,10 @@ x-backend-env: &backend-env
   GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/auth/google/callback}
   FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
   AUTO_APPROVE_COURSES: ${AUTO_APPROVE_COURSES:-true}
+  # How often one student may ask for grading. Enforced by the API before a
+  # row is written or a job queued; see backend/app/services/rate_limit.py.
+  SUBMISSION_COOLDOWN_SECONDS: ${SUBMISSION_COOLDOWN_SECONDS:-10}
+  SUBMISSION_HOURLY_LIMIT: ${SUBMISSION_HOURLY_LIMIT:-40}
   # Object storage (Cloudflare R2). Empty by default: the upload endpoints
   # answer 503 until a bucket exists. See docs/huong-dan-cloudflare-r2.md.
   # R2_ENDPOINT_URL overrides the endpoint for anything else that speaks S3 --

@@ -216,6 +216,20 @@ Output của test case ẩn **không được ghi xuống** (`stdout_trunc` NULL
 
 `judge()` là chỗ duy nhất trong backend biết kiểu dữ liệu của runner tồn tại, và nó import bên trong hàm: container API chỉ enqueue nên không cần grader lẫn Docker để khởi động được.
 
+### Không quá nhanh
+
+`POST .../submissions` đi qua hai cửa trong Redis trước khi ghi dòng nào: cooldown **10 giây** cho mỗi (học viên, bài tập), và **40 bài/giờ** cho mỗi học viên trên toàn bộ bài tập. Cả hai chỉnh được bằng `SUBMISSION_COOLDOWN_SECONDS` và `SUBMISSION_HOURLY_LIMIT`.
+
+Cooldown chặn nút bấm hai lần và script quay vòng một bài; hạn mức theo giờ chặn script kiên nhẫn ngồi đợi hết cooldown — thứ mà riêng cooldown không bao giờ chặn được. Mỗi cửa là **một lệnh Redis** (`SET NX EX`, `INCR`) chứ không phải đọc-rồi-ghi: API chạy nhiều tiến trình, hai request của cùng một cú double-click rơi vào hai worker, cả hai cùng đọc "chưa có gì".
+
+Cửa chặn nằm **sau** mọi kiểm tra quyền và trước khi ghi: người không xem được bài tập phải nhận 404, không phải nhận thông tin về hạn mức của hệ thống.
+
+Từ chối trả 429 kèm `Retry-After` ở header **và** `retry_after` trong `detail` — header cho proxy/curl, trường JSON cho trang vẽ đồng hồ đếm ngược. Lần bị từ chối **không** đẩy lùi hạn chờ: cooldown để giãn nhịp, không để phạt.
+
+Giới hạn gắn với **user id chứ không phải IP**: một phòng máy của trường ngồi sau một IP NAT, chặn theo IP là chặn nhầm cả lớp vì một người.
+
+**Redis chết thì cho qua**, có chủ đích và chỉ ở đây: Redis cũng là broker của Celery, nên lúc nó chết thì bài vừa được cho qua cũng không vào được hàng đợi và API trả 503 ngay sau. Từ chối ở đây là đổi "hàng đợi hở một lúc" lấy "không ai nộp được bài", để bảo vệ một hàng đợi vốn không chạy.
+
 ## Trạng thái
 
 Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, auth email + mật khẩu và đăng nhập Google (bảng trên) với `get_current_user`.

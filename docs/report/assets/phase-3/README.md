@@ -159,3 +159,29 @@ Lần chạy đầu, hai ca báo `ESCAPED`. Cả hai đều là **fixture kết 
 ### Hạn chế đã biết, nói thẳng
 
 Bài nộp **giết được container của chính nó** bằng `SIGTERM` gửi tới PID 1 (`docker-init` có handler cho tín hiệu này). Không chặn được, và cũng không cần chặn: tín hiệu không đi ra khỏi PID namespace nên không bài nộp nào khác bị ảnh hưởng, container thoát mã 143 ≠ 0 nên verdict là RE. Học viên chỉ có thể vứt bỏ chính bài của mình. Có fixture và test riêng cho việc này thay vì giấu đi.
+
+## Trình soạn bài tập code (11/09/2026)
+
+`instructor-code-exercise.png` — ảnh chụp thật, không dựng: khóa học tạo mới qua UI, bài học `code_exercise`, đề bài, code mở đầu, hai giới hạn tài nguyên và hai test case (một mẫu, một ẩn) đều đi qua API thật vào Postgres thật.
+
+### Đường đi đã đi hết bằng chuột
+
+| Bước | Kết quả quan sát được |
+|---|---|
+| Chọn loại bài học “Bài tập code” | Bài học tạo được — trước hôm nay loại này backend nhận nhưng frontend không cho chọn |
+| Mở bài học chưa có bài tập | `GET /lessons/{id}/code-exercise` trả 404, UI hiện trạng thái rỗng thay vì báo lỗi |
+| Nhập giới hạn thời gian 99999 ms | Chặn tại chỗ: “Giới hạn thời gian phải trong khoảng 100–10000 ms”, không phát request |
+| Tạo bài tập | 201, form đổi sang chế độ sửa, phần test case hiện ra |
+| Chưa có test case nào | Cảnh báo đỏ: hệ thống sẽ từ chối nhận bài nộp |
+| Thêm 1 case mẫu | Cảnh báo đổi giọng: mọi case đều hiển thị thì chỉ cần in đáp án là qua |
+| Thêm 1 case ẩn, trọng số 2 | Hết cảnh báo. Dòng tóm tắt: “2 test case · 1 mẫu, 1 ẩn · tổng trọng số 3” |
+| Đưa case 2 lên trên | Postgres đổi `position` đúng (0 ↔ 1) — ràng buộc `uq_test_cases_position` DEFERRABLE chịu được |
+| Sửa trọng số thành 0 | Chặn tại chỗ: “Trọng số là số nguyên từ 1 trở lên” |
+| Sửa trọng số thành 3 | Lưu, tổng trọng số trên UI thành 4, DB khớp |
+
+### Điều đáng nói trong báo cáo
+
+- **Ba cảnh báo trên đều là bài tập hợp lệ với API.** Không có test case, toàn ẩn, toàn hiện — cả ba đều tạo được qua API và đều sai về mặt sư phạm. Đây là chỗ giao diện làm được việc mà ràng buộc CSDL không làm: nó khuyên, chứ không cấm.
+- **Ô “Ẩn với học viên” tự về mặc định ẩn sau mỗi lần thêm**, không giữ lựa chọn trước đó. Quên ô này một lần là đáp án nằm trên trang, nên giá trị an toàn phải là giá trị phải chủ động bỏ chọn mỗi lần.
+- **Chính sách so sánh output được nói ngay dưới ô nhập đáp án**: bỏ khoảng trắng cuối dòng và dòng trống cuối, giữ khoảng trắng giữa dòng. Giảng viên biết luật trước khi viết đáp án thì không mất buổi tối đi truy một WA không có thật.
+- Trang học của học viên tạm thời nói thẳng “trang nộp bài đang được xây dựng”. Nếu không sửa, bài tập code rơi vào nhánh bài đọc và hiện “Bài học này chưa có nội dung” — một câu sai, vì bài học có nội dung, chỉ là chưa có chỗ nộp (tuần 8).

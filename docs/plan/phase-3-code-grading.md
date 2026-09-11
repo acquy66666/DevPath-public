@@ -15,7 +15,7 @@
 ## Tuần 7 — Tích hợp queue & API
 
 - [x] Bảng + API: `code_exercises`, `test_cases`, `submissions`, `submission_results`
-- [ ] Instructor UI: tạo bài tập code (đề markdown, starter code, test case, giới hạn tài nguyên, sample/hidden)
+- [x] Instructor UI: tạo bài tập code (đề markdown, starter code, test case, giới hạn tài nguyên, sample/hidden)
 - [ ] Celery queue riêng cho grading; worker gọi runner; retry + dead letter; concurrency giới hạn theo tài nguyên VPS
 - [ ] Rate limit nộp bài (Redis) — chống spam queue
 - [ ] API kết quả: hidden test chỉ trả verdict, không trả input/expected output

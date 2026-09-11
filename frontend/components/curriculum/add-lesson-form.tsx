@@ -14,15 +14,16 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { validateLessonTitle } from "@/lib/courses/validation";
 
 /**
- * Only video and article can be added here.
+ * Quiz is the one lesson type still missing from here.
  *
- * Quiz and code exercise are lesson types too, but each arrives with a whole
- * editor of its own in phase 3–4; offering them now would create rows nothing
- * can fill in.
+ * It is a lesson type the backend knows, but nothing on this side can fill one
+ * in yet, and a row no editor can open is worse than an option that is not
+ * offered. Its editor arrives in phase 4.
  */
 const TYPES: Array<{ value: BuildableLessonType; label: string }> = [
   { value: "video", label: "Video" },
   { value: "article", label: "Bài đọc" },
+  { value: "code_exercise", label: "Bài tập code" },
 ];
 
 export function AddLessonForm({
@@ -95,7 +96,7 @@ export function AddLessonForm({
           onChange={(event) => setType(event.target.value as BuildableLessonType)}
           aria-label="Loại bài học"
           disabled={create.isPending}
-          className="w-32"
+          className="w-40"
         >
           {TYPES.map((option) => (
             <option key={option.value} value={option.value}>

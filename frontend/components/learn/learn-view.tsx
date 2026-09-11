@@ -231,6 +231,16 @@ export function LearnView({
                     </AlertDescription>
                   </Alert>
                 )
+              ) : lesson.data.type === "code_exercise" ? (
+                // The submission page -- editor, sample runs, verdicts -- is
+                // week 8. Until then say so: falling through to the article
+                // branch would tell a student the lesson is empty, which is
+                // the one thing it is not.
+                <Alert>
+                  <AlertDescription>
+                    Bài tập code — trang nộp bài đang được xây dựng.
+                  </AlertDescription>
+                </Alert>
               ) : (
                 <article className="whitespace-pre-line text-pretty">
                   {lesson.data.article_content ?? "Bài học này chưa có nội dung."}

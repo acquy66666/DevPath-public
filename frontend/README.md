@@ -68,6 +68,22 @@ Sau khi tải xong, màn hình hỏi lại trạng thái mỗi 4 giây trong lú
 
 **Cạm bẫy dnd-kit:** khi trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, mũi tên **cuộn trang** trước rồi mới di chuyển phần tử — đó là hành vi có sẵn của `KeyboardSensor`, không phải lỗi. Test tự động vì thế phải đặt viewport đủ cao để trang hết cuộn.
 
+## Soạn bài tập code (Phase 3)
+
+Nằm trong chính trình soạn mục lục: thêm bài học loại **Bài tập code** rồi bấm sửa. `components/exercise/` lo phần còn lại — đề bài Markdown, code mở đầu, giới hạn thời gian/bộ nhớ, và danh sách test case.
+
+**Bài tập sống ở bảng khác nên nó tự lưu.** Nút “Lưu bài học” ghi tên và cờ học thử; nút “Lưu bài tập” ghi đề bài và giới hạn. Gộp chung một nút sẽ phải ghi hai lần vào hai nhóm bảng trong một thao tác, và nửa chừng hỏng thì không có trạng thái nào đúng để quay về.
+
+**404 là câu trả lời, không phải lỗi.** Bài học vừa tạo thì `GET /lessons/{id}/code-exercise` trả 404 — đó là trạng thái rỗng, nên query tắt retry cho riêng mã này và render form tạo thay vì banner đỏ.
+
+**Hai giá trị mặc định được chọn theo hướng an toàn:** test case mặc định **ẩn**, và ô đó tự về ẩn sau mỗi lần thêm. Quên nó một lần là đáp án nằm trên trang học viên.
+
+**Giao diện cảnh báo ba trạng thái mà API vẫn cho phép:** không có test case (bài nộp sẽ bị từ chối — `EXERCISE_NOT_READY`), toàn case ẩn (học viên không có gì để thử), toàn case hiện (in đáp án mẫu là qua bài). Cả ba đều hợp lệ với cơ sở dữ liệu và đều sai về mặt sư phạm.
+
+**Thứ tự test case là dữ liệu, không phải trang trí** — “test case 3 sai” trỏ đúng dòng thứ ba. Nút lên/xuống gửi cả danh sách (`PUT .../test-cases/order`), cùng cách kéo-thả mục lục gửi.
+
+Đáp án của case ẩn **không bao giờ xuống trình duyệt học viên**: backend trả hai model khác nhau tùy người gọi, và model của học viên không có trường nào để chứa đáp án. `lib/api/grading.ts` vì thế chỉ khai kiểu của giảng viên — trang nộp bài (tuần 8) phải khai kiểu riêng, không dùng lại.
+
 ## Cấu trúc
 
 ```
@@ -79,8 +95,10 @@ components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, 
 components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)
+components/exercise/   trình soạn bài tập code + test case (Phase 3)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)
+lib/grading/         giới hạn tài nguyên, chép tay từ model backend
 ```
 
 ## Nguyên tắc

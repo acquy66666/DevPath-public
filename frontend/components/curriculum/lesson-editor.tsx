@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { useId, useState } from "react";
 
+import { ExerciseEditor } from "@/components/exercise/exercise-editor";
 import { VideoUpload } from "@/components/curriculum/video-upload";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -145,6 +146,10 @@ function LessonForm({
             disabled={save.isPending}
           />
         </div>
+      ) : lesson.type === "code_exercise" ? (
+        // The exercise is four tables away from the lesson, so it edits itself
+        // and saves on its own button rather than riding along with the title.
+        <ExerciseEditor lessonId={lesson.id} />
       ) : (
         <VideoUpload lesson={lesson} />
       )}

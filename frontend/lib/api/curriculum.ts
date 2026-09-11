@@ -8,8 +8,8 @@ import type { VideoAsset } from "./video";
  */
 
 export type LessonType = "video" | "article" | "quiz" | "code_exercise";
-/** Only these two can be created here; quizzes and exercises arrive in phase 3–4. */
-export type BuildableLessonType = "video" | "article";
+/** Quiz is the one still missing an editor behind it; it arrives in phase 4. */
+export type BuildableLessonType = "video" | "article" | "code_exercise";
 
 export interface LessonSummary {
   id: string;

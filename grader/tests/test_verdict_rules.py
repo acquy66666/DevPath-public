@@ -19,7 +19,7 @@ from __future__ import annotations
 import pytest
 
 from runner.sandbox import Execution, Outcome
-from runner.verdict import Verdict, overall, verdict_for
+from runner.verdict import TestCase, Verdict, grade, overall, verdict_for
 
 
 def ended(
@@ -151,3 +151,69 @@ def test_an_exercise_with_no_test_cases_is_our_problem_not_the_students():
     nothing; calling it WA would take them away for nothing.
     """
     assert overall([]) is Verdict.SYSTEM_ERROR
+
+
+# --- Reporting a case before the submission is finished --------------------
+
+
+def test_a_caller_hears_about_each_case_as_it_finishes(monkeypatch) -> None:
+    """`on_case` fires between cases, which is the only thing that makes it
+    worth having.
+
+    The check that matters is inside the fake sandbox: before case *n* is
+    started, the callback for every earlier case must already have run. A
+    grade() that collected the results and called the callback three times at
+    the end would satisfy a test on the final list and would still leave a
+    student watching a spinner, so the interleaving is asserted where it
+    happens rather than afterwards.
+    """
+    seen: list[tuple[int, str]] = []
+    started = 0
+
+    def fake_execute(source, *, command=None, **kwargs):
+        nonlocal started
+        if command is not None:
+            return ended()  # the compile step, which runs no test case
+        assert len(seen) == started, "a case started before the previous was reported"
+        started += 1
+        return ended(stdout=f"{started}\n")
+
+    monkeypatch.setattr("runner.verdict.execute", fake_execute)
+
+    judgement = grade(
+        "print(1)",
+        [TestCase(expected="1\n"), TestCase(expected="nope"), TestCase(expected="3\n")],
+        on_case=lambda index, result: seen.append((index, str(result.verdict))),
+    )
+
+    assert seen == [(0, "AC"), (1, "WA"), (2, "AC")]
+    assert judgement.verdict is Verdict.WRONG_ANSWER
+
+
+def test_a_submission_that_never_compiled_reports_no_cases(monkeypatch) -> None:
+    """Nothing ran, so nothing is reported -- not even a zero.
+
+    A progress event for a case that was never executed would put a letter on
+    a page for a program that does not exist.
+    """
+    monkeypatch.setattr(
+        "runner.verdict.execute",
+        lambda source, **kwargs: ended(exit_code=1),
+    )
+    seen: list[int] = []
+
+    judgement = grade(
+        "def (", [TestCase()], on_case=lambda index, result: seen.append(index)
+    )
+
+    assert judgement.verdict is Verdict.COMPILE_ERROR
+    assert seen == []
+
+
+def test_grading_without_a_listener_is_unchanged(monkeypatch) -> None:
+    """The callback is optional, and the verdict does not depend on it."""
+    monkeypatch.setattr(
+        "runner.verdict.execute", lambda source, **kwargs: ended(stdout="ok\n")
+    )
+
+    assert grade("print(1)", [TestCase(expected="ok\n")]).verdict is Verdict.ACCEPTED

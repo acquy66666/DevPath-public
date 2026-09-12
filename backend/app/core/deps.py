@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, WebSocket
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,6 +18,26 @@ DbSession = Annotated[AsyncSession, Depends(get_db)]
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+async def user_for_access_token(session: AsyncSession, token: str) -> User | None:
+    """The account an access token stands for, or None if it stands for none.
+
+    Answers with None rather than raising because not every transport has an
+    error envelope to raise into -- a WebSocket handshake has a close code and
+    nothing else. The HTTP dependency below turns None into the 401.
+    """
+    try:
+        payload = decode_access_token(token)
+    except TokenError:
+        return None
+
+    user = await session.get(User, payload.user_id)
+    if user is None or user.locked_at is not None:
+        # The token may still be within its 15 minutes; the account is not.
+        return None
+
+    return user
+
+
 async def get_current_user(
     session: DbSession,
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
@@ -31,14 +51,8 @@ async def get_current_user(
     if credentials is None:
         raise NotAuthenticatedError("Chưa đăng nhập")
 
-    try:
-        payload = decode_access_token(credentials.credentials)
-    except TokenError as exc:
-        raise NotAuthenticatedError("Phiên đăng nhập không hợp lệ") from exc
-
-    user = await session.get(User, payload.user_id)
-    if user is None or user.locked_at is not None:
-        # The token may still be within its 15 minutes; the account is not.
+    user = await user_for_access_token(session, credentials.credentials)
+    if user is None:
         raise NotAuthenticatedError("Phiên đăng nhập không hợp lệ")
 
     return user
@@ -95,12 +109,53 @@ def require_role(*roles: str):
     return dependency
 
 
+#: How a token reaches a WebSocket.
+#:
+#: The browser's WebSocket API cannot set an `Authorization` header, so the
+#: credential has to travel some other way. The usual answer -- a query string
+#: -- writes a live access token into nginx's access log, into any error
+#: report that includes the URL, and into whatever proxy is between the two.
+#: The handshake's subprotocol list is a header (`Sec-WebSocket-Protocol`), it
+#: is the one header the browser API does let a page set, and it is not logged
+#: as part of the request line. So the client offers `["bearer", "<token>"]`
+#: and the server accepts with `bearer`.
+WEBSOCKET_BEARER = "bearer"
+
+
+def websocket_token(websocket: WebSocket) -> str | None:
+    """Pull the access token out of the handshake, or None if it is not there.
+
+    Exactly two protocols, ours first: a longer list is not a client that
+    happens to also want something else, it is a client this server does not
+    understand, and guessing which entry is a credential is how a credential
+    gets read out of the wrong field.
+    """
+    offered = websocket.scope.get("subprotocols") or []
+    if len(offered) == 2 and offered[0] == WEBSOCKET_BEARER:
+        return offered[1]
+    return None
+
+
+async def get_websocket_user(
+    session: AsyncSession, websocket: WebSocket
+) -> User | None:
+    """The user behind a WebSocket handshake, or None for anyone unproven."""
+    token = websocket_token(websocket)
+    if token is None:
+        return None
+    return await user_for_access_token(session, token)
+
+
 __all__ = [
+    "WEBSOCKET_BEARER",
     "CurrentUser",
     "DbSession",
     "OptionalUser",
     "get_current_user",
     "get_db",
     "get_optional_user",
+    "get_websocket_user",
     "require_role",
+    "user_for_access_token",
+    "websocket_token",
 ]

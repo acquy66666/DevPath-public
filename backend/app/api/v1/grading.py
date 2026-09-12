@@ -11,14 +11,22 @@ for everyone else, which has no field an answer key could travel in.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 
-from app.core.deps import CurrentUser, DbSession, OptionalUser
-from app.models import SubmissionResult, TestCase
+from app.core.db import SessionLocal
+from app.core.deps import (
+    WEBSOCKET_BEARER,
+    CurrentUser,
+    DbSession,
+    OptionalUser,
+    get_websocket_user,
+)
+from app.models import SubmissionResult, TestCase, User
 from app.schemas.grading import (
     CodeExerciseCreate,
     CodeExerciseOut,
     CodeExerciseUpdate,
+    GradingEvent,
     SubmissionCreate,
     SubmissionDetail,
     SubmissionOut,
@@ -31,6 +39,7 @@ from app.schemas.grading import (
 )
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.services import grading as grading_service
+from app.services import grading_events
 from app.services.rate_limit import RateLimiter, get_rate_limiter
 
 router = APIRouter(tags=["grading"])
@@ -274,5 +283,78 @@ async def get_submission(
     return SubmissionDetail(
         **SubmissionOut.model_validate(submission).model_dump(),
         code=submission.code,
+        total_cases=await grading_service.count_test_cases(
+            session, submission.exercise_id
+        ),
         results=[result_out(result, case) for result, case in results],
     )
+
+
+# --- Watching a submission being graded ------------------------------------
+
+#: Close codes in the application range (4000-4999), so a client can tell the
+#: two apart: 4401 means "get a fresh token and reconnect", 4404 means "stop
+#: asking". Anything else -- a dropped network, a restarted API -- is a
+#: transport failure, and the answer to those is to fall back to polling.
+WS_NOT_AUTHENTICATED = 4401
+WS_NOT_FOUND = 4404
+
+
+@router.websocket("/submissions/{submission_id}/events")
+async def watch_submission(websocket: WebSocket, submission_id: uuid.UUID) -> None:
+    """Live grading progress for one submission.
+
+    Authenticated through the handshake's subprotocol rather than a query
+    string, because a query string is a credential in a log file. The client
+    connects offering `["bearer", "<access token>"]` and the server accepts
+    with `bearer`.
+
+    No database session is held open for the life of the socket. A student
+    watching a ten-second run would otherwise pin a pooled connection for as
+    long as their tab is open, and thirty of them would pin thirty -- so each
+    snapshot opens a session, reads, and hands it straight back.
+
+    The account is looked up again on every snapshot, for the same reason it
+    is looked up on every request: a socket opened an hour ago must not keep
+    answering for an account that has since been locked.
+    """
+    async with SessionLocal() as session:
+        user = await get_websocket_user(session, websocket)
+
+    if user is None:
+        # Accept first, then close with a code. Refusing the handshake outright
+        # gives a browser an `error` event with nothing in it, and the client
+        # cannot then tell "your token expired" from "the server is down" --
+        # which are answered by refreshing and by retrying respectively.
+        await websocket.accept()
+        await websocket.close(WS_NOT_AUTHENTICATED, "Chưa đăng nhập")
+        return
+
+    user_id = user.id
+    await websocket.accept(subprotocol=WEBSOCKET_BEARER)
+
+    async def read_snapshot() -> GradingEvent | None:
+        async with SessionLocal() as session:
+            viewer = await session.get(User, user_id)
+            if viewer is None:
+                return None
+            return await grading_events.snapshot_for(session, submission_id, viewer)
+
+    reason = grading_events.GONE
+    try:
+        async with grading_events.subscribe(submission_id) as stream:
+            reason = await grading_events.stream_progress(
+                read_snapshot, stream, websocket
+            )
+    except WebSocketDisconnect:
+        # The ordinary ending: the student closed the tab.
+        return
+
+    try:
+        if reason == grading_events.GONE:
+            await websocket.close(WS_NOT_FOUND, "Không tìm thấy bài nộp")
+        else:
+            await websocket.close()
+    except RuntimeError:
+        # Already closed from the other end while we were deciding.
+        return

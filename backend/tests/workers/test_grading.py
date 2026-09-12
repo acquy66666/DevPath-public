@@ -13,6 +13,7 @@ worker writes it into a column the API is willing to return.
 import uuid
 from datetime import UTC, datetime
 from decimal import Decimal
+from unittest import mock
 
 import pytest
 from sqlalchemy import select
@@ -29,9 +30,12 @@ from app.models import (
     TestCase,
     User,
 )
+from app.schemas.grading import GradingCaseEvent, GradingEvent
+from app.services import grading_events
 from app.workers.grading import (
     STORED_OUTPUT_LIMIT,
     CaseOutcome,
+    CaseProgress,
     GradingOutcome,
     cpu_seconds_for,
     park_submission,
@@ -134,15 +138,25 @@ async def make_submission(
 
 
 def judging(*verdicts: str, stdout: str = "3\n", message: str = "") -> object:
-    """A judge that hands back the verdicts it was built with."""
+    """A judge that hands back the verdicts it was built with.
 
-    def judge(code, cases, *, time_limit_ms, memory_limit_mb):
+    It calls `on_case` between cases the way the real one does, so a test can
+    watch what is announced *while* a submission is being graded rather than
+    only what is left behind at the end.
+    """
+
+    def judge(code, cases, *, time_limit_ms, memory_limit_mb, on_case=None):
         judge.seen = {
             "code": code,
             "cases": list(cases),
             "time_limit_ms": time_limit_ms,
             "memory_limit_mb": memory_limit_mb,
         }
+        for index, verdict in enumerate(verdicts):
+            # A compile error never reaches a test case, so a judge built to
+            # report one does not pretend to have run any.
+            if on_case is not None and verdict != "CE":
+                on_case(CaseProgress(index=index, verdict=verdict, run_time_ms=10 + index))
         overall = next((v for v in verdicts if v != "AC"), "AC")
         return GradingOutcome(
             verdict=overall,
@@ -411,3 +425,191 @@ async def test_the_compiler_message_is_capped_too(db_session: AsyncSession) -> N
 
     await db_session.refresh(submission)
     assert len(submission.message) == STORED_OUTPUT_LIMIT
+
+
+# --- What is said while it happens -----------------------------------------
+
+
+class Recorder:
+    """Collects announcements instead of publishing them."""
+
+    def __init__(self) -> None:
+        self.events: list[GradingEvent] = []
+
+    def __call__(self, event: GradingEvent) -> None:
+        self.events.append(event)
+
+    def statuses(self) -> list[str]:
+        return [event.status for event in self.events]
+
+
+async def test_progress_is_announced_per_case_as_the_run_goes(
+    db_session: AsyncSession,
+) -> None:
+    """The point of the whole channel: a count that moves before the end.
+
+    Three cases must produce three progress events, not one summary at the
+    finish -- a progress bar that only ever shows 0% and then 100% is a
+    spinner with extra machinery behind it.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1, 1))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(
+        db_session, submission.id, judge=judging("AC", "WA", "AC"), announce=announce
+    )
+
+    assert announce.statuses() == ["running", "running", "running", "running", "done"]
+    ticks = [event for event in announce.events if event.case is not None]
+    assert [tick.completed_cases for tick in ticks] == [1, 2, 3]
+    assert [tick.case.verdict for tick in ticks] == ["AC", "WA", "AC"]
+    assert all(tick.total_cases == 3 for tick in announce.events[:-1])
+
+
+async def test_the_first_announcement_says_how_many_cases_there_are(
+    db_session: AsyncSession,
+) -> None:
+    """`running` arrives before any case does, carrying the denominator.
+
+    Without it the page can say "test 1" but not "test 1/10", and the number
+    it is missing is the one that tells a student whether to keep waiting.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1, 1, 1))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(
+        db_session,
+        submission.id,
+        judge=judging("AC", "AC", "AC", "AC"),
+        announce=announce,
+    )
+
+    first = announce.events[0]
+    assert first.status == "running"
+    assert first.total_cases == 4
+    assert first.completed_cases == 0
+    assert first.case is None
+
+
+async def test_the_last_announcement_carries_the_verdict_and_the_score(
+    db_session: AsyncSession,
+) -> None:
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(
+        db_session, submission.id, judge=judging("AC", "WA"), announce=announce
+    )
+
+    last = announce.events[-1]
+    assert last.status == "done"
+    assert last.is_terminal
+    assert last.verdict == "WA"
+    assert last.score == 50
+
+
+async def test_no_announcement_carries_what_a_program_printed(
+    db_session: AsyncSession,
+) -> None:
+    """The structural half of the hidden-test-case rule, on the live channel.
+
+    The judge below prints the secret on every case, hidden and sample alike.
+    Not one event may contain it -- and the reason no conditional is needed to
+    achieve that is that `GradingEvent` has no field for output at all.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(
+        db_session,
+        submission.id,
+        judge=judging("WA", "WA", stdout=HIDDEN_OUTPUT),
+        announce=announce,
+    )
+
+    published = [event.model_dump_json() for event in announce.events]
+    assert published, "nothing was announced at all"
+    assert not any(HIDDEN_OUTPUT in line for line in published)
+    assert "stdout" not in GradingEvent.model_fields
+    assert "stdout" not in GradingCaseEvent.model_fields
+
+
+async def test_a_case_event_says_which_case_by_position_not_by_arrival(
+    db_session: AsyncSession,
+) -> None:
+    """Position comes from the row, so a reordered exercise still lines up."""
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(
+        db_session, submission.id, judge=judging("AC", "AC"), announce=announce
+    )
+
+    ticks = [event.case for event in announce.events if event.case is not None]
+    assert [tick.position for tick in ticks] == [0, 1]
+    assert [tick.is_hidden for tick in ticks] == [False, True]
+
+
+async def test_a_system_error_announces_nothing_terminal(
+    db_session: AsyncSession,
+) -> None:
+    """Our failure does not end anyone's wait, because it is about to be retried.
+
+    A `done` here would stop the page on an attempt that is being tried again
+    a few seconds later, and the student would be shown a failure that the
+    platform itself does not consider final.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await run_grading(db_session, submission.id, judge=judging("SE"), announce=announce)
+
+    assert not any(event.is_terminal for event in announce.events)
+
+
+async def test_parking_a_submission_ends_the_wait(db_session: AsyncSession) -> None:
+    """Giving up is terminal, and the channel has to say so.
+
+    Otherwise the only thing that ends a socket over a parked submission is
+    the five-minute deadline, and the student watches a spinner through it.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    await park_submission(db_session, submission.id, "docker is down", announce=announce)
+
+    assert [event.status for event in announce.events] == ["error"]
+    assert announce.events[0].is_terminal
+
+
+async def test_grading_survives_a_publisher_that_throws(
+    db_session: AsyncSession,
+) -> None:
+    """Telemetry is not allowed to fail a submission.
+
+    `run_grading` does not catch this itself -- `publish_event` does, which is
+    the single place where a broken channel becomes a log line. The test runs
+    with the real announcer and a publisher that throws on every call, so it
+    proves the seam is where it is claimed to be rather than that a fake was
+    polite.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    class Broken:
+        def publish(self, event: GradingEvent) -> None:
+            raise RuntimeError("redis is down")
+
+    with mock.patch.object(grading_events, "get_publisher", Broken):
+        await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    await db_session.refresh(submission)
+    assert submission.status == "done"
+    assert submission.verdict == "AC"

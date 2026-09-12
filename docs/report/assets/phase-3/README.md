@@ -297,3 +297,51 @@ Cái làm nó không đáng bỏ công là **rate limit vừa làm ở task trư
 ### Một lỗ thật tìm thấy khi rà
 
 `submissions.message` (lời trình biên dịch cho CE) **không bị cắt**: trần của nó là 1 MB của runner, và cột này được đọc lại trong **mọi trang** lịch sử nộp bài. Đã cắt về cùng hạn mức với output từng case, kèm test.
+
+
+## Tiến độ chấm realtime: Redis pub/sub → WebSocket (12/09/2026)
+
+`grading-progress.txt` — một bài nộp thật, và socket được mở ở **bốn thời điểm khác nhau** để lấy bốn câu trả lời khác nhau.
+
+### Trong lúc chấm: tiến độ đến từng test case
+
+```
+   109 ms  snapshot  running   0/4  -                    verdict=None
+  2828 ms  progress  running   1/4  case 0 (mẫu) -> AC   verdict=None
+  3922 ms  progress  running   2/4  case 1 (mẫu) -> AC   verdict=None
+  5078 ms  progress  running   3/4  case 2 (ẩn ) -> RE   verdict=None
+  6906 ms  progress  running   4/4  case 3 (ẩn ) -> AC   verdict=None
+  7031 ms  progress  done      4/4  -                    verdict=RE
+```
+
+Bốn mốc thời gian là bốn container khác nhau chạy xong — mỗi test case một container. Cột `type` là chỗ đáng nhìn: frame đầu đọc từ Postgres, năm frame sau do worker publish. Hai nguồn, một hình dạng dữ liệu.
+
+### Sau khi chấm xong: tình huống pub/sub bó tay
+
+Redis pub/sub **không có bộ nhớ** — gửi cho ai đang nghe tại đúng khoảnh khắc đó, không phát lại. Socket mở muộn đã lỡ mọi sự kiện sẽ từng tồn tại. Đó là lý do mỗi socket mở đầu bằng một snapshot đọc từ CSDL, và tại sao client vào muộn vẫn có đáp án sau **47 ms** thay vì đợi mãi mãi.
+
+Cùng cơ chế ấy xử lý luôn ba hỏng hóc khác bằng một câu trả lời: thông điệp mất khi subscription chưa kịp thiết lập, kết nối Redis đứt giữa chừng, và worker chết để lại dòng `running`. Cứ im lặng 10 giây là đọc CSDL một lần.
+
+### Redis tắt hẳn: tính năng còn hay mất
+
+```
+a) Socket vẫn mở được, trả lời đúng sau 1578 ms bằng snapshot
+b) Polling REST: 200 — kết quả nằm ở Postgres, không nằm ở Redis
+c) Nộp bài mới: 503 GRADING_UNAVAILABLE — từ chối thẳng, không nhận rồi bỏ đó
+```
+
+Không có kênh thì socket tự hạ cấp thành vòng đọc CSDL — tức là polling, chỉ khác là chạy trên WebSocket.
+
+### Token đi trong handshake, không đi trong URL
+
+Trình duyệt không cho đặt header `Authorization` cho WebSocket. Cách phổ biến nhất — nhét token vào query string — ghi một chứng danh còn sống vào log nginx. Ở đây client chào `["bearer", "<token>"]` qua `Sec-WebSocket-Protocol` và server nhận với `bearer`. Quyền xem socket là **đúng hàm** mà `GET /submissions/{id}` dùng: học viên khác nhận 4404, chưa đăng nhập nhận 4401.
+
+### Một lỗi chỉ chạy thật mới tìm ra
+
+Lần chạy đầu không có frame `progress` nào — `done` đến ở đúng mốc 10 giây, tức nhịp heartbeat. `_shared_publisher()` trả về client Redis trần thay vì bọc trong `RedisEventPublisher`, nên sáu lần publish đều ném `TypeError` và đều bị nuốt.
+
+Toàn bộ unit test vẫn xanh: chúng kiểm adapter trực tiếp, còn fixture thì thay luôn `get_publisher` — không test nào chạm đoạn dây nối giữa hai thứ đó. Đã thêm test đúng vào chỗ ấy. Đáng chú ý là **học viên vẫn nhận kết quả đúng, chỉ chậm 10 giây** — thiết kế tự chứng minh, nhưng cũng cho thấy kênh hỏng im lặng rất khó thấy, nên mỗi lần publish thất bại đều ghi log WARNING, và chính dòng log ấy chỉ ra lỗi.
+
+### Bí mật của case ẩn không đi qua kênh realtime
+
+8 frame nhận được, quét tìm input và đáp án của case ẩn: **0**. `GradingEvent` không có trường nào chứa output, input hay message — con số 0 là tính chất của kiểu dữ liệu, không phải kết quả của một câu lệnh lọc.

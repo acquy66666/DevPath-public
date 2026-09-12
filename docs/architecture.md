@@ -53,6 +53,19 @@ Lỗi phía hệ thống (SE) được thử lại 3 lần rồi "đỗ" hàng n
 câu trả lời về bài nộp nên không thử lại.
 ```
 
+**Pub/sub là lời kể, cơ sở dữ liệu là nguồn chân lý.** Redis pub/sub không có bộ
+nhớ: phát cho ai đang nghe tại đúng khoảnh khắc đó, không hàng đợi, không phát
+lại, không xác nhận. Nên WebSocket `/submissions/{id}/events` **mở đầu bằng một
+snapshot đọc từ Postgres** và cứ 10 giây im lặng lại đọc thêm một cái. Một cơ
+chế trả lời cả bốn hỏng hóc: client vào muộn, thông điệp mất lúc subscription
+chưa sẵn sàng, kết nối Redis đứt, worker chết để lại dòng `running`.
+
+Vì vậy "fallback polling" tồn tại ở hai tầng, không phải một: Redis chết thì
+socket tự hạ cấp thành vòng đọc CSDL; WebSocket không mở được thì client chuyển
+sang `GET /submissions/{id}`. Cả hai đường phát ra cùng một kiểu dữ liệu, và
+kiểu ấy không có trường nào chứa output hay input — nên luật "test case ẩn
+không rời máy chủ" không cần thêm bộ lọc nào trên đường realtime.
+
 ### 2. Chatbot RAG (⭐ điểm nhấn 3)
 
 ```

@@ -19,7 +19,14 @@ Two rules from the sandbox checklist show up as code rather than as comments:
   **A hidden test case never leaves the server.** The output of a hidden case
   is not stored at all. The API already refuses to return it; this is the line
   before that one, because a column that is never filled cannot be leaked by
-  an endpoint written later.
+  an endpoint written later. The live progress channel obeys the same rule by
+  having no field for output at all, which is why nothing below has to
+  remember to strip one.
+
+Progress is announced as it happens, and always after the commit it describes:
+the row is what a reloaded page will show, so an event that ran ahead of it
+would be a client told about something it cannot yet find. Announcing never
+fails a submission -- see `publish_event`.
 """
 
 from __future__ import annotations
@@ -37,6 +44,8 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase
+from app.schemas.grading import GradingCaseEvent, GradingEvent
+from app.services.grading_events import publish_event
 from app.workers.celery_app import celery_app
 
 # How much of a sample case's output is kept. Enough to show a student what
@@ -76,6 +85,23 @@ class CaseOutcome:
 
 
 @dataclass(frozen=True)
+class CaseProgress:
+    """One case has finished; the run is still going.
+
+    Narrower than `CaseOutcome` on purpose, and the narrowing is the point:
+    this is what goes out over the live channel while a submission is being
+    graded, and it has no field for output. The runner hands the adapter
+    below a whole `CaseResult`, stdout included; what crosses into the
+    progress channel is a letter and a duration, so "a hidden case's output
+    never leaves" needs no conditional here -- there is nothing to condition.
+    """
+
+    index: int
+    verdict: str
+    run_time_ms: int
+
+
+@dataclass(frozen=True)
 class GradingOutcome:
     verdict: str
     message: str = ""
@@ -83,6 +109,11 @@ class GradingOutcome:
 
 
 Judge = Callable[..., GradingOutcome]
+
+#: Where progress goes. A parameter everywhere it is used, so the tests that
+#: care about the sequence of events collect them in a list, and the ones that
+#: do not never reach Redis.
+Announce = Callable[[GradingEvent], None]
 
 
 def cpu_seconds_for(time_limit_ms: int) -> int:
@@ -103,6 +134,7 @@ def judge(
     *,
     time_limit_ms: int,
     memory_limit_mb: int,
+    on_case: Callable[[CaseProgress], None] | None = None,
 ) -> GradingOutcome:
     """Hand the submission to the sandbox and translate what comes back.
 
@@ -127,10 +159,26 @@ def judge(
         output_bytes=DEFAULT_LIMITS.output_bytes,
     )
 
+    def relay(index: int, result) -> None:
+        """Where the runner's full result becomes a progress report.
+
+        Everything the sandbox captured arrives here; only the letter and the
+        duration go on. The stdout in `result` is dropped on this line, not
+        filtered out three layers later by something that remembers to.
+        """
+        on_case(
+            CaseProgress(
+                index=index,
+                verdict=str(result.verdict),
+                run_time_ms=int(result.duration_seconds * 1000),
+            )
+        )
+
     judgement = grade(
         code,
         [RunnerCase(stdin=stdin, expected=expected) for stdin, expected in cases],
         limits=limits,
+        on_case=None if on_case is None else relay,
     )
 
     return GradingOutcome(
@@ -157,7 +205,11 @@ async def _cases_of(session: AsyncSession, exercise_id: uuid.UUID) -> list[TestC
 
 
 async def run_grading(
-    session: AsyncSession, submission_id: uuid.UUID, *, judge: Judge = judge
+    session: AsyncSession,
+    submission_id: uuid.UUID,
+    *,
+    judge: Judge = judge,
+    announce: Announce = publish_event,
 ) -> GradingOutcome | None:
     """Grade one submission and write down everything except a system error.
 
@@ -165,16 +217,15 @@ async def run_grading(
     can outlive the row that queued it, and an exercise deleted mid-grading
     takes its submissions with it. That is not a failure and must not be
     retried.
+
+    Every `announce` below happens **after** the commit it describes. The
+    database is what a page reloaded in five seconds will show, so an event
+    that arrived before the row was written would be a client told something
+    it can then fail to find.
     """
     submission = await session.get(Submission, submission_id)
     if submission is None:
         return None
-
-    # Committed before any judging starts: otherwise a submission being graded
-    # looks exactly like one nobody has picked up, and a worker killed halfway
-    # leaves no trace of having tried.
-    submission.status = "running"
-    await session.commit()
 
     exercise = await session.get(CodeExercise, submission.exercise_id)
     if exercise is None:
@@ -182,21 +233,61 @@ async def run_grading(
 
     cases = await _cases_of(session, exercise.id)
 
+    # Committed before any judging starts: otherwise a submission being graded
+    # looks exactly like one nobody has picked up, and a worker killed halfway
+    # leaves no trace of having tried.
+    submission.status = "running"
+    await session.commit()
+    announce(
+        GradingEvent(
+            submission_id=submission.id, status="running", total_cases=len(cases)
+        )
+    )
+
+    def report(progress: CaseProgress) -> None:
+        case = cases[progress.index]
+        announce(
+            GradingEvent(
+                submission_id=submission.id,
+                status="running",
+                total_cases=len(cases),
+                completed_cases=progress.index + 1,
+                case=GradingCaseEvent(
+                    position=case.position,
+                    is_hidden=case.is_hidden,
+                    verdict=progress.verdict,
+                    run_time_ms=progress.run_time_ms,
+                ),
+            )
+        )
+
     outcome = judge(
         submission.code,
         [(case.input, case.expected_output) for case in cases],
         time_limit_ms=exercise.time_limit_ms,
         memory_limit_mb=exercise.memory_limit_mb,
+        on_case=report,
     )
 
     if outcome.verdict == SYSTEM_ERROR:
-        # Nothing is written: the row stays `running` and the caller decides
-        # whether to try again or park it. A verdict here would close the
-        # submission over a failure that was ours.
+        # Nothing is written and nothing is announced: the row stays `running`
+        # and the caller decides whether to try again or park it. A verdict
+        # here would close the submission over a failure that was ours, and an
+        # event saying so would close the student's page over it too.
         return outcome
 
     _record(session, submission, cases, outcome)
     await session.commit()
+    announce(
+        GradingEvent(
+            submission_id=submission.id,
+            status="done",
+            total_cases=len(cases),
+            completed_cases=len(outcome.cases),
+            verdict=submission.verdict,
+            score=submission.score,
+        )
+    )
     return outcome
 
 
@@ -252,7 +343,11 @@ def _record(
 
 
 async def park_submission(
-    session: AsyncSession, submission_id: uuid.UUID, reason: str
+    session: AsyncSession,
+    submission_id: uuid.UUID,
+    reason: str,
+    *,
+    announce: Announce = publish_event,
 ) -> None:
     """Give up on a submission, in writing.
 
@@ -270,6 +365,10 @@ async def park_submission(
     submission.verdict = None
     submission.message = reason
     await session.commit()
+    # Terminal, so a page that is watching stops waiting now rather than in
+    # five minutes. What went wrong is on the row; the event only says that
+    # there is nothing more coming.
+    announce(GradingEvent(submission_id=submission.id, status="error"))
 
 
 async def _with_session(work: Callable[[AsyncSession], Awaitable[object]]) -> object:

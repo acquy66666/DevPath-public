@@ -17,7 +17,7 @@ Three rules run through everything in this module, in this order:
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -180,6 +180,7 @@ def grade(
     *,
     limits: Limits = DEFAULT_LIMITS,
     image: str = PYTHON_IMAGE,
+    on_case: Callable[[int, CaseResult], None] | None = None,
 ) -> Judgement:
     """Compile once, then run every case, and say what the submission got.
 
@@ -191,6 +192,14 @@ def grade(
     Every case is run, including those after the first failure. Stopping early
     would be cheaper and would turn "3 of 5 passed" -- the thing that tells a
     beginner they are close -- into a bare "failed".
+
+    `on_case` is called with the index and the result as each case finishes,
+    for a caller that wants to report progress while the run is still going.
+    It is handed the whole `CaseResult`, output included: this module grades,
+    and deciding what a student may be shown is the platform's job, made in
+    the platform's own layer. Exceptions from it are not caught, because a
+    callback that throws is a bug in the caller and burying it here would
+    turn that bug into a silently missing progress bar.
     """
     compiled = execute(source, limits=limits, image=image, command=COMPILE_COMMAND)
     if compiled.outcome is Outcome.SYSTEM_ERROR:
@@ -200,7 +209,13 @@ def grade(
         # either way the submission never became a program.
         return Judgement(Verdict.COMPILE_ERROR, message=compiled.stderr.strip() or COMPILE_GAVE_UP)
 
-    results = tuple(run_case(source, case, limits=limits, image=image) for case in cases)
+    graded: list[CaseResult] = []
+    for index, case in enumerate(cases):
+        result = run_case(source, case, limits=limits, image=image)
+        graded.append(result)
+        if on_case is not None:
+            on_case(index, result)
+    results = tuple(graded)
     verdict = overall(result.verdict for result in results)
     message = ""
     if verdict is Verdict.SYSTEM_ERROR:

@@ -22,7 +22,7 @@
 
 ## Tuần 8 — Realtime & UX
 
-- [ ] Redis pub/sub tiến độ chấm → WebSocket endpoint; fallback polling
+- [x] Redis pub/sub tiến độ chấm → WebSocket endpoint; fallback polling
 - [ ] Trang nộp bài: Monaco editor, starter code, chạy thử với sample test, nộp chính thức, lịch sử submission
 - [ ] Kết quả hiển thị per-test realtime (đang chấm test 3/10...)
 - [ ] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — script đo lưu trong repo, số liệu vào `docs/report/assets/phase-3/benchmark.md`

@@ -181,6 +181,21 @@ async def _cases_of(session: AsyncSession, exercise_id: uuid.UUID) -> list[TestC
     return list(rows)
 
 
+async def count_test_cases(session: AsyncSession, exercise_id: uuid.UUID) -> int:
+    """How many cases a submission to this exercise will be judged against.
+
+    The denominator of "test 3/8", and it comes from the exercise rather than
+    from the results so a page can show it before the first case has run. One
+    definition, used by the REST detail and by the live channel's snapshot --
+    two counts that disagreed would make the progress bar jump when a socket
+    dropped.
+    """
+    total = await session.scalar(
+        select(func.count()).select_from(TestCase).where(TestCase.exercise_id == exercise_id)
+    )
+    return total or 0
+
+
 async def _load_exercise(session: AsyncSession, exercise_id: uuid.UUID) -> CodeExercise:
     exercise = await session.get(CodeExercise, exercise_id)
     if exercise is None:

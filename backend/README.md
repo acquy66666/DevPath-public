@@ -236,6 +236,31 @@ Giới hạn gắn với **user id chứ không phải IP**: một phòng máy c
 
 **Redis chết thì cho qua**, có chủ đích và chỉ ở đây: Redis cũng là broker của Celery, nên lúc nó chết thì bài vừa được cho qua cũng không vào được hàng đợi và API trả 503 ngay sau. Từ chối ở đây là đổi "hàng đợi hở một lúc" lấy "không ai nộp được bài", để bảo vệ một hàng đợi vốn không chạy.
 
+### Xem bài đang được chấm
+
+`WS /api/v1/submissions/{id}/events` phát tiến độ trong lúc worker chạy: một sự kiện khi bắt đầu (mang **tổng số test case**, tức mẫu số của "test 3/8"), một sự kiện sau mỗi case, một sự kiện khi xong.
+
+**Cơ sở dữ liệu vẫn là nguồn chân lý, kênh chỉ là lời kể.** Redis pub/sub không có bộ nhớ: gửi cho ai đang nghe tại đúng khoảnh khắc đó, không hàng đợi, không phát lại, không xác nhận. Nên mỗi socket **mở đầu bằng một snapshot đọc từ Postgres**, và cứ 10 giây im lặng lại đọc thêm một cái nữa. Một cơ chế trả lời bốn hỏng hóc khác nhau:
+
+| Hỏng hóc | Vì sao snapshot xử lý được |
+|---|---|
+| Client kết nối sau khi chấm xong | Sự kiện đã đi qua từ lâu; snapshot đầu tiên trả lời ngay |
+| Thông điệp phát trong lúc subscription chưa sẵn sàng | Lần đọc kế tiếp bù lại |
+| Kết nối Redis đứt giữa chừng | Im lặng, và im lặng được trả lời bằng một lần đọc |
+| Worker chết để lại dòng `running` | Snapshot cuối cùng chạm trần 5 phút và đóng socket |
+
+Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất bại thì socket nhận `SilentStream` và tự hạ cấp thành vòng đọc CSDL mỗi 2 giây — đúng là polling, chỉ khác là chạy trên WebSocket. `publish` thất bại thì bị nuốt kèm log WARNING: tiến độ là lời kể về công việc mà dòng dữ liệu đã ghi xong, không bao giờ được phép làm hỏng việc chấm.
+
+**Token đi trong `Sec-WebSocket-Protocol`.** Trình duyệt không cho đặt header `Authorization` cho WebSocket; cách phổ biến nhất — query string — ghi một chứng danh còn sống vào log nginx. Client chào `["bearer", "<access token>"]`, server nhận với `bearer`. Đúng hai giá trị, giá trị của mình đứng trước: đoán xem phần tử nào là chứng danh chính là cách đọc nhầm chứng danh ở trường khác.
+
+**Quyền xem socket là quyền đọc bài nộp**, theo đúng nghĩa đen: `snapshot_for()` gọi chính `get_submission()` mà endpoint REST dùng. Không có snapshot thì không có socket — nên không tồn tại trạng thái nào mà ai đó đã subscribe được vào kênh của một bài nộp họ không được xem. Mã đóng nằm trong dải ứng dụng: **4401** (lấy token mới rồi kết nối lại) và **4404** (thôi đừng hỏi nữa).
+
+**Sự kiện không mang kết quả.** `GradingEvent` không có trường nào chứa output, input, message hay code — nó là thanh tiến độ, không phải bảng điểm. Kết quả lấy từ `GET /submissions/{id}`, chỗ duy nhất luật test case ẩn được viết ra và được test. Nhờ vậy quy tắc "output case ẩn không rời máy chủ" không cần thêm một câu lệnh lọc nào ở đây.
+
+**Socket không giữ session CSDL.** Mỗi snapshot mở một session, đọc, trả lại ngay — nếu giữ, 30 tab đang mở là 30 kết nối bị ghim khỏi pool. Tài khoản cũng được tra lại mỗi lần, nên socket mở từ một giờ trước không tiếp tục trả lời cho tài khoản vừa bị khóa.
+
+**Đường lùi phía client** nằm ở `frontend/lib/api/submissions.ts`: `watchSubmission()` thử WebSocket, và chuyển sang polling `GET /submissions/{id}` mỗi 2 giây nếu không mở được, hoặc nếu socket đóng trước khi chấm xong. Ngoại lệ duy nhất là 4404 — hỏi lại không làm một bài nộp không tồn tại hiện ra. Hai đường phát ra cùng một kiểu `GradingEvent`, và `SubmissionDetail` mang sẵn `total_cases` để đường polling cũng vẽ được "3/8" y hệt.
+
 ## Trạng thái
 
 Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, auth email + mật khẩu và đăng nhập Google (bảng trên) với `get_current_user`.

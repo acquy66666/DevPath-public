@@ -21,6 +21,10 @@ from app.models.grading import (
     MIN_TIME_LIMIT_MS,
 )
 
+#: Submission statuses that mean the grading is over, one way or another.
+TERMINAL_STATUSES = frozenset({"done", "error"})
+
+
 # --- Code exercises --------------------------------------------------------
 
 
@@ -158,7 +162,67 @@ class SubmissionOut(BaseModel):
 
 
 class SubmissionDetail(SubmissionOut):
-    """One submission with the code that was sent and the per-case results."""
+    """One submission with the code that was sent and the per-case results.
+
+    `total_cases` is here so this response answers the same question a live
+    progress event does. A client that lost its WebSocket and fell back to
+    polling gets "3 of 8 done" from here, rather than being able to count only
+    the results that have arrived and never knowing what it is counting
+    towards.
+    """
 
     code: str
+    total_cases: int = 0
     results: list[SubmissionResultOut] = []
+
+
+# --- Grading progress events ------------------------------------------------
+
+
+class GradingCaseEvent(BaseModel):
+    """One test case, the moment it finished.
+
+    The same three facts the finished submission already shows: which case,
+    whether it is hidden, and the letter. There is deliberately no field for
+    what the program printed -- not even for a sample case. Output belongs to
+    `GET /submissions/{id}`, which is the one place the hidden-case rule is
+    written down and tested, and a second place to send output is a second
+    place to get it wrong.
+    """
+
+    position: int
+    is_hidden: bool
+    verdict: str
+    run_time_ms: int | None = None
+
+
+class GradingEvent(BaseModel):
+    """What a client watching a submission is told, over any transport.
+
+    Two kinds, distinguished by `type`:
+
+    * `snapshot` -- read from the database. Authoritative, and the first thing
+      a socket sends, so a client that connects late is not waiting for an
+      event that has already been published.
+    * `progress` -- published by the worker as it goes. Redis pub/sub is
+      fire-and-forget: nobody listening means nobody hears it, and there is no
+      replay. So progress makes the wait legible, and snapshots make it true.
+
+    Nothing here carries code, output, a compiler message or a test case's
+    input. It is a progress bar, not a result: the result is fetched from the
+    REST endpoint when `status` becomes terminal.
+    """
+
+    type: str = "progress"
+    submission_id: uuid.UUID
+    status: str
+    total_cases: int = 0
+    completed_cases: int = 0
+    case: GradingCaseEvent | None = None
+    verdict: str | None = None
+    score: int | None = None
+
+    @property
+    def is_terminal(self) -> bool:
+        """Whether there is anything left to wait for."""
+        return self.status in TERMINAL_STATUSES

@@ -34,6 +34,7 @@ from app.models import (
     User,
 )
 from app.services import grading as grading_service
+from app.services import grading_events
 from app.services.rate_limit import get_rate_limiter
 from app.workers.grading import CaseOutcome, GradingOutcome, run_grading
 from tests.api.fakes import MemoryRateLimiter
@@ -157,14 +158,17 @@ async def exercise(
 
 
 @pytest.fixture
-async def student(
-    api_client: AsyncClient, db_session: AsyncSession, lesson: dict
-) -> dict[str, str]:
+async def student_user(db_session: AsyncSession, lesson: dict) -> User:
     """A student enrolled in the course, so the lesson is theirs to open."""
     user = await make_user(db_session, "student")
     db_session.add(Enrollment(user_id=user.id, course_id=uuid.UUID(lesson["course_id"])))
     await db_session.flush()
-    return await sign_in(api_client, user)
+    return user
+
+
+@pytest.fixture
+async def student(api_client: AsyncClient, student_user: User) -> dict[str, str]:
+    return await sign_in(api_client, student_user)
 
 
 async def add_case(
@@ -1080,3 +1084,176 @@ async def test_deleting_an_exercise_takes_its_cases_and_submissions_with_it(
             select(Submission).where(Submission.exercise_id == exercise_id)
         )
     ).all() == []
+
+
+# --- What a watching socket is allowed to read -----------------------------
+
+
+async def test_a_snapshot_says_how_far_the_grading_has_got(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    student_user: User,
+):
+    """The snapshot is what makes the live channel safe to lose.
+
+    It is read from the rows, so it is true whether or not a single event was
+    ever delivered -- and it counts finished cases by counting the rows that
+    exist, rather than by trusting a number somebody remembered to increment.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    event = await grading_events.snapshot_for(
+        db_session, uuid.UUID(submission_id), student_user
+    )
+
+    assert event.type == "snapshot"
+    assert event.status == "done"
+    assert event.total_cases == 2
+    assert event.completed_cases == 2
+    assert event.verdict == "WA"
+    assert event.is_terminal
+
+
+async def test_a_snapshot_of_a_submission_nobody_has_graded_yet_counts_zero(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    student_user: User,
+):
+    """Pending, with the denominator already known.
+
+    The number of cases comes from the exercise, not from the run, so a page
+    can say "0/8" before the worker has picked the job up -- which is the
+    difference between a progress bar and a spinner.
+    """
+    await add_case(api_client, exercise, owner)
+    await add_case(api_client, exercise, owner)
+    created = await api_client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/submissions",
+        json={"code": "print(3)"},
+        headers=student,
+    )
+
+    event = await grading_events.snapshot_for(
+        db_session, uuid.UUID(created.json()["id"]), student_user
+    )
+
+    assert event.status == "pending"
+    assert event.total_cases == 2
+    assert event.completed_cases == 0
+    assert not event.is_terminal
+
+
+async def test_a_stranger_gets_no_snapshot_to_watch(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    """Watching is reading, so it is refused by the same function.
+
+    A socket with no snapshot is never accepted, which means there is no state
+    in which someone is subscribed to a channel for a submission they were
+    never allowed to see.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+    outsider = await make_user(db_session, "student")
+
+    assert (
+        await grading_events.snapshot_for(
+            db_session, uuid.UUID(submission_id), outsider
+        )
+        is None
+    )
+
+
+async def test_the_instructor_may_watch_a_submission_to_their_own_exercise(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    owner_user: User,
+    student: dict[str, str],
+):
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    event = await grading_events.snapshot_for(
+        db_session, uuid.UUID(submission_id), owner_user
+    )
+
+    assert event is not None
+    assert event.status == "done"
+
+
+async def test_no_snapshot_carries_an_answer_key(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    owner_user: User,
+    student: dict[str, str],
+):
+    """The same scan as the REST endpoint's, against the live channel's shape.
+
+    The submission below was graded on a hidden case whose input, expected
+    output and captured stdout are all secrets. The *instructor* reads the
+    snapshot here, deliberately: they are the caller with the most rights, so
+    if even their snapshot is clean, no viewer of this channel gets an answer.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    event = await grading_events.snapshot_for(
+        db_session, uuid.UUID(submission_id), owner_user
+    )
+    payload = event.model_dump_json()
+
+    assert SECRET_ANSWER not in payload
+    assert SECRET_INPUT not in payload
+    assert SECRET_STDOUT not in payload
+
+
+async def test_polling_and_watching_agree_on_the_same_numbers(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    student_user: User,
+):
+    """A fallback is only a fallback if it answers the same question.
+
+    A client whose WebSocket failed polls this endpoint instead, and it has to
+    be able to render the same thing: the same status, the same verdict, and
+    the same "n of m" -- which is why the denominator was added to the REST
+    response rather than left as something only a live event carries.
+    """
+    submission_id = await graded_submission(
+        api_client, db_session, exercise, owner, student
+    )
+
+    polled = (
+        await api_client.get(f"/api/v1/submissions/{submission_id}", headers=student)
+    ).json()
+    watched = await grading_events.snapshot_for(
+        db_session, uuid.UUID(submission_id), student_user
+    )
+
+    assert polled["total_cases"] == watched.total_cases == 2
+    assert len(polled["results"]) == watched.completed_cases
+    assert polled["status"] == watched.status
+    assert polled["verdict"] == watched.verdict
+    assert polled["score"] == watched.score

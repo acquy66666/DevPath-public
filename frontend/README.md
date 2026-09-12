@@ -84,6 +84,16 @@ Nằm trong chính trình soạn mục lục: thêm bài học loại **Bài t�
 
 Đáp án của case ẩn **không bao giờ xuống trình duyệt học viên**: backend trả hai model khác nhau tùy người gọi, và model của học viên không có trường nào để chứa đáp án. `lib/api/grading.ts` vì thế chỉ khai kiểu của giảng viên — trang nộp bài (tuần 8) phải khai kiểu riêng, không dùng lại.
 
+### Xem bài đang được chấm
+
+`lib/api/submissions.ts` là kiểu riêng ấy: `SubmissionResult.stdout_trunc` khai là `string | null` vì với case ẩn nó **luôn** null, và một kiểu nói "luôn có" là một giả định sai được viết thành code.
+
+`watchSubmission()` mở WebSocket `/api/v1/submissions/{id}/events` với access token đi trong subprotocol (`["bearer", token]`) — không đi trong query string, vì query string nằm trong log của nginx. Nếu socket không mở được, hoặc đóng trước khi chấm xong, nó **chuyển sang polling** `GET /submissions/{id}` mỗi 2 giây. Ngoại lệ duy nhất là mã đóng 4404: hỏi lại không làm một bài nộp không tồn tại hiện ra.
+
+Cả hai đường phát ra cùng một kiểu `GradingEvent`, nên component chỉ vẽ một thứ và không bao giờ biết dữ liệu đến bằng đường nào. Đó cũng là lý do `SubmissionDetail` mang `total_cases`: thiếu nó, đường polling đếm được số case đã xong nhưng không biết đang tiến tới con số nào.
+
+Hàm trả về một `stop()` — gọi khi component unmount. Nó gỡ `onclose` **trước** khi đóng socket, nếu không thì chính thao tác dọn dẹp sẽ khởi động vòng polling mà nó đang cố dừng.
+
 ## Cấu trúc
 
 ```

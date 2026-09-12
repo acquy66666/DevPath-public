@@ -2,12 +2,14 @@
 
 import { CheckCircle2, CircleAlert, Loader2, XCircle } from "lucide-react";
 
+import { LiveCases } from "@/components/exercise/live-cases";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import type {
   GradingEvent,
   SubmissionDetail,
   TestCaseSample,
 } from "@/lib/api/submissions";
+import { caseSlots, type CaseReports } from "@/lib/grading/run-progress";
 import {
   TONE_BADGE,
   VERDICT_HINTS,
@@ -23,14 +25,21 @@ import {
  * tell), and `detail` is the finished result read from the REST endpoint. The
  * first says how far along; only the second carries per-case output, because
  * the live channel has no field for output at all.
+ *
+ * `reports` is the accumulation of the first: one entry per case the grader
+ * has finished, in run order. The two lists below — the live one and the
+ * final one — are therefore the same list at two levels of detail, and the
+ * handover between them happens when the run ends and `detail` arrives.
  */
 export function RunResult({
   event,
+  reports,
   detail,
   samples,
   trial,
 }: {
   event: GradingEvent | null;
+  reports: CaseReports;
   detail: SubmissionDetail | null;
   samples: TestCaseSample[];
   trial: boolean;
@@ -44,15 +53,25 @@ export function RunResult({
   if (running) {
     const done = event?.completed_cases ?? 0;
     const total = event?.total_cases ?? 0;
+    // Which case is on the grader's bench: the one after everything finished,
+    // except at the very end, where the last case is done and the verdict is
+    // being written — no case is running then, and "test 11/10" would be a lie
+    // told by arithmetic.
+    const current = Math.min(done + 1, total);
 
     return (
       <div className="rounded-lg border bg-muted/30 p-4">
-        <p className="flex items-center gap-2 text-sm font-medium">
+        <p
+          className="flex items-center gap-2 text-sm font-medium"
+          // Announced rather than only drawn: a student using a screen reader
+          // is waiting on exactly the same thing everyone else is.
+          aria-live="polite"
+        >
           <Loader2 className="size-4 animate-spin" aria-hidden />
           {status === "pending"
             ? "Đang chờ tới lượt chấm…"
             : total > 0
-              ? `Đang chấm — ${done}/${total} test case`
+              ? `Đang chấm test ${current}/${total}`
               : "Đang chấm…"}
         </p>
         {total > 0 ? (
@@ -69,6 +88,7 @@ export function RunResult({
             />
           </div>
         ) : null}
+        <LiveCases slots={caseSlots(event, reports, samples)} />
       </div>
     );
   }

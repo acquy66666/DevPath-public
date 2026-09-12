@@ -25,6 +25,7 @@ import {
   type GradingEvent,
   type Submission,
 } from "@/lib/api/submissions";
+import { mergeCaseReport, type CaseReports } from "@/lib/grading/run-progress";
 
 /**
  * Monaco is a megabyte of editor and it renders nothing on the server.
@@ -94,6 +95,11 @@ export function ExerciseWorkspace({
   const [shownId, setShownId] = useState<string | null>(null);
   const [watchId, setWatchId] = useState<string | null>(null);
   const [event, setEvent] = useState<GradingEvent | null>(null);
+  // What each case came back as, kept alongside the latest event rather than
+  // inside it: an event is a moment, and the list is everything the grader has
+  // said so far. Only the live channel names cases, so on the polling fallback
+  // this stays empty and the list waits instead of moving.
+  const [reports, setReports] = useState<CaseReports>([]);
   const [failure, setFailure] = useState<string | null>(null);
 
   // Decide the editor's opening text once per exercise: the draft this student
@@ -136,6 +142,7 @@ export function ExerciseWorkspace({
       accessToken,
       onEvent: (next) => {
         setEvent(next);
+        setReports((known) => mergeCaseReport(known, next));
         if (!isFinished(next.status)) return;
         // The result itself lives at the REST endpoint: the event says it is
         // ready, and this is the fetch that goes and gets it.
@@ -158,6 +165,7 @@ export function ExerciseWorkspace({
     setShownId(submission.id);
     setWatchId(submission.id);
     setEvent(null);
+    setReports([]);
     if (!submission.is_trial) {
       queryClient.invalidateQueries({ queryKey: ["submissions", exerciseId] });
     }
@@ -311,6 +319,7 @@ export function ExerciseWorkspace({
           </div>
           <RunResult
             event={watchId === shownId ? event : null}
+            reports={watchId === shownId ? reports : []}
             detail={detail.data ?? null}
             samples={samples.data ?? []}
             trial={detail.data?.is_trial ?? false}
@@ -330,6 +339,7 @@ export function ExerciseWorkspace({
             // painted over an old submission's result.
             setWatchId(null);
             setEvent(null);
+            setReports([]);
           }}
         />
       </section>

@@ -26,7 +26,7 @@
 - [x] Trang nộp bài: Monaco editor, starter code, chạy thử với sample test, nộp chính thức, lịch sử submission
 - [x] Kết quả hiển thị per-test realtime (đang chấm test 3/10...)
 - [x] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — script đo lưu trong repo, số liệu vào `docs/report/assets/phase-3/benchmark.md`
-- [ ] Buffer trễ / hoàn thiện UX còn dở của phase trước
+- [x] Buffer trễ / hoàn thiện UX còn dở của phase trước
 
 ## Gate cuối phase
 

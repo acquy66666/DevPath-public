@@ -45,6 +45,7 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase
 from app.schemas.grading import GradingCaseEvent, GradingEvent
+from app.services import progress as progress_service
 from app.services.grading_events import publish_event
 from app.workers.celery_app import celery_app
 
@@ -68,6 +69,8 @@ GAVE_UP_MESSAGE = (
 )
 
 SYSTEM_ERROR = "SE"
+#: Every case passed. The only verdict that finishes a lesson.
+ACCEPTED = "AC"
 
 # The technical reason goes here and nowhere near the student. Submitted code
 # is never logged: it is a stranger's file, and a shared log is the one place
@@ -288,6 +291,7 @@ async def run_grading(
         return outcome
 
     _record(session, submission, cases, outcome)
+    await _finish_lesson_if_solved(session, submission, exercise)
     await session.commit()
     announce(
         GradingEvent(
@@ -300,6 +304,27 @@ async def run_grading(
         )
     )
     return outcome
+
+
+async def _finish_lesson_if_solved(
+    session: AsyncSession, submission: Submission, exercise: CodeExercise
+) -> None:
+    """A solved exercise finishes its lesson, in the same transaction.
+
+    Same transaction on purpose: a completion written separately could survive
+    a rollback of the verdict that justified it, and a lesson ticked for a
+    submission with no AC row behind it is a bug nobody would ever find.
+
+    A trial run is excluded by `is_trial` rather than by its verdict. Passing
+    the samples is not solving the exercise -- hidden cases are the exam -- and
+    the two are different questions that happen to share a letter.
+    """
+    if submission.is_trial or submission.verdict != ACCEPTED:
+        return
+
+    await progress_service.mark_lesson_solved(
+        session, lesson_id=exercise.lesson_id, user_id=submission.user_id
+    )
 
 
 def _record(

@@ -195,3 +195,58 @@ def resume_lesson_id(
         return max(watched, key=lambda row: row.updated_at).lesson_id
     return lesson_ids[0] if lesson_ids else None
 
+
+
+async def mark_lesson_solved(
+    session: AsyncSession, *, lesson_id: uuid.UUID, user_id: uuid.UUID
+) -> bool:
+    """Finish a lesson because its exercise was solved.
+
+    The counterpart of `save_position` for lessons nobody watches. A video is
+    finished when the student says so; a code exercise is finished when every
+    test case passes, and asking them to also tick a box is asking them to
+    tell the system something it just watched happen.
+
+    Written by the grading worker, so it takes ids rather than a `User`: there
+    is no request and no caller to authorise. That is safe here because the
+    only thing it can do is record a completion for a submission that has
+    already been graded -- and it does nothing at all for somebody with no
+    enrolment, which is how an instructor trying their own exercise stays out
+    of their course's completion figures.
+
+    Does not commit: the caller is mid-transaction and owns that decision.
+    Returns whether an enrolment was found to record against.
+    """
+    lesson = await session.get(Lesson, lesson_id)
+    if lesson is None:
+        return False
+
+    course_id = await _course_id_of_lesson(session, lesson)
+    enrollment = await session.scalar(
+        select(Enrollment).where(
+            Enrollment.user_id == user_id, Enrollment.course_id == course_id
+        )
+    )
+    if enrollment is None:
+        return False
+
+    await session.execute(
+        insert(LessonProgress)
+        .values(
+            enrollment_id=enrollment.id,
+            lesson_id=lesson.id,
+            last_position_s=0,
+            completed_at=func.now(),
+        )
+        .on_conflict_do_update(
+            constraint="uq_lesson_progress_enrollment_lesson",
+            # Only the completion: a lesson that already has a position keeps
+            # it, and one solved twice keeps the day it was first solved.
+            set_={
+                "completed_at": func.coalesce(LessonProgress.completed_at, func.now()),
+                "updated_at": func.now(),
+            },
+        )
+    )
+    await _refresh_course_completion(session, enrollment, course_id)
+    return True

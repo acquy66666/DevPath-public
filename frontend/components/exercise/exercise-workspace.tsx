@@ -59,9 +59,12 @@ function draftKey(exerciseId: string): string {
 export function ExerciseWorkspace({
   lessonId,
   accessToken,
+  onSolved,
 }: {
   lessonId: string;
   accessToken: string;
+  /** Every case passed on a real submission — the lesson is finished. */
+  onSolved?: () => void;
 }) {
   const queryClient = useQueryClient();
 
@@ -101,6 +104,19 @@ export function ExerciseWorkspace({
   // this stays empty and the list waits instead of moving.
   const [reports, setReports] = useState<CaseReports>([]);
   const [failure, setFailure] = useState<string | null>(null);
+  // Whether the run being watched is a rehearsal. In a ref rather than in
+  // state because the watcher's callback reads it long after the render that
+  // started the run, and a trial mistaken for a submission would tick a
+  // lesson that has not met a single hidden case.
+  const watchedTrial = useRef(false);
+  // The parent's callback, kept where the effect can reach the current one
+  // without listing it as a dependency -- an inline arrow is a new function
+  // every render, and depending on it would tear the socket down and build it
+  // again on each one.
+  const solved = useRef(onSolved);
+  useEffect(() => {
+    solved.current = onSolved;
+  }, [onSolved]);
 
   // Decide the editor's opening text once per exercise: the draft this student
   // left behind, or the starter code the instructor wrote, or nothing.
@@ -148,6 +164,7 @@ export function ExerciseWorkspace({
         // ready, and this is the fetch that goes and gets it.
         queryClient.invalidateQueries({ queryKey: ["submission", next.submission_id] });
         queryClient.invalidateQueries({ queryKey: ["submissions", exerciseId] });
+        if (next.verdict === "AC" && !watchedTrial.current) solved.current?.();
       },
     });
 
@@ -166,6 +183,7 @@ export function ExerciseWorkspace({
     setWatchId(submission.id);
     setEvent(null);
     setReports([]);
+    watchedTrial.current = submission.is_trial;
     if (!submission.is_trial) {
       queryClient.invalidateQueries({ queryKey: ["submissions", exerciseId] });
     }

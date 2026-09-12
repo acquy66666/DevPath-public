@@ -24,7 +24,9 @@ from app.models import (
     CodeExercise,
     Course,
     CourseSection,
+    Enrollment,
     Lesson,
+    LessonProgress,
     Submission,
     SubmissionResult,
     TestCase,
@@ -119,6 +121,7 @@ async def make_submission(
     *,
     code: str = "print(3)",
     is_trial: bool = False,
+    enrolled: bool = True,
 ) -> Submission:
     student = User(
         email=f"hv-{uuid.uuid4().hex[:8]}@example.com",
@@ -128,6 +131,15 @@ async def make_submission(
     )
     session.add(student)
     await session.flush()
+
+    # Enrolled by default because that is the only way to reach the page that
+    # submits. `enrolled=False` is the instructor trying their own exercise:
+    # graded like anybody's, but with no progress to record.
+    if enrolled:
+        session.add(
+            Enrollment(user_id=student.id, course_id=await course_of(session, exercise))
+        )
+        await session.flush()
 
     submission = Submission(
         user_id=student.id,
@@ -705,3 +717,136 @@ async def test_a_trial_run_scores_against_the_samples_it_ran(
     await db_session.refresh(submission)
     assert submission.score == 50
     assert submission.verdict == "WA"
+
+
+# --- Solving the exercise finishes the lesson -------------------------------
+
+
+async def course_of(session: AsyncSession, exercise: CodeExercise) -> uuid.UUID:
+    """The course an exercise belongs to, the long way round the curriculum."""
+    return await session.scalar(
+        select(CourseSection.course_id)
+        .join(Lesson, Lesson.section_id == CourseSection.id)
+        .where(Lesson.id == exercise.lesson_id)
+    )
+
+
+async def completion_of(
+    session: AsyncSession, submission: Submission, exercise: CodeExercise
+) -> LessonProgress | None:
+    return await session.scalar(
+        select(LessonProgress)
+        .join(Enrollment, Enrollment.id == LessonProgress.enrollment_id)
+        .where(
+            Enrollment.user_id == submission.user_id,
+            LessonProgress.lesson_id == exercise.lesson_id,
+        )
+    )
+
+
+async def test_an_accepted_submission_finishes_its_lesson(
+    db_session: AsyncSession,
+) -> None:
+    """Solving the exercise is finishing the lesson; nobody should have to say so.
+
+    A student who gets AC and then has to tick "đánh dấu hoàn thành" by hand is
+    being asked to tell the system something it just watched happen.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC", "AC"))
+
+    progress = await completion_of(db_session, submission, exercise)
+    assert progress is not None
+    assert progress.completed_at is not None
+
+
+async def test_finishing_the_only_lesson_finishes_the_course(
+    db_session: AsyncSession,
+) -> None:
+    """The enrolment's own completion is computed, so it has to follow along."""
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    enrollment = await db_session.scalar(
+        select(Enrollment).where(Enrollment.user_id == submission.user_id)
+    )
+    assert enrollment is not None
+    assert enrollment.completed_at is not None
+
+
+async def test_a_wrong_answer_leaves_the_lesson_unfinished(
+    db_session: AsyncSession,
+) -> None:
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC", "WA"))
+
+    progress = await completion_of(db_session, submission, exercise)
+    assert progress is None or progress.completed_at is None
+
+
+async def test_a_trial_run_never_finishes_the_lesson(
+    db_session: AsyncSession,
+) -> None:
+    """Passing the samples is not solving the exercise -- that is what hidden
+    cases are for, and a rehearsal that completed the lesson would hand the
+    tick to code that has not met them."""
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    submission = await make_submission(db_session, exercise, is_trial=True)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    await db_session.refresh(submission)
+    assert submission.verdict == "AC"
+    progress = await completion_of(db_session, submission, exercise)
+    assert progress is None or progress.completed_at is None
+
+
+async def test_a_second_accepted_submission_keeps_the_first_completion_time(
+    db_session: AsyncSession,
+) -> None:
+    """Solving it again does not move the day it was solved."""
+    exercise = await make_exercise(db_session)
+    first = await make_submission(db_session, exercise)
+    await run_grading(db_session, first.id, judge=judging("AC"))
+    progress = await completion_of(db_session, first, exercise)
+    assert progress is not None
+    finished_at = progress.completed_at
+
+    again = Submission(
+        user_id=first.user_id,
+        exercise_id=exercise.id,
+        code="print(3)",
+        language="python",
+        status="pending",
+    )
+    db_session.add(again)
+    await db_session.flush()
+    await run_grading(db_session, again.id, judge=judging("AC"))
+
+    await db_session.refresh(progress)
+    assert progress.completed_at == finished_at
+
+
+async def test_grading_still_works_for_somebody_with_no_enrolment(
+    db_session: AsyncSession,
+) -> None:
+    """An instructor trying their own exercise is graded and leaves no progress.
+
+    Progress belongs to an enrolment, and inventing one here would put the
+    author of a course into their own completion figures.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise, enrolled=False)
+
+    outcome = await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    assert outcome.verdict == "AC"
+    await db_session.refresh(submission)
+    assert submission.status == "done"
+    assert await completion_of(db_session, submission, exercise) is None

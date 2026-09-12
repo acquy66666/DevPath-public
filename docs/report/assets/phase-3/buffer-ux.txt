@@ -1,0 +1,110 @@
+BUFFER UX CUỐI PHASE 3 — HAI LỖ ĐƯỢC VÁ
+Ngày chạy: 13/09/2026 · stack thật: API + Redis + worker chấm + sandbox Docker
+
+Ảnh kèm theo
+------------
+  buffer-ux-ac-hoan-thanh.png  bài học tự đánh dấu hoàn thành ngay sau khi AC
+                               (thanh tiến độ đầy, dấu tick ở mục lục, 100%)
+  buffer-ux-404.png            trang 404 tiếng Việt, còn header để đi tiếp
+
+Task "buffer trễ / hoàn thiện UX còn dở" không nói vá cái gì, nên việc đầu tiên
+là đi soát chứ không phải đi sửa. Soát ba nguồn: mục "CÒN THIẾU" trong các file
+bằng chứng đã có, quy ước trong skill `nextjs-feature`, và đường đi của bài demo
+cuối phase (tạo bài tập → nộp sai → WA realtime → sửa → AC). Ra hai lỗ thật.
+
+==============================================================================
+1. GIẢI ĐÚNG BÀI TẬP MÀ BÀI HỌC VẪN CHƯA XONG
+==============================================================================
+Trước: học viên nộp bài, ăn AC 100/100, rồi vẫn phải tự bấm "Đánh dấu hoàn
+thành" thì mục lục mới tick và tiến độ khóa học mới nhúc nhích. Nghĩa là bắt
+người ta khai báo với hệ thống đúng cái điều mà hệ thống vừa tự tay chấm.
+
+Trên đường demo của phase, lỗ này lộ ngay: chấm xong AC mà tiêu đề vẫn "0/1 bài
+· 0%".
+
+Sau: worker ghi luôn `lesson_progress.completed_at` **trong cùng transaction**
+với verdict (`_finish_lesson_if_solved` trong `app/workers/grading.py` gọi
+`progress.mark_lesson_solved`). Cùng transaction là có chủ ý — một dấu hoàn
+thành ghi tách ra có thể sống sót qua một rollback của chính cái verdict biện
+minh cho nó, và một bài học được tick mà không có hàng AC nào đứng sau là loại
+lỗi không ai tìm ra.
+
+Bốn ranh giới được test khẳng định (`tests/workers/test_grading.py`):
+
+  AC, bài nộp thật, có ghi danh   -> lesson_progress.completed_at có giá trị
+  WA                              -> không tick
+  Chạy thử AC (chỉ test mẫu)      -> KHÔNG tick. Qua test mẫu không phải là
+                                     giải được bài; test ẩn mới là bài thi
+  Không có ghi danh (giảng viên    -> chấm bình thường, không sinh tiến độ nào.
+  thử bài của chính mình)            Tiến độ thuộc về một lượt ghi danh, chế ra
+                                     một lượt ghi danh ở đây là nhét tác giả
+                                     khóa học vào thống kê hoàn thành của chính
+                                     khóa học đó
+  Nộp AC lần thứ hai               -> giữ nguyên mốc thời gian hoàn thành lần đầu
+
+Đo bằng trình duyệt thật, một bài học duy nhất trong khóa, không tải lại trang:
+
+  nộp sai   -> "Sai kết quả · 0/100"  ·  tiêu đề vẫn "0/1 bài · 0%"
+  nộp đúng  -> "Đúng · 100/100"       ·  tiêu đề thành
+               "1/1 bài · 100% · đã hoàn thành khóa học 🎉"
+               nút đổi thành "Bỏ đánh dấu hoàn thành"
+
+Phía giao diện chỉ thêm một sợi dây: `ExerciseWorkspace` nhận `onSolved`, gọi
+khi sự kiện kết thúc mang verdict AC và lần chạy đó không phải chạy thử (cờ
+`is_trial` giữ trong ref, vì callback đọc nó rất lâu sau cái render đã bắt đầu
+lần chạy). `learn-view` nghe `onSolved` để làm mới hai query tiến độ. Không có
+logic nghiệp vụ nào ở frontend: trang chỉ đi xem lại cái mà worker đã ghi.
+
+==============================================================================
+2. BỐN TRANG LỖI/CHỜ CÒN THIẾU, TRONG ĐÓ CÓ TRANG QUAN TRỌNG NHẤT
+==============================================================================
+Quy ước dự án (skill `nextjs-feature`, mục 6): mỗi route segment phải có
+`loading.tsx` và `error.tsx`. Thực tế trước khi sửa:
+
+  (auth)                  error + loading   đủ
+  (dashboard)/giang-day   error + loading   đủ
+  (marketing)/khoa-hoc    error             thiếu loading
+  .../khoa-hoc/[slug]     error + not-found thiếu loading
+  (learn)                 —                 thiếu cả hai   <- phòng học
+  app/ (gốc)              —                 không có lưới cuối nào
+
+Đã thêm bốn file, chọn theo chỗ thật sự có ích chứ không rải cho đủ bộ:
+
+  app/error.tsx                     lưới cuối cho mọi route chưa có lưới riêng.
+                                    Không có nó thì một render ném lỗi rơi vào
+                                    trang lỗi mặc định của Next: tiếng Anh, trên
+                                    đó không có gì ngoài chữ "error"
+  app/not-found.tsx                 URL không khớp route nào. Giữ header, vì một
+                                    trang 404 không có đường đi tiếp là ngõ cụt
+  (learn)/error.tsx                 lời lẽ riêng cho phòng học: nói rõ tiến độ và
+                                    bài nộp vẫn nằm trên máy chủ, và có đường về
+                                    "khóa học của tôi"
+  khoa-hoc/loading.tsx              hai trang này là Server Component có await
+  khoa-hoc/[slug]/loading.tsx       thật (danh mục + khóa học + mục lục + đánh
+                                    giá). Không có skeleton thì trình duyệt đứng
+                                    ở trang cũ cho tới khi API trả lời
+
+Không thêm `loading.tsx` cho `ho-so` và `khoa-hoc-cua-toi`: hai trang đó là
+Client Component, vẽ ra tức thì và đã tự có skeleton bên trong — thêm file chỉ
+là thêm nhiễu.
+
+Kiểm 404 bằng trình duyệt: `/duong-dan-khong-ton-tai` trả đúng HTTP 404 và hiện
+trang tiếng Việt (ảnh kèm theo). Console không có lỗi nào ngoài chính cái 404.
+
+==============================================================================
+KIỂM CHỨNG
+==============================================================================
+  pytest (toàn bộ backend)     610 passed, 2 skipped in 271.64s
+  tsc --noEmit                 sạch
+  eslint app components lib    sạch
+  trình duyệt thật             luồng WA -> AC -> tự hoàn thành, và trang 404
+
+==============================================================================
+CÒN THIẾU, NÓI THẲNG
+==============================================================================
+- Vẫn chưa có test tự động cho giao diện (Vitest/Playwright là Phase 6). Phần
+  đo được không cần trình duyệt thì đã nằm trong 5 test worker mới.
+- `error.tsx` chỉ bắt lỗi lúc render. Lỗi từ API vẫn được bắt ngay tại chỗ gọi
+  và hiện cạnh thứ vừa hỏng — đó là chủ ý, không phải thiếu sót.
+- Bài học dạng video/bài đọc vẫn phải tự bấm hoàn thành. Đúng như vậy: không có
+  cách nào biết người ta đã đọc xong, còn bài tập code thì có.

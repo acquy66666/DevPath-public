@@ -239,6 +239,14 @@ export function LearnView({
                   key={lesson.data.id}
                   lessonId={lesson.data.id}
                   accessToken={accessToken as string}
+                  // Solving it finishes the lesson, and the worker wrote that
+                  // down in the same transaction as the verdict. The page only
+                  // has to go and look: the tick, the "x/y bài" counter and the
+                  // course card all read from these two.
+                  onSolved={() => {
+                    queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
+                    queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+                  }}
                 />
               ) : (
                 <article className="whitespace-pre-line text-pretty">

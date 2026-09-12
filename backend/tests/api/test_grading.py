@@ -1257,3 +1257,187 @@ async def test_polling_and_watching_agree_on_the_same_numbers(
     assert polled["status"] == watched.status
     assert polled["verdict"] == watched.verdict
     assert polled["score"] == watched.score
+
+
+# --- Chạy thử: a run that does not count ------------------------------------
+
+
+async def trial(client: AsyncClient, exercise: dict, headers: dict[str, str]):
+    return await client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/trial-runs",
+        json={"code": "print(1)"},
+        headers=headers,
+    )
+
+
+async def test_a_trial_run_is_accepted_and_marked_as_one(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    await add_case(api_client, exercise, owner, is_hidden=False)
+
+    response = await trial(api_client, exercise, student)
+
+    assert response.status_code == 201, response.text
+    assert response.json()["is_trial"] is True
+    assert response.json()["status"] == "pending"
+
+
+async def test_a_trial_run_stays_out_of_the_history(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    """History is the record of what was handed in.
+
+    Both rows below exist and both are readable one at a time; only the real
+    submission is part of the record. A page of forty rehearsals is not a
+    history of anything.
+    """
+    await add_case(api_client, exercise, owner, is_hidden=False)
+    trial_id = (await trial(api_client, exercise, student)).json()["id"]
+    real_id = (await submit(api_client, exercise, student)).json()["id"]
+
+    listed = await api_client.get(
+        f"/api/v1/code-exercises/{exercise['id']}/submissions", headers=student
+    )
+    ids = [row["id"] for row in listed.json()["items"]]
+
+    assert ids == [real_id]
+    assert listed.json()["total"] == 1
+    # Still readable on its own -- the page has to be able to show its result.
+    assert (
+        await api_client.get(f"/api/v1/submissions/{trial_id}", headers=student)
+    ).status_code == 200
+
+
+async def test_a_trial_run_needs_something_to_run_against(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+):
+    """An exercise of hidden cases only can be submitted to, not rehearsed.
+
+    Its own code rather than `EXERCISE_NOT_READY`: nothing is wrong with the
+    exercise, so the page disables one button instead of showing an error.
+    """
+    await add_case(api_client, exercise, owner, is_hidden=True)
+
+    response = await trial(api_client, exercise, student)
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "NO_SAMPLE_TEST_CASES"
+
+
+async def test_a_trial_run_counts_only_the_sample_cases(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    student_user: User,
+):
+    """The denominator has to describe this run, on both paths.
+
+    A trial that reported "0/3" while running one sample case would be telling
+    the student about a submission that is not happening.
+    """
+    await add_case(api_client, exercise, owner, is_hidden=False)
+    await add_case(api_client, exercise, owner, is_hidden=True)
+    await add_case(api_client, exercise, owner, is_hidden=True)
+    trial_id = (await trial(api_client, exercise, student)).json()["id"]
+
+    polled = await api_client.get(f"/api/v1/submissions/{trial_id}", headers=student)
+    watched = await grading_events.snapshot_for(
+        db_session, uuid.UUID(trial_id), student_user
+    )
+
+    assert polled.json()["total_cases"] == 1
+    assert watched.total_cases == 1
+
+
+async def test_a_student_may_not_run_an_exercise_they_cannot_open(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    exercise: dict,
+    owner: dict[str, str],
+):
+    """Trial runs go through the same door as everything else on the lesson."""
+    outsider = await sign_in(api_client, await make_user(db_session, "student"))
+    await add_case(api_client, exercise, owner, is_hidden=False)
+
+    assert (await trial(api_client, exercise, outsider)).status_code == 403
+
+
+async def test_rehearsing_does_not_block_submitting(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    """The sequence the page teaches must not be the sequence the limit bans.
+
+    Try the samples, then hand it in. One shared cooldown would answer that
+    with 429 and leave a student staring at a countdown for doing exactly what
+    the buttons invite.
+    """
+    await add_case(api_client, exercise, owner, is_hidden=False)
+
+    assert (await trial(api_client, exercise, student)).status_code == 201
+    assert (await submit(api_client, exercise, student)).status_code == 201
+
+
+async def test_two_trial_runs_in_a_row_are_still_refused(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    """A trial costs the queue exactly what a submission costs it."""
+    await add_case(api_client, exercise, owner, is_hidden=False)
+
+    assert (await trial(api_client, exercise, student)).status_code == 201
+    refused = await trial(api_client, exercise, student)
+
+    assert refused.status_code == 429
+    assert refused.json()["detail"]["code"] == "SUBMISSION_RATE_LIMITED"
+    # Named after the button that was pressed: "bạn vừa nộp bài" sends someone
+    # who clicked "chạy thử" to look for a submission that does not exist.
+    assert "chạy thử" in refused.json()["detail"]["message"]
+
+
+async def test_trial_runs_and_submissions_share_the_hourly_quota(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    limiter: MemoryRateLimiter,
+):
+    """The gate that actually protects the queue counts both.
+
+    Otherwise the hourly limit is worth nothing: a script that alternates
+    between the two routes would walk straight around it while costing the
+    same containers.
+    """
+    await add_case(api_client, exercise, owner, is_hidden=False)
+    settings = get_settings()
+
+    used = 0
+    while used < settings.submission_hourly_limit:
+        # Past the cooldown each time, so only the hourly quota can refuse.
+        limiter.now += settings.submission_cooldown_seconds + 1
+        route = trial if used % 2 == 0 else submit
+        assert (await route(api_client, exercise, student)).status_code == 201
+        used += 1
+
+    limiter.now += settings.submission_cooldown_seconds + 1
+    refused = await trial(api_client, exercise, student)
+
+    assert refused.status_code == 429
+    assert refused.json()["detail"]["retry_after"] > 0

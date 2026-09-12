@@ -176,6 +176,21 @@ class Submission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # change what an old submission was graded as.
     language: Mapped[str] = mapped_column(String(20), nullable=False)
 
+    # A trial run: the student pressed "chạy thử" instead of "nộp bài".
+    #
+    # It is the same row, the same queue and the same sandbox, because it costs
+    # exactly the same to run -- what differs is that it is graded against the
+    # sample cases only, and that it is left out of the submission history. A
+    # separate table would have duplicated the queue, the worker, the progress
+    # channel and every rule about who may read a run; a boolean here does not.
+    #
+    # It is also why a trial can never leak anything: the hidden cases are not
+    # part of the run at all, rather than part of it with their output stripped
+    # afterwards.
+    is_trial: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, server_default=text("'pending'")
     )
@@ -209,11 +224,14 @@ class Submission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         ),
         CheckConstraint("score IS NULL OR score BETWEEN 0 AND 100", name="ck_submissions_score"),
         # The submission history of one student on one exercise, newest first.
+        # Partial: history never shows trial runs, and a student who leans on
+        # "chạy thử" makes far more of those than of real submissions.
         Index(
             "ix_submissions_user_exercise",
             "user_id",
             "exercise_id",
             text("created_at DESC"),
+            postgresql_where=text("is_trial = false"),
         ),
         # Watching the queue: how many are waiting, how many are being graded.
         # Partial, because the rows that matter are a vanishing fraction of the

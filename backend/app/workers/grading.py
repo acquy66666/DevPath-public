@@ -195,11 +195,22 @@ def judge(
     )
 
 
-async def _cases_of(session: AsyncSession, exercise_id: uuid.UUID) -> list[TestCase]:
+async def _cases_of(
+    session: AsyncSession, exercise_id: uuid.UUID, *, samples_only: bool = False
+) -> list[TestCase]:
+    """The cases to grade against, in the instructor's order.
+
+    `samples_only` is how a trial run stays harmless: the hidden cases are
+    never loaded, so they are not run, not timed, and not written down. That
+    is a stronger statement than filtering their results afterwards -- there
+    is no point in this process at which a trial run holds an answer key.
+    """
+    where = TestCase.exercise_id == exercise_id
+    if samples_only:
+        where = where & TestCase.is_hidden.is_(False)
+
     rows = await session.scalars(
-        select(TestCase)
-        .where(TestCase.exercise_id == exercise_id)
-        .order_by(TestCase.position)
+        select(TestCase).where(where).order_by(TestCase.position)
     )
     return list(rows)
 
@@ -231,7 +242,7 @@ async def run_grading(
     if exercise is None:
         return None
 
-    cases = await _cases_of(session, exercise.id)
+    cases = await _cases_of(session, exercise.id, samples_only=submission.is_trial)
 
     # Committed before any judging starts: otherwise a submission being graded
     # looks exactly like one nobody has picked up, and a worker killed halfway

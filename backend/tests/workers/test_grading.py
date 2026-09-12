@@ -114,7 +114,11 @@ async def make_exercise(
 
 
 async def make_submission(
-    session: AsyncSession, exercise: CodeExercise, *, code: str = "print(3)"
+    session: AsyncSession,
+    exercise: CodeExercise,
+    *,
+    code: str = "print(3)",
+    is_trial: bool = False,
 ) -> Submission:
     student = User(
         email=f"hv-{uuid.uuid4().hex[:8]}@example.com",
@@ -131,6 +135,7 @@ async def make_submission(
         code=code,
         language="python",
         status="pending",
+        is_trial=is_trial,
     )
     session.add(submission)
     await session.flush()
@@ -613,3 +618,90 @@ async def test_grading_survives_a_publisher_that_throws(
     await db_session.refresh(submission)
     assert submission.status == "done"
     assert submission.verdict == "AC"
+
+
+# --- Trial runs -------------------------------------------------------------
+
+
+HIDDEN_ANSWER = "ANSWER-KEY-OF-A-HIDDEN-CASE"
+
+
+async def test_a_trial_run_is_never_handed_a_hidden_case(
+    db_session: AsyncSession,
+) -> None:
+    """The strongest form of the rule, and the reason trials filter at load.
+
+    The judge records everything it was given. A trial run must not have the
+    hidden case's input or expected output anywhere in that record -- not
+    stripped from the results afterwards, but never fetched. There is no
+    moment in the process at which a trial run holds an answer key.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    cases = await db_session.scalars(
+        select(TestCase).where(TestCase.exercise_id == exercise.id)
+    )
+    for case in cases:
+        if case.is_hidden:
+            case.expected_output = HIDDEN_ANSWER
+    await db_session.flush()
+
+    submission = await make_submission(db_session, exercise, is_trial=True)
+    judge = judging("AC")
+
+    await run_grading(db_session, submission.id, judge=judge)
+
+    handed_over = repr(judge.seen["cases"])
+    assert HIDDEN_ANSWER not in handed_over
+    assert len(judge.seen["cases"]) == 1
+
+
+async def test_a_real_submission_still_gets_every_case(
+    db_session: AsyncSession,
+) -> None:
+    """The control. Without it the test above would pass on a worker that had
+    stopped grading anything at all."""
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    submission = await make_submission(db_session, exercise)
+    judge = judging("AC", "AC")
+
+    await run_grading(db_session, submission.id, judge=judge)
+
+    assert len(judge.seen["cases"]) == 2
+
+
+async def test_a_trial_run_counts_only_the_cases_it_will_run(
+    db_session: AsyncSession,
+) -> None:
+    """"Test 1/1", not "test 1/3": the denominator describes this run."""
+    exercise = await make_exercise(
+        db_session, weights=(1, 1, 1), hidden=(False, True, True)
+    )
+    submission = await make_submission(db_session, exercise, is_trial=True)
+    announce = Recorder()
+
+    await run_grading(
+        db_session, submission.id, judge=judging("AC"), announce=announce
+    )
+
+    assert announce.events[0].total_cases == 1
+    assert all(event.total_cases == 1 for event in announce.events)
+
+
+async def test_a_trial_run_scores_against_the_samples_it_ran(
+    db_session: AsyncSession,
+) -> None:
+    """Half the sample cases passing is 50, even though the exercise has more.
+
+    A trial that scored out of the whole exercise would tell a student their
+    correct solution was worth a third of the marks.
+    """
+    exercise = await make_exercise(
+        db_session, weights=(1, 1, 1, 1), hidden=(False, False, True, True)
+    )
+    submission = await make_submission(db_session, exercise, is_trial=True)
+
+    await run_grading(db_session, submission.id, judge=judging("AC", "WA"))
+
+    await db_session.refresh(submission)
+    assert submission.score == 50
+    assert submission.verdict == "WA"

@@ -73,6 +73,10 @@ const MESSAGES: Record<string, string> = {
   TEST_CASE_NOT_FOUND: "Test case này không còn tồn tại. Tải lại trang giúp mình nhé.",
   EXERCISE_NOT_READY:
     "Bài tập chưa có test case nào nên chưa nhận bài nộp được.",
+  // Khác EXERCISE_NOT_READY: bài tập vẫn nộp được bình thường, chỉ là không có
+  // test mẫu nào để chạy thử. Trang nộp bài khóa riêng nút “Chạy thử”.
+  NO_SAMPLE_TEST_CASES:
+    "Bài tập này không có test case mẫu nào để chạy thử. Bạn nộp bài trực tiếp nhé.",
   SUBMISSION_NOT_FOUND: "Không tìm thấy bài nộp này.",
   // Kèm `retry_after` (giây) trong detail — trang nộp bài dùng số đó để đếm
   // ngược thay vì hiện câu chung chung này.

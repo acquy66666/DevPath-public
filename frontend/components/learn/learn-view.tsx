@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 
+import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
 import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
 import {
@@ -232,15 +233,13 @@ export function LearnView({
                   </Alert>
                 )
               ) : lesson.data.type === "code_exercise" ? (
-                // The submission page -- editor, sample runs, verdicts -- is
-                // week 8. Until then say so: falling through to the article
-                // branch would tell a student the lesson is empty, which is
-                // the one thing it is not.
-                <Alert>
-                  <AlertDescription>
-                    Bài tập code — trang nộp bài đang được xây dựng.
-                  </AlertDescription>
-                </Alert>
+                <ExerciseWorkspace
+                  // Keyed by lesson: moving to another exercise must start a
+                  // fresh editor rather than carry the previous answer over.
+                  key={lesson.data.id}
+                  lessonId={lesson.data.id}
+                  accessToken={accessToken as string}
+                />
               ) : (
                 <article className="whitespace-pre-line text-pretty">
                   {lesson.data.article_content ?? "Bài học này chưa có nội dung."}

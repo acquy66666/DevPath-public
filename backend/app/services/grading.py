@@ -45,13 +45,17 @@ QUEUE_DOWN_MESSAGE = (
 
 # Keys are prefixed so they are greppable in a Redis that also holds the Celery
 # queue, and carry the user id so one person's limit is theirs alone.
-COOLDOWN_KEY = "rl:submit:cooldown:{user}:{exercise}"
+COOLDOWN_KEY = "rl:{kind}:cooldown:{user}:{exercise}"
 HOURLY_KEY = "rl:submit:hour:{user}"
 HOUR_SECONDS = 3600
 
 
 async def enforce_submission_limits(
-    limiter: RateLimiter, user_id: uuid.UUID, exercise_id: uuid.UUID
+    limiter: RateLimiter,
+    user_id: uuid.UUID,
+    exercise_id: uuid.UUID,
+    *,
+    kind: str = "submit",
 ) -> None:
     """Two gates, cheapest first, both before anything is written or queued.
 
@@ -59,16 +63,31 @@ async def enforce_submission_limits(
     for, and a student switching to another exercise is not the abuse this
     guards against. The hourly quota is per person across every exercise,
     which is the only one of the two a patient script cannot walk around.
+
+    A trial run gets its **own cooldown** and **shares the hourly quota**. The
+    split is deliberate: the normal way to use this page is to try the samples
+    and then submit, and one cooldown for both would make the platform refuse
+    the very sequence it is teaching. The quota is the gate that actually
+    protects the queue, and a trial costs the queue exactly what a submission
+    costs it, so that one is shared.
     """
     settings = get_settings()
 
     wait = await limiter.claim(
-        COOLDOWN_KEY.format(user=user_id, exercise=exercise_id),
+        COOLDOWN_KEY.format(kind=kind, user=user_id, exercise=exercise_id),
         settings.submission_cooldown_seconds,
     )
     if wait:
+        # Named after the button that was pressed. Telling someone who clicked
+        # "chạy thử" that they just submitted is a small lie that makes them
+        # check their submission history for something that is not there.
+        did, again = (
+            ("chạy thử bài tập này", "chạy lại")
+            if kind == "trial"
+            else ("nộp bài cho bài tập này", "nộp lại")
+        )
         raise SubmissionRateLimitedError(
-            f"Bạn vừa nộp bài cho bài tập này. Đợi {wait} giây rồi nộp lại nhé.",
+            f"Bạn vừa {did}. Đợi {wait} giây rồi {again} nhé.",
             retry_after=wait,
         )
 
@@ -157,6 +176,19 @@ class GradingUnavailableError(DomainError):
     code = "GRADING_UNAVAILABLE"
 
 
+class NoSampleTestCaseError(DomainError):
+    """Nothing to try the code against.
+
+    Separate from `EXERCISE_NOT_READY` because it means something different to
+    the person reading it: the exercise is fine and can be submitted to, it
+    just has no visible case to rehearse against. The page turns this into a
+    disabled button rather than an error.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "NO_SAMPLE_TEST_CASES"
+
+
 class ExerciseNotReadyError(DomainError):
     """No test cases, so there is nothing a submission could be judged against.
 
@@ -181,7 +213,9 @@ async def _cases_of(session: AsyncSession, exercise_id: uuid.UUID) -> list[TestC
     return list(rows)
 
 
-async def count_test_cases(session: AsyncSession, exercise_id: uuid.UUID) -> int:
+async def count_test_cases(
+    session: AsyncSession, exercise_id: uuid.UUID, *, samples_only: bool = False
+) -> int:
     """How many cases a submission to this exercise will be judged against.
 
     The denominator of "test 3/8", and it comes from the exercise rather than
@@ -189,9 +223,18 @@ async def count_test_cases(session: AsyncSession, exercise_id: uuid.UUID) -> int
     definition, used by the REST detail and by the live channel's snapshot --
     two counts that disagreed would make the progress bar jump when a socket
     dropped.
+
+    `samples_only` is what a trial run counts against, and it has to be asked
+    for here rather than worked out by the caller: a trial that showed "1/8"
+    while running the two sample cases would be describing a different run
+    from the one happening.
     """
+    where = TestCase.exercise_id == exercise_id
+    if samples_only:
+        where = where & TestCase.is_hidden.is_(False)
+
     total = await session.scalar(
-        select(func.count()).select_from(TestCase).where(TestCase.exercise_id == exercise_id)
+        select(func.count()).select_from(TestCase).where(where)
     )
     return total or 0
 
@@ -447,6 +490,8 @@ async def create_submission(
     user: User,
     code: str,
     limiter: RateLimiter,
+    *,
+    is_trial: bool = False,
 ) -> Submission:
     """Take a submission in and hand it to the grading queue.
 
@@ -455,17 +500,32 @@ async def create_submission(
     an id that is not in the database yet. The cost of this order is a row
     that exists while the queue is down, which is why the failure below is
     written into the row rather than swallowed.
+
+    A trial run takes the same path with `is_trial=True`. What changes is what
+    it is judged against -- the worker runs only the sample cases -- and that
+    it stays out of the history. Nothing about the sandbox, the queue or the
+    retries differs, because none of those should.
     """
     exercise = await exercise_for_viewer(session, exercise_id, user)
 
     cases = await _cases_of(session, exercise_id)
-    if not cases:
+    if is_trial:
+        # A trial with no sample case has nothing to run against. Refusing is
+        # the honest answer: the alternative is a run that grades zero cases
+        # and comes back SE, blaming the platform for an empty exercise.
+        if not any(not case.is_hidden for case in cases):
+            raise NoSampleTestCaseError(
+                "Bài tập này không có test case mẫu nào để chạy thử"
+            )
+    elif not cases:
         raise ExerciseNotReadyError("Bài tập chưa có test case nào để chấm")
 
     # Last of the refusals and first of the work: everything above is about
     # whether this submission is possible at all, and a caller who cannot see
     # the exercise should not learn about our rate limits instead of a 404.
-    await enforce_submission_limits(limiter, user.id, exercise.id)
+    await enforce_submission_limits(
+        limiter, user.id, exercise.id, kind="trial" if is_trial else "submit"
+    )
 
     submission = Submission(
         user_id=user.id,
@@ -475,6 +535,7 @@ async def create_submission(
         # graded as is not the submitter's decision.
         language=exercise.language,
         status="pending",
+        is_trial=is_trial,
     )
     session.add(submission)
     await session.commit()
@@ -509,10 +570,18 @@ async def list_submissions(
     Only your own, even for the instructor who owns the exercise: reading
     another student's submissions is a different feature with a different
     audience, and it is not this one.
+
+    Trial runs are left out. History is the record of what a student handed
+    in; mixing in every press of "chạy thử" would bury it, and a page of forty
+    rehearsals is not a record of anything.
     """
     await exercise_for_viewer(session, exercise_id, user)
 
-    mine = (Submission.exercise_id == exercise_id) & (Submission.user_id == user.id)
+    mine = (
+        (Submission.exercise_id == exercise_id)
+        & (Submission.user_id == user.id)
+        & Submission.is_trial.is_(False)
+    )
     total = await session.scalar(select(func.count()).select_from(Submission).where(mine))
 
     rows = await session.scalars(

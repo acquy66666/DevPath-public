@@ -152,6 +152,8 @@ class SubmissionOut(BaseModel):
     exercise_id: uuid.UUID
     user_id: uuid.UUID
     language: str
+    #: True for a "chạy thử" run: sample cases only, and not part of history.
+    is_trial: bool
     status: str
     verdict: str | None
     score: int | None

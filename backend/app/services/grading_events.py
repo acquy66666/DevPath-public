@@ -280,7 +280,7 @@ async def snapshot_for(
         submission_id=submission.id,
         status=submission.status,
         total_cases=await grading_service.count_test_cases(
-            session, submission.exercise_id
+            session, submission.exercise_id, samples_only=submission.is_trial
         ),
         # The rows that exist are the cases that finished, so the count comes
         # from the same read as everything else rather than from a counter

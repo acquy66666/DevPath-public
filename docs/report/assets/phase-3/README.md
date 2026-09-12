@@ -345,3 +345,41 @@ Toàn bộ unit test vẫn xanh: chúng kiểm adapter trực tiếp, còn fixtu
 ### Bí mật của case ẩn không đi qua kênh realtime
 
 8 frame nhận được, quét tìm input và đáp án của case ẩn: **0**. `GradingEvent` không có trường nào chứa output, input hay message — con số 0 là tính chất của kiểu dữ liệu, không phải kết quả của một câu lệnh lọc.
+
+
+## Trang nộp bài: Monaco, chạy thử, nộp chính thức, lịch sử (12/09/2026)
+
+`submission-page.txt` · `submission-page-grading.png` · `submission-page-accepted.png`
+
+### Hai nút, hai nghĩa khác nhau
+
+| | Chấm với | Vào lịch sử | Route |
+|---|---|---|---|
+| **Chạy thử** | chỉ test mẫu | không | `POST /code-exercises/{id}/trial-runs` |
+| **Nộp bài** | mọi test | có | `POST /code-exercises/{id}/submissions` |
+
+Cùng hàng đợi, cùng worker, cùng sandbox, cùng kênh tiến độ realtime. Một lần chạy thử là một hàng `submissions` với `is_trial = true` — bảng riêng sẽ phải nhân đôi hàng đợi, worker, kênh tiến độ và mọi luật về ai được đọc bài nộp nào.
+
+### Bài học sư phạm nằm gọn trong một lần chạy
+
+Cùng một đoạn code, chạy trên stack thật:
+
+```
+chạy thử  -> AC  100/100   chấm 2/2 case (mẫu)
+nộp bài   -> RE   75/100   chấm 4/4 case  ← case ẩn số 2 làm int() ném lỗi
+```
+
+Qua hết test mẫu **không** có nghĩa là qua bài. Đó chính là lý do test ẩn tồn tại, và trang nộp bài nói điều đó bằng cách cho học viên tự thấy.
+
+### Vì sao chạy thử không thể rò rỉ
+
+Worker nạp test case bằng `_cases_of(..., samples_only=submission.is_trial)`. Case ẩn **không được nạp**, nên không chạy, không đo giờ, không ghi. Mạnh hơn "chạy hết rồi lọc kết quả": không tồn tại thời điểm nào mà một lần chạy thử cầm đáp án ẩn. Bằng chứng ngắn nhất là cột `so_case` trong CSDL — hàng `is_trial=t` có đúng 2 kết quả, hàng `is_trial=f` có 4.
+
+### Monaco tự phục vụ, không qua CDN
+
+`@monaco-editor/react` mặc định tải editor từ jsdelivr — tức trang quan trọng nhất của đồ án phụ thuộc mạng của căn phòng, đúng hôm bảo vệ. `scripts/copy-monaco.mjs` chép bản AMD vào `public/monaco`. Kiểm bằng danh sách request thật: **19 file, tất cả từ cùng origin, không một request nào ra ngoài**.
+
+### Hai lỗi gặp khi chạy thật
+
+1. **Lần chạy thử đầu chấm 4 case thay vì 2** — Celery không tự nạp lại code dù thư mục nguồn được mount. Triệu chứng đáng chú ý: thanh tiến độ hiện "0/2" (API mới) trong khi worker chạy 4 case (worker cũ). Hai nửa bất đồng thì tính chất "mẫu số mô tả chính lần chạy này" vỡ trước tiên.
+2. **Playwright gõ vào Monaco mất ký tự** — ban đầu tưởng lỗi sản phẩm, kiểm lại bằng cách bấm từng phím riêng thì đủ cả. Giới hạn của công cụ kiểm thử với Monaco 0.56 (EditContext API), không phải lỗi trang; chú thích trong code đã được sửa lại cho đúng.

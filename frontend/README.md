@@ -84,6 +84,24 @@ Nằm trong chính trình soạn mục lục: thêm bài học loại **Bài t�
 
 Đáp án của case ẩn **không bao giờ xuống trình duyệt học viên**: backend trả hai model khác nhau tùy người gọi, và model của học viên không có trường nào để chứa đáp án. `lib/api/grading.ts` vì thế chỉ khai kiểu của giảng viên — trang nộp bài (tuần 8) phải khai kiểu riêng, không dùng lại.
 
+### Trang nộp bài
+
+`components/exercise/exercise-workspace.tsx` — đề bài, editor, hai nút, kết quả, lịch sử. Nằm trong nhánh `code_exercise` của [learn-view.tsx](components/learn/learn-view.tsx), có `key={lesson.id}` để chuyển bài là đổi editor chứ không mang code bài cũ sang.
+
+**Monaco tự phục vụ, không qua CDN.** `@monaco-editor/react` mặc định tải editor từ jsdelivr — trang quan trọng nhất của đồ án sẽ phụ thuộc mạng của căn phòng, đúng hôm bảo vệ. `scripts/copy-monaco.mjs` chép bản dựng AMD của package vào `public/monaco` (đã .gitignore, 24 MB), và `loader.config({ paths: { vs: "/monaco/vs" } })` trỏ vào đó. Chạy ở `predev`/`prebuild` chứ không phải `postinstall`: image Docker cài dependency ở một layer chỉ có lockfile, nên postinstall sẽ đi tìm một file chưa tồn tại.
+
+Chép chứ không bundle vì bản ESM của Monaco cần plugin webpack, mà dự án build bằng Turbopack. Bản AMD không cần bundler nào cả.
+
+**Editor không chịu điều khiển (`defaultValue`, không phải `value`).** Monaco giữ một tài liệu có con trỏ, vùng chọn và ngăn xếp undo — mỗi phím gõ đã nằm ở đó trước. Cho state React làm nguồn nghĩa là mỗi phím đi một vòng ra rồi về, và mỗi lần render xen giữa là một cơ hội đẩy chữ cũ vào tài liệu đang sống. Chữ ở trong editor, `onChange` báo ra ngoài để nộp và để lưu nháp, đường duy nhất đi ngược vào là handle mệnh lệnh — dùng cho "khôi phục code mẫu" và "đưa code bài nộp cũ vào editor", đúng hai trường hợp mà ghi đè chính là ý định.
+
+**Bản nháp lưu ở `localStorage`** theo từng bài tập (`devpath:code:<exerciseId>`), nên F5 không mất bài đang viết. Mọi lần đọc/ghi đều bọc try/catch: chế độ ẩn danh làm `localStorage` ném lỗi, và mất bản nháp là thiệt hại nhỏ hơn vỡ cả trang.
+
+**Hai nút gọi hai route khác nhau**, xem [backend/README.md](../backend/README.md). Khi bị 429, trang hiện chính câu của server kèm `retry_after` — `ApiError` mang sẵn trường đó vì một 429 không nói bao giờ quay lại chỉ có thể trả lời bằng cách thử lại, tức thêm một request nữa.
+
+**Kết quả đến từ hai nguồn và không gộp làm một.** `event` là tiến độ sống (hoặc snapshot polling — client không phân biệt được), `detail` là kết quả đọc từ REST. Cái đầu nói đang tới đâu, chỉ cái sau mang output từng test — vì kênh realtime không có trường nào để chứa output. Ô input/mong đợi/thực tế chỉ vẽ cho test **không ẩn**.
+
+**Đề bài render bằng `react-markdown`**, không bật plugin HTML thô. Đây là chữ một người dùng viết cho người dùng khác đọc: một đề bài chứa `<script>` sẽ hiện ra đúng những ký tự đã gõ.
+
 ### Xem bài đang được chấm
 
 `lib/api/submissions.ts` là kiểu riêng ấy: `SubmissionResult.stdout_trunc` khai là `string | null` vì với case ẩn nó **luôn** null, và một kiểu nói "luôn có" là một giả định sai được viết thành code.
@@ -120,9 +138,11 @@ lib/grading/         giới hạn tài nguyên, chép tay từ model backend
 
 Chi tiết: skill `nextjs-feature` trong `.claude/skills/`.
 
-## Hai cái bẫy của Next.js 16 đã gặp
+## Ba cái bẫy của Next.js 16 đã gặp
 
 **Component gọi API phải `await connection()`.** Không có nó, trang bị prerender lúc build và kết quả API bị đóng băng vào HTML tĩnh — trạng thái backend sẽ luôn hiện như lúc chạy `npm run build`. Kết hợp với `<Suspense>` để phần tĩnh của trang vẫn được prerender bình thường.
+
+**Dev server đôi khi phục vụ bundle cũ.** Sửa file, `tsc` sạch, tải lại trang vẫn ra giao diện cũ — đã gặp hai lần, cả hai đều ở container Docker trên Windows, nơi Turbopack phải poll để thấy thay đổi. `touch` không cứu được; `docker compose restart frontend` thì được. Dấu hiệu nhận ra: đọc `outerHTML` của phần vừa sửa thấy đúng cấu trúc cũ, tức không phải lỗi logic mà là mã cũ.
 
 **Không dựng JSX bên trong `try/catch`.** ESLint (`react-hooks/error-boundaries`) chặn, và đúng: lỗi render của component con sẽ bị `catch` nuốt nhầm. Await trong `try`, gán kết quả ra biến, rồi mới render bên ngoài.
 

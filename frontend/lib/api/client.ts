@@ -63,6 +63,12 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly status: number,
+    /**
+     * Seconds to wait, when the backend said so. Only a 429 carries it, and
+     * without it the only way to answer "when may I try again?" is to try
+     * again — which is another request, arriving at the same refusal.
+     */
+    readonly retryAfter: number | null = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -92,18 +98,22 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
   if (!response.ok) {
     let code = "UNKNOWN_ERROR";
     let message = response.statusText;
+    let retryAfter: number | null = null;
 
     try {
       const body = await response.json();
       if (body?.detail?.code) {
         code = body.detail.code;
         message = body.detail.message ?? message;
+        if (typeof body.detail.retry_after === "number") {
+          retryAfter = body.detail.retry_after;
+        }
       }
     } catch {
       // Body was not JSON — keep the status text.
     }
 
-    throw new ApiError(code, message, response.status);
+    throw new ApiError(code, message, response.status, retryAfter);
   }
 
   // 204 and friends have no body at all; parsing one would throw.

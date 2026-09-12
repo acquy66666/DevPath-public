@@ -7,9 +7,10 @@ import { apiFetch } from "./client";
  * models depending on who asks: `TestCaseOut` -- what is typed below -- for the
  * instructor who wrote the answer key, and a sample-only model for everyone
  * else. This file is used by the authoring UI, so it types the first one. The
- * student's view arrives with the submission page and must not reuse this type:
- * an `expected_output` that is always present in TypeScript is exactly the
- * assumption that turns a hidden case into a visible one.
+ * student's view lives in `submissions.ts` as `TestCaseSample` and deliberately
+ * does not reuse this type: an `expected_output` that is always present in
+ * TypeScript is exactly the assumption that turns a hidden case into a visible
+ * one.
  */
 
 export interface CodeExercise {

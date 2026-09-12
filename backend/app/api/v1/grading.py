@@ -246,6 +246,36 @@ async def create_submission(
     return SubmissionOut.model_validate(submission)
 
 
+@router.post(
+    "/code-exercises/{exercise_id}/trial-runs",
+    response_model=SubmissionOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_trial_run(
+    exercise_id: uuid.UUID,
+    payload: SubmissionCreate,
+    current_user: CurrentUser,
+    session: DbSession,
+    limiter: RateLimit,
+) -> SubmissionOut:
+    """Run the code against the sample cases only, without it counting.
+
+    Its own route rather than a flag on the submit route. The two do different
+    things to a student's record -- one is an attempt at the exercise, the
+    other is not -- and a boolean in the body is a thing a client can get
+    wrong silently, in the direction of turning every rehearsal into a
+    submission.
+
+    Everything else is the submit route: same queue, same sandbox, same live
+    progress channel, same rate limiting. It is watched and read exactly the
+    same way, so the page needs no second code path for it.
+    """
+    submission = await grading_service.create_submission(
+        session, exercise_id, current_user, payload.code, limiter, is_trial=True
+    )
+    return SubmissionOut.model_validate(submission)
+
+
 @router.get(
     "/code-exercises/{exercise_id}/submissions", response_model=Page[SubmissionOut]
 )
@@ -284,7 +314,7 @@ async def get_submission(
         **SubmissionOut.model_validate(submission).model_dump(),
         code=submission.code,
         total_cases=await grading_service.count_test_cases(
-            session, submission.exercise_id
+            session, submission.exercise_id, samples_only=submission.is_trial
         ),
         results=[result_out(result, case) for result, case in results],
     )

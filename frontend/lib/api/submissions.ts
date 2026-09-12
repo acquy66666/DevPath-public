@@ -9,6 +9,40 @@
 
 import { apiFetch, apiUrl, ApiError } from "./client";
 
+/**
+ * A test case as a student may see it.
+ *
+ * The counterpart of `TestCase` in `grading.ts`, and the difference is the
+ * whole point: there is no `expected_output` here. A hidden case arrives with
+ * both sample fields null, so code that renders one cannot accidentally print
+ * an answer key — there is no field holding one.
+ */
+export interface TestCaseSample {
+  id: string;
+  position: number;
+  is_hidden: boolean;
+  sample_input: string | null;
+  sample_output: string | null;
+  score_weight: number;
+}
+
+/**
+ * The exercise's cases, in the detail this caller is entitled to.
+ *
+ * The same URL answers the instructor with the answer key. A student gets
+ * this shape, which is decided by the server per caller — the type here is a
+ * description of what arrives, not a request for it.
+ */
+export function listSampleTestCases(
+  accessToken: string,
+  exerciseId: string,
+): Promise<TestCaseSample[]> {
+  return apiFetch<TestCaseSample[]>(
+    `/api/v1/code-exercises/${exerciseId}/test-cases`,
+    { accessToken },
+  );
+}
+
 export interface SubmissionResult {
   test_case_id: string;
   position: number;
@@ -24,6 +58,8 @@ export interface Submission {
   exercise_id: string;
   user_id: string;
   language: string;
+  /** True for a "chạy thử" run: sample cases only, and not part of history. */
+  is_trial: boolean;
   status: SubmissionStatus;
   verdict: string | null;
   score: number | null;
@@ -56,6 +92,56 @@ export function getSubmission(
   return apiFetch<SubmissionDetail>(`/api/v1/submissions/${submissionId}`, {
     accessToken,
   });
+}
+
+/** Hand the code in. Counts, and appears in the history. */
+export function createSubmission(
+  accessToken: string,
+  exerciseId: string,
+  code: string,
+): Promise<Submission> {
+  return apiFetch<Submission>(
+    `/api/v1/code-exercises/${exerciseId}/submissions`,
+    { method: "POST", accessToken, body: JSON.stringify({ code }) },
+  );
+}
+
+/**
+ * Run the code against the sample cases only. Does not count.
+ *
+ * A different endpoint rather than a flag, because the two do different things
+ * to a student's record — and a boolean in a body is the kind of thing a
+ * client gets wrong silently, in the direction of turning every rehearsal into
+ * a submission.
+ */
+export function createTrialRun(
+  accessToken: string,
+  exerciseId: string,
+  code: string,
+): Promise<Submission> {
+  return apiFetch<Submission>(
+    `/api/v1/code-exercises/${exerciseId}/trial-runs`,
+    { method: "POST", accessToken, body: JSON.stringify({ code }) },
+  );
+}
+
+export interface SubmissionPage {
+  items: Submission[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+/** Your own attempts at this exercise, newest first. Trial runs are not here. */
+export function listSubmissions(
+  accessToken: string,
+  exerciseId: string,
+  pageSize = 20,
+): Promise<SubmissionPage> {
+  return apiFetch<SubmissionPage>(
+    `/api/v1/code-exercises/${exerciseId}/submissions?page=1&page_size=${pageSize}`,
+    { accessToken },
+  );
 }
 
 /* -- Watching one being graded -------------------------------------------- */

@@ -236,6 +236,22 @@ Giới hạn gắn với **user id chứ không phải IP**: một phòng máy c
 
 **Redis chết thì cho qua**, có chủ đích và chỉ ở đây: Redis cũng là broker của Celery, nên lúc nó chết thì bài vừa được cho qua cũng không vào được hàng đợi và API trả 503 ngay sau. Từ chối ở đây là đổi "hàng đợi hở một lúc" lấy "không ai nộp được bài", để bảo vệ một hàng đợi vốn không chạy.
 
+### Chạy thử
+
+`POST /code-exercises/{id}/trial-runs` chấm code với **chỉ test case mẫu** và không đưa vào lịch sử nộp bài. Cùng hàng đợi, cùng worker, cùng sandbox, cùng kênh tiến độ — khác đúng hai điều: chấm với cái gì, và có được ghi vào hồ sơ hay không.
+
+**Cùng bảng, một cột `is_trial`.** Bảng riêng sẽ phải nhân đôi hàng đợi, worker, kênh tiến độ, và mọi luật về ai được đọc bài nộp nào; một boolean thì không. Đổi lại, mọi truy vấn nói về "bài đã nộp" phải nhớ lọc — nên chỗ duy nhất làm việc đó là `list_submissions`, và index `ix_submissions_user_exercise` cũng partial `WHERE is_trial = false`.
+
+**Route riêng chứ không phải cờ trong body.** Hai thao tác để lại hai dấu vết khác nhau trong hồ sơ học viên, mà một boolean trong body là thứ client làm sai trong im lặng — và sai theo hướng biến mọi lần tập dượt thành bài nộp thật.
+
+**Case ẩn không được nạp, chứ không phải nạp rồi lọc.** Worker gọi `_cases_of(..., samples_only=submission.is_trial)`: test case ẩn không bao giờ đi vào tiến trình của một lần chạy thử, nên không có thời điểm nào nó cầm đáp án ẩn trong tay. Mạnh hơn hẳn "chạy hết rồi xóa kết quả đi".
+
+**`total_cases` đếm theo đúng lần chạy này.** Một lần chạy thử hiện "1/2", không phải "1/8" — mẫu số phải mô tả lần chạy đang diễn ra, nếu không thanh tiến độ đang nói về một bài nộp không tồn tại.
+
+**Thời gian chờ riêng, hạn mức giờ chung.** Luồng mà trang dạy học viên làm là "chạy thử rồi nộp"; một thời gian chờ dùng chung sẽ trả lời đúng luồng ấy bằng 429. Nhưng hạn mức 40 lần/giờ thì dùng chung, vì một script đổi qua đổi lại giữa hai route vẫn tốn đúng ngần ấy container. Câu từ chối gọi tên đúng nút vừa bấm: "bạn vừa **chạy thử**", không phải "bạn vừa nộp bài".
+
+**`NO_SAMPLE_TEST_CASES` (409)** khi bài tập không có test mẫu nào. Khác `EXERCISE_NOT_READY`: bài tập ấy vẫn nộp được bình thường, chỉ là không có gì để tập dượt — trang khóa một nút thay vì báo lỗi.
+
 ### Xem bài đang được chấm
 
 `WS /api/v1/submissions/{id}/events` phát tiến độ trong lúc worker chạy: một sự kiện khi bắt đầu (mang **tổng số test case**, tức mẫu số của "test 3/8"), một sự kiện sau mỗi case, một sự kiện khi xong.

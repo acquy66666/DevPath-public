@@ -302,6 +302,16 @@ Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đ
 | `SEED_INSTRUCTOR_PASSWORD` | `devpath-instructor` (kèm cảnh báo) | Mật khẩu 2 tài khoản giảng viên |
 | `SEED_SAMPLE_HLS_URL` | luồng demo công khai của hls.js | Video cho mọi bài học dạng video |
 
+### Đo hiệu năng chấm bài
+
+`scripts/bench_grading.py` đo cả đường thật — API → hàng đợi Celery → worker → sandbox Docker — nên phải chạy khi stack đang lên:
+
+```bash
+docker compose exec backend python -m scripts.bench_grading --submissions 10 --cases 5
+```
+
+Nó dựng một khóa học, một bài tập và **một học viên cho mỗi bài nộp** (mười bài từ một tài khoản là phép đo rate limit, không phải phép đo tải), bắn tất cả cùng lúc, rồi lấy mốc thời gian từ chính kênh tiến độ Redis để tách *chờ hàng đợi* khỏi *thời gian chấm*. Dọn sạch mọi thứ đã tạo khi xong, trừ khi có `--keep`. Số liệu và kết luận cấu hình: [docs/report/assets/phase-3/benchmark.md](../docs/report/assets/phase-3/benchmark.md).
+
 Nội dung khóa học nằm ở `scripts/seed_courses.py`. **Video là của người khác:** mọi bài học video đều trỏ vào một luồng HLS mẫu công khai, nên khóa học seed phát được cả trên máy chưa cấu hình R2 — đặt `SEED_SAMPLE_HLS_URL` để trỏ sang manifest của bạn. Seed không upload gì lên bucket; upload thật đi qua luồng presigned URL và worker transcode.
 
 Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (dùng lại `services/storage.py`, chỉ thiếu endpoint), job dọn object mồ côi (Phase 6 — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới).

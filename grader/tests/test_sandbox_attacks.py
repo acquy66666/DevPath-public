@@ -69,14 +69,23 @@ def test_nothing_outside_the_mount_can_be_read():
     assert "/var/run/docker.sock       does not exist" in report
     # Not root: the file is there, and reading it is still refused.
     assert "/etc/shadow                PermissionError" in report
-    # A third layer, neither the image's nor the runner's: the daemon replaces
-    # the dangerous entries in /proc with a bind mount of /dev/null.
+    # Kernel memory, refused -- but not by the same layer on every host, so
+    # what is asserted here is the refusal and not the mechanism.
     #
-    # The report travels with the failure on purpose. This assertion is about
-    # what the host's daemon does, so when it breaks it breaks on someone
-    # else's machine, and pytest's own truncation cuts out the one line that
-    # would say what happened instead.
-    assert "MASKED   /proc/kcore" in report, report
+    # On Docker Desktop the daemon masks /proc/kcore with a bind mount of
+    # /dev/null, a layer that would hold even against root. On the GitHub
+    # runner the file is left in place and mode 0400 refuses it, a layer that
+    # holds because the submission is not root. Either is a real denial, both
+    # of them are somebody else's doing, and pinning the test to the one this
+    # machine happens to get is how a green suite turns red on a host that is
+    # every bit as safe.
+    #
+    # The report travels with the failure for the same reason: this breaks on
+    # machines we cannot open a shell on, and pytest's truncation drops the
+    # one line that says what happened instead.
+    kcore = [line for line in report.splitlines() if "/proc/kcore" in line]
+    assert kcore, report
+    assert kcore[0].startswith("MASKED") or "PermissionError" in kcore[0], report
     # Where a careless bind mount would have landed, and nothing is there.
     assert "/media                     an empty directory: []" in report
     # One file in the mount, the one the student submitted. The test input

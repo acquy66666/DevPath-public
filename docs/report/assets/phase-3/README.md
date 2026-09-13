@@ -383,3 +383,35 @@ Worker nạp test case bằng `_cases_of(..., samples_only=submission.is_trial)`
 
 1. **Lần chạy thử đầu chấm 4 case thay vì 2** — Celery không tự nạp lại code dù thư mục nguồn được mount. Triệu chứng đáng chú ý: thanh tiến độ hiện "0/2" (API mới) trong khi worker chạy 4 case (worker cũ). Hai nửa bất đồng thì tính chất "mẫu số mô tả chính lần chạy này" vỡ trước tiên.
 2. **Playwright gõ vào Monaco mất ký tự** — ban đầu tưởng lỗi sản phẩm, kiểm lại bằng cách bấm từng phím riêng thì đủ cả. Giới hạn của công cụ kiểm thử với Monaco 0.56 (EditContext API), không phải lỗi trang; chú thích trong code đã được sửa lại cho đúng.
+
+
+## Demo gate: tạo bài tập → nộp sai → WA realtime → sửa → AC (13/09/2026)
+
+`demo-gate-wa-to-ac.txt` · `demo-gate-1-tao-bai-tap.png` … `demo-gate-6-lich-su.png`
+
+Mục đầu tiên của gate cuối Phase 3, đi trọn một lượt trên giao diện thật: giảng viên tạo khóa → chương → bài học kiểu bài tập code → đề bài + 8 test case (2 mẫu, 6 ẩn); học viên đăng ký tài khoản mới → ghi danh → nộp bài sai → sửa → AC.
+
+### Bài tập chọn theo một lỗi có thật của người mới
+
+Đề "số lớn nhất trong dãy", lời giải sai khởi tạo `best = 0`. Cái bẫy nằm ở chỗ nó **qua sạch cả hai test mẫu** rồi mới gãy ở ba test ẩn toàn số âm — tức là bấm "Chạy thử" thấy xanh hết vẫn có thể trượt. Test ẩn sinh ra đúng để bắt tình huống đó, và demo cho học viên tự thấy điều ấy thay vì giải thích bằng lời.
+
+### Con số biện hộ cho việc làm realtime per-test
+
+| Mốc | Bài nộp sai |
+|---|---|
+| API nhận bài → worker chạy test đầu | 202 ms |
+| Test ẩn số 3 chuyển đỏ | 2 294 ms |
+| Verdict tổng (WA 62/100) | 4 406 ms |
+
+**Học viên biết mình sai sớm hơn verdict tổng 2,1 giây.** Với bài 8 case chạy 4 giây thì đó là một nửa thời gian chờ; với bài 30 case thì là hàng chục giây.
+
+### Ba thứ được kiểm ngoài giao diện
+
+1. **Test ẩn không rò qua API.** Gọi thẳng `GET /submissions/{id}` bằng token học viên trên chính bài nộp sai: case ẩn chỉ mang vị trí, cờ ẩn, verdict, thời gian chạy — không stdin, không đáp án, không cả stdout đã in ra, kể cả ở case sai.
+2. **Chạy thử không vào lịch sử.** Bản chạy thử nằm ở `submissions.is_trial = true`, danh sách lịch sử lọc nó ra.
+3. **AC tự đóng bài học.** Không bấm "Đánh dấu hoàn thành" lần nào; `lesson_progress.completed_at` được ghi 4 giây sau verdict AC, tiến độ khóa nhảy 0/1 → 1/1.
+
+### Hai điều nói thẳng trong file bằng chứng
+
+- Ba bài nộp chậm trong lịch sử là **cùng lời giải sai cộng vòng lặp 6 triệu bước**, dựng riêng để chụp được ảnh lúc đang chấm — ở tốc độ thật cả lần chấm chỉ 4,4 giây, ngắn hơn một lượt chụp màn hình. Số trên hai ảnh đó là của bản cố tình chậm, không phải tốc độ hệ thống.
+- Khóa demo là khóa mới tạo, không phải khóa seed: bốn khóa seed đang thuộc hai tài khoản `@devpath.local` không đăng nhập được nữa (email-validator từ chối domain `.local`). Lệch dữ liệu của máy dev, cần dọn trước buổi bảo vệ.

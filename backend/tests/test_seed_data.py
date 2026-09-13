@@ -24,7 +24,7 @@ from app.models import (
     VideoAsset,
 )
 from app.schemas.auth import LoginIn
-from scripts.seed import CATEGORY_TREE
+from scripts.seed import CATEGORY_TREE, seed_categories
 from scripts.seed_courses import COURSES, INSTRUCTORS, seed_courses
 
 # The three the plan asks for; there are four so the catalogue has something to
@@ -193,6 +193,12 @@ async def test_the_seed_really_writes_the_code_exercise_and_its_cases(
             )
         )
         await db_session.flush()
+
+    # `seed_courses` looks its categories up rather than creating them, so
+    # `main()` runs `seed_categories` first. Doing the same here is the whole
+    # difference between a test that passes on a database someone has already
+    # seeded and one that passes on an empty one -- and CI's is empty.
+    await seed_categories(db_session)
 
     await seed_courses(db_session)
 

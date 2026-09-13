@@ -71,7 +71,12 @@ def test_nothing_outside_the_mount_can_be_read():
     assert "/etc/shadow                PermissionError" in report
     # A third layer, neither the image's nor the runner's: the daemon replaces
     # the dangerous entries in /proc with a bind mount of /dev/null.
-    assert "MASKED   /proc/kcore" in report
+    #
+    # The report travels with the failure on purpose. This assertion is about
+    # what the host's daemon does, so when it breaks it breaks on someone
+    # else's machine, and pytest's own truncation cuts out the one line that
+    # would say what happened instead.
+    assert "MASKED   /proc/kcore" in report, report
     # Where a careless bind mount would have landed, and nothing is there.
     assert "/media                     an empty directory: []" in report
     # One file in the mount, the one the student submitted. The test input

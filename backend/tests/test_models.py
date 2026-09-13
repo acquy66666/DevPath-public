@@ -33,7 +33,9 @@ def index_names(model: type) -> set[str]:
 
 
 def test_registered_tables_match_the_phases_done_so_far() -> None:
-    """Phase 1 created three; the rest arrive with the Phase 2 feature that reads them."""
+    """Phase 1 created three; every table after that arrives with the feature
+    that reads it -- Phase 2's curriculum and enrolments, then Phase 3's four
+    grading tables."""
     assert set(Base.metadata.tables) == {
         "users",
         "categories",
@@ -47,6 +49,11 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "notes",
         "bookmarks",
         "reviews",
+        # Phase 3 -- code grading.
+        "code_exercises",
+        "test_cases",
+        "submissions",
+        "submission_results",
     }
 
 

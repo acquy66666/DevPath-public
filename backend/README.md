@@ -11,7 +11,7 @@ app/
 ├── models/<domain>.py     SQLAlchemy models
 ├── schemas/<domain>.py    Pydantic: <Entity>Create / Update / Out
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
-└── workers/               Celery tasks: embedding, mail, chứng chỉ PDF
+└── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
 scripts/                   seed.py, eval_recommender.py, rebuild_course_stats.py
 ```
@@ -196,6 +196,87 @@ Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) nhận 409 `PA
 
 `JWT_SECRET` phải đặt thật khi `ENV=production` — app từ chối khởi động nếu vẫn còn giá trị mặc định trong `.env.example`.
 
+## Chấm bài (Phase 3)
+
+`POST /code-exercises/{id}/submissions` ghi một dòng `pending` rồi đẩy job vào hàng đợi `grading`. Worker ở `app/workers/grading.py` nhận job, gọi runner trong `grader/` (sandbox Docker), rồi ghi verdict, điểm và kết quả từng test case.
+
+**Thứ tự commit rồi mới enqueue là bắt buộc, không phải thói quen.** Worker nhanh hơn nhiều so với phần còn lại của request: enqueue trước commit thì nó được đưa một id chưa có trong cơ sở dữ liệu. Cái giá của thứ tự này là một hàng nộp bài tồn tại trong lúc Redis chết — nên trường hợp đó được ghi vào chính hàng đó (`status = error`) rồi trả 503 `GRADING_UNAVAILABLE`, thay vì trả 201 cho một bài không ai chấm.
+
+**Chỉ SE mới thử lại.** Sai (WA), chạy lỗi (RE), quá giờ (TLE), tràn bộ nhớ (MLE), không biên dịch được (CE) đều là câu trả lời *về bài nộp*: chạy lại chỉ tốn gấp ba để nhận cùng một câu. SE là lỗi phía mình (daemon chết, image chưa build) nên thử lại 3 lần, giãn 15s rồi 30s.
+
+**Dead letter là một dòng trong bảng, không phải một hàng đợi.** Redis không có chỗ để một message không ai xử lý được, và một dòng log thì học viên lẫn giảng viên đều không thấy. Hết lượt thử, hàng nộp bài chuyển `status = error`, `verdict` vẫn NULL — không có gì được chấm — kèm `message` bằng tiếng Việt. Câu lỗi kỹ thuật ở lại trong log worker: "bind source path does not exist" chỉ khiến học viên đi đọc lại code đúng của mình.
+
+**Ràng buộc CSDL đứng sau cả hai đường:** `ck_submissions_verdict_requires_done` không cho một hàng mang verdict trước khi `done`, nên cả đường retry lẫn đường dead letter đều không thể vô tình đóng một bài nộp lại bằng một chữ cái.
+
+Điểm tính theo **trọng số**, không theo số test case: `round(100 × tổng trọng số các case AC / tổng trọng số)`. Một bài khởi động 1 điểm không đáng bằng case mà cả bài tập nói về.
+
+`run_time_ms` là case chậm nhất chứ không phải tổng — giới hạn thời gian nói về một lần chạy. `peak_memory_mb` để NULL: sandbox báo *bị giết vì bộ nhớ*, không bao giờ báo *đã dùng bao nhiêu*, và một con số bịa ra ở đây sẽ bị đọc như một phép đo.
+
+Output của test case ẩn **không được ghi xuống** (`stdout_trunc` NULL). API đã từ chối trả nó; đây là lớp trước đó, vì một cột không bao giờ được điền thì không endpoint nào viết sau này làm rò được.
+
+`message` cũng bị cắt về cùng hạn mức: lời trình biên dịch đi qua trần 1 MB của sandbox, và cột này được đọc lại trong mọi trang lịch sử nộp bài.
+
+Bốn route trả `TestCaseOut` đầy đủ (`POST`/`PATCH`/`DELETE` test case và `PUT .../order`) không chọn model theo người gọi — chúng **từ chối** người gọi. Học viên đã ghi danh nhận 403, và đó là người duy nhất mà chỉ còn mỗi lớp kiểm tra quyền đứng chắn giữa họ và đáp án; có test đi hết từng route.
+
+**Verdict của case ẩn vẫn trả về, và đó là một oracle đã biết:** nộp chương trình kiểu "nếu input bắt đầu bằng 'A' thì in đáp án đúng" rồi đọc AC/WA là dò được input ẩn. Đúng với mọi hệ thống chấm báo kết quả theo từng test case. Không chặn, vì chặn nghĩa là bỏ luôn kết quả theo case; thứ làm nó không đáng bỏ công là rate limit — dò một input 20 ký tự cần hàng chục giờ, và mỗi bước để lại một dòng mang tên tài khoản trong `submissions`.
+
+`judge()` là chỗ duy nhất trong backend biết kiểu dữ liệu của runner tồn tại, và nó import bên trong hàm: container API chỉ enqueue nên không cần grader lẫn Docker để khởi động được.
+
+### Không quá nhanh
+
+`POST .../submissions` đi qua hai cửa trong Redis trước khi ghi dòng nào: cooldown **10 giây** cho mỗi (học viên, bài tập), và **40 bài/giờ** cho mỗi học viên trên toàn bộ bài tập. Cả hai chỉnh được bằng `SUBMISSION_COOLDOWN_SECONDS` và `SUBMISSION_HOURLY_LIMIT`.
+
+Cooldown chặn nút bấm hai lần và script quay vòng một bài; hạn mức theo giờ chặn script kiên nhẫn ngồi đợi hết cooldown — thứ mà riêng cooldown không bao giờ chặn được. Mỗi cửa là **một lệnh Redis** (`SET NX EX`, `INCR`) chứ không phải đọc-rồi-ghi: API chạy nhiều tiến trình, hai request của cùng một cú double-click rơi vào hai worker, cả hai cùng đọc "chưa có gì".
+
+Cửa chặn nằm **sau** mọi kiểm tra quyền và trước khi ghi: người không xem được bài tập phải nhận 404, không phải nhận thông tin về hạn mức của hệ thống.
+
+Từ chối trả 429 kèm `Retry-After` ở header **và** `retry_after` trong `detail` — header cho proxy/curl, trường JSON cho trang vẽ đồng hồ đếm ngược. Lần bị từ chối **không** đẩy lùi hạn chờ: cooldown để giãn nhịp, không để phạt.
+
+Giới hạn gắn với **user id chứ không phải IP**: một phòng máy của trường ngồi sau một IP NAT, chặn theo IP là chặn nhầm cả lớp vì một người.
+
+**Redis chết thì cho qua**, có chủ đích và chỉ ở đây: Redis cũng là broker của Celery, nên lúc nó chết thì bài vừa được cho qua cũng không vào được hàng đợi và API trả 503 ngay sau. Từ chối ở đây là đổi "hàng đợi hở một lúc" lấy "không ai nộp được bài", để bảo vệ một hàng đợi vốn không chạy.
+
+### Chạy thử
+
+`POST /code-exercises/{id}/trial-runs` chấm code với **chỉ test case mẫu** và không đưa vào lịch sử nộp bài. Cùng hàng đợi, cùng worker, cùng sandbox, cùng kênh tiến độ — khác đúng hai điều: chấm với cái gì, và có được ghi vào hồ sơ hay không.
+
+**Cùng bảng, một cột `is_trial`.** Bảng riêng sẽ phải nhân đôi hàng đợi, worker, kênh tiến độ, và mọi luật về ai được đọc bài nộp nào; một boolean thì không. Đổi lại, mọi truy vấn nói về "bài đã nộp" phải nhớ lọc — nên chỗ duy nhất làm việc đó là `list_submissions`, và index `ix_submissions_user_exercise` cũng partial `WHERE is_trial = false`.
+
+**Route riêng chứ không phải cờ trong body.** Hai thao tác để lại hai dấu vết khác nhau trong hồ sơ học viên, mà một boolean trong body là thứ client làm sai trong im lặng — và sai theo hướng biến mọi lần tập dượt thành bài nộp thật.
+
+**Case ẩn không được nạp, chứ không phải nạp rồi lọc.** Worker gọi `_cases_of(..., samples_only=submission.is_trial)`: test case ẩn không bao giờ đi vào tiến trình của một lần chạy thử, nên không có thời điểm nào nó cầm đáp án ẩn trong tay. Mạnh hơn hẳn "chạy hết rồi xóa kết quả đi".
+
+**`total_cases` đếm theo đúng lần chạy này.** Một lần chạy thử hiện "1/2", không phải "1/8" — mẫu số phải mô tả lần chạy đang diễn ra, nếu không thanh tiến độ đang nói về một bài nộp không tồn tại.
+
+**Thời gian chờ riêng, hạn mức giờ chung.** Luồng mà trang dạy học viên làm là "chạy thử rồi nộp"; một thời gian chờ dùng chung sẽ trả lời đúng luồng ấy bằng 429. Nhưng hạn mức 40 lần/giờ thì dùng chung, vì một script đổi qua đổi lại giữa hai route vẫn tốn đúng ngần ấy container. Câu từ chối gọi tên đúng nút vừa bấm: "bạn vừa **chạy thử**", không phải "bạn vừa nộp bài".
+
+**`NO_SAMPLE_TEST_CASES` (409)** khi bài tập không có test mẫu nào. Khác `EXERCISE_NOT_READY`: bài tập ấy vẫn nộp được bình thường, chỉ là không có gì để tập dượt — trang khóa một nút thay vì báo lỗi.
+
+### Xem bài đang được chấm
+
+`WS /api/v1/submissions/{id}/events` phát tiến độ trong lúc worker chạy: một sự kiện khi bắt đầu (mang **tổng số test case**, tức mẫu số của "test 3/8"), một sự kiện sau mỗi case, một sự kiện khi xong.
+
+**Cơ sở dữ liệu vẫn là nguồn chân lý, kênh chỉ là lời kể.** Redis pub/sub không có bộ nhớ: gửi cho ai đang nghe tại đúng khoảnh khắc đó, không hàng đợi, không phát lại, không xác nhận. Nên mỗi socket **mở đầu bằng một snapshot đọc từ Postgres**, và cứ 10 giây im lặng lại đọc thêm một cái nữa. Một cơ chế trả lời bốn hỏng hóc khác nhau:
+
+| Hỏng hóc | Vì sao snapshot xử lý được |
+|---|---|
+| Client kết nối sau khi chấm xong | Sự kiện đã đi qua từ lâu; snapshot đầu tiên trả lời ngay |
+| Thông điệp phát trong lúc subscription chưa sẵn sàng | Lần đọc kế tiếp bù lại |
+| Kết nối Redis đứt giữa chừng | Im lặng, và im lặng được trả lời bằng một lần đọc |
+| Worker chết để lại dòng `running` | Snapshot cuối cùng chạm trần 5 phút và đóng socket |
+
+Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất bại thì socket nhận `SilentStream` và tự hạ cấp thành vòng đọc CSDL mỗi 2 giây — đúng là polling, chỉ khác là chạy trên WebSocket. `publish` thất bại thì bị nuốt kèm log WARNING: tiến độ là lời kể về công việc mà dòng dữ liệu đã ghi xong, không bao giờ được phép làm hỏng việc chấm.
+
+**Token đi trong `Sec-WebSocket-Protocol`.** Trình duyệt không cho đặt header `Authorization` cho WebSocket; cách phổ biến nhất — query string — ghi một chứng danh còn sống vào log nginx. Client chào `["bearer", "<access token>"]`, server nhận với `bearer`. Đúng hai giá trị, giá trị của mình đứng trước: đoán xem phần tử nào là chứng danh chính là cách đọc nhầm chứng danh ở trường khác.
+
+**Quyền xem socket là quyền đọc bài nộp**, theo đúng nghĩa đen: `snapshot_for()` gọi chính `get_submission()` mà endpoint REST dùng. Không có snapshot thì không có socket — nên không tồn tại trạng thái nào mà ai đó đã subscribe được vào kênh của một bài nộp họ không được xem. Mã đóng nằm trong dải ứng dụng: **4401** (lấy token mới rồi kết nối lại) và **4404** (thôi đừng hỏi nữa).
+
+**Sự kiện không mang kết quả.** `GradingEvent` không có trường nào chứa output, input, message hay code — nó là thanh tiến độ, không phải bảng điểm. Kết quả lấy từ `GET /submissions/{id}`, chỗ duy nhất luật test case ẩn được viết ra và được test. Nhờ vậy quy tắc "output case ẩn không rời máy chủ" không cần thêm một câu lệnh lọc nào ở đây.
+
+**Socket không giữ session CSDL.** Mỗi snapshot mở một session, đọc, trả lại ngay — nếu giữ, 30 tab đang mở là 30 kết nối bị ghim khỏi pool. Tài khoản cũng được tra lại mỗi lần, nên socket mở từ một giờ trước không tiếp tục trả lời cho tài khoản vừa bị khóa.
+
+**Đường lùi phía client** nằm ở `frontend/lib/api/submissions.ts`: `watchSubmission()` thử WebSocket, và chuyển sang polling `GET /submissions/{id}` mỗi 2 giây nếu không mở được, hoặc nếu socket đóng trước khi chấm xong. Ngoại lệ duy nhất là 4404 — hỏi lại không làm một bài nộp không tồn tại hiện ra. Hai đường phát ra cùng một kiểu `GradingEvent`, và `SubmissionDetail` mang sẵn `total_cases` để đường polling cũng vẽ được "3/8" y hệt.
+
 ## Trạng thái
 
 Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, auth email + mật khẩu và đăng nhập Google (bảng trên) với `get_current_user`.
@@ -220,6 +301,16 @@ Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đ
 | `SEED_ADMIN_PASSWORD` | `devpath-admin` (kèm cảnh báo) | Mật khẩu quản trị |
 | `SEED_INSTRUCTOR_PASSWORD` | `devpath-instructor` (kèm cảnh báo) | Mật khẩu 2 tài khoản giảng viên |
 | `SEED_SAMPLE_HLS_URL` | luồng demo công khai của hls.js | Video cho mọi bài học dạng video |
+
+### Đo hiệu năng chấm bài
+
+`scripts/bench_grading.py` đo cả đường thật — API → hàng đợi Celery → worker → sandbox Docker — nên phải chạy khi stack đang lên:
+
+```bash
+docker compose exec backend python -m scripts.bench_grading --submissions 10 --cases 5
+```
+
+Nó dựng một khóa học, một bài tập và **một học viên cho mỗi bài nộp** (mười bài từ một tài khoản là phép đo rate limit, không phải phép đo tải), bắn tất cả cùng lúc, rồi lấy mốc thời gian từ chính kênh tiến độ Redis để tách *chờ hàng đợi* khỏi *thời gian chấm*. Dọn sạch mọi thứ đã tạo khi xong, trừ khi có `--keep`. Số liệu và kết luận cấu hình: [docs/report/assets/phase-3/benchmark.md](../docs/report/assets/phase-3/benchmark.md).
 
 Nội dung khóa học nằm ở `scripts/seed_courses.py`. **Video là của người khác:** mọi bài học video đều trỏ vào một luồng HLS mẫu công khai, nên khóa học seed phát được cả trên máy chưa cấu hình R2 — đặt `SEED_SAMPLE_HLS_URL` để trỏ sang manifest của bạn. Seed không upload gì lên bucket; upload thật đi qua luồng presigned URL và worker transcode.
 

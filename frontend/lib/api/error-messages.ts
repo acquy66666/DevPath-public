@@ -47,7 +47,7 @@ const MESSAGES: Record<string, string> = {
   LESSON_NOT_FOUND: "Bài học này không còn tồn tại. Tải lại trang giúp mình nhé.",
   LESSON_LOCKED: "Bài học này cần đăng ký khóa học mới xem được.",
   INVALID_ORDER:
-    "Thứ tự vừa gửi không khớp với nội dung khóa học. Tải lại trang rồi sắp xếp lại nhé.",
+    "Thứ tự vừa gửi không khớp với dữ liệu trên máy chủ. Tải lại trang rồi sắp xếp lại nhé.",
 
   // Đánh giá khóa học.
   NOT_ENROLLED: "Bạn cần đăng ký khóa học này trước khi đánh giá.",
@@ -62,6 +62,27 @@ const MESSAGES: Record<string, string> = {
   LESSON_NOT_VIDEO: "Chỉ bài học dạng video mới gắn được video.",
   INVALID_VIDEO_STATUS:
     "Video đang ở trạng thái khác nên không làm được thao tác này. Tải lại trang nhé.",
+
+  // Bài tập code. EXERCISE_NOT_FOUND cũng là câu trả lời bình thường cho một bài
+  // học vừa tạo — nơi nào coi nó là trạng thái rỗng thì bắt riêng, không lấy câu
+  // này.
+  EXERCISE_NOT_FOUND: "Bài học này chưa có bài tập code.",
+  EXERCISE_EXISTS: "Bài học này đã có bài tập code rồi. Tải lại trang nhé.",
+  LESSON_NOT_CODE_EXERCISE:
+    "Chỉ bài học kiểu “Bài tập code” mới gắn được bài tập chấm tự động.",
+  TEST_CASE_NOT_FOUND: "Test case này không còn tồn tại. Tải lại trang giúp mình nhé.",
+  EXERCISE_NOT_READY:
+    "Bài tập chưa có test case nào nên chưa nhận bài nộp được.",
+  // Khác EXERCISE_NOT_READY: bài tập vẫn nộp được bình thường, chỉ là không có
+  // test mẫu nào để chạy thử. Trang nộp bài khóa riêng nút “Chạy thử”.
+  NO_SAMPLE_TEST_CASES:
+    "Bài tập này không có test case mẫu nào để chạy thử. Bạn nộp bài trực tiếp nhé.",
+  SUBMISSION_NOT_FOUND: "Không tìm thấy bài nộp này.",
+  // Kèm `retry_after` (giây) trong detail — trang nộp bài dùng số đó để đếm
+  // ngược thay vì hiện câu chung chung này.
+  SUBMISSION_RATE_LIMITED: "Bạn nộp bài hơi nhanh. Đợi một chút rồi thử lại nhé.",
+  GRADING_UNAVAILABLE:
+    "Hệ thống chấm bài đang bận hoặc tạm ngừng. Thử lại sau ít phút nhé.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

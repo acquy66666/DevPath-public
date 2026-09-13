@@ -22,6 +22,11 @@ jobs:
     # so the suite needs Postgres from here on. tests/conftest.py skips the
     # database tests when it cannot connect *and* CI is unset -- in CI it fails
     # instead, so a broken service container can never show up as a green run.
+    #
+    # Redis is here for the same reason and on the same terms: the rate limiter
+    # is tested against a dictionary for its rules and against a real Redis for
+    # the four commands it sends. A skipped integration test is a green run
+    # that proved nothing.
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -37,8 +42,19 @@ jobs:
           --health-timeout 5s
           --health-retries 12
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+
     env:
       DATABASE_URL: postgresql+asyncpg://devpath:devpath@localhost:5432/devpath
+      REDIS_URL: redis://localhost:6379/0
 
     steps:
       - uses: actions/checkout@v4
@@ -151,6 +167,35 @@ jobs:
         run: |
           python -m scripts.seed
           python -m scripts.seed
+
+  grader:
+    name: Grader — sandbox image
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: grader
+
+    # The one job that runs code the way a student's submission will run: it
+    # builds the sandbox image and then makes assertions from inside a
+    # container, because what matters is what the kernel allows, not what the
+    # Dockerfile claims. `CI` is set for every GitHub run, and the suite turns
+    # a missing Docker daemon into a failure rather than a skip when it is --
+    # a silently skipped sandbox test is worse than a red one.
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the test tooling
+        run: pip install "pytest>=8.3" "ruff>=0.8"
+
+      - name: Ruff
+        run: ruff check .
+
+      - name: Pytest
+        run: pytest -q
 
   deploy-config:
     name: Deploy config — compose, nginx, production images

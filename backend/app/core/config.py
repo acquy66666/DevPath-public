@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     # of a lecture video, short enough that a leaked URL stops working.
     upload_url_ttl_seconds: int = 3600
 
+    # How often one student may ask for grading. The cooldown stops a
+    # double-clicked button and a script hammering one exercise; the hourly
+    # quota stops a patient script that waits the cooldown out. Both protect
+    # the queue -- one submission is several containers and several seconds --
+    # and both are far above what iterating on an exercise looks like.
+    submission_cooldown_seconds: int = 10
+    submission_hourly_limit: int = 40
+
     # Phase 5 replaces this with a real admin review queue; until then a
     # submitted course goes straight to published so the rest of Phase 2 has
     # something to show.

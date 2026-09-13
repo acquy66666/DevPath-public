@@ -7,3 +7,8 @@
 *.template text eol=lf
 Dockerfile text eol=lf
 *.conf text eol=lf
+
+# Grading fixtures stand in for submitted code. A CRLF checkout would make
+# them differ on Windows from what the same file grades as on the server,
+# and line endings are exactly what this part of the system is sensitive to.
+grader/tests/fixtures/* text eol=lf

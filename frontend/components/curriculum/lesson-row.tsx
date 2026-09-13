@@ -4,7 +4,15 @@ import { useDndContext } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, GripVertical, Loader2, Pencil, Trash2, Video } from "lucide-react";
+import {
+  Code2,
+  FileText,
+  GripVertical,
+  Loader2,
+  Pencil,
+  Trash2,
+  Video,
+} from "lucide-react";
 import { useState } from "react";
 
 import { LessonEditor } from "@/components/curriculum/lesson-editor";
@@ -22,8 +30,15 @@ const TYPE_LABELS: Record<LessonType, string> = {
   code_exercise: "Bài tập code",
 };
 
+const TYPE_ICONS: Record<LessonType, typeof FileText> = {
+  video: Video,
+  article: FileText,
+  quiz: FileText,
+  code_exercise: Code2,
+};
+
 function TypeIcon({ type }: { type: LessonType }) {
-  const Icon = type === "video" ? Video : FileText;
+  const Icon = TYPE_ICONS[type];
   return <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
 }
 

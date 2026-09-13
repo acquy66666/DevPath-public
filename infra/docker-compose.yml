@@ -22,6 +22,10 @@ x-backend-env: &backend-env
   GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8000/api/v1/auth/google/callback}
   FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
   AUTO_APPROVE_COURSES: ${AUTO_APPROVE_COURSES:-true}
+  # How often one student may ask for grading. Enforced by the API before a
+  # row is written or a job queued; see backend/app/services/rate_limit.py.
+  SUBMISSION_COOLDOWN_SECONDS: ${SUBMISSION_COOLDOWN_SECONDS:-10}
+  SUBMISSION_HOURLY_LIMIT: ${SUBMISSION_HOURLY_LIMIT:-40}
   # Object storage (Cloudflare R2). Empty by default: the upload endpoints
   # answer 503 until a bucket exists. See docs/huong-dan-cloudflare-r2.md.
   # R2_ENDPOINT_URL overrides the endpoint for anything else that speaks S3 --
@@ -111,7 +115,13 @@ services:
       context: ../backend
       target: development
     image: devpath-backend:dev
-    command: ["celery", "-A", "app.workers.celery_app", "worker", "--loglevel=info"]
+    # Named queues, not the default one: since grading got a queue of its own,
+    # a worker listening to "whatever is there" would listen to neither.
+    # `celery` is the default queue and stays here so a task added later
+    # without a route has a consumer.
+    command:
+      ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "media,celery",
+       "--loglevel=info"]
     environment: *backend-env
     volumes: *backend-volumes
     depends_on:
@@ -119,6 +129,62 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  # Submissions, and only submissions. Separate from the worker above because
+  # the two jobs are nothing alike -- and because this is the one container in
+  # the stack that can talk to the Docker daemon.
+  grading-worker:
+    build:
+      context: ../backend
+      target: grading-development
+    image: devpath-grading:dev
+    command:
+      ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "grading",
+       "--loglevel=info", "--concurrency=${GRADING_CONCURRENCY:-2}"]
+    environment:
+      <<: *backend-env
+      # The grader is a sibling project, not a dependency: it is mounted and
+      # imported rather than installed, the same way its own tests import it.
+      PYTHONPATH: /grader
+      # The one path that has to mean the same thing here and on the host: the
+      # daemon resolves `--mount source=` outside this container, so the
+      # directory holding a submission has to exist on both sides under the
+      # same name. See the identical entry in `volumes` below.
+      DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+    volumes:
+      - ../backend:/app
+      - /app/.venv
+      # Read-only: this container runs the grader, it does not develop it.
+      - ../grader:/grader:ro
+      # Same path on both sides, deliberately. One submission's source file
+      # lives here for the seconds it takes to grade it, and is deleted by the
+      # runner afterwards. On Docker Desktop this resolves inside the Linux VM,
+      # which is exactly where the daemon looks.
+      - /var/lib/devpath-grading:/var/lib/devpath-grading
+      # The whole grading design in one line. Everything a submission does is
+      # confined to a container with no network, no privileges and a read-only
+      # filesystem -- but the process that *starts* those containers needs the
+      # daemon, and a socket is not a permission system: this container can
+      # start any container it likes on the host. It is why nothing else in
+      # this stack gets the socket, why this image has no web server in it,
+      # and why no submitted code ever runs in this container.
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # Ping itself by name rather than "whoever answers": with two workers on
+      # one broker, a plain inspect ping is answered by the other one and this
+      # container stays healthy while dead.
+      test:
+        - CMD-SHELL
+        - celery -A app.workers.celery_app inspect ping -d celery@$$(hostname) > /dev/null
       interval: 30s
       timeout: 15s
       retries: 3

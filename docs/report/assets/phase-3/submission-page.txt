@@ -1,0 +1,179 @@
+TRANG NỘP BÀI — MONACO, CHẠY THỬ, NỘP CHÍNH THỨC, LỊCH SỬ
+Ngày chạy: 12/09/2026 · stack thật: API + Redis + worker chấm + sandbox Docker
+
+Ảnh kèm theo
+------------
+  submission-page-grading.png   trang lúc đang chấm (thanh tiến độ n/m)
+  submission-page-accepted.png  trang sau khi AC — đủ đề bài, editor, kết quả
+                                từng test, lịch sử
+
+Hai nút, hai nghĩa khác nhau
+---------------------------
+    Chạy thử   POST /code-exercises/{id}/trial-runs   chỉ test mẫu, không lưu vào lịch sử
+    Nộp bài    POST /code-exercises/{id}/submissions  mọi test, vào lịch sử
+
+Cùng hàng đợi, cùng worker, cùng sandbox, cùng kênh tiến độ realtime. Khác ở
+**thứ được chấm** và **thứ được ghi lại**. Một lần chạy thử là một hàng trong
+bảng `submissions` với `is_trial = true`; bảng riêng sẽ phải nhân đôi hàng đợi,
+worker, kênh tiến độ và mọi luật về ai được đọc bài nộp nào.
+
+Vì sao chạy thử không thể rò rỉ
+-------------------------------
+Worker nạp test case bằng `_cases_of(..., samples_only=submission.is_trial)`.
+Test case ẩn **không được nạp**, nên không được chạy, không được đo giờ, không
+được ghi. Mạnh hơn hẳn so với "chạy hết rồi lọc kết quả đi": không tồn tại thời
+điểm nào trong tiến trình mà một lần chạy thử cầm trong tay đáp án ẩn.
+
+Bài tập: 4 test case — 2 mẫu, 2 ẩn (một case ẩn mang bí mật 'SECRET-INPUT-9d38')
+Bài nộp: 'a, b = input().split()\nprint(int(a) + int(b))\n'
+
+==============================================================================
+1. CHẠY THỬ VÀ NỘP BÀI: CÙNG SANDBOX, KHÁC THỨ ĐƯỢC CHẤM
+==============================================================================
+POST /trial-runs      -> 201  is_trial=True
+  verdict=AC  score=100  chấm 2/2 case
+    case 0 (mẫu) -> AC   stdout_trunc='3\n'
+    case 1 (mẫu) -> AC   stdout_trunc='30\n'
+
+POST /submissions     -> 201  is_trial=False  (ngay sau khi chạy thử, không bị 429)
+  verdict=RE  score=75  chấm 4/4 case
+    case 0 (mẫu) -> AC   stdout_trunc='3\n'
+    case 1 (mẫu) -> AC   stdout_trunc='30\n'
+    case 2 (ẩn ) -> RE   stdout_trunc=None
+    case 3 (ẩn ) -> AC   stdout_trunc=None
+
+==============================================================================
+2. LỊCH SỬ NỘP BÀI CHỈ CHỨA BÀI NỘP THẬT
+==============================================================================
+GET /submissions -> 1 dòng
+  is_trial=False  RE  75/100
+
+Trong cơ sở dữ liệu:
+ is_trial | verdict | score | so_case 
+----------+---------+-------+---------
+ t        | AC      |   100 |       2
+ f        | RE      |    75 |       4
+(2 rows)
+
+
+
+==============================================================================
+3. GIỚI HẠN TẦN SUẤT: CHUNG HẠN MỨC GIỜ, RIÊNG THỜI GIAN CHỜ
+==============================================================================
+Hai lần chạy thử liên tiếp, không chờ:
+  lần 1 -> 201
+  lần 2 -> 429 SUBMISSION_RATE_LIMITED  retry_after=10
+          "Bạn vừa chạy thử bài tập này. Đợi 10 giây rồi chạy lại nhé."
+  -> chạy thử tốn đúng ngần ấy container như nộp bài, nên vẫn có thời gian chờ
+     riêng. Cái được tách là thời gian chờ; hạn mức theo giờ thì dùng chung,
+     vì đó mới là cửa bảo vệ hàng đợi (xem test trong tests/api/test_grading.py).
+
+==============================================================================
+4. BÀI TẬP KHÔNG CÓ TEST MẪU THÌ KHÔNG CHẠY THỬ ĐƯỢC
+==============================================================================
+POST /trial-runs  -> 409 NO_SAMPLE_TEST_CASES
+  "Bài tập này không có test case mẫu nào để chạy thử"
+POST /submissions -> 201  (bài tập vẫn nộp được bình thường)
+  -> hai mã lỗi khác nhau vì hai tình huống khác nhau: bài tập này không
+     hỏng, nó chỉ không có gì để tập dượt. Trang chỉ khóa một nút.
+
+Dọn dẹp: đã xóa hai khóa học demo
+
+================================================================================
+ĐỌC KỸ
+================================================================================
+
+- **Mục 1 là bài học sư phạm của cả tính năng.** Cùng một đoạn code: chạy thử
+  báo AC 100/100, nộp bài thật báo RE 75/100. Qua hết test mẫu không có nghĩa
+  là qua bài — và đó chính là lý do test ẩn tồn tại. (Ở đây case ẩn cố tình
+  mang input không phải số nên `int()` ném lỗi; một đề thật sẽ là biên, số âm,
+  hay dữ liệu lớn.)
+
+- **Cột `so_case` trong bảng CSDL là bằng chứng ngắn nhất.** Hàng `is_trial=t`
+  có đúng 2 kết quả, hàng `is_trial=f` có 4. Không phải "chạy 4 rồi giấu 2".
+
+- **`stdout_trunc=None` ở hai case ẩn**, đúng như task trước. Trang nộp bài
+  cũng không có chỗ để hiện: component kết quả chỉ vẽ ô input/mong đợi/thực tế
+  cho case **không ẩn**.
+
+- **Lịch sử chỉ có một dòng** dù đã chạy tổng cộng ba lần. Lọc ở tầng service
+  (`Submission.is_trial.is_(False)`), không phải ở giao diện — và index
+  `ix_submissions_user_exercise` cũng đã đổi thành partial `WHERE is_trial =
+  false` để không phải quét qua đống bài tập dượt.
+
+- **Mục 3 tách thời gian chờ, giữ chung hạn mức giờ.** Luồng mà trang dạy người
+  ta làm là "chạy thử rồi nộp"; một thời gian chờ dùng chung sẽ trả lời đúng
+  luồng ấy bằng 429. Nhưng hạn mức 40 lần/giờ thì dùng chung, vì một script
+  đổi qua đổi lại giữa hai route sẽ đi vòng qua nó mà vẫn tốn đúng ngần ấy
+  container.
+
+- **Mục 4: hai mã lỗi cho hai tình huống khác nhau.** `EXERCISE_NOT_READY` là
+  bài tập chưa có test case nào (nộp cũng không được). `NO_SAMPLE_TEST_CASES`
+  là bài tập bình thường, chỉ không có gì để tập dượt — trang khóa đúng một nút
+  thay vì báo lỗi.
+
+================================================================================
+MONACO: TỰ PHỤC VỤ, KHÔNG QUA CDN
+================================================================================
+
+`@monaco-editor/react` mặc định tải editor từ jsdelivr. Nghĩa là trang quan
+trọng nhất của đồ án phụ thuộc vào uptime của người khác và vào mạng của căn
+phòng — đúng vào hôm bảo vệ. `scripts/copy-monaco.mjs` chép bản dựng AMD của
+package vào `public/monaco`, và `loader.config({ paths: { vs: "/monaco/vs" } })`
+trỏ vào đó.
+
+Kiểm chứng bằng danh sách request thật của trình duyệt — 19 file, tất cả từ
+cùng origin, không một request nào ra ngoài:
+
+    http://localhost:3000/monaco/vs/loader.js
+    http://localhost:3000/monaco/vs/editor/editor.main.js
+    http://localhost:3000/monaco/vs/editor-KLE6jdfb.js        (2.3 MB)
+    http://localhost:3000/monaco/vs/python-CqWUUgfu.js
+    http://localhost:3000/monaco/vs/assets/editor.worker-lj3bdIIn.js  (266 KB)
+    ... và 14 file nữa, đều là localhost:3000
+
+Chép chứ không bundle: bản ESM của Monaco cần plugin webpack, mà dự án này
+build bằng Turbopack. Bản AMD thì không cần bundler nào cả — nó là một thư mục
+file sau một thẻ `<script>`. Script chạy ở `predev`/`prebuild` chứ không phải
+`postinstall`, vì image Docker cài dependency ở một layer chỉ có lockfile, nên
+hook postinstall sẽ đi tìm một file chưa tồn tại.
+
+Cái giá: `public/monaco` nặng 24 MB trên đĩa (đã .gitignore). Trình duyệt chỉ
+tải phần nó dùng — bản `ts.worker` 6.8 MB nằm im vì không có model TypeScript
+nào được tạo.
+
+================================================================================
+HAI LỖI GẶP KHI CHẠY THẬT
+================================================================================
+
+1. **Lần chạy thử đầu tiên chấm 4 case thay vì 2.** Không phải lỗi code:
+   worker chấm bài là Celery, và **Celery không tự nạp lại code** dù thư mục
+   nguồn được mount vào container. Nó vẫn đang chạy bản trước khi có `is_trial`.
+   Điều đáng chú ý là triệu chứng: thanh tiến độ hiện "0/2" (API đã có code
+   mới) trong khi worker chạy 4 case — hai nửa bất đồng thì đúng cái tính chất
+   "mẫu số phải mô tả chính lần chạy này" là thứ vỡ trước tiên. Sau
+   `docker compose restart grading-worker`: đúng 2 case.
+
+2. **Playwright gõ vào Monaco bị mất ký tự.** `pressSequentially` gõ
+   `a, b = input().split()` ra `a   inu().li()`. Ban đầu tưởng là lỗi sản phẩm
+   (editor bị React điều khiển). Kiểm lại bằng cách bấm từng phím riêng lẻ thì
+   ký tự vào đủ — đây là giới hạn của công cụ kiểm thử với Monaco 0.56 (dùng
+   EditContext API), không phải lỗi trang. Đã sửa lại chú thích trong code cho
+   đúng sự thật thay vì để lại một khẳng định không có bằng chứng.
+
+   Dù vậy editor vẫn được viết theo kiểu **không chịu điều khiển**
+   (`defaultValue` + handle mệnh lệnh) chứ không phải `value`: Monaco giữ một
+   tài liệu có con trỏ, vùng chọn và ngăn xếp undo, và đẩy state React ngược
+   vào một tài liệu đang sống là cách làm nhảy con trỏ.
+
+================================================================================
+CÒN THIẾU, NÓI THẲNG
+================================================================================
+
+- **Chưa có test tự động cho giao diện.** Vitest/Playwright là Phase 6 theo kế
+  hoạch. Những gì kiểm được không cần trình duyệt thì đã có test backend; phần
+  còn lại của trang này được kiểm bằng tay qua trình duyệt thật, và bằng chứng
+  là hai tấm ảnh kèm theo.
+
+- **Bản nháp lưu ở localStorage của máy đó.** Đổi máy là mất. Lưu lên server
+  sẽ cần một bảng và một chính sách dọn dẹp; chưa đáng ở quy mô này.

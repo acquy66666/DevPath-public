@@ -95,14 +95,18 @@ server {
         set $api_upstream http://backend:8000;
         proxy_pass $api_upstream;
 
-        # Nothing streams yet; Phase 3 sends grading verdicts back live and
-        # this is what a WebSocket upgrade needs when it does.
+        # Used now: /api/v1/submissions/{id}/events is a WebSocket carrying
+        # grading progress. The access token rides in the handshake's
+        # Sec-WebSocket-Protocol header rather than in the query string, so
+        # nothing below writes a live credential into the access log.
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
 
         # A transcode kick-off or a slow query should not turn into a 504
-        # while the browser is still waiting.
+        # while the browser is still waiting. It also has to outlast a quiet
+        # grading socket: that one sends a snapshot every 10 seconds, well
+        # inside this, so an idle watcher is never cut off mid-run.
         proxy_read_timeout 120s;
     }
 

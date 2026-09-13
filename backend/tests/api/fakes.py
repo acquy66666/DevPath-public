@@ -38,3 +38,56 @@ class RefusingStorage(FakeStorage):
 
     def delete_prefix(self, prefix: str) -> None:
         raise RuntimeError("bucket unreachable")
+
+
+class AllowAllRateLimiter:
+    """A limiter that never refuses, and remembers being asked.
+
+    The default for API tests: almost none of them are about rate limiting,
+    and the real limiter would both need Redis and reject the second
+    submission in any test that makes two.
+    """
+
+    def __init__(self) -> None:
+        self.claims: list[tuple[str, int]] = []
+        self.counts: list[tuple[str, int, int]] = []
+
+    async def claim(self, key: str, seconds: int) -> int:
+        self.claims.append((key, seconds))
+        return 0
+
+    async def count(self, key: str, limit: int, window_seconds: int) -> int:
+        self.counts.append((key, limit, window_seconds))
+        return 0
+
+
+class MemoryRateLimiter:
+    """The real rules, in a dictionary, on a clock the test moves itself.
+
+    Same semantics as `RedisRateLimiter` -- a claim held for N seconds, a
+    counter per window -- so a test can prove the endpoint refuses without
+    sleeping through a real cooldown.
+    """
+
+    def __init__(self) -> None:
+        self.held: dict[str, int] = {}
+        self.used: dict[str, int] = {}
+        self.window_ends: dict[str, int] = {}
+        self.now = 0
+
+    async def claim(self, key: str, seconds: int) -> int:
+        until = self.held.get(key, 0)
+        if until > self.now:
+            return until - self.now
+        self.held[key] = self.now + seconds
+        return 0
+
+    async def count(self, key: str, limit: int, window_seconds: int) -> int:
+        if self.window_ends.get(key, 0) <= self.now:
+            self.used[key] = 0
+            self.window_ends[key] = self.now + window_seconds
+
+        self.used[key] += 1
+        if self.used[key] <= limit:
+            return 0
+        return self.window_ends[key] - self.now

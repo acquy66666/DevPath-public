@@ -1,0 +1,144 @@
+==============================================================================
+BAY VERDICT, MOI CAI TU MOT BAI NOP THAT
+==============================================================================
+
+Image        : devpath-sandbox-python:v1
+Gioi han mac dinh : cpu 5s, 0.5 core, 256MB, 64 pids, output 1MB
+Gioi han rut ngan : cpu 1s (dung cho cac ca cham gioi han, de khoi cho lau)
+
+------------------------------------------------------------------------------
+AC   hello.py
+     in dung dap an, thoat 0
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.12s
+       case 1: AC   0.26s  stdout='Xin chao\n'
+
+------------------------------------------------------------------------------
+AC   sloppy_whitespace.py
+     dung dap an nhung thua space/tab cuoi dong, thieu newline cuoi
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.03s
+       case 1: AC   0.26s  stdout='Xin chao \nTam biet\t'
+
+------------------------------------------------------------------------------
+WA   wrong_answer.py
+     chay sach, thoat 0, in sai dap an
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.16s
+       case 1: WA   0.26s  stdout='Tam biet\n'
+
+------------------------------------------------------------------------------
+TLE  burn_cpu.py
+     vong lap vo tan -> gioi han CPU BEN TRONG container bat
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 3.06s
+       case 1: TLE  2.17s  stdout=''
+
+------------------------------------------------------------------------------
+TLE  sleep_forever.py
+     sleep(3600), khong ton CPU -> dong ho tuong BEN NGOAI bat
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 6.95s
+       case 1: TLE  6.12s  stdout='dang cho\n'
+
+------------------------------------------------------------------------------
+MLE  eat_memory.py
+     xin bo nho vuot tran -> nhan giet, doc tu State.OOMKilled
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.64s
+       case 1: MLE  0.56s  stdout=''
+
+------------------------------------------------------------------------------
+RE   crash.py
+     raise ValueError giua chung
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.19s
+       case 1: RE   0.26s  stdout='truoc khi loi\n'
+                stderr='Traceback (most recent call last):\n  File "main.py", line 2, in <module>\n    raise ValueEr...'
+
+------------------------------------------------------------------------------
+RE   right_answer_then_crash.py
+     IN DUNG DAP AN roi moi chet -> van khong phai AC
+     so test case gui vao : 1
+     so case thuc su chay : 1
+     tong thoi gian       : 1.11s
+       case 1: RE   0.25s  stdout='Xin chao\n'
+
+------------------------------------------------------------------------------
+CE   syntax_error.py
+     thieu dau hai cham -> chan o pha compile, khong case nao chay
+     so test case gui vao : 5
+     so case thuc su chay : 0
+     tong thoi gian       : 0.59s
+     message:
+       | File "main.py", line 3
+       |     def main()
+       |               ^
+       | SyntaxError: expected ':'
+
+------------------------------------------------------------------------------
+SE   hello.py
+     image chua tung duoc build -> loi phia he thong, khong do cho hoc vien
+     so test case gui vao : 1
+     so case thuc su chay : 0
+     tong thoi gian       : 0.11s
+     message:
+       | Error response from daemon: No such image: devpath-sandbox-nope:v1
+
+==============================================================================
+DOI CHIEU: VERDICT MONG DOI ↔ VERDICT NHAN DUOC
+==============================================================================
+
+  OK   mong doi AC   nhan AC
+  OK   mong doi AC   nhan AC
+  OK   mong doi WA   nhan WA
+  OK   mong doi TLE  nhan TLE
+  OK   mong doi TLE  nhan TLE
+  OK   mong doi MLE  nhan MLE
+  OK   mong doi RE   nhan RE
+  OK   mong doi RE   nhan RE
+  OK   mong doi CE   nhan CE
+  OK   mong doi SE   nhan SE
+
+  10/10 khop
+
+  Cac letter da tan mat thay he thong sinh ra: AC CE MLE RE SE TLE WA
+  Bo verdict day du: AC WA TLE MLE RE CE SE
+  Con thieu: khong
+
+==============================================================================
+THU TU UU TIEN: CASE HONG DAU TIEN DAT TEN CHO CA BAI NOP
+==============================================================================
+
+  ket qua tung case : ['AC', 'WA', 'AC']
+  verdict ca bai    : WA
+
+  Moi case chay het, khong dung o case hong dau tien: hoc vien can biet
+  'dung 2/3' chu khong phai 'truot'. Va moi case mot container rieng, nen
+  khong gi tu case nay chay sang case kia.
+
+==============================================================================
+BO TEST
+==============================================================================
+
+$ python -m ruff check .
+All checks passed!
+
+$ python -m pytest tests/test_verdict_rules.py -q     (luat thuan, khong Docker)
+...............                                                          [100%]
+15 passed in 0.02s
+
+$ python -m pytest tests/test_verdict_end_to_end.py -q  (container that)
+...............                                                          [100%]
+15 passed in 27.71s
+
+$ python -m pytest -q   (ca bo grader)
+.....                                                                    [100%]
+77 passed in 72.48s (0:01:12)

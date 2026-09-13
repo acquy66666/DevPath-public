@@ -27,7 +27,16 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
-from app.models import Category, Course, CourseSection, Lesson, User, VideoAsset
+from app.models import (
+    Category,
+    CodeExercise,
+    Course,
+    CourseSection,
+    Lesson,
+    TestCase,
+    User,
+    VideoAsset,
+)
 
 # hls.js's own demo stream: a short Big Buck Bunny render with several
 # renditions, so the quality switch in the player has something to switch.
@@ -47,15 +56,41 @@ class InstructorSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class TestCaseSpec:
+    input: str
+    expected_output: str
+    hidden: bool = True
+    weight: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class ExerciseSpec:
+    """A code exercise and the cases that mark it.
+
+    Samples first and visible, hidden cases after them. One list, in the order
+    the student sees, because "case 3 failed" has to mean the third row here.
+    """
+
+    statement_md: str
+    starter_code: str
+    cases: list[TestCaseSpec]
+    time_limit_ms: int = 2000
+    memory_limit_mb: int = 128
+
+
+@dataclass(frozen=True, slots=True)
 class LessonSpec:
     title: str
     duration_s: int = 0
     """Video length in seconds. Zero marks an article, which has no timeline."""
     article: str | None = None
     preview: bool = False
+    exercise: ExerciseSpec | None = None
 
     @property
     def type(self) -> str:
+        if self.exercise is not None:
+            return "code_exercise"
         return "article" if self.article is not None else "video"
 
 
@@ -171,6 +206,45 @@ COURSES = [
                     LessonSpec("Vòng lặp for và range", 498),
                     LessonSpec("Vòng lặp while và điều kiện dừng", 452),
                     LessonSpec("break, continue và vòng lặp lồng nhau", 587),
+                    LessonSpec(
+                        "Bài tập: đếm số chẵn",
+                        exercise=ExerciseSpec(
+                            statement_md=(
+                                "Cho một dãy số nguyên, đếm xem có bao nhiêu số "
+                                "chẵn.\n\n"
+                                "**Đầu vào:** dòng đầu là số nguyên `n` — số lượng "
+                                "phần tử. Dòng thứ hai là `n` số nguyên cách nhau "
+                                "bởi dấu cách.\n\n"
+                                "**Đầu ra:** một số nguyên duy nhất — số lượng số "
+                                "chẵn trong dãy.\n\n"
+                                "**Giới hạn:** `1 ≤ n ≤ 1000`, mỗi số trong khoảng "
+                                "`-10^6` đến `10^6`.\n\n"
+                                "**Ví dụ**\n\n"
+                                "```\n5\n1 2 3 4 6\n```\n\n"
+                                "cho kết quả `3`, vì dãy có ba số chẵn là 2, 4 và 6."
+                            ),
+                            starter_code=(
+                                "n = int(input())\n"
+                                "numbers = list(map(int, input().split()))\n"
+                                "\n"
+                                "# Viết code của bạn ở đây\n"
+                            ),
+                            cases=[
+                                # Two samples: the worked example from the
+                                # statement, and one answering the question every
+                                # beginner has -- what if there are none?
+                                TestCaseSpec("5\n1 2 3 4 6\n", "3\n", hidden=False),
+                                TestCaseSpec("3\n1 3 5\n", "0\n", hidden=False),
+                                # Hidden. One element; all even; negatives, which
+                                # an answer written as `% 2 == 1` gets wrong; and
+                                # zero, which is even and routinely forgotten.
+                                TestCaseSpec("1\n2\n", "1\n"),
+                                TestCaseSpec("4\n2 4 6 8\n", "4\n"),
+                                TestCaseSpec("5\n-2 -3 -4 -5 -6\n", "3\n", weight=2),
+                                TestCaseSpec("3\n0 1 2\n", "2\n", weight=2),
+                            ],
+                        ),
+                    ),
                 ],
             ),
             SectionSpec(
@@ -461,19 +535,50 @@ async def _build_course(
                 await session.flush()
                 video_asset_id = asset.id
 
-            session.add(
-                Lesson(
-                    section_id=section.id,
-                    title=lesson_spec.title,
-                    type=lesson_spec.type,
-                    position=lesson_position,
-                    is_preview=lesson_spec.preview,
-                    video_asset_id=video_asset_id,
-                    article_content=lesson_spec.article,
-                )
+            lesson = Lesson(
+                section_id=section.id,
+                title=lesson_spec.title,
+                type=lesson_spec.type,
+                position=lesson_position,
+                is_preview=lesson_spec.preview,
+                video_asset_id=video_asset_id,
+                article_content=lesson_spec.article,
             )
+            session.add(lesson)
+
+            if lesson_spec.exercise is not None:
+                await session.flush()
+                await _add_exercise(session, lesson, lesson_spec.exercise)
 
     await session.flush()
+
+
+async def _add_exercise(
+    session: AsyncSession, lesson: Lesson, spec: ExerciseSpec
+) -> None:
+    """Attach an exercise and its test cases to a freshly created lesson."""
+    exercise = CodeExercise(
+        lesson_id=lesson.id,
+        statement_md=spec.statement_md,
+        language="python",
+        starter_code=spec.starter_code,
+        time_limit_ms=spec.time_limit_ms,
+        memory_limit_mb=spec.memory_limit_mb,
+    )
+    session.add(exercise)
+    await session.flush()
+
+    for position, case in enumerate(spec.cases):
+        session.add(
+            TestCase(
+                exercise_id=exercise.id,
+                input=case.input,
+                expected_output=case.expected_output,
+                is_hidden=case.hidden,
+                position=position,
+                score_weight=case.weight,
+            )
+        )
 
 
 async def seed_courses(session: AsyncSession) -> tuple[int, int]:

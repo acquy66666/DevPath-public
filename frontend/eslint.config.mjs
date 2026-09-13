@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Monaco's AMD bundle, copied out of node_modules by
+    // scripts/copy-monaco.mjs. It is gitignored, so CI lints a checkout that
+    // does not have it yet -- but on a machine that has run the dev server
+    // once, `npm run lint` reports 25,599 problems in minified third-party
+    // code and none of them are ours.
+    "public/monaco/**",
   ]),
 ]);
 

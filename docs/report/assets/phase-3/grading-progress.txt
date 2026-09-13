@@ -1,0 +1,211 @@
+TIẾN ĐỘ CHẤM BÀI THỜI GIAN THỰC — REDIS PUB/SUB → WEBSOCKET, VÀ ĐƯỜNG LÙI
+Ngày chạy: 12/09/2026 · stack thật: API + Redis + worker chấm + sandbox Docker
+
+Cách kiểm
+---------
+Một bài nộp thật đi qua đúng đường bài nộp thật đi, và socket được mở ở bốn
+thời điểm khác nhau để lấy ra bốn câu trả lời khác nhau:
+
+    trong lúc chấm   -> tiến độ đến từng test case
+    sau khi xong     -> trường hợp pub/sub KHÔNG cứu được
+    bởi người khác   -> 4404
+    khi Redis đã tắt -> tính năng còn hay mất
+
+Bài tập có 4 test case: 2 mẫu, 2 ẩn, trong đó một case ẩn mang chuỗi bí mật
+để quét lại toàn bộ frame ở cuối.
+
+Kiến trúc, gọn trong ba câu
+---------------------------
+1. Worker publish sau mỗi test case lên kênh `grading:events:<submission_id>`.
+2. WebSocket `/api/v1/submissions/{id}/events` subscribe kênh ấy và tiếp sóng.
+3. Nhưng **cơ sở dữ liệu mới là nguồn chân lý**: mỗi socket mở đầu bằng một
+   snapshot đọc từ Postgres, và cứ 10 giây im lặng lại đọc thêm một cái nữa.
+
+Câu thứ ba là câu quan trọng nhất, vì Redis pub/sub **không có bộ nhớ**: gửi
+cho ai đang nghe tại đúng khoảnh khắc đó, không hàng đợi, không phát lại,
+không xác nhận. Không có snapshot thì mọi sự cố nhỏ của kênh đều biến thành
+một trang web quay vòng vĩnh viễn.
+
+Bài tập 207386b4-e679-4b68-822a-055d1b123498 — 4 test case (2 mẫu, 2 ẩn)
+Case ẩn số 2 mang bí mật: input='SECRET-INPUT-051c' đáp án='SECRET-ANSWER-051c'
+
+==============================================================================
+1. MỞ SOCKET TRONG LÚC CHẤM — tiến độ đến từng test case
+==============================================================================
+Đã nộp: c15f6661-61a1-4402-a85a-8915e1a72274  (trạng thái ban đầu: pending)
+  [học viên] đã mở, subprotocol='bearer'
+       109 ms  snapshot  running   0/4  -                           verdict=None
+      2828 ms  progress  running   1/4  case 0 (mẫu) -> AC          verdict=None
+      3922 ms  progress  running   2/4  case 1 (mẫu) -> AC          verdict=None
+      5078 ms  progress  running   3/4  case 2 (ẩn ) -> RE          verdict=None
+      6906 ms  progress  running   4/4  case 3 (ẩn ) -> AC          verdict=None
+      7031 ms  progress  done      4/4  -                           verdict=RE
+      7031 ms  socket đóng: code=1000
+
+==============================================================================
+2. MỞ SOCKET SAU KHI ĐÃ CHẤM XONG — trường hợp pub/sub không cứu được
+==============================================================================
+Không một sự kiện nào còn tồn tại để gửi lại. Snapshot mở đầu trả lời:
+  [học viên, vào muộn] đã mở, subprotocol='bearer'
+        47 ms  snapshot  done      4/4  -                           verdict=RE
+        47 ms  socket đóng: code=1000
+
+==============================================================================
+3. SOCKET CỦA NGƯỜI KHÔNG CÓ QUYỀN
+==============================================================================
+Học viên khác (đã ghi danh, nhưng không phải chủ bài nộp):
+  [người lạ] đã mở, subprotocol='bearer'
+        78 ms  socket đóng: code=4404
+Không đăng nhập (không gửi subprotocol nào):
+  [vô danh] đã mở, subprotocol=None
+        32 ms  socket đóng: code=4401
+
+==============================================================================
+4. ĐƯỜNG DỰ PHÒNG: POLLING REST
+==============================================================================
+GET /submissions/{id} -> 200
+  status=done  verdict=RE  score=75  4/4 case
+  -> cùng bộ số mà socket vừa gửi, nên client mất socket vẫn vẽ được y hệt.
+
+  Kết quả từng case (đường REST, có output của case mẫu):
+    case 0 (mẫu) -> AC   stdout_trunc='3\n'
+    case 1 (mẫu) -> AC   stdout_trunc='30\n'
+    case 2 (ẩn ) -> RE   stdout_trunc=None
+    case 3 (ẩn ) -> AC   stdout_trunc=None
+
+==============================================================================
+5. TẮT HẲN REDIS — kênh realtime biến mất, tính năng thì không
+==============================================================================
+docker compose stop redis ...
+Redis đã dừng. Bây giờ không có kênh nào để subscribe.
+
+a) Socket vẫn mở được, và vẫn trả lời đúng bằng snapshot:
+  [Redis chết] đã mở, subprotocol='bearer'
+      1578 ms  snapshot  done      4/4  -                           verdict=RE
+      1578 ms  socket đóng: code=1000
+
+b) Polling REST vẫn nguyên vẹn: 200 — kết quả nằm ở Postgres,
+   không nằm ở Redis (verdict=RE).
+
+c) Nộp bài mới lúc này: 503 GRADING_UNAVAILABLE
+   Từ chối thẳng thay vì nhận rồi bỏ đó — hàng đợi không nhận được job.
+
+Redis đã bật lại.
+
+==============================================================================
+6. QUÉT MỌI FRAME ĐÃ NHẬN TÌM BÍ MẬT CỦA CASE ẨN
+==============================================================================
+Tổng số frame đã nhận: 8
+  input ẩn     xuất hiện trong 0 frame
+  đáp án ẩn    xuất hiện trong 0 frame
+
+Số lần bí mật đi qua kênh realtime: 0
+(GradingEvent không có trường nào chứa output hay input, nên con số này
+ là tính chất của kiểu dữ liệu, không phải của một câu lệnh lọc.)
+
+Dọn dẹp: xóa khóa học demo -> 204
+
+================================================================================
+ĐỌC KỸ
+================================================================================
+
+- **Bảng ở mục 1 là toàn bộ lý do làm tính năng này.** Bốn mốc 2.8s / 3.9s /
+  5.1s / 6.9s là bốn container khác nhau chạy xong, mỗi test case một
+  container. Không có kênh này thì học viên nhìn một vòng quay 7 giây rồi
+  thấy kết quả nhảy ra; có nó thì họ thấy "test 3/4" và biết mình còn phải
+  đợi bao lâu.
+
+- **Cột `type` mới là chỗ đáng nhìn.** Frame đầu là `snapshot` (đọc từ
+  Postgres), năm frame sau là `progress` (worker publish). Hai nguồn, một
+  hình dạng dữ liệu — client không cần biết cái nào đến từ đâu.
+
+- **Mục 2 là tình huống pub/sub bó tay, và là lý do có snapshot.** Socket mở
+  sau khi chấm xong: mọi sự kiện đã phát ra từ lâu, kênh không giữ lại gì cả.
+  Không mở đầu bằng một lần đọc DB thì client này đợi mãi mãi một thông điệp
+  đã đi qua trước khi nó đến. Ở đây nó có đáp án sau 47 ms.
+
+- **Mục 3: quyền xem socket = quyền đọc bài nộp.** Không có luật riêng cho
+  WebSocket; hàm kiểm tra là đúng hàm mà `GET /submissions/{id}` dùng. Học
+  viên khác nhận 4404 (mã trong dải ứng dụng 4000–4999, để client phân biệt
+  "lấy token mới" với "thôi đừng hỏi nữa"), người chưa đăng nhập nhận 4401.
+
+- **Token đi trong `Sec-WebSocket-Protocol`, không đi trong query string.**
+  Trình duyệt không cho đặt header `Authorization` cho WebSocket, và cách phổ
+  biến nhất — nhét token vào URL — ghi thẳng một chứng danh còn sống vào log
+  của nginx. Client chào `["bearer", "<token>"]`, server nhận với `bearer`
+  (thấy `subprotocol='bearer'` trong từng dòng ở trên).
+
+- **Mục 5 là phép thử thật sự của thiết kế.** Redis bị `docker compose stop`,
+  rồi mở socket: nó vẫn mở được, và vẫn trả lời đúng sau 1.6 giây bằng
+  snapshot. Không có kênh thì socket tự hạ cấp thành một vòng đọc CSDL — tức
+  là polling, chỉ khác là chạy trên WebSocket. Polling REST ở (b) không hề hấn
+  gì vì kết quả nằm ở Postgres. Còn (c) — nộp bài mới lúc này nhận 503 —
+  không phải lỗi mới: đó là quyết định từ task hàng đợi, thà từ chối thẳng
+  còn hơn nhận bài rồi để đó không ai chấm.
+
+- **Mục 6 nối tiếp task trước.** `GradingEvent` không có trường nào chứa
+  output, input hay message. Con số 0 ở đây là tính chất của kiểu dữ liệu,
+  không phải kết quả của một câu lệnh lọc mà ai đó phải nhớ viết.
+
+================================================================================
+MỘT LỖI CHỈ CHẠY THẬT MỚI TÌM RA
+================================================================================
+
+Lần chạy đầu tiên không nhận được frame `progress` nào — chỉ toàn `snapshot`,
+và cái `done` đến ở đúng mốc 10 giây, tức nhịp heartbeat. Log worker:
+
+    grading progress not published for a60f8ed2-...:
+    PubSubCommands.publish() missing 1 required positional argument: 'message'
+
+`_shared_publisher()` trả về **client Redis trần** thay vì bọc nó trong
+`RedisEventPublisher`, nên `publish(event)` gọi nhầm `Redis.publish(channel)`.
+Sáu lần phát đều hỏng — đúng bằng số lần đáng lẽ phải có (1 running + 4 case
++ 1 done).
+
+Hai điều đáng ghi lại:
+
+1. **Toàn bộ unit test vẫn xanh.** Chúng kiểm `RedisEventPublisher` trực tiếp,
+   còn fixture thì thay luôn `get_publisher` — không test nào chạm vào đoạn
+   dây nối giữa hai thứ đó. Đã thêm một test đúng vào chỗ ấy
+   (`test_the_shared_publisher_is_the_adapter_and_not_a_bare_client`).
+
+2. **Học viên vẫn nhận được kết quả đúng, chỉ chậm 10 giây.** Đó chính là
+   thiết kế tự chứng minh: kênh realtime hỏng hoàn toàn mà tính năng không
+   hỏng. Nhưng nó cũng cho thấy một kênh hỏng im lặng thì rất khó phát hiện —
+   nên `publish_event` ghi log WARNING mỗi lần thất bại, và chính dòng log ấy
+   là thứ chỉ ra lỗi.
+
+================================================================================
+HAI CHI TIẾT ĐÃ SỬA SAU KHI ĐO
+================================================================================
+
+- **Frame `pending` bị lặp lúc mở socket.** Redis trả về một gói xác nhận cho
+  lệnh subscribe; `get_message(ignore_subscribe_messages=True)` trả None cho
+  gói ấy, không phân biệt được với "hết giờ chờ", nên vòng lặp tưởng là im
+  lặng và đọc CSDL thêm một lần. Đã đọc bỏ gói xác nhận ngay lúc subscribe:
+  mất một round trip khi mở, đổi lấy một truy vấn thừa trên mỗi kết nối.
+
+- **Socket lúc Redis chết mất 4 giây mới có frame đầu.** Đó là redis-py tự
+  thử lại kết nối. Đã chặn trần toàn bộ thao tác subscribe bằng
+  `asyncio.wait_for(..., 1.5s)`: 4062 ms → 1578 ms. Chờ lâu hơn không đổi
+  được gì, vì snapshot đã sẵn sàng để gửi ngay từ đầu.
+
+================================================================================
+GIỚI HẠN ĐÃ BIẾT
+================================================================================
+
+- **Mỗi socket giữ một kết nối Redis.** Với quy mô khóa luận (vài chục người
+  xem cùng lúc) là chấp nhận được. Cách mở rộng đúng là một subscriber dùng
+  chung cho cả tiến trình rồi phân phát trong bộ nhớ — chưa làm, vì nó chỉ
+  đáng làm khi có số đo nói rằng cần.
+
+- **Socket không giữ session CSDL.** Mỗi snapshot mở một session, đọc, trả
+  lại ngay. Nếu giữ, 30 tab đang mở là 30 kết nối bị ghim khỏi pool.
+
+- **Trần 5 phút cho một socket.** Một worker chết giữa chừng để lại dòng
+  `running` mãi mãi; không có trần thì một tab bị quên sẽ giữ kết nối vô hạn.
+
+- **Server chưa chủ động phát hiện client ngắt.** Vòng lặp chỉ biết khi lần
+  gửi kế tiếp thất bại, chậm nhất là sau một nhịp heartbeat (10 giây), và
+  trần 5 phút chặn trường hợp xấu nhất. Đủ ở quy mô này, và được ghi ra đây
+  thay vì để ngầm.

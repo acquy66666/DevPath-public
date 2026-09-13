@@ -1,0 +1,114 @@
+TOÀN BỘ TEST VERDICT + TEST BẢO MẬT XANH TRONG CI
+Ngày: 13/09/2026 · mục thứ hai của gate cuối Phase 3
+
+Lần chạy xanh: https://github.com/acquy66666/DevPath/actions/runs/34753790965
+Pull request : https://github.com/acquy66666/DevPath/pull/25 (nhánh
+               feature/grading-runner → main, 20 commit của cả Phase 3)
+
+==============================================================================
+1. KẾT QUẢ
+==============================================================================
+
+  Job                                                trạng thái   thời gian
+  ------------------------------------------------------------------------
+  Backend — lint & test                              pass         5m41s
+  Grader — sandbox image                             pass         1m06s
+  Frontend — lint & build                            pass         1m15s
+  Migrations & seed on an empty database             pass         44s
+  Deploy config — compose, nginx, production images  pass         1m36s
+
+Số test chạy thật, đọc từ log:
+
+  backend   610 passed, 2 skipped in 290.45s     (2 skip: cần ffmpeg)
+  grader     89 passed in 56.62s
+  ruff       All checks passed (backend + grader)
+
+89 test của grader gồm đúng những gì gate đòi:
+
+  test_verdict_rules.py        18   luật xếp verdict, thứ tự ưu tiên
+  test_verdict_end_to_end.py   15   mỗi chữ trong AC/WA/TLE/MLE/RE/CE/SE
+                                    sinh từ một bài nộp chạy thật
+  test_sandbox_attacks.py       7   mạng, đọc file ngoài mount, ghi rootfs,
+                                    fork bomb, leo thang đặc quyền, giết
+                                    container, làm đầy đĩa
+  test_runner_core.py          19   giới hạn tài nguyên, hai lớp timeout
+  test_output_comparison.py    18   chuẩn hóa khoảng trắng, cắt output
+  test_python_image.py         12   image sandbox
+
+Job grader không cho phép bỏ qua test bảo mật: `CI` luôn được đặt trên
+GitHub, và bộ test biến "không có Docker daemon" thành lỗi thay vì thành
+skip. Một test sandbox bị bỏ qua âm thầm còn tệ hơn một test đỏ.
+
+==============================================================================
+2. HAI LỖI CHỈ CI MỚI TÌM RA — LÝ DO MỤC GATE NÀY TỒN TẠI
+==============================================================================
+
+Trước khi mở PR, cả ba bộ đều xanh trên máy dev: backend 610 passed, grader
+89 passed, eslint sạch. CI vẫn đỏ ngay lần chạy đầu, ở hai chỗ khác nhau.
+Đây là phần đáng viết vào báo cáo nhất của mục này.
+
+--- Lỗi 1: test seed mượn dữ liệu của máy dev ------------------------------
+
+  FAILED tests/test_seed_data.py::test_the_seed_really_writes_the_code_exercise_and_its_cases
+  RuntimeError: Category 'python' does not exist: CATEGORY_TREE in
+  scripts/seed.py and COURSES here have drifted apart.
+
+`seed_courses()` tra cứu danh mục chứ không tạo — `main()` trong
+scripts/seed.py chạy `seed_categories()` trước. Test gọi thẳng
+`seed_courses()` và bỏ qua bước đó, nhưng vẫn xanh trên mọi máy đã từng chạy
+seed một lần, vì hàng danh mục đã nằm sẵn trong CSDL. CSDL của CI trống nên
+lộ ra ngay.
+
+Tái hiện tại chỗ để chắc chắn, không đoán: tạo CSDL rỗng `devpath_citest`,
+`alembic upgrade head`, chạy lại bộ test seed → hỏng y hệt. Thêm
+`seed_categories(db_session)` trước `seed_courses` → 18 passed trên CSDL
+trống, và vẫn 18 passed trên CSDL dev đã seed.
+
+Bài học chung: một test dùng CSDL thật chỉ chứng minh được điều nó tự dựng
+lấy tiền đề. Phần tiền đề đi mượn là phần không được kiểm.
+
+--- Lỗi 2: test bảo mật khẳng định cơ chế thay vì tính chất -----------------
+
+  FAILED tests/test_sandbox_attacks.py::test_nothing_outside_the_mount_can_be_read
+  assert "MASKED   /proc/kcore" in report
+
+Cùng một bài tấn công, hai máy trả lời khác nhau:
+
+  máy dev (Docker Desktop)  MASKED   /proc/kcore  replaced by /dev/null
+  runner GitHub             BLOCKED  /proc/kcore  PermissionError
+
+Trên máy dev, daemon che `/proc/kcore` bằng bind mount `/dev/null` — lớp này
+chặn được cả root. Trên runner, file vẫn nằm đó và quyền 0400 gặp user không
+đặc quyền nên từ chối thẳng — lớp này chặn được vì sandbox đã bỏ root. Hai
+lớp độc lập, không lớp nào do mình cấu hình, cả hai đều là từ chối thật.
+
+Quan trọng: `assert "ESCAPED" not in report` **qua ở cả hai máy** ngay từ lần
+chạy đỏ đầu tiên. Không có gì thoát sandbox; thứ sai là kỳ vọng của test.
+
+Test đã sửa để khẳng định **sự từ chối** thay vì **cơ chế từ chối**, và vẫn
+đỏ trong hai trường hợp phải đỏ: báo cáo có `ESCAPED` ở dòng kcore, hoặc báo
+cáo mất hẳn dòng kcore. Kiểm cả hai nhánh trước khi đẩy — nhánh MASKED bằng
+lần chạy thật ở máy, nhánh PermissionError bằng chính chuỗi báo cáo CI in ra.
+
+Điều này sửa lại một câu trong attack-tests.txt và README: "Docker che
+/proc" **không** phải tính chất chung của mọi máy chạy Docker. Câu đúng ở
+mọi máy đã thử là: đọc bộ nhớ kernel bị từ chối, và có ít nhất hai cơ chế
+độc lập cùng làm việc đó.
+
+--- Một sửa nữa đi kèm, không do CI bắt ------------------------------------
+
+`npm run lint` trên máy đã từng chạy dev server báo 25 599 vấn đề, toàn bộ
+nằm trong `frontend/public/monaco` — bộ Monaco mà copy-monaco.mjs chép từ
+node_modules ra. CI không thấy vì thư mục đó bị gitignore và bước lint chạy
+trước bước build sinh ra nó. Thêm `public/monaco/**` vào globalIgnores để
+lint ở máy nói đúng thứ CI nói.
+
+==============================================================================
+3. CÒN THIẾU, NÓI THẲNG
+==============================================================================
+- CI chạy trên đúng một loại máy chủ (ubuntu-latest của GitHub) và máy dev
+  chạy Docker Desktop trên WSL2. Hai điểm dữ liệu đủ để phát hiện lớp phòng
+  thủ nào phụ thuộc máy chủ, chưa đủ để nói đã phủ hết mọi cấu hình. VPS ở
+  Phase 6 là điểm thứ ba, và bộ test tấn công cần được chạy lại ở đó.
+- Hai test backend bị skip vì thiếu ffmpeg trên image test; chúng là test
+  transcode video, không thuộc phạm vi Phase 3.

@@ -1,0 +1,183 @@
+DEMO GATE PHASE 3: TẠO BÀI TẬP → NỘP SAI → THẤY WA REALTIME → SỬA → AC
+Ngày chạy: 13/09/2026 · stack thật: Next dev + FastAPI + PostgreSQL + Redis
++ worker chấm riêng + sandbox Docker (devpath-sandbox-python:v1)
+
+Đây là mục đầu tiên của gate cuối Phase 3. Toàn bộ đường đi dưới đây đi bằng
+trình duyệt trên giao diện thật, không gọi API tay, không sửa CSDL tay. Mỗi mốc
+thời gian trong tài liệu đọc từ DOM của trang lúc đang chấm, 100 ms một lần,
+giữ lại những khung khác nhau.
+
+Ảnh kèm theo
+------------
+  demo-gate-1-tao-bai-tap.png   trình soạn bài tập của giảng viên: đề bài, code
+                                mở đầu, giới hạn, 8 test case (2 mẫu, 6 ẩn)
+  demo-gate-2-dang-cham.png     "Đang chấm test 3/8" — test 1, 2 đã xanh kèm
+                                thời gian, test 3 đang quay, 4–8 viền đứt chờ
+  demo-gate-3-wa-realtime.png   test 3, 5, 7 (đều ẩn) đã đỏ "Sai kết quả" trong
+                                khi test 8 còn đang chạy, chưa có verdict tổng.
+                                Đây là ảnh trả lời đúng chữ "thấy WA realtime"
+                                mà gate yêu cầu
+  demo-gate-4-wa-ket-qua.png    kết quả cuối của bài nộp sai: 62/100, test mẫu
+                                có input/mong đợi/thực tế, test ẩn chỉ có verdict
+  demo-gate-5-ac.png            sau khi sửa: Đúng 100/100, cả 8 test xanh
+  demo-gate-6-lich-su.png       lịch sử nộp bài: sai → đúng, giữ đủ mốc giờ
+
+==============================================================================
+1. BÀI TẬP DỰNG CHO DEMO, VÀ VÌ SAO CHỌN BÀI NÀY
+==============================================================================
+Khóa "Luyện thuật toán với Python" (tạo mới trong phiên này, miễn phí, đã xuất
+bản) · chương "Mảng và vòng lặp" · bài học "Số lớn nhất trong dãy".
+
+Đề: dòng 1 là n, dòng 2 là n số nguyên trong khoảng -1000..1000, in ra số lớn
+nhất. Giới hạn 2000 ms · 256 MB. Tám test case, trọng số bằng nhau:
+
+  # 1  mẫu  "5 / 3 9 2 7 5"         → 9
+  # 2  mẫu  "1 / 42"                → 42
+  # 3  ẩn   "4 / -3 -9 -2 -7"       → -2      <- bẫy
+  # 4  ẩn   "6 / 10 10 10 10 10 10" → 10
+  # 5  ẩn   "3 / -100 -50 -75"      → -50     <- bẫy
+  # 6  ẩn   "5 / 0 -1 -2 -3 -4"     → 0
+  # 7  ẩn   "2 / -7 -7"             → -7      <- bẫy
+  # 8  ẩn   "7 / 1 -2 3 -4 5 -6 7"  → 7
+
+Bài này được chọn vì lỗi sai của nó là lỗi thật của người mới học, không phải
+lỗi dựng lên cho có: khởi tạo `best = 0` rồi so sánh dần. Code đó qua sạch cả
+hai test mẫu — nghĩa là học viên bấm "Chạy thử" thấy xanh hết và tưởng xong —
+rồi mới gãy ở ba test ẩn toàn số âm. Đúng tình huống mà test ẩn sinh ra để bắt.
+
+==============================================================================
+2. BÀI NỘP SAI: WA ĐẾN TỪNG DÒNG, TRƯỚC VERDICT TỔNG 2,1 GIÂY
+==============================================================================
+Code nộp (sai):
+
+    best = 0
+    for x in nums:
+        if x > best:
+            best = x
+
+Mốc tính từ khung đầu tiên có ô "Kết quả", tức ngay sau khi API nhận bài:
+
+  [    0 ms] Đang chờ tới lượt chấm…
+  [   96 ms] 8 dòng test hiện ra, tất cả "Chờ"
+  [  202 ms] Đang chấm test 1/8 | Test 1 Đang chấm…
+  [ 1504 ms] Đang chấm test 2/8 | Test 1 265 ms Đúng
+  [ 1899 ms] Đang chấm test 3/8 | Test 2 215 ms Đúng
+  [ 2294 ms] Đang chấm test 4/8 | Test 3 Ẩn 216 ms Sai kết quả   <-- SAI Ở ĐÂY
+  [ 2696 ms] Đang chấm test 5/8 | Test 4 Ẩn 267 ms Đúng
+  [ 3098 ms] Đang chấm test 6/8 | Test 5 Ẩn 265 ms Sai kết quả
+  [ 3496 ms] Đang chấm test 7/8 | Test 6 Ẩn 215 ms Đúng
+  [ 4002 ms] Đang chấm test 8/8 | Test 7 Ẩn 265 ms Sai kết quả
+  [ 4406 ms] Sai kết quả | Điểm: 62/100
+  [ 4498 ms] bảng chi tiết đầy đủ, chậm nhất 267 ms
+
+Hai con số đáng nói:
+
+- Chờ hàng đợi 0,2 giây. Từ lúc API nhận bài tới lúc worker chạy test đầu tiên
+  là 202 ms, trên máy rỗng. Số này khớp với nửa "chờ hàng đợi" trong
+  benchmark.md, nơi đo đúng thứ đó lúc 10 người nộp cùng lúc.
+
+- Biết mình sai ở giây 2,3; verdict tổng tới ở giây 4,4. Khoảng cách 2,1 giây
+  này là toàn bộ lý do làm realtime per-test. Bài 8 case chạy 4 giây thì 2 giây
+  là ít; bài 30 case chạy 30 giây thì nó thành hàng chục giây học viên ngồi
+  nhìn thanh tiến độ mà không biết gì đang xảy ra.
+
+Điểm 62/100: 5 trên 8 case đúng, trọng số bằng nhau, 5/8 = 62,5 làm tròn xuống.
+
+==============================================================================
+3. SỬA, CHẠY THỬ, RỒI NỘP LẠI: AC 100/100
+==============================================================================
+Sửa đúng một dòng — lấy phần tử đầu làm mốc thay vì số 0:
+
+    best = nums[0]
+
+Bấm "Chạy thử" trước: 100/100 trên test mẫu, kèm dòng "Chạy thử — không tính
+vào lịch sử". Trong CSDL bản chạy thử nằm ở `submissions.is_trial = true` và
+danh sách lịch sử lọc nó ra, nên nó không chen vào bảng thành tích.
+
+Nộp chính thức:
+
+  [    0 ms] Đang chờ tới lượt chấm…
+  [  109 ms] Đang chấm test 1/8
+  [ 1002 ms] Đang chấm test 2/8 | Test 1 215 ms Đúng
+  [ 1509 ms] Đang chấm test 3/8 | Test 2 265 ms Đúng
+  [ 2006 ms] Đang chấm test 4/8 | Test 3 Ẩn 315 ms Đúng
+  [ 2405 ms] Đang chấm test 5/8 | Test 4 Ẩn 265 ms Đúng
+  [ 2803 ms] Đang chấm test 6/8 | Test 5 Ẩn 215 ms Đúng
+  [ 3204 ms] Đang chấm test 7/8 | Test 6 Ẩn 266 ms Đúng
+  [ 3706 ms] Đang chấm test 8/8 | Test 7 Ẩn 265 ms Đúng
+  [ 4113 ms] Đúng | Điểm: 100/100 | chậm nhất 315 ms
+
+Cả lần chấm 8 test mất 4,1 giây, trung bình 0,26 giây một test — gần như toàn
+bộ là chi phí dựng container, vì bài giải chỉ duyệt vài chục số.
+
+==============================================================================
+4. TEST ẨN KHÔNG RỜI MÁY CHỦ — KIỂM Ở TẦNG API, KHÔNG CHỈ Ở GIAO DIỆN
+==============================================================================
+Giao diện không hiện input/đáp án của test ẩn thì chưa nói lên được gì: câu hỏi
+thật là API có trả về hay không. Gọi thẳng endpoint kết quả bằng token của học
+viên, với chính bài nộp sai:
+
+  GET /api/v1/submissions/999e9102-4734-4844-b1b6-78375a1dfc22
+
+  case 0 hidden=False AC  → trường có dữ liệu: stdout_trunc, test_case_id
+  case 1 hidden=False AC  → trường có dữ liệu: stdout_trunc, test_case_id
+  case 2 hidden=True  WA  → trường có dữ liệu: test_case_id
+  case 3 hidden=True  AC  → trường có dữ liệu: test_case_id
+  case 4 hidden=True  WA  → trường có dữ liệu: test_case_id
+  case 5 hidden=True  AC  → trường có dữ liệu: test_case_id
+  case 6 hidden=True  WA  → trường có dữ liệu: test_case_id
+  case 7 hidden=True  AC  → trường có dữ liệu: test_case_id
+
+Case ẩn về tay học viên chỉ còn: vị trí, cờ ẩn, verdict, thời gian chạy. Không
+stdin, không đáp án mong đợi, không cả stdout mà chương trình đã in ra — kể cả
+khi case đó sai, tức đúng lúc học viên muốn biết nhất. Đây là bất biến số 9
+trong skill `sandbox-grading`; bảng đối chứng đầy đủ nằm ở hidden-tests.txt.
+
+==============================================================================
+5. GIẢI ĐƯỢC BÀI THÌ BÀI HỌC TỰ XONG
+==============================================================================
+Không bấm "Đánh dấu hoàn thành" lần nào trong cả phiên demo. Trong CSDL:
+
+  bài nộp AC                   : 08:34:00 UTC (15:34:00 giờ máy)
+  lesson_progress.completed_at : 08:34:04 UTC
+
+Bốn giây sau verdict, và thanh tiến độ khóa học nhảy 0/1 → 1/1 (100%). Tức việc
+đánh dấu hoàn thành đến từ verdict AC chứ không từ cú bấm nào của người dùng —
+tính năng của commit e1831a6.
+
+==============================================================================
+6. BA BÀI NỘP CHẬM TRONG LỊCH SỬ LÀ ĐỂ CHỤP ẢNH — NÓI THẲNG
+==============================================================================
+Lịch sử của tài khoản demo có 6 bài nộp chứ không phải 2. Hai bài làm nên câu
+chuyện ở mục 2 và 3 (WA 62/100 lúc 15:32:49, AC 100/100 lúc 15:34:00); bài cuối
+cùng là nộp lại bản đúng để hệ thống dừng ở trạng thái AC. Ba bài còn lại
+(15:36:06, 15:36:49, 15:37:39) là cùng lời giải sai đó cộng thêm một vòng lặp 6
+triệu bước cho chậm lại, chỉ nhằm chụp được ảnh 2 và 3.
+
+Lý do phải làm vậy: ở tốc độ thật mỗi test 0,26 giây, cả lần chấm 4,4 giây,
+trong khi một lượt chụp màn hình qua công cụ điều khiển trình duyệt mất lâu hơn
+thế — hai lần đầu bấm máy đều rơi vào lúc đã chấm xong. Kéo lên 1,2 giây/test
+thì cửa sổ "đang chấm" rộng khoảng 10 giây, đủ để bấm.
+
+Vậy nên số đọc được trên hai ảnh đó (1068 ms, 1219 ms…) là thời gian của bản cố
+tình chậm, không phải tốc độ thật của hệ thống. Tốc độ thật nằm ở hai bảng mốc
+thời gian mục 2 và 3, và ở benchmark.md. Verdict của ba bài chậm vẫn là WA
+62/100 y hệt bản thường — vòng lặp thêm vào không đổi kết quả, chỉ đổi thời gian.
+
+==============================================================================
+CÒN THIẾU, NÓI THẲNG
+==============================================================================
+- Code được đặt vào ô soạn thảo bằng API của Monaco chứ không gõ từng phím, để
+  khỏi bị tính năng tự thụt dòng của editor làm hỏng thụt lề Python. Mọi bước
+  sau đó — bấm Chạy thử, bấm Nộp bài, nhận kết quả — là đường đi thật của trang.
+
+- Khóa học dùng cho demo là khóa mới tạo trong phiên, không phải khóa seed. Bốn
+  khóa seed hiện thuộc hai tài khoản @devpath.local mà bây giờ không đăng nhập
+  được nữa: email-validator từ chối domain `.local`, nên seed đã đổi sang
+  @devpath.example và những khóa cũ ở lại với chủ cũ. Đây là lệch dữ liệu của
+  máy dev, không phải lỗi code, nhưng cần dọn trước buổi bảo vệ — hoặc trỏ lại
+  chủ sở hữu, hoặc dựng lại CSDL rồi seed từ đầu.
+
+- Chưa có test tự động cho đường đi này (Playwright là việc của Phase 6). Bằng
+  chứng ở đây là hai bảng mốc thời gian đọc từ DOM, sáu ảnh chụp, và các truy
+  vấn CSDL kèm theo.

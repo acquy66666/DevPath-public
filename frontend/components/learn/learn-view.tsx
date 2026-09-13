@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef } from "react";
 
+import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
 import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
 import {
@@ -231,6 +232,22 @@ export function LearnView({
                     </AlertDescription>
                   </Alert>
                 )
+              ) : lesson.data.type === "code_exercise" ? (
+                <ExerciseWorkspace
+                  // Keyed by lesson: moving to another exercise must start a
+                  // fresh editor rather than carry the previous answer over.
+                  key={lesson.data.id}
+                  lessonId={lesson.data.id}
+                  accessToken={accessToken as string}
+                  // Solving it finishes the lesson, and the worker wrote that
+                  // down in the same transaction as the verdict. The page only
+                  // has to go and look: the tick, the "x/y bài" counter and the
+                  // course card all read from these two.
+                  onSolved={() => {
+                    queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
+                    queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+                  }}
+                />
               ) : (
                 <article className="whitespace-pre-line text-pretty">
                   {lesson.data.article_content ?? "Bài học này chưa có nội dung."}

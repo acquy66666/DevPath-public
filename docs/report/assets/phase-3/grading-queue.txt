@@ -1,0 +1,145 @@
+HÀNG ĐỢI CHẤM BÀI — CELERY + WORKER GỌI RUNNER
+Ngày chạy: 12/09/2026 · máy dev (Windows + Docker Desktop / WSL2), stack infra/docker-compose.yml
+
+Chứng minh điều gì
+------------------
+1. Học viên nộp bài qua API → job vào hàng đợi riêng "grading" → worker chấm
+   trong sandbox → verdict, điểm và kết quả từng test case quay lại API.
+2. Sáu loại verdict đi hết đường thật (SE có bằng chứng riêng ở cuối file).
+3. Test case ẩn: có verdict, không có output. Cột stdout_trunc để NULL.
+4. Retry + dead letter hoạt động — và bằng chứng là một sự cố thật, không dàn dựng.
+
+Cấu hình đang chạy
+------------------
+- Hai hàng đợi, hai worker: "grading" (2 luồng) và "media,celery" (transcode).
+  Chung một hàng đợi thì một bài giảng đang chuyển mã sẽ chặn mọi bài nộp.
+- Concurrency 2: mỗi bài chấm giữ một container 0.5 CPU / 256 MB, nên 2 là trần
+  của máy 2 vCPU, chừa chỗ cho Postgres, Redis và API.
+- acks_late + reject_on_worker_lost: worker bị OOM killer giết không phải là
+  exception, không có cờ thứ hai thì job biến mất cùng nó.
+- Chỉ container grading-worker chạm được Docker daemon. Nó không phục vụ HTTP,
+  không nhận request từ ngoài, và không bao giờ tự chạy code người nộp.
+
+================================================================================
+TRẠNG THÁI STACK VÀ WORKER
+================================================================================
+
+$ docker compose -f infra/docker-compose.yml ps
+backend	Up 51 minutes (healthy)
+frontend	Up 43 minutes (healthy)
+grading-worker	Up 5 minutes (healthy)
+postgres	Up 51 minutes (healthy)
+redis	Up 51 minutes (healthy)
+worker	Up 9 minutes (healthy)
+
+$ docker compose logs grading-worker | head -30   (lúc khởi động)
+/usr/local/lib/python3.12/site-packages/celery/platforms.py:841: SecurityWarning: You're running the worker with superuser privileges: this is
+absolutely not recommended!
+
+Please specify a different user using the --uid option.
+
+User information: uid=0 euid=0 gid=0 egid=0
+
+  warnings.warn(SecurityWarning(ROOT_DISCOURAGED.format(
+ 
+ -------------- celery@34e31f4f6ea8 v5.6.3 (recovery)
+--- ***** ----- 
+-- ******* ---- Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.41 2026-09-11 17:26:56
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         devpath:0x7caa052aeae0
+- ** ---------- .> transport:   redis://redis:6379/0
+- ** ---------- .> results:     redis://redis:6379/0
+- *** --- * --- .> concurrency: 2 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> grading          exchange=grading(direct) key=grading
+                
+
+[tasks]
+  . app.workers.celery_app.ping
+  . app.workers.grading.grade_submission
+  . app.workers.video.transcode_video
+
+[2026-09-11 17:26:56,986: INFO/MainProcess] Connected to redis://redis:6379/0
+
+================================================================================
+NỘP BÀI THẬT QUA API — 6 CHƯƠNG TRÌNH, 6 VERDICT
+================================================================================
+
+Exercise beabdea5-d8f9-4b31-a129-ee39012df41d — 2 test case (1 mẫu, 1 ẩn), 2000 ms / 64 MB
+
+Mong đợi  Nhận được  Trạng thái   Điểm     ms  hàng đợi (s)
+------------------------------------------------------------------------
+AC        AC         done          100    420  3.3
+WA        WA         done            0    424  3.2
+TLE       TLE        done            0   4288  13.4
+RE        RE         done            0    419  13.4
+CE        CE         done            0   None  13.4
+MLE       MLE        done            0    920  13.4
+
+CE message: File "main.py", line 1
+
+Kết quả từng test case (bài AC và bài WA):
+  AC: case 0 (mẫu) -> AC, 420 ms, stdout='3\n'
+  AC: case 1 (ẩn) -> AC, 420 ms, stdout=None
+  WA: case 0 (mẫu) -> WA, 424 ms, stdout='0\n'
+  WA: case 1 (ẩn) -> WA, 368 ms, stdout=None
+
+Dọn dẹp: xóa khóa học demo -> 204
+
+Khớp mong đợi: tất cả
+
+================================================================================
+SỰ CỐ THẬT Ở LẦN CHẠY ĐẦU — VÀ ĐƯỜNG DEAD LETTER
+================================================================================
+
+Lần chạy đầu tiên, cả 6 bài nộp đều hỏng. Đây là bằng chứng giá trị nhất trong
+file này, vì nó là lỗi chỉ lộ ra khi chạy thật, và vì nó cho thấy đường xử lý
+thất bại hoạt động đúng như thiết kế.
+
+Nguyên nhân: runner tạo thư mục tạm BÊN TRONG container worker
+(/tmp/devpath-grading-xxx/code), rồi bảo Docker daemon bind-mount đường dẫn đó.
+Daemon phân giải đường dẫn trên HOST, nơi thư mục ấy không tồn tại:
+
+  Error response from daemon: invalid mount config for type "bind":
+  bind source path does not exist: /tmp/devpath-grading-n_72y1m0/code
+
+Đây là lỗi phía hệ thống, và hệ thống đã xử lý đúng như đã thiết kế:
+
+  17:24:33 WARNING grading failed for submission 0e46...c8ca (attempt 1): ...
+  17:25:03 WARNING grading failed for submission 0e46...c8ca (attempt 2): ...
+  17:25:33 WARNING grading failed for submission 0e46...c8ca (attempt 3): ...
+  17:25:33 ERROR   giving up on submission 0e46...c8ca: Error response from daemon: ...
+
+- Ba lần thử, giãn cách 15s rồi 30s (backoff nhân đôi).
+- Không bài nào bị gán verdict. Không có dòng SubmissionResult nào được ghi.
+- Sau lần cuối, hàng được "đỗ" lại: status = error, verdict = NULL, message là
+  câu tiếng Việt cho học viên — KHÔNG phải câu lỗi của Docker.
+- Câu lỗi kỹ thuật chỉ nằm trong log worker. Học viên đọc "Hệ thống chấm bài
+  đang gặp sự cố", không phải "bind source path does not exist".
+
+Đây chính là điều bất biến "lỗi của mình không đổ lên đầu học viên" được kiểm
+chứng bằng một sự cố có thật, chứ không bằng một test giả lập.
+
+Cách sửa: runner nhận biến môi trường DEVPATH_GRADING_WORKSPACE. Worker
+bind-mount /var/lib/devpath-grading vào đúng đường dẫn đó bên trong nó, nên thư
+mục chứa bài nộp tồn tại ở cả hai phía dưới cùng một tên. Chạy test trên máy
+trực tiếp thì biến này không đặt và mọi thứ giữ nguyên như cũ.
+
+================================================================================
+GHI CHÚ ĐỌC KỸ
+================================================================================
+
+- Bài TLE mất 4.3 giây: giới hạn 2000 ms CPU thành 2 giây RLIMIT_CPU, cộng thời
+  gian khởi động container cho cả hai test case. Đồng hồ tường ngoài đặt ở
+  (2+1)/0.5 + 3 = 9 giây nên lớp trong bắn trước — đúng thứ tự mong muốn.
+- Bài CE không có run_time_ms: nó chưa bao giờ chạy. Thông điệp trình biên dịch
+  ('File "main.py", line 1') nói về file của học viên, không nói về mount của
+  chúng ta.
+- Cột "hàng đợi (s)" là thời gian từ lúc POST tới lúc API trả verdict, đo từ
+  phía client. Hai bài đầu 3.2s vì có 2 luồng rỗi; bốn bài sau xếp hàng.
+- Worker dev chạy bằng root (Celery cảnh báo ở log trên) vì socket của Docker
+  Desktop thuộc root. Image production chạy uid 10001 và vào nhóm docker của
+  host bằng group_add — xem docker-compose.prod.yml.

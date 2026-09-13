@@ -45,19 +45,28 @@ class PermissionDeniedError(DomainError):
     code = "PERMISSION_DENIED"
 
 
-def _error(status_code: int, code: str, message: str) -> JSONResponse:
+def _error(status_code: int, code: str, message: str, **extra) -> JSONResponse:
     return JSONResponse(
         status_code=status_code,
-        content={"detail": {"code": code, "message": message}},
+        content={"detail": {"code": code, "message": message, **extra}},
     )
 
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def handle_domain_error(_: Request, exc: DomainError) -> JSONResponse:
-        response = _error(exc.status_code, exc.code, exc.message)
+        # A rate limit that does not say when to come back is a rate limit the
+        # client can only answer by guessing -- which is another request.
+        retry_after = getattr(exc, "retry_after", None)
+        extra = {"retry_after": retry_after} if retry_after else {}
+
+        response = _error(exc.status_code, exc.code, exc.message, **extra)
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:
             response.headers["WWW-Authenticate"] = "Bearer"
+        if retry_after:
+            # The header is what a browser, a proxy or curl already knows how
+            # to read; the body field is for the page that draws a countdown.
+            response.headers["Retry-After"] = str(retry_after)
         return response
 
     @app.exception_handler(StarletteHTTPException)

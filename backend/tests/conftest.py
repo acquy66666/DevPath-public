@@ -10,6 +10,29 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.main import create_app
+from app.services import grading_events
+from app.services.rate_limit import get_rate_limiter
+from tests.api.fakes import AllowAllRateLimiter
+
+
+@pytest.fixture(autouse=True)
+def silent_grading_channel(monkeypatch: pytest.MonkeyPatch) -> list:
+    """Grading progress is announced to nobody unless a test asks for it.
+
+    The worker publishes to Redis as it grades. Without this, every test that
+    runs `run_grading` would open a connection to a real Redis -- reaching
+    infrastructure that no test here is about, and on a developer machine that
+    has one, publishing to live channels about rows this transaction is going
+    to roll back. Returns the list it collected, for a test that wants to look.
+    """
+    published: list = []
+
+    class Collector:
+        def publish(self, event) -> None:
+            published.append(event)
+
+    monkeypatch.setattr(grading_events, "get_publisher", Collector)
+    return published
 
 
 @pytest.fixture
@@ -90,6 +113,10 @@ async def api_client(
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    # No Redis in an API test, and no cooldown either: a test that submits
+    # twice is testing something else. The tests that *are* about the limit
+    # override this again with one that counts.
+    app.dependency_overrides[get_rate_limiter] = AllowAllRateLimiter
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client

@@ -43,11 +43,28 @@ flowchart LR
 ### 1. Chấm mã nguồn (⭐ điểm nhấn 1)
 
 ```
-Submit code → API validate + tạo submission(pending) → Celery queue
+Submit code → API validate + tạo submission(pending) → Celery queue "grading"
 → Grader worker → docker run (image theo ngôn ngữ, cô lập hoàn toàn)
 → chạy từng test case → verdict per test → update DB
 → Redis pub/sub → client nhận realtime (WebSocket, fallback polling)
+
+Lỗi phía hệ thống (SE) được thử lại 3 lần rồi "đỗ" hàng nộp bài lại ở trạng thái
+`error` kèm lý do — không bao giờ ghi thành verdict. Sai, chậm, tràn bộ nhớ là
+câu trả lời về bài nộp nên không thử lại.
 ```
+
+**Pub/sub là lời kể, cơ sở dữ liệu là nguồn chân lý.** Redis pub/sub không có bộ
+nhớ: phát cho ai đang nghe tại đúng khoảnh khắc đó, không hàng đợi, không phát
+lại, không xác nhận. Nên WebSocket `/submissions/{id}/events` **mở đầu bằng một
+snapshot đọc từ Postgres** và cứ 10 giây im lặng lại đọc thêm một cái. Một cơ
+chế trả lời cả bốn hỏng hóc: client vào muộn, thông điệp mất lúc subscription
+chưa sẵn sàng, kết nối Redis đứt, worker chết để lại dòng `running`.
+
+Vì vậy "fallback polling" tồn tại ở hai tầng, không phải một: Redis chết thì
+socket tự hạ cấp thành vòng đọc CSDL; WebSocket không mở được thì client chuyển
+sang `GET /submissions/{id}`. Cả hai đường phát ra cùng một kiểu dữ liệu, và
+kiểu ấy không có trường nào chứa output hay input — nên luật "test case ẩn
+không rời máy chủ" không cần thêm bộ lọc nào trên đường realtime.
 
 ### 2. Chatbot RAG (⭐ điểm nhấn 3)
 
@@ -78,3 +95,4 @@ Query: câu hỏi học viên → embed → similarity search top-k (lọc theo 
 | Postgres FTS thay vì Elasticsearch | Như trên |
 | WebSocket cho kết quả chấm, fallback polling | Realtime là điểm demo ăn tiền |
 | Python-only grading ở v1 | Image per-language thiết kế sẵn chỗ mở rộng |
+| Worker chấm bài giữ socket Docker, và là container duy nhất được giữ | Chấm bài *là* việc khởi động container, nên tiến trình chấm phải nói chuyện được với daemon. Socket không phải hệ thống phân quyền: container nào cầm nó cũng khởi động được container tùy ý trên host. Đổi lại, nó không phục vụ HTTP, không mở ra ngoài, và không tự chạy dòng code nào của người nộp — mọi dòng đó chạy trong container dùng một lần mà nó tạo ra |

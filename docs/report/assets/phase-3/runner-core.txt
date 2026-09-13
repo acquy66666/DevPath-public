@@ -1,0 +1,93 @@
+BẰNG CHỨNG PHASE 3 — RUNNER CORE
+Ngày chạy: 09/09/2026   Máy: dev (Docker Desktop, WSL2)
+Nguồn: grader/runner/sandbox.py — test: grader/tests/test_runner_core.py
+==============================================================================
+
+1. GIỚI HẠN NHÌN TỪ BÊN TRONG CONTAINER
+------------------------------------------------------------------------------
+Một 'bài nộp' (tests/fixtures/report_limits.py) tự đọc lấy cái lồng nó đang
+ngồi. Runner được gọi với: cpu_seconds=2, memory_mb=128, pids=32, cpus=0.5
+
+    pid              = 7
+    uid              = 10001
+    gid              = 10001
+    rlimit_cpu       = [2, 3]
+    memory_max       = 134217728
+    memory_swap_max  = 0
+    pids_max         = 32
+    cpu_max          = 50000 100000
+    interfaces       = ['lo']
+    capabilities     = 0000000000000000
+    no_new_privs     = 1
+    rootfs_write     = Read-only_file_system
+    tmp_write        = wrote
+    sandbox_dir      = ['main.py']
+
+    pid != 1  → xem mục 3
+    rlimit_cpu [2, 3] = mềm 2s CPU, cứng 3s
+    memory_swap_max 0 = cấm swap, nên vượt bộ nhớ là bị dừng chứ không phải chậm đi
+    cpu_max '50000 100000' = 50ms mỗi chu kỳ 100ms = 0.5 CPU
+    interfaces ['lo'] = không có card mạng nào ngoài loopback
+    capabilities 0000000000000000 = cap-drop ALL
+
+2. TIMEOUT HAI LỚP — MỖI LỚP BẮT MỘT LOẠI BÀI KHÁC NHAU
+------------------------------------------------------------------------------
+Giới hạn dùng cho phép đo: cpu_seconds=1, cpus=0.5, grace=2s → tường 6s
+
+  burn_cpu.py     (vòng lặp vô hạn, ăn CPU tối đa)
+      → cpu_time_exceeded, exit 152, sau 2.31s
+      exit 152 = 128+SIGXCPU: giới hạn CPU *mềm* bắn đúng hạn, lớp trong xử lý
+  sleep_forever.py (ngủ 3600s, KHÔNG tốn CPU)
+      → wall_time_exceeded, exit 137, sau 6.14s
+      giới hạn CPU vĩnh viễn không bắn: chỉ đồng hồ tường ngoài container dừng được
+      stdout giữ lại: 'dang cho\n'  ← in trước khi bị giết, không mất
+
+3. PHÁT HIỆN: PID 1 NUỐT TÍN HIỆU, GIỚI HẠN CPU MỀM THÀNH VÔ NGHĨA
+------------------------------------------------------------------------------
+Nhân Linux không áp dụng hành vi mặc định của tín hiệu cho PID 1: tín hiệu nào
+không có handler thì bị bỏ qua thay vì giết tiến trình. Chạy bài nộp làm PID 1
+thì SIGXCPU biến mất, giới hạn mềm không làm gì cả, và mọi bài quá giờ đều bị
+SIGKILL của giới hạn cứng giết muộn một giây — với mã thoát không phân biệt được
+với một bài crash.
+
+Cùng một vòng lặp vô hạn, cùng --ulimit cpu=1:2, khác đúng một cờ:
+
+    khong --init: bài nộp là PID  1  → exit 137 sau 2.72s
+    co --init   : bài nộp là PID  7  → exit 152 sau 1.88s
+
+    152 = SIGXCPU (giới hạn mềm, đúng 1s CPU) — 137 = SIGKILL (giới hạn cứng, 2s)
+Kết luận: `--init` không phải tùy chọn cho tiện, nó là điều kiện để lớp timeout
+bên trong tồn tại. Đã có test riêng chặn hồi quy.
+
+4. CÁC ĐƯỜNG KẾT THÚC KHÁC
+------------------------------------------------------------------------------
+  eat_memory.py    → out_of_memory, exit 137 (nhân OOM-kill, đọc từ State.OOMKilled)
+  crash.py         → exited, exit 1
+      stdout 'truoc khi loi\n' và stderr tách riêng — traceback không lẫn vào bài làm
+      stderr: 'ValueError: khong chia duoc cho 0'
+  flood_output.py  → cắt ở 50000 byte (giới hạn 50.000), truncated=True
+      đọc CÓ trần chứ không đọc hết rồi cắt: bài nộp không được quyết worker tốn bao nhiêu RAM
+  image không tồn tại → system_error, exit None
+      Error response from daemon: No such image: devpath-sandbox-does-not-exist:v0
+      lỗi phía mình không bao giờ tính vào bài của học viên
+
+5. DỌN DẸP
+------------------------------------------------------------------------------
+  docker ps -a --filter label=devpath.grading=1 sau toàn bộ phép đo trên:
+      ''  (rỗng = không rò container nào, kể cả những cái phải giết)
+
+6. CHI PHÍ MỘT LẦN CHẤM
+------------------------------------------------------------------------------
+  hello.py, 5 lần: 0.38s, 0.36s, 0.34s, 0.33s, 0.38s
+  → khởi động container + interpreter + thoát ≈ 0.36s
+  Đây là sàn của mọi test case; con số dùng lại ở benchmark tuần 8.
+
+7. BỘ TEST (cả grader: 12 test image + 17 test runner)
+------------------------------------------------------------------------------
+$ ruff check .
+All checks passed!
+
+$ python -m pytest -q
+.............................                                            [100%]
+29 passed in 44.05s
+

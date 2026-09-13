@@ -6,30 +6,30 @@
 
 ## Tuần 6 — Sandbox MVP
 
-- [ ] Image sandbox Python: user không đặc quyền, tối giản (python:slim + user nobody)
-- [ ] Runner core: chạy 1 file code + 1 stdin trong container với đủ giới hạn (network none, memory, cpus, pids, read-only, no-new-privileges, cap-drop ALL, tmpfs /tmp, timeout 2 lớp)
-- [ ] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
-- [ ] Bộ test verdict: AC / WA / TLE / MLE / RE / CE / SE — fixture cho từng loại trong `grader/tests/fixtures/`
-- [ ] **Bộ test bảo mật:** thử network, đọc file ngoài mount, ghi rootfs, fork bomb → tất cả bị chặn (lưu output test vào `docs/report/assets/phase-3/attack-tests.txt`)
+- [x] Image sandbox Python: user không đặc quyền, tối giản (python:slim + user nobody)
+- [x] Runner core: chạy 1 file code + 1 stdin trong container với đủ giới hạn (network none, memory, cpus, pids, read-only, no-new-privileges, cap-drop ALL, tmpfs /tmp, timeout 2 lớp)
+- [x] So sánh output (trim trailing whitespace từng dòng), cắt output 1MB
+- [x] Bộ test verdict: AC / WA / TLE / MLE / RE / CE / SE — fixture cho từng loại trong `grader/tests/fixtures/`
+- [x] **Bộ test bảo mật:** thử network, đọc file ngoài mount, ghi rootfs, fork bomb → tất cả bị chặn (lưu output test vào `docs/report/assets/phase-3/attack-tests.txt`)
 
 ## Tuần 7 — Tích hợp queue & API
 
-- [ ] Bảng + API: `code_exercises`, `test_cases`, `submissions`, `submission_results`
-- [ ] Instructor UI: tạo bài tập code (đề markdown, starter code, test case, giới hạn tài nguyên, sample/hidden)
-- [ ] Celery queue riêng cho grading; worker gọi runner; retry + dead letter; concurrency giới hạn theo tài nguyên VPS
-- [ ] Rate limit nộp bài (Redis) — chống spam queue
-- [ ] API kết quả: hidden test chỉ trả verdict, không trả input/expected output
+- [x] Bảng + API: `code_exercises`, `test_cases`, `submissions`, `submission_results`
+- [x] Instructor UI: tạo bài tập code (đề markdown, starter code, test case, giới hạn tài nguyên, sample/hidden)
+- [x] Celery queue riêng cho grading; worker gọi runner; retry + dead letter; concurrency giới hạn theo tài nguyên VPS
+- [x] Rate limit nộp bài (Redis) — chống spam queue
+- [x] API kết quả: hidden test chỉ trả verdict, không trả input/expected output
 
 ## Tuần 8 — Realtime & UX
 
-- [ ] Redis pub/sub tiến độ chấm → WebSocket endpoint; fallback polling
-- [ ] Trang nộp bài: Monaco editor, starter code, chạy thử với sample test, nộp chính thức, lịch sử submission
-- [ ] Kết quả hiển thị per-test realtime (đang chấm test 3/10...)
-- [ ] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — script đo lưu trong repo, số liệu vào `docs/report/assets/phase-3/benchmark.md`
-- [ ] Buffer trễ / hoàn thiện UX còn dở của phase trước
+- [x] Redis pub/sub tiến độ chấm → WebSocket endpoint; fallback polling
+- [x] Trang nộp bài: Monaco editor, starter code, chạy thử với sample test, nộp chính thức, lịch sử submission
+- [x] Kết quả hiển thị per-test realtime (đang chấm test 3/10...)
+- [x] Benchmark: thời gian chấm trung bình, throughput khi 10 bài nộp cùng lúc — script đo lưu trong repo, số liệu vào `docs/report/assets/phase-3/benchmark.md`
+- [x] Buffer trễ / hoàn thiện UX còn dở của phase trước
 
 ## Gate cuối phase
 
-- [ ] Demo: tạo bài tập → nộp bài sai → thấy WA realtime → sửa → AC
-- [ ] Toàn bộ test verdict + test bảo mật xanh trong CI
-- [ ] Thu bằng chứng vào `docs/report/assets/phase-3/`: bảng benchmark, output test tấn công, log demo đủ 7 verdict, screenshot trang nộp bài lúc chấm realtime (sơ đồ kiến trúc grading vẽ ở Phase 7)
+- [x] Demo: tạo bài tập → nộp bài sai → thấy WA realtime → sửa → AC
+- [x] Toàn bộ test verdict + test bảo mật xanh trong CI
+- [x] Thu bằng chứng vào `docs/report/assets/phase-3/`: bảng benchmark, output test tấn công, log demo đủ 7 verdict, screenshot trang nộp bài lúc chấm realtime (sơ đồ kiến trúc grading vẽ ở Phase 7)

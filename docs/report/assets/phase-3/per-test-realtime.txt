@@ -1,0 +1,92 @@
+KẾT QUẢ TỪNG TEST CASE HIỆN THEO THỜI GIAN THỰC
+Ngày chạy: 12/09/2026 · stack thật: Next dev + API + Redis + worker chấm + sandbox Docker
+
+Ảnh kèm theo
+------------
+  per-test-realtime-dang-cham.png  đang chấm test 4/8 — 3 test đầu đã xanh, test 4
+                                   đang quay, 4 test còn lại nằm chờ (viền đứt)
+  per-test-realtime-test-sai.png   đang chấm test 6/8 — test 4 (ẩn) đã đỏ "Sai kết quả"
+                                   trong khi test 6 còn đang chạy
+
+Bài tập dựng để đo: 8 test case (3 mẫu + 5 ẩn), giới hạn 9000 ms.
+Bài nộp: giải đúng nhưng cố tình chậm (vòng lặp 12 triệu bước) và sai ở một
+test ẩn duy nhất — `abs(int(a)) + abs(int(b))` nên case "-5 5" ra 10 thay vì 0.
+Chậm là để chụp được: mỗi case ~2 giây, cả lần chấm ~16 giây, đủ rộng để bấm
+máy ảnh vào giữa. Ở tốc độ thật (~0,3 s/case) toàn bộ lần chấm chỉ 2,5 giây.
+
+==============================================================================
+1. QUA WEBSOCKET: DANH SÁCH NHÍCH TỪNG DÒNG
+==============================================================================
+Chụp DOM 100 ms/lần, chỉ giữ những khung khác nhau (bản chạy nhanh, 0,3 s/case):
+
+[  137 ms] Đang chấm test 1/8 | Test 1 Đang chấm… | Test 2 Chờ | ... | Test 8 Ẩn Chờ
+[ 1192 ms] Đang chấm test 2/8 | Test 1 315 ms Đúng | Test 2 Đang chấm… | Test 3 Chờ ...
+[ 1721 ms] Đang chấm test 3/8 | Test 1 Đúng | Test 2 266 ms Đúng | Test 3 Đang chấm…
+[ 2142 ms] Đang chấm test 4/8 | Test 3 265 ms Đúng | Test 4 Ẩn Đang chấm…
+[ 2562 ms] Đang chấm test 5/8 | Test 4 Ẩn 266 ms Sai kết quả | Test 5 Ẩn Đang chấm…
+[ 3092 ms] Đang chấm test 6/8 | Test 5 Ẩn 315 ms Đúng | Test 6 Ẩn Đang chấm…
+[ 3627 ms] Đang chấm test 7/8 | Test 6 Ẩn 315 ms Đúng | Test 7 Ẩn Đang chấm…
+[ 4042 ms] Đang chấm test 8/8 | Test 7 Ẩn 265 ms Đúng | Test 8 Ẩn Đang chấm…
+[ 4458 ms] Đang chấm test 8/8 | ... Test 8 Ẩn 267 ms Đúng      <- xong cả 8, chưa có verdict
+[ 4572 ms] Sai kết quả | Điểm: 88/100 | (kết quả đầy đủ, có input/mong đợi/thực tế)
+
+Ba điều đọc được từ bảng trên:
+
+- **Học viên biết mình sai ở giây thứ 2,5, không phải giây thứ 4,6.** Dòng
+  "Test 4 Sai kết quả" tới trước verdict tổng hai giây — với bài chấm 30 giây
+  thì khoảng cách đó là hàng chục giây.
+
+- **Khung 4458 ms là lý do tiêu đề bị kẹp.** Cả 8 case đã xong nhưng worker
+  còn đang ghi bảng điểm, nên `completed_cases = 8` mà `status` vẫn `running`.
+  Không kẹp thì tiêu đề sẽ ghi "đang chấm test 9/8".
+
+- **Test ẩn có nhãn "Ẩn", có verdict, có thời gian — và không có gì khác.** Sự
+  kiện tiến độ chỉ mang `position`, `is_hidden`, `verdict`, `run_time_ms`; đề
+  bài và đáp án của case ẩn không đi qua kênh này (xem `sandbox-grading` mục 9).
+
+==============================================================================
+2. KHI KÊNH REALTIME CHẾT: TRANG ĐỨNG YÊN, KHÔNG BỊA
+==============================================================================
+Chặn hẳn WebSocket trong trình duyệt (`window.WebSocket` ném lỗi) rồi nộp lại:
+
+[     0 ms] (kết quả lần trước)
+[   155 ms] Đang chờ tới lượt chấm… | Test 1 Chờ | ... | Test 8 Ẩn Chờ
+[  2189 ms] Đang chấm test 1/8 | Test 1 Đang chấm… | Test 2 Chờ | ...
+[ 20333 ms] Sai kết quả | Điểm: 88/100 | (kết quả đầy đủ)
+
+Danh sách **không** nhích trong suốt 18 giây. Đây là giới hạn có thật, và nó
+nằm ở backend chứ không ở giao diện: ảnh chụp trạng thái đếm số dòng trong
+`submission_results`, mà worker ghi toàn bộ số dòng đó trong **một** commit lúc
+chấm xong (`_record` rồi `commit` trong `app/workers/grading.py`). Nên khi
+polling, cơ sở dữ liệu thật sự không biết case nào đã chạy.
+
+Đã cân nhắc và không làm: commit sau mỗi case để polling cũng nhích. Cái giá là
+8 lần ghi + 8 lần commit cho mỗi bài nộp thay vì 1, đổi lấy trải nghiệm của
+nhánh dự phòng — nhánh chỉ chạy khi Redis hoặc WebSocket hỏng. Ghi lại ở đây để
+Phase 6 quyết định lại nếu tunnel/proxy chặn WebSocket thường xuyên hơn dự kiến.
+
+Điều quan trọng là trang **không bịa**: một case mà máy chủ chưa nói gì thì nằm
+im ở "Chờ", không đoán màu, không đoán chữ. Dòng "Đã chấm" (xong nhưng không rõ
+verdict) tồn tại đúng cho tình huống ảnh chụp báo nhiều case hơn số sự kiện
+nhận được.
+
+==============================================================================
+3. NHỮNG GÌ ĐÃ SỬA SO VỚI BẢN TRƯỚC
+==============================================================================
+Trước:  một thanh tiến độ + dòng chữ "Đang chấm — 3/8 test case".
+Sau:    thêm danh sách 8 dòng, mỗi dòng một test, đổi trạng thái ngay khi sự
+        kiện tới; tiêu đề đổi thành "Đang chấm test 4/8" (số của case đang
+        chạy, không phải số case đã xong).
+
+Logic tách khỏi JSX, nằm trong `frontend/lib/grading/run-progress.ts`:
+`mergeCaseReport` xếp mỗi sự kiện vào đúng ô theo `completed_cases - 1` (nhận
+trùng một sự kiện không sinh dòng thừa; nếu job bị retry và chấm lại từ đầu thì
+những dòng phía sau bị bỏ đi thay vì để lại verdict của lần chạy đã chết), còn
+`caseSlots` quyết định trạng thái từng dòng bằng bộ đếm.
+
+==============================================================================
+CÒN THIẾU, NÓI THẲNG
+==============================================================================
+- Chưa có test tự động cho phần này (Vitest/Playwright là Phase 6). Kiểm bằng
+  trình duyệt thật, bằng chứng là hai bảng khung hình ở trên và hai ảnh chụp.
+- Nhánh polling không nhích — xem mục 2.

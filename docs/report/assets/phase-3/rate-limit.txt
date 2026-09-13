@@ -1,0 +1,105 @@
+RATE LIMIT NỘP BÀI — CHỐNG SPAM HÀNG ĐỢI CHẤM
+Ngày chạy: 12/09/2026 · máy dev, stack infra/docker-compose.yml (API + Redis + worker thật)
+
+Vì sao cần
+----------
+Chấm bài là thứ đắt nhất mà một học viên có thể yêu cầu hệ thống làm: mỗi bài
+nộp là vài container và vài giây CPU. Một vòng lặp bấm "Nộp" tốn của hàng đợi
+nhiều hơn hẳn so với tốn của người chạy nó, và người trả giá là những học viên
+đang xếp hàng phía sau. Giới hạn này để bảo vệ hàng đợi, không phải để phạt ai.
+
+Hai cửa, chặn hai kiểu lạm dụng khác nhau
+----------------------------------------
+1. Cooldown 10 giây cho mỗi (học viên, bài tập) — chặn nút bấm hai lần và
+   script quay vòng vào một bài tập. Khóa Redis `rl:submit:cooldown:<user>:<bài>`,
+   đặt bằng SET NX EX.
+2. Hạn mức 40 bài/giờ cho mỗi học viên trên toàn bộ bài tập — chặn script kiên
+   nhẫn ngồi đợi hết cooldown, thứ mà riêng cooldown không bao giờ chặn được.
+   Khóa `rl:submit:hour:<user>`, đếm bằng INCR + EXPIRE.
+
+Cả hai đều là **lệnh đơn của Redis**, không phải đọc-rồi-ghi: API chạy nhiều
+tiến trình, hai request của cùng một cú double-click rơi vào hai worker khác
+nhau, cả hai cùng đọc "chưa có gì" rồi cùng đi tiếp.
+
+================================================================================
+BẤM NỘP 10 LẦN LIÊN TIẾP
+================================================================================
+
+Nộp 10 lần liên tiếp, không nghỉ giữa các lần:
+
+ Lần  HTTP  code                     Retry-After
+------------------------------------------------------------
+   1   201  (nhận, pending)          -
+   2   429  SUBMISSION_RATE_LIMITED  10
+   3   429  SUBMISSION_RATE_LIMITED  10
+   4   429  SUBMISSION_RATE_LIMITED  10
+   5   429  SUBMISSION_RATE_LIMITED  10
+   6   429  SUBMISSION_RATE_LIMITED  10
+   7   429  SUBMISSION_RATE_LIMITED  10
+   8   429  SUBMISSION_RATE_LIMITED  10
+   9   429  SUBMISSION_RATE_LIMITED  10
+  10   429  SUBMISSION_RATE_LIMITED  10
+
+10 lần bấm trong 0.1s -> nhận 1, từ chối 9
+Số bài nộp thật sự được tạo trong CSDL: 1
+Thông điệp học viên đọc được: Bạn vừa nộp bài cho bài tập này. Đợi 10 giây rồi nộp lại nhé.
+
+Đợi hết cooldown rồi nộp lại...
+  -> HTTP 201 (nhận)
+Tổng số bài nộp sau khi đợi: 2
+
+Dọn dẹp: xóa khóa học demo -> 204
+
+================================================================================
+KHÓA TRONG REDIS
+================================================================================
+
+$ redis-cli --scan --pattern 'rl:submit:*'
+rl:submit:hour:2c28ac84-a137-456c-bc9b-9b95e8ec2411
+rl:submit:hour:8eafa6eb-2edb-46c9-84f9-b916720dd3a8
+rl:submit:hour:75f2cbfe-d7bd-494e-bff8-486fd6112578
+rl:submit:hour:71ab024b-c82f-4763-99f6-4b6ea87cb10b
+rl:submit:hour:49913d09-c2ba-4c96-922e-8550861e33c5
+rl:submit:hour:8e552eb9-ec4c-4343-9cd5-be389ae676f1
+
+$ redis-cli TTL <khóa đếm theo giờ> ; GET <khóa đếm theo giờ>
+key = rl:submit:hour:2c28ac84-a137-456c-bc9b-9b95e8ec2411
+2985
+1
+
+================================================================================
+ĐỌC KỸ MẤY ĐIỂM SAU
+================================================================================
+
+- **10 lần bấm trong 0.1 giây → đúng 1 dòng trong cơ sở dữ liệu, đúng 1 job vào
+  hàng đợi.** Chín lần còn lại bị chặn *trước khi* ghi dòng nào và *trước khi*
+  đẩy job nào — nếu chặn sau thì cái giá đã trả rồi, và 429 chỉ còn là lời nói.
+
+- **Retry-After nằm ở cả header lẫn thân phản hồi.** Header là thứ trình duyệt,
+  proxy và curl đã biết đọc sẵn; trường `retry_after` trong `detail` là cho
+  trang web vẽ đồng hồ đếm ngược. Một mã 429 không nói khi nào quay lại thì
+  cách duy nhất để trả lời nó là... gửi thêm một request nữa.
+
+- **Lần bị từ chối không đẩy lùi hạn chờ.** Bấm thêm 9 lần nữa vẫn hết hạn sau
+  đúng 10 giây kể từ lần nộp thành công. Cooldown để giãn nhịp, không phải để
+  trừng phạt người bấm nhầm hai lần.
+
+- **Khóa cooldown tự biến mất**, nên không có việc dọn rác: Redis xóa nó khi hết
+  hạn. Khóa đếm theo giờ cũng vậy — ở lần chụp trên, TTL còn 2985 giây và giá
+  trị đếm là 1.
+
+- **Khóa gắn với user id, không phải địa chỉ IP.** Cả một phòng máy trường có
+  thể ngồi sau một IP NAT duy nhất; chặn theo IP sẽ chặn nhầm cả lớp vì một
+  người. Đổi lại, giới hạn này không chống được kẻ tạo hàng loạt tài khoản —
+  đó là việc của giới hạn đăng ký, không phải của chỗ này.
+
+- **Redis chết thì cho qua, có chủ đích.** Redis cũng chính là broker của
+  Celery: lúc nó chết thì bài nộp vừa được cho qua cũng không vào được hàng đợi
+  và API trả 503 ngay sau đó. Từ chối ở đây sẽ đổi "hàng đợi hở một lúc" lấy
+  "không ai nộp được bài", để bảo vệ một hàng đợi vốn đang không chạy. Quyết
+  định hẹp cho đúng chỗ này, không phải một nguyên tắc chung.
+
+- **Con số 10 giây / 40 bài mỗi giờ chỉnh được** bằng biến môi trường
+  `SUBMISSION_COOLDOWN_SECONDS` và `SUBMISSION_HOURLY_LIMIT`. 40 bài/giờ là một
+  bài mỗi 90 giây suốt một tiếng liền — cao hơn hẳn nhịp sửa-rồi-nộp bình
+  thường, và vẫn chặn đứng một tài khoản định chiếm hàng đợi.

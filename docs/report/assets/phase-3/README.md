@@ -146,7 +146,7 @@ Traceback lúc chạy ghi `File "/sandbox/main.py"` — đường dẫn nội b�
 
 Bộ test lộ ra hai lớp không nằm trong Dockerfile lẫn cờ của runner:
 
-- **Docker che `/proc`**: `/proc/kcore` mở được nhưng rỗng — nó bị bind mount đè bằng `/dev/null`, chứng minh bằng `st_rdev` trùng khít `1,3` của `/dev/null`.
+- **Docker che `/proc`**: `/proc/kcore` mở được nhưng rỗng — nó bị bind mount đè bằng `/dev/null`, chứng minh bằng `st_rdev` trùng khít `1,3` của `/dev/null`. **Nhưng lớp này phụ thuộc máy chủ, và chỉ CI mới cho thấy điều đó** (13/09): trên runner của GitHub, `/proc/kcore` *không* bị che — file vẫn nằm đó và quyền `0400` gặp user không đặc quyền nên trả `PermissionError`. Cùng một bài tấn công, hai lớp khác nhau chặn, không lớp nào do mình cấu hình. Kết luận đáng viết vào báo cáo không phải "Docker che `/proc`" mà là: **đọc bộ nhớ kernel bị từ chối ở mọi máy đã thử, và có ít nhất hai cơ chế độc lập cùng làm việc đó** — cái thứ nhất chặn được cả root, cái thứ hai chặn được vì mình đã bỏ root. Test vì vậy khẳng định sự từ chối chứ không khẳng định cơ chế (`grader/tests/test_sandbox_attacks.py`).
 - **Seccomp bật sẵn**: `/proc/self/status` báo `Seccomp: 2` (chế độ lọc), tức profile mặc định của Docker đang chặn hàng chục syscall trước khi capability kịp có ý kiến.
 
 ### Hai lần fixture báo động giả — và vì sao vẫn giữ lại chuyện đó
@@ -415,3 +415,27 @@ Mục đầu tiên của gate cuối Phase 3, đi trọn một lượt trên gia
 
 - Ba bài nộp chậm trong lịch sử là **cùng lời giải sai cộng vòng lặp 6 triệu bước**, dựng riêng để chụp được ảnh lúc đang chấm — ở tốc độ thật cả lần chấm chỉ 4,4 giây, ngắn hơn một lượt chụp màn hình. Số trên hai ảnh đó là của bản cố tình chậm, không phải tốc độ hệ thống.
 - Khóa demo là khóa mới tạo, không phải khóa seed: bốn khóa seed đang thuộc hai tài khoản `@devpath.local` không đăng nhập được nữa (email-validator từ chối domain `.local`). Lệch dữ liệu của máy dev, cần dọn trước buổi bảo vệ.
+
+
+## CI xanh: test verdict + test bảo mật chạy trên máy không phải máy mình (13/09/2026)
+
+`ci-xanh.txt` · [PR #25](https://github.com/acquy66666/DevPath/pull/25) · [lần chạy xanh](https://github.com/acquy66666/DevPath/actions/runs/34753790965)
+
+Mục thứ hai của gate. Năm job xanh: backend `610 passed, 2 skipped`, grader `89 passed`, frontend lint + build, migrations trên CSDL trống, và cấu hình deploy. 89 test của grader gồm 18 test luật verdict, 15 test end-to-end đủ bảy chữ, và 7 test tấn công sandbox.
+
+### Giá trị của mục gate này nằm ở hai lỗi nó bắt được
+
+Trước khi mở PR, cả ba bộ đều xanh trên máy dev. CI vẫn đỏ ngay lần đầu, ở hai chỗ mà **không lần chạy local nào có thể phát hiện**:
+
+| Lỗi | Vì sao máy dev không thấy |
+|---|---|
+| Test seed hỏng vì thiếu danh mục | `seed_courses()` tra cứu danh mục chứ không tạo; máy đã seed một lần thì hàng đó có sẵn. CSDL của CI trống |
+| Test bảo mật đỏ ở `/proc/kcore` | Máy dev được Docker che bằng `/dev/null`; runner GitHub không che, quyền `0400` từ chối thay |
+
+Lỗi thứ nhất sửa ở gốc: test tự dựng tiền đề bằng `seed_categories()` như `main()` vẫn làm. Tái hiện trước khi sửa bằng một CSDL rỗng dựng ngay tại máy, để không phải đoán.
+
+Lỗi thứ hai **không phải lỗ hổng**: `assert "ESCAPED" not in report` qua ở cả hai máy ngay từ lần đỏ đầu tiên. Thứ sai là kỳ vọng của test — nó khẳng định *cơ chế* thay vì *tính chất*. Xem mục "Lớp phòng thủ thứ ba và thứ tư" ở trên, đã được sửa lại theo phát hiện này.
+
+### Câu đáng mang ra hội đồng
+
+Một bộ test xanh trên máy của mình chỉ chứng minh được điều nó tự dựng lấy tiền đề, trên đúng cấu hình máy đó. Phần đi mượn — hàng dữ liệu đã có sẵn, lớp phòng thủ mà máy chủ tình cờ cung cấp — là phần chưa được kiểm, và nó chỉ lộ ra khi có một máy thứ hai chạy lại.

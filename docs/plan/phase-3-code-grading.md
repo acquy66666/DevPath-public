@@ -31,5 +31,5 @@
 ## Gate cuối phase
 
 - [x] Demo: tạo bài tập → nộp bài sai → thấy WA realtime → sửa → AC
-- [ ] Toàn bộ test verdict + test bảo mật xanh trong CI
+- [x] Toàn bộ test verdict + test bảo mật xanh trong CI
 - [ ] Thu bằng chứng vào `docs/report/assets/phase-3/`: bảng benchmark, output test tấn công, log demo đủ 7 verdict, screenshot trang nộp bài lúc chấm realtime (sơ đồ kiến trúc grading vẽ ở Phase 7)

@@ -173,3 +173,28 @@ tests/test_sandbox_attacks.py::test_the_one_writable_place_cannot_fill_the_hosts
 $ python -m pytest -q   (ca bo grader)
 ............                                                             [100%]
 84 passed in 154.50s (0:02:34)
+
+==============================================================================
+BO SUNG 13/09/2026: CUNG BAI TAN CONG, CHAY TREN MAY KHAC, LOP CHAN KHAC
+==============================================================================
+
+Log o tren chay tren may dev (Docker Desktop). Khi cho bo test nay chay trong
+CI cua GitHub, dung mot ca doi ket qua -- va doi theo huong van an toan:
+
+    may dev        MASKED   /proc/kcore   replaced by /dev/null, nothing to read
+    runner GitHub  BLOCKED  /proc/kcore   PermissionError: Permission denied
+
+Tren may dev, daemon che /proc/kcore bang mot bind mount /dev/null: doc ra 0
+byte. Tren runner, file van nam do va quyen 0400 gap user khong dac quyen nen
+bi tu choi thang.
+
+Hai lop khac nhau, deu khong phai do minh cau hinh, va deu that:
+  - lop che cua daemon chan duoc CA root;
+  - lop quyen file chan duoc VI da bo root.
+
+Dieu nay sua lai mot ket luan o log tren: "Docker che /proc" khong phai tinh
+chat chung cua moi may chay Docker. Cai dung o moi may da thu la: doc bo nho
+kernel bi tu choi. Bo test da doi theo -- no khang dinh su tu choi, va ghi lai
+lop nao da tu choi, thay vi khang dinh mot co che.
+
+So ca thoat duoc, tren ca hai may: 0.

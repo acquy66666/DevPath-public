@@ -144,6 +144,8 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Tunnel trỏ vào nginx chứ không trỏ thẳng vào Next** — `/api` phải về backend trên cùng origin với trang, và nginx là thứ làm điều đó đúng. Trỏ vào `frontend:3000` sẽ cho một trang mở được nhưng 404 ở mọi lời gọi API. Đây cũng là lý do dùng overlay `docker-compose.tunnel.yml` cộng vào stack production, thay vì chạy cloudflared rời trên host: trong mạng compose thì `nginx` là một hostname có sẵn.
 
+## Phase 3 — Code Grading ⭐
+
 **Image sandbox dùng user riêng `sandbox` (uid 10001) thay vì `nobody`** — kế hoạch viết "user nobody", nhưng 65534 là đúng cái uid mà những thứ khác trên máy chủ đã ánh xạ vào, rõ nhất là NFS squash. Một uid riêng trong dải của mình là con số worker sẽ dùng khi quyết định ai sở hữu file được mount vào; hai tiến trình không liên quan dùng chung một danh tính là trùng hợp nên tránh chứ không nên dựa vào. `USER` đặt sẵn trong image nên `--user` của runner trở thành lớp thứ hai chứ không phải lớp duy nhất — test chạy **không** truyền `--user` để chứng minh đúng điều đó.
 
 **"Tối giản" ở đây là tối giản nội dung, không phải dung lượng** — image 187 MB, base 189 MB. Xóa pip/ensurepip và làm rỗng site-packages không tiết kiệm được bao nhiêu byte; cái nó mua là **tính tái lập của verdict**: image đúng bằng thư viện chuẩn, hôm nay và sau mỗi lần bump base, nên một bài AC tháng 9 không thể WA tháng 11 vì một gói lặng lẽ đổi phiên bản.
@@ -171,3 +173,47 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Container không dùng `--rm`, mà `create` → `start` → `inspect` → `rm --force`** — `--rm` xóa container trước khi kịp đọc `State.OOMKilled`, mà đó là câu trả lời duy nhất phân biệt "bị nhân giết vì hết bộ nhớ" với "bị giết vì lý do khác" (cả hai đều exit 137). Tách `create` khỏi `start` còn làm cho lỗi tạo container (thiếu image, daemon chết) không thể bị nhầm thành mã thoát của bài nộp.
 
 **Mọi container mang nhãn `devpath.grading=1`** — worker chết giữa chừng thì đống container còn lại tìm và dọn được bằng một lệnh không thể quét trúng thứ gì khác trên máy chủ.
+
+**Chuẩn hóa output tha lỗi của trình soạn thảo, không tha quyết định của chương trình** — bỏ khoảng trắng cuối dòng, CRLF và dòng trống ở cuối; giữ nguyên thụt đầu dòng, khoảng trắng giữa dòng, thứ tự dòng, hoa/thường. Đo được: 8 trong 14 ca đối chứng là bài làm đúng bị so sánh byte chấm sai, và không ca nào theo chiều ngược lại.
+
+**Không dùng `str.splitlines()` để tách dòng** — nó cắt dòng trên 11 ký tự chứ không phải 1, nên `a\x0bb` và `a\nb` bằng nhau: một bài in ra ký tự điều khiển được chấm như đã xuống dòng. Chỉ tách trên LF, sau khi quy CRLF/CR về LF.
+
+**Output bị cắt vì quá trần 1 MB thì không bao giờ AC** — một đoạn đầu trùng đáp án không nói gì về phần còn lại. Thiếu luật này thì chính cái trần bảo vệ bộ nhớ worker lại thành lỗ hổng chấm điểm: in đúng đáp án rồi in thêm 500 MB rác vẫn AC.
+
+**Thứ tự ưu tiên verdict: SE → giới hạn → crash → so output** — mỗi bậc bảo vệ học viên khỏi một câu trả lời sai về chương trình của chính họ. Lỗi phía mình (SE) không bao giờ tính vào học viên. Bài bị giới hạn giết chưa chạy xong nên thứ nó in ra chưa từng là câu trả lời — gọi WA sẽ chỉ học viên sai chỗ. Bài in đúng đáp án rồi mới chết vẫn không đậu.
+
+**Verdict của cả bài lấy theo case hỏng đầu tiên, không phải case "nặng nhất"** — test case do giảng viên xếp, dễ trước, nên "case 3 quá giờ" là câu học viên hành động được.
+
+**Hàng đợi `grading` tách khỏi hàng đợi mặc định** — một bài nộp là vài container và vài giây; để chung thì một đợt nộp bài làm email xác thực và job transcode nằm chờ sau nó. Tách hàng đợi còn cho phép chỉnh riêng concurrency của việc chấm theo tài nguyên máy chủ.
+
+**Retry chỉ dành cho lỗi phía mình, không dành cho lỗi của bài nộp** — daemon chết hay hết chỗ đĩa thì giao lại; bài nộp crash hay sai đáp án thì không, vì chạy lại mười lần vẫn ra đúng kết quả đó và chỉ tốn thêm mười lần tài nguyên.
+
+**Rate limit hai cửa: cooldown 10 giây và hạn mức 40 bài mỗi giờ** — cooldown chặn nút bị bấm hai lần và script hammer; hạn mức chặn script kiên nhẫn biết chờ hết cooldown. Cả hai đều cao hơn nhiều so với nhịp làm bài thật.
+
+**Test case ẩn: API không trả input lẫn đáp án, kể cả khi case đó sai** — đúng lúc học viên muốn biết nhất cũng là lúc không được nói. Mạnh hơn thế: worker **không nạp** case ẩn khi chạy thử (`samples_only=submission.is_trial`), nên không tồn tại thời điểm nào một lần chạy thử cầm đáp án ẩn.
+
+**Chạy thử và nộp bài dùng chung hàng đợi, worker, sandbox và kênh tiến độ** — khác nhau đúng một cờ `submissions.is_trial`. Bảng riêng cho chạy thử sẽ phải nhân đôi hàng đợi, worker, kênh realtime và mọi luật về ai được đọc bài nộp nào.
+
+**Tiến độ chấm đi bằng Redis pub/sub → WebSocket, có fallback polling** — publish thất bại thì ghi log WARNING chứ không làm hỏng lần chấm: kênh realtime hỏng thì học viên nhận kết quả chậm mười giây, không phải mất kết quả. Đã xảy ra thật một lần, và chính dòng log ấy chỉ ra lỗi.
+
+**`GradingEvent` không có trường nào chứa input, output hay message** — bí mật của case ẩn không rò qua kênh realtime vì kiểu dữ liệu không chỗ nào đựng nó. Đây là tính chất của kiểu, không phải kết quả của một câu lệnh lọc.
+
+**Monaco tự phục vụ từ `public/monaco`, không lấy từ CDN** — trang quan trọng nhất của đồ án không được phụ thuộc vào mạng của căn phòng đúng hôm bảo vệ. Kiểm bằng danh sách request thật: 19 file, tất cả cùng origin.
+
+**Tiêu đề "đang chấm test n/N" bị kẹp ở N** — có khung mà cả N case đã xong nhưng worker còn đang ghi bảng điểm (`completed_cases = N`, `status` vẫn `running`). Không kẹp thì tiêu đề hiện "đang chấm test 9/8".
+
+**Trang không đoán trạng thái của case mà máy chủ chưa nói gì** — nằm im ở "Chờ". Có riêng trạng thái "Đã chấm" (xong nhưng không rõ verdict) cho tình huống ảnh chụp báo nhiều case hơn số sự kiện nhận được.
+
+**Nhánh polling không nhích giữa chừng, và chấp nhận như vậy** — worker ghi toàn bộ `submission_results` trong một commit lúc chấm xong, nên khi polling thì CSDL thật sự không biết case nào đã chạy. Commit sau mỗi case sẽ tốn 8 lần ghi + 8 lần commit mỗi bài nộp thay vì 1, đổi lấy trải nghiệm của nhánh chỉ chạy khi Redis hoặc WebSocket hỏng. Xem lại ở Phase 6 nếu tunnel/proxy chặn WebSocket thường xuyên.
+
+**`GRADING_CONCURRENCY=2`, chọn công bằng chứ không chọn throughput cao nhất** — chạy 8 bài song song làm `run_time_ms` của chính chương trình học viên tăng gấp đôi (248 → 516 ms), trong khi giới hạn là 2000 ms: một bài đúng nhưng sát biên có thể ăn TLE chỉ vì nộp trúng lúc chín người khác cũng nộp. Ở 2 slot độ lệch là 21%. Muốn nhanh hơn thì tăng vCPU trước, 1 slot cho mỗi vCPU dôi ra.
+
+**Benchmark đo bằng chính kênh realtime mà trang web đang nghe** — không cắm đồng hồ riêng vào worker, không thêm cột nào vào CSDL. Hệ quả: thứ được đo đúng là thứ học viên đang nhìn.
+
+**AC ghi `lesson_progress.completed_at` trong cùng transaction với verdict** — một dấu hoàn thành ghi tách ra có thể sống sót qua một rollback của chính cái verdict biện minh cho nó, và một bài học được tick mà không có hàng AC nào đứng sau là loại lỗi không ai tìm ra. Chạy thử AC **không** tick: qua test mẫu không phải là giải được bài.
+
+**Bài học video và bài đọc vẫn phải tự bấm hoàn thành** — không có cách nào biết người ta đã đọc xong, còn bài tập code thì có. Không suy diễn từ thời lượng xem.
+
+**Test bảo mật khẳng định sự từ chối, không khẳng định cơ chế từ chối** — CI cho thấy `/proc/kcore` bị chặn ở cả hai máy nhưng bằng hai lớp khác nhau: daemon che bằng `/dev/null` trên máy dev, quyền `0400` gặp user không đặc quyền trên runner GitHub. Ghim test vào cơ chế của một máy là để nó đỏ trên một máy an toàn không kém. Điều này cũng sửa lại một câu trong báo cáo: "Docker che `/proc`" không phải tính chất chung của mọi máy chạy Docker.
+
+**Test dùng CSDL phải tự dựng lấy tiền đề của nó** — test seed từng gọi thẳng `seed_courses()` và mượn hàng danh mục có sẵn trong CSDL dev, nên xanh ở máy và đỏ trong CI. Phần tiền đề đi mượn là phần không được kiểm.

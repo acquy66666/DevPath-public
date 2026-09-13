@@ -1,5 +1,20 @@
 # Bằng chứng Phase 3 — Code Grading ⭐
 
+## Gate cuối phase yêu cầu gì, và nó nằm ở tệp nào
+
+Bảng này để Phase 7 không phải đi tìm, và để soát gate bằng mắt thay vì bằng trí nhớ.
+
+| Gate đòi | Tệp | Con số đáng trích |
+|---|---|---|
+| Bảng benchmark | `benchmark.md` (script `backend/scripts/bench_grading.py`) | 10 bài nộp đồng thời, 4 cấu hình slot; mặc định 2 slot: 9,55 s nộp → verdict, trong đó 6,40 s là chờ hàng đợi |
+| Output test tấn công sandbox | `attack-tests.txt` | 7 ca tấn công, 43 lần bị chặn, **0 ca thoát** — trên cả máy dev lẫn runner CI |
+| Log demo đủ 7 verdict | `verdicts.txt` | 10 bài nộp thật, 10/10 khớp verdict mong đợi, đủ AC/WA/TLE/MLE/RE/CE/SE |
+| Screenshot trang nộp bài lúc chấm realtime | `per-test-realtime-dang-cham.png`, `per-test-realtime-test-sai.png`, `demo-gate-2-dang-cham.png`, `demo-gate-3-wa-realtime.png`, `submission-page-grading.png` | khung "Đang chấm test 3/8" và khung ba test ẩn đã đỏ trong khi test 8 còn chạy |
+| *(ngoài gate, thu thêm)* Demo đủ đường WA → AC | `demo-gate-wa-to-ac.txt` + 6 ảnh `demo-gate-*` | test ẩn đỏ ở 2 294 ms, verdict tổng ở 4 406 ms |
+| *(ngoài gate, thu thêm)* CI xanh trên máy khác | `ci-xanh.txt` | 5 job xanh; 2 lỗi chỉ CI mới bắt được |
+
+Sơ đồ kiến trúc grading **không** vẽ ở đây — theo kế hoạch, mọi hình vẽ dồn về Phase 7.
+
 ## Image sandbox Python (08/09/2026)
 
 Image mà mã nguồn của người lạ sẽ chạy trong đó: `grader/images/python/Dockerfile`, tag `devpath-sandbox-python:v1`.
@@ -385,9 +400,96 @@ Worker nạp test case bằng `_cases_of(..., samples_only=submission.is_trial)`
 2. **Playwright gõ vào Monaco mất ký tự** — ban đầu tưởng lỗi sản phẩm, kiểm lại bằng cách bấm từng phím riêng thì đủ cả. Giới hạn của công cụ kiểm thử với Monaco 0.56 (EditContext API), không phải lỗi trang; chú thích trong code đã được sửa lại cho đúng.
 
 
+## Kết quả per-test realtime (12/09/2026)
+
+`per-test-realtime.txt` · `per-test-realtime-dang-cham.png` · `per-test-realtime-test-sai.png`
+
+Trước: một thanh tiến độ và dòng chữ "Đang chấm — 3/8 test case". Sau: tám dòng, mỗi test một dòng, đổi trạng thái ngay khi sự kiện của worker tới.
+
+### Con số biện hộ cho việc này
+
+Bảng khung hình chụp DOM 100 ms/lần trên một bài nộp sai đúng một test ẩn:
+
+| Mốc | Điều học viên thấy |
+|---:|---|
+| 2 562 ms | `Test 4 Ẩn 266 ms Sai kết quả` — trong khi test 5 còn đang chạy |
+| 4 572 ms | verdict tổng: `Sai kết quả · 88/100` |
+
+**Học viên biết mình sai ở giây 2,5 chứ không phải 4,6.** Khoảng cách hai giây đó co giãn theo số test case, nên với bài 30 case nó là hàng chục giây.
+
+### Ba chi tiết đáng viết vào chương 4
+
+- **Tiêu đề phải bị kẹp.** Có khung mà cả 8 case đã xong nhưng worker còn đang ghi bảng điểm: `completed_cases = 8` trong khi `status` vẫn `running`. Không kẹp thì tiêu đề hiện "đang chấm test 9/8".
+- **Test ẩn đi qua kênh realtime mà không mang theo gì.** Sự kiện chỉ có `position`, `is_hidden`, `verdict`, `run_time_ms` — đề bài và đáp án của case ẩn không tồn tại trong kiểu dữ liệu, nên không có gì để rò.
+- **Trang không bịa.** Case nào máy chủ chưa nói gì thì nằm im ở "Chờ", không đoán màu. Có hẳn trạng thái "Đã chấm" (xong nhưng không rõ verdict) cho tình huống ảnh chụp báo nhiều case hơn số sự kiện nhận được.
+
+Logic tách khỏi JSX, nằm trong `frontend/lib/grading/run-progress.ts`: `mergeCaseReport` xếp mỗi sự kiện vào đúng ô theo `completed_cases - 1` (nhận trùng một sự kiện không sinh dòng thừa; job bị retry thì những dòng phía sau bị bỏ thay vì giữ verdict của lần chạy đã chết), còn `caseSlots` quyết định trạng thái từng dòng bằng bộ đếm.
+
+### Hạn chế đã biết, và vì sao chấp nhận
+
+Chặn hẳn WebSocket rồi nộp lại: danh sách **không nhích** suốt 18 giây, tới lúc xong mới hiện đủ. Giới hạn này nằm ở backend chứ không ở giao diện — worker ghi toàn bộ `submission_results` trong **một** commit lúc chấm xong, nên khi polling thì CSDL thật sự không biết case nào đã chạy.
+
+Đã cân nhắc và không làm: commit sau mỗi case. Cái giá là 8 lần ghi + 8 lần commit mỗi bài nộp thay vì 1, đổi lấy trải nghiệm của nhánh dự phòng — nhánh chỉ chạy khi Redis hoặc WebSocket hỏng. Ghi lại ở đây để Phase 6 quyết định lại nếu tunnel/proxy chặn WebSocket thường xuyên hơn dự kiến.
+
+## Benchmark: thời gian chấm và throughput (13/09/2026)
+
+`benchmark.md` · script `backend/scripts/bench_grading.py` (chạy lại được: `docker compose exec backend python -m scripts.bench_grading --submissions 10 --cases 5`)
+
+Mười học viên **khác nhau** nộp cùng lúc — mười bài từ một tài khoản không phải phép đo tải mà là phép đo rate limit. Mốc thời gian lấy từ chính kênh Redis pub/sub mà trang web đang nghe, nên **thứ được đo đúng là thứ học viên đang nhìn**, không phải một đồng hồ riêng cắm thêm vào worker.
+
+| Slot | Cả đợt | Throughput | Nộp → verdict (TB) | Chờ hàng đợi | Chấm | ms/case |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 26,9 s | 22,3 bài/phút | 14,90 s | 12,25 s | 2,65 s | 530 |
+| **2** *(mặc định)* | **16,1 s** | **37,2 bài/phút** | **9,55 s** | **6,40 s** | **3,15 s** | **630** |
+| 4 | 12,4 s | 48,4 bài/phút | 7,22 s | 3,18 s | 4,04 s | 808 |
+| 8 | 9,7 s | 62,2 bài/phút | 7,21 s | 1,35 s | 5,86 s | 1172 |
+
+Một học viên nộp một mình, hàng đợi rỗng: **2,6 – 2,8 giây** cho cả 5 case, ở mọi cấu hình.
+
+### Kết quả đáng giá nhất không phải throughput mà là công bằng
+
+`run_time_ms` — con số sandbox đo từ bên trong container — **tăng gấp đôi khi chạy 8 bài song song** (248 ms → 516 ms cho cùng chương trình `a + b`). Giới hạn thời gian là 2000 ms, nên một bài đúng nhưng sát biên có thể ăn TLE chỉ vì nó xui, nộp trúng lúc chín người khác cũng nộp.
+
+Đó là lý do chọn `GRADING_CONCURRENCY=2` chứ không chọn cấu hình nhanh nhất: ở 2 slot số đo chỉ lệch 21% so với máy rảnh, ở 8 slot là 108%. **Tăng slot trên máy cũ là đổi độ chính xác của việc chấm lấy tốc độ** — thứ một hệ thống chấm điểm không được phép đổi. Muốn nhanh hơn thì tăng vCPU trước, theo tỉ lệ 1 slot cho mỗi vCPU dôi ra.
+
+### Hai điều nữa cho chương 5
+
+- **Hàng đợi, không phải sandbox, là thứ học viên chờ.** Ở cấu hình mặc định, 6,40 trong 9,55 giây là nằm chờ tới lượt. Đây chính là lý do trang phải nói thành thật "đang chờ tới lượt chấm" thay vì hiện thanh tiến độ giả.
+- **Dựng container tốn ngang chạy chương trình** (282 ms dựng / 248 ms chạy). Đổi lại là cô lập thật: mỗi case một container dùng một lần, không trạng thái nào sống sót giữa hai case. Nếu sau này cần nhanh hơn thì đây là chỗ tối ưu, không phải chỗ nào khác.
+
+Phép đo chạy trên máy dev 8 CPU, không phải VPS 2 vCPU — bảng này dùng để chọn *hình dạng* cấu hình (bao nhiêu slot cho mỗi vCPU), không phải để hứa con số tuyệt đối. Đo lại ở Phase 6.
+
+## Buffer UX: hai lỗ được vá trước khi đóng phase (13/09/2026)
+
+`buffer-ux.txt` · `buffer-ux-ac-hoan-thanh.png` · `buffer-ux-404.png`
+
+Task này không nói vá cái gì, nên việc đầu tiên là đi soát: mục "CÒN THIẾU" trong các file bằng chứng đã có, quy ước trong skill `nextjs-feature`, và đường đi của bài demo cuối phase. Ra hai lỗ thật.
+
+### 1. Giải đúng bài tập mà bài học vẫn chưa xong
+
+Học viên ăn AC 100/100 rồi vẫn phải tự bấm "Đánh dấu hoàn thành" — tức bắt người ta khai báo với hệ thống đúng cái điều hệ thống vừa tự tay chấm. Trên đường demo của phase, lỗ này lộ ngay: chấm xong AC mà tiêu đề vẫn "0/1 bài · 0%".
+
+Worker giờ ghi `lesson_progress.completed_at` **trong cùng transaction** với verdict. Cùng transaction là có chủ ý: một dấu hoàn thành ghi tách ra có thể sống sót qua một rollback của chính cái verdict biện minh cho nó, và một bài học được tick mà không có hàng AC nào đứng sau là loại lỗi không ai tìm ra.
+
+Bốn ranh giới được test khẳng định, mỗi cái là một câu trả lời cho "tick khi nào":
+
+| Tình huống | Kết quả |
+|---|---|
+| AC, bài nộp thật, có ghi danh | tick |
+| WA | không tick |
+| Chạy thử AC (chỉ test mẫu) | **không tick** — qua test mẫu không phải là giải được bài |
+| Không có ghi danh (giảng viên thử bài của chính mình) | chấm bình thường, không sinh tiến độ nào |
+| Nộp AC lần thứ hai | giữ nguyên mốc hoàn thành lần đầu |
+
+### 2. Bốn trang lỗi/chờ còn thiếu, trong đó có trang quan trọng nhất
+
+Quy ước dự án đòi mỗi route segment có `loading.tsx` và `error.tsx`; phòng học `(learn)` thiếu **cả hai**, và `app/` gốc không có lưới cuối nào — nghĩa là một render ném lỗi sẽ rơi vào trang lỗi mặc định của Next: tiếng Anh, trên đó không có gì ngoài chữ "error".
+
+Thêm bốn file, chọn theo chỗ thật sự có ích chứ không rải cho đủ bộ: `app/error.tsx`, `app/not-found.tsx`, `(learn)/error.tsx` (nói rõ tiến độ và bài nộp vẫn nằm trên máy chủ), và `loading.tsx` cho hai trang khóa học là Server Component có await thật. **Không** thêm cho `ho-so` và `khoa-hoc-cua-toi`: hai trang đó là Client Component, vẽ ra tức thì và đã tự có skeleton — thêm file chỉ là thêm nhiễu.
+
 ## Demo gate: tạo bài tập → nộp sai → WA realtime → sửa → AC (13/09/2026)
 
-`demo-gate-wa-to-ac.txt` · `demo-gate-1-tao-bai-tap.png` … `demo-gate-6-lich-su.png`
+`demo-gate-wa-to-ac.txt` · `demo-gate-1-tao-bai-tap.png` (trình soạn bài tập, 8 test case) · `demo-gate-2-dang-cham.png` (đang chấm test 3/8) · `demo-gate-3-wa-realtime.png` (ba test ẩn đã đỏ, test 8 còn chạy) · `demo-gate-4-wa-ket-qua.png` (WA 62/100) · `demo-gate-5-ac.png` (AC 100/100) · `demo-gate-6-lich-su.png` (lịch sử sai → đúng)
 
 Mục đầu tiên của gate cuối Phase 3, đi trọn một lượt trên giao diện thật: giảng viên tạo khóa → chương → bài học kiểu bài tập code → đề bài + 8 test case (2 mẫu, 6 ẩn); học viên đăng ký tài khoản mới → ghi danh → nộp bài sai → sửa → AC.
 

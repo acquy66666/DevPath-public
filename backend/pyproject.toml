@@ -12,6 +12,10 @@ dependencies = [
     "sqlalchemy[asyncio]>=2.0.36",
     "asyncpg>=0.30",
     "alembic>=1.14",
+    # The `vector` column type, so SQLAlchemy and Alembic can say what the
+    # pgvector extension already understands. The extension itself lives in
+    # the database (see the first migration); this is only the client side.
+    "pgvector>=0.3.6",
     "redis>=5.2",
     "celery[redis]>=5.4",
     "bcrypt>=4.2",

@@ -6,7 +6,7 @@
 
 ## Tuần 9 — RAG chatbot + sinh quiz
 
-- [ ] Bật pgvector, bảng `doc_chunks` (index HNSW)
+- [x] Bật pgvector, bảng `doc_chunks` (index HNSW)
 - [ ] Pipeline ingest: transcript video (giảng viên upload .srt/.txt) + article → chunk ~500 token overlap → Gemini embedding → lưu (job Celery, chạy khi content published)
 - [ ] API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời trong phạm vi khóa học, kèm trích nguồn bài học) → stream response
 - [ ] UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson), lịch sử phiên

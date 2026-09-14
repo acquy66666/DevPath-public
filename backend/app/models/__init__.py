@@ -16,6 +16,7 @@ from app.models.grading import (
     TestCase,
 )
 from app.models.progress import LessonProgress
+from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
 from app.models.refresh_token import RefreshToken
 from app.models.review import Review
 from app.models.study import Bookmark, Note
@@ -28,6 +29,8 @@ __all__ = [
     "CodeExercise",
     "Course",
     "CourseSection",
+    "DocChunk",
+    "EMBEDDING_DIMENSIONS",
     "Enrollment",
     "Lesson",
     "LessonProgress",

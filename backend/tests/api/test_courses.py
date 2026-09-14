@@ -92,9 +92,17 @@ def payload(category: Category, **overrides) -> dict:
 async def create_course(
     client: AsyncClient, headers: dict[str, str], category: Category, **overrides
 ) -> dict:
+    """Create a course, and say so out loud when creating one fails.
+
+    Every caller goes straight on to `created["id"]`. Returning the body
+    unchecked meant a failed POST surfaced two lines later as `KeyError: 'id'`,
+    which names neither the status nor the reason -- and once, on a full run
+    that has not repeated, that was the only thing left of the failure.
+    """
     response = await client.post(
         COURSES, json=payload(category, **overrides), headers=headers
     )
+    assert response.status_code == 201, f"{response.status_code}: {response.text}"
     return response.json()
 
 

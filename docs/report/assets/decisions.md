@@ -239,3 +239,21 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Index HNSW được xác nhận bằng `EXPLAIN` chứ không bằng việc nó tồn tại** — dựng HNSW sai lớp toán tử (`vector_l2_ops` trong khi truy vấn dùng `<=>`) không sinh ra lỗi nào: Postgres lặng lẽ quét tuần tự. Đo trên 3000 chunk: planner chọn `Index Scan using ix_doc_chunks_embedding`, 1,33 ms và 1239 buffer, so với 5,89 ms và 9055 buffer khi tắt index scan. Chưa đo recall — HNSW là tìm kiếm xấp xỉ, và câu hỏi "top-5 nó trả về có đúng là top-5 thật không" cần embedding thật, để đo cùng precision@k. Xem `phase-4/hnsw-index.txt`.
 
 **Tham số `m`/`ef_construction` để mặc định** — tinh chỉnh HNSW là đánh đổi recall lấy tốc độ, mà recall thì chưa đo được khi chưa có embedding thật. Chỉnh sớm là chỉnh mù.
+
+**Đồng hồ làm bài đặt ở máy chủ, trình duyệt chỉ hiển thị** — hạn nộp tính bằng `started_at + time_limit_s`, cả hai đọc từ hàng `quiz_attempts`, không có endpoint nào nhận thời gian từ client. Bộ đếm ngược trên trang chỉ đếm con số `seconds_remaining` mà máy chủ vừa trả về; tab bị treo, bị throttle hay chỉnh giờ máy đều không đổi được kết quả. Test chứng minh bằng cách kéo `started_at` lùi về quá khứ rồi nộp một bài **đúng hết**: vẫn 0 điểm.
+
+**Ân hạn 10 giây sau hạn nộp** — học viên bấm nộp kịp giờ nhưng request mất vài giây trên đường truyền; từ chối bài đó là phạt đường truyền chứ không phạt hành vi. Cửa sổ 10 giây quá ngắn để mua thêm được câu trả lời nào, nên nó không phải là lỗ hổng.
+
+**Không lưu đáp án dở trong lúc làm** — đổi lại: hết giờ mà chưa bấm nộp thì không có gì để chấm, và lượt đó là 0 điểm. Chọn như vậy để bảng `quiz_attempts` không phải nhận một lượt ghi cho mỗi cú click. Nếu sau này muốn chấm phần đã làm khi hết giờ thì phải thêm autosave trước — và ràng buộc `ck_quiz_attempts_expired_scores_zero` sẽ là chỗ báo cho người sửa biết quy tắc cũ là gì.
+
+**Mỗi người mỗi quiz chỉ một lượt chưa nộp** — cưỡng chế bằng UNIQUE một phần (`WHERE submitted_at IS NULL`), không bằng câu lệnh kiểm tra trong service. Không có nó thì mở 4 tab là 4 đồng hồ và học viên giữ lại lượt nào đẹp nhất. Hệ quả phải xử lý kèm: lượt bỏ dở sẽ khóa slot vĩnh viễn, nên bất kỳ ai nhìn tới nó sau khi hết giờ đều đóng nó lại (`submitted_at` = đúng thời điểm hết giờ, không phải lúc phát hiện).
+
+**`time_limit_s` chụp lại trên từng lượt làm** — cùng lý do `submissions` chép `language`: giảng viên sửa quiz không được phép dời hạn của người đang làm dở.
+
+**Câu hỏi bị khóa khi quiz đang xuất bản** — chấm bài đọc `correct_index` tại thời điểm nộp, nên sửa đáp án giữa chừng là chấm học viên trên một đề họ chưa từng thấy. Muốn sửa thì gỡ xuất bản, mà gỡ xuất bản lại bị từ chối khi đang có người làm dở — hai quy tắc khép lại cùng một lỗ hổng từ hai phía.
+
+**`correct_index < len(options)` đưa xuống CHECK của CSDL** — thiết kế ban đầu giao cho service. Nhưng service không phải nơi duy nhất ghi vào bảng này: task kế tiếp sinh câu hỏi bằng Gemini và ghi thẳng JSON của model xuống. Câu hỏi có đáp án đúng trỏ ra ngoài danh sách phương án không gây lỗi ở đâu cả — nó chỉ làm học viên bị chấm sai. Viết bằng `CASE` chứ không phải chuỗi `AND`, vì `jsonb_array_length` ném lỗi trên giá trị không phải mảng còn Postgres không hứa thứ tự đánh giá của `AND`.
+
+**Đáp án và giải thích không có chỗ trên model trả về cho học viên đang làm bài** — `QuestionForAttempt` không có hai trường đó, `QuestionReview` (chỉ dựng sau khi đã nộp) mới có. Cùng một cách làm với test case ẩn ở Phase 3: quy tắc nằm ở chỗ *không có trường để lọt*, chứ không nằm ở việc nhớ xóa trường. Test kiểm trên **thân response dạng text**, không phải trên field đã parse.
+
+**Đạt quiz thì đóng bài học, trong cùng transaction** — đúng quy tắc AC đóng bài tập code ở Phase 3, và dùng lại chính `progress_service.mark_lesson_solved` chứ không viết bản thứ hai.

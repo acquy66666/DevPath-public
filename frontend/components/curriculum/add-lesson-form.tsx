@@ -14,16 +14,17 @@ import { useAuth } from "@/lib/auth/auth-provider";
 import { validateLessonTitle } from "@/lib/courses/validation";
 
 /**
- * Quiz is the one lesson type still missing from here.
+ * Every lesson type the backend knows, now that each one has an editor.
  *
- * It is a lesson type the backend knows, but nothing on this side can fill one
- * in yet, and a row no editor can open is worse than an option that is not
- * offered. Its editor arrives in phase 4.
+ * `quiz` was held back through phases 2 and 3 for the reason that decides
+ * membership of this list: a row no editor can open is worse than an option
+ * that is not offered. It joined in phase 4 with `QuizEditor` behind it.
  */
 const TYPES: Array<{ value: BuildableLessonType; label: string }> = [
   { value: "video", label: "Video" },
   { value: "article", label: "Bài đọc" },
   { value: "code_exercise", label: "Bài tập code" },
+  { value: "quiz", label: "Trắc nghiệm" },
 ];
 
 export function AddLessonForm({

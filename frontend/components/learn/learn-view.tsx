@@ -13,6 +13,7 @@ import {
   VideoPlayer,
   type PlayerHandle,
 } from "@/components/learn/video-player";
+import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api/client";
@@ -244,6 +245,22 @@ export function LearnView({
                   // has to go and look: the tick, the "x/y bài" counter and the
                   // course card all read from these two.
                   onSolved={() => {
+                    queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
+                    queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+                  }}
+                />
+              ) : lesson.data.type === "quiz" ? (
+                <QuizWorkspace
+                  // Keyed by lesson for the same reason the exercise is:
+                  // moving to another quiz must not carry the previous
+                  // attempt's answers into a fresh paper.
+                  key={lesson.data.id}
+                  lessonId={lesson.data.id}
+                  accessToken={accessToken as string}
+                  // Passing finishes the lesson, written in the same
+                  // transaction as the score. The page only has to go and
+                  // look -- exactly as it does after an accepted submission.
+                  onPassed={() => {
                     queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
                     queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
                   }}

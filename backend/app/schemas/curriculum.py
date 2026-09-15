@@ -19,8 +19,9 @@ TITLE_MAX_LENGTH = 200
 # shell until the exercise is attached to it -- statement, limits and test
 # cases have their own endpoints, because they are a form of their own and
 # because the answer key must never travel through a curriculum schema.
-# Quizzes join this list in Phase 4, on the same terms.
-BuildableLessonType = Literal["video", "article", "code_exercise"]
+# A `quiz` lesson joined the list in Phase 4 on exactly those terms: the quiz,
+# its questions and their correct answers live behind `/lessons/{id}/quiz`.
+BuildableLessonType = Literal["video", "article", "code_exercise", "quiz"]
 
 
 def _strip_title(value: str) -> str:

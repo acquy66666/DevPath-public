@@ -284,25 +284,44 @@ async def test_a_code_exercise_lesson_starts_as_an_empty_shell(
     assert lesson["article_content"] is None
 
 
-@pytest.mark.parametrize("lesson_type", ["quiz", "khong-ton-tai"])
 async def test_a_lesson_type_without_a_feature_behind_it_cannot_be_created(
-    api_client: AsyncClient, course: dict, owner: dict[str, str], lesson_type: str
+    api_client: AsyncClient, course: dict, owner: dict[str, str]
 ) -> None:
     """A lesson type is buildable once the feature that fills it exists.
 
     `code_exercise` became buildable in Phase 3, when the exercise, its limits
-    and its test cases got endpoints of their own. `quiz` waits for Phase 4 on
-    the same terms: an empty shell nothing can fill is a dead end in the
-    curriculum, not a feature."""
+    and its test cases got endpoints of their own; `quiz` joined it in Phase 4
+    on the same terms (see the test below). What is left here is the case that
+    never becomes buildable: a type nothing in the system has ever heard of."""
     section = await add_section(api_client, course, owner, "Mở đầu")
 
     response = await api_client.post(
         f"/api/v1/sections/{section['id']}/lessons",
-        json={"title": "Bài", "type": lesson_type},
+        json={"title": "Bài", "type": "khong-ton-tai"},
         headers=owner,
     )
 
     assert response.status_code == 422
+
+
+async def test_a_quiz_lesson_can_be_built_now_that_quizzes_exist(
+    api_client: AsyncClient, course: dict, owner: dict[str, str]
+) -> None:
+    """The shell a quiz hangs off.
+
+    It stayed un-buildable through Phases 2 and 3 because an empty shell
+    nothing can fill is a dead end rather than a feature. `tests/api/test_quiz.py`
+    is the thing that fills it: the quiz, its questions and the attempt flow."""
+    section = await add_section(api_client, course, owner, "Mở đầu")
+
+    response = await api_client.post(
+        f"/api/v1/sections/{section['id']}/lessons",
+        json={"title": "Kiểm tra chương 1", "type": "quiz"},
+        headers=owner,
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["type"] == "quiz"
 
 
 async def test_a_lesson_can_be_edited(

@@ -9,6 +9,7 @@ from app.api.v1 import (
     grading,
     health,
     progress,
+    quiz,
     reviews,
     study,
     users,
@@ -25,6 +26,7 @@ api_router.include_router(curriculum.router)
 api_router.include_router(enrollments.router)
 api_router.include_router(grading.router)
 api_router.include_router(progress.router)
+api_router.include_router(quiz.router)
 api_router.include_router(reviews.router)
 api_router.include_router(study.router)
 api_router.include_router(video.router)

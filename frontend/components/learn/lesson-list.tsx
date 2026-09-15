@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, Check, FileText, PlayCircle } from "lucide-react";
+import { Bookmark, Check, FileText, ListChecks, PlayCircle } from "lucide-react";
 
 import type { Curriculum, LessonType } from "@/lib/api/curriculum";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const TYPE_ICONS: Record<LessonType, typeof PlayCircle> = {
   video: PlayCircle,
   article: FileText,
-  quiz: FileText,
+  quiz: ListChecks,
   code_exercise: FileText,
 };
 

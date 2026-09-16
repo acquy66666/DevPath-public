@@ -81,7 +81,7 @@ Query: câu hỏi học viên → embed → similarity search top-k (lọc theo 
 ### 3. Hybrid Recommender (⭐ điểm nhấn 2)
 
 - **Content-based:** embedding (title + description + category) → cosine similarity, giải quyết cold-start item.
-- **Collaborative filtering:** implicit feedback (enroll, hoàn thành, rating) → ALS/item-based CF trên ma trận user–item.
+- **Collaborative filtering:** implicit feedback (enroll=1, hoàn thành=2, rating ≥4=3, lấy mức mạnh nhất; rating ≤2 kéo về 1) → **item-based CF** (cosine giữa các khóa học) — `backend/app/services/collaborative.py`. Đã cân nhắc ALS (thư viện `implicit`) và không chọn: với vài chục user, vector ẩn của ALS chủ yếu là nhiễu phụ thuộc seed, không kiểm tay được và không giải thích được vì sao gợi ý; item-based thì tất định và mỗi gợi ý kèm khóa học đã "sinh" ra nó.
 - **Hybrid:** weighted blend, fallback content-based + phổ biến-theo-danh-mục khi user mới.
 - Tính offline theo batch (Celery beat, mỗi đêm), cache kết quả top-N per user vào Redis.
 - Đánh giá: precision@k, recall@k trên tập held-out từ dữ liệu seed — script tại `backend/scripts/eval_recommender.py`.

@@ -17,7 +17,7 @@
 ## Tuần 10 — Hybrid recommender
 
 - [ ] Content-based: embedding title+description+category cho mọi course → cosine similarity ("khóa học tương tự" trên trang chi tiết)
-- [ ] Collaborative: implicit matrix (enroll=1, completed=2, rating cao=3) → item-based CF hoặc ALS (thư viện `implicit`)
+- [x] Collaborative: implicit matrix (enroll=1, completed=2, rating cao=3) → item-based CF hoặc ALS (thư viện `implicit`)
 - [ ] Hybrid blend + fallback: user mới → content-based theo lịch sử xem + phổ biến theo danh mục
 - [ ] Batch Celery beat hằng đêm → cache top-N vào Redis; API `/recommendations`
 - [ ] UI: khối "Gợi ý cho bạn" (trang chủ), "Khóa học tương tự" (trang chi tiết), "Học tiếp theo" (sau khi hoàn thành)

@@ -217,3 +217,25 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Test bảo mật khẳng định sự từ chối, không khẳng định cơ chế từ chối** — CI cho thấy `/proc/kcore` bị chặn ở cả hai máy nhưng bằng hai lớp khác nhau: daemon che bằng `/dev/null` trên máy dev, quyền `0400` gặp user không đặc quyền trên runner GitHub. Ghim test vào cơ chế của một máy là để nó đỏ trên một máy an toàn không kém. Điều này cũng sửa lại một câu trong báo cáo: "Docker che `/proc`" không phải tính chất chung của mọi máy chạy Docker.
 
 **Test dùng CSDL phải tự dựng lấy tiền đề của nó** — test seed từng gọi thẳng `seed_courses()` và mượn hàng danh mục có sẵn trong CSDL dev, nên xanh ở máy và đỏ trong CI. Phần tiền đề đi mượn là phần không được kiểm.
+
+---
+
+## Phase 4 — AI Features ⭐
+
+**Bảng `doc_chunks` dựng trước khi có API key Gemini** — việc chọn số chiều vector, khóa ngoại và index là quyết định schema, không phải quyết định model. Làm trước nghĩa là task ingest sau này chỉ còn phần gọi API, và cũng nghĩa là phần không phụ thuộc bên ngoài không bị chặn bởi phần phụ thuộc bên ngoài.
+
+**Vector 768 chiều, chốt trong kiểu cột** — đúng cỡ gốc của `text-embedding-004` và là mức cắt Matryoshka hợp lệ của `gemini-embedding-001`, nên đổi model không nhất thiết phải viết lại cả bảng. Quan trọng hơn: 768 nằm dưới trần **2000 chiều** mà index HNSW của pgvector chấp nhận cho kiểu `vector` — chọn 3072 chiều là tự đẩy mình sang `halfvec` ngay từ dòng đầu tiên.
+
+**`lesson_id` không null, dù về mặt dữ liệu có thể để trống** — chunk nào không chỉ được về một bài học thì không trích nguồn được, mà "trả lời kèm trích nguồn" là điều kiện gate của phase này. Ràng buộc đặt ở schema để không có đường nào tạo ra chunk không trích nguồn được.
+
+**`course_id` denormalize, biết là dư và vẫn giữ** — đi vòng lesson → section → course vẫn ra đúng giá trị đó, nhưng mọi truy vấn top-k đều lọc theo khóa học, và hai phép join quanh một lần quét vector là chi phí trả ở *mỗi câu hỏi người dùng đặt*. Job ingest ghi cả hai cột cùng lúc, ingest lại xóa theo `lesson_id`, nên hai cột không lệch nhau được trừ khi có người sửa tay.
+
+**Phạm vi khóa học cưỡng chế bằng `WHERE`, không bằng lời dặn trong prompt** — "chỉ trả lời trong phạm vi khóa học" mà chỉ viết trong prompt thì model phá được; viết thành điều kiện lọc hàng thì không. Đã có test: một chunk của khóa khác khớp câu hỏi hoàn hảo vẫn không được trả về.
+
+**Cột `embedding_model` ghi model đã sinh ra vector** — hai model cùng 768 chiều vẫn đặt cùng một câu ở hai vị trí khác nhau, nên bảng trộn vector của hai model trả kết quả vô nghĩa **mà không báo lỗi**. Kế hoạch đã liệt "Gemini API đổi/giới hạn quota" vào rủi ro chính; cột này biến ngày đó thành một câu truy vấn thay vì một cuộc điều tra.
+
+**Unique (`lesson_id`,`chunk_index`) để ingest lại là idempotent** — pipeline ingest xóa rồi ghi lại theo bài học; nếu job chết giữa chừng và chạy lại, ràng buộc này là thứ từ chối bản sao thứ hai.
+
+**Index HNSW được xác nhận bằng `EXPLAIN` chứ không bằng việc nó tồn tại** — dựng HNSW sai lớp toán tử (`vector_l2_ops` trong khi truy vấn dùng `<=>`) không sinh ra lỗi nào: Postgres lặng lẽ quét tuần tự. Đo trên 3000 chunk: planner chọn `Index Scan using ix_doc_chunks_embedding`, 1,33 ms và 1239 buffer, so với 5,89 ms và 9055 buffer khi tắt index scan. Chưa đo recall — HNSW là tìm kiếm xấp xỉ, và câu hỏi "top-5 nó trả về có đúng là top-5 thật không" cần embedding thật, để đo cùng precision@k. Xem `phase-4/hnsw-index.txt`.
+
+**Tham số `m`/`ef_construction` để mặc định** — tinh chỉnh HNSW là đánh đổi recall lấy tốc độ, mà recall thì chưa đo được khi chưa có embedding thật. Chỉnh sớm là chỉnh mù.

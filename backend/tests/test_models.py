@@ -8,11 +8,13 @@ upgrade/downgrade against the dev database.
 import pytest
 
 from app.models import (
+    EMBEDDING_DIMENSIONS,
     Base,
     Bookmark,
     Category,
     Course,
     CourseSection,
+    DocChunk,
     Enrollment,
     Lesson,
     LessonProgress,
@@ -54,6 +56,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "test_cases",
         "submissions",
         "submission_results",
+        # Phase 4 -- what the RAG assistant retrieves from.
+        "doc_chunks",
     }
 
 
@@ -307,3 +311,44 @@ def test_a_review_is_one_to_five_stars_and_never_a_blank_comment() -> None:
         "ck_reviews_rating",
         "ck_reviews_comment_not_blank",
     } <= constraint_names(Review)
+
+
+def test_a_chunk_is_always_attached_to_a_citable_lesson() -> None:
+    """Both parents cascade, and neither is optional.
+
+    A chunk whose lesson has been deleted would be the assistant quoting
+    material the course no longer contains; a chunk with no lesson at all would
+    be an answer with no source to link to.
+    """
+    for column in ("course_id", "lesson_id"):
+        assert DocChunk.__table__.c[column].nullable is False
+        fk = next(iter(DocChunk.__table__.c[column].foreign_keys))
+        assert fk.ondelete == "CASCADE"
+
+
+def test_chunk_embeddings_are_fixed_width() -> None:
+    """The width lives in the column type, so a model change cannot be quiet."""
+    assert DocChunk.__table__.c.embedding.type.dim == EMBEDDING_DIMENSIONS
+    assert EMBEDDING_DIMENSIONS <= 2000, "over pgvector's HNSW ceiling for `vector`"
+    assert DocChunk.__table__.c.embedding_model.nullable is False
+
+
+def test_the_embedding_index_is_hnsw_over_cosine_distance() -> None:
+    """The operator class has to match the operator the retrieval query uses.
+
+    Build it with the wrong one and nothing fails: the planner just ignores the
+    index and every question becomes a sequential scan of the whole corpus.
+    """
+    index = next(i for i in DocChunk.__table__.indexes if i.name == "ix_doc_chunks_embedding")
+    assert index.dialect_options["postgresql"]["using"] == "hnsw"
+    assert index.dialect_options["postgresql"]["ops"] == {"embedding": "vector_cosine_ops"}
+    assert index_names(DocChunk) == {"ix_doc_chunks_course_id", "ix_doc_chunks_embedding"}
+
+
+def test_re_ingesting_a_lesson_cannot_double_its_chunks() -> None:
+    assert "uq_doc_chunks_lesson_chunk" in constraint_names(DocChunk)
+    assert {
+        "ck_doc_chunks_chunk_index",
+        "ck_doc_chunks_content_not_empty",
+        "ck_doc_chunks_token_count",
+    } <= constraint_names(DocChunk)

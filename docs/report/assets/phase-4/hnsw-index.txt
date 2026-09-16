@@ -1,0 +1,89 @@
+INDEX HNSW CÓ ĐƯỢC POSTGRES DÙNG THẬT KHÔNG
+Ngày đo: 14/09/2026 · máy dev (Windows 11, Docker Desktop) · pgvector/pgvector:pg16
+Bảng: doc_chunks, cột embedding vector(768), index ix_doc_chunks_embedding
+      hnsw (embedding vector_cosine_ops), tham số build để mặc định (m=16,
+      ef_construction=64)
+
+Vì sao phải đo: một index HNSW dựng sai lớp toán tử (`vector_l2_ops` trong khi
+truy vấn dùng `<=>`) **không báo lỗi gì cả** — Postgres lặng lẽ bỏ qua index và
+quét tuần tự. Nhìn `\d doc_chunks` thấy index nằm đó thì vẫn tưởng là xong.
+Cách duy nhất biết chắc là bắt planner nói ra.
+
+Cách tái tạo:
+  # stack dev đang chạy (infra/docker-compose.yml)
+  cd backend && python <script đo>            # script trong scratchpad phiên làm việc
+  # script chèn 3000 chunk giả vào MỘT khóa học, ANALYZE, rồi EXPLAIN hai lần;
+  # toàn bộ nằm trong một transaction và được rollback — CSDL dev không đổi.
+
+==============================================================================
+1. KẾT QUẢ
+==============================================================================
+Truy vấn đo (chính là truy vấn chatbot sẽ chạy):
+
+  SELECT id, content FROM doc_chunks
+  WHERE course_id = :course_id
+  ORDER BY embedding <=> :question
+  LIMIT 5
+
+Dữ liệu: 3000 chunk, vector ngẫu nhiên chuẩn hóa 768 chiều, cùng một khóa học.
+
+  Lần 1 — để planner tự chọn:
+    Limit (actual time=0.931..0.948 rows=5)
+      ->  Index Scan using ix_doc_chunks_embedding on doc_chunks
+            Order By: (embedding <=> '[...768 số...]'::vector)
+            Filter: (course_id = '...'::uuid)
+            Buffers: shared hit=1239
+    Planning Time: 0.111 ms
+    Execution Time: 1.328 ms
+
+  Lần 2 — tắt index scan (SET LOCAL enable_indexscan/enable_bitmapscan = off):
+    Limit (actual time=5.874..5.875 rows=5)
+      ->  Sort  (Sort Method: top-N heapsort  Memory: 25kB)
+            ->  Seq Scan on doc_chunks (rows=3000)
+                  Buffers: shared hit=9055
+    Planning Time: 0.057 ms
+    Execution Time: 5.887 ms
+
+(Hai khối EXPLAIN gốc dài hơn thế này vì literal vector 768 số được in đầy đủ
+trong dòng `Order By` / `Sort Key`; ở đây rút gọn thành `[...768 số...]`,
+không sửa gì khác.)
+
+==============================================================================
+2. ĐỌC ĐƯỢC GÌ
+==============================================================================
+- **Dòng quan trọng nhất là "Index Scan using ix_doc_chunks_embedding".** Lớp
+  toán tử của index khớp với toán tử `<=>` của truy vấn, nên planner dùng được.
+  Đây là điều cần chứng minh, không phải con số mili giây.
+
+- **4,4 lần nhanh hơn và 7,3 lần ít trang hơn** (1,328 ms / 5,887 ms; 1239 /
+  9055 buffer). Khoảng cách còn khiêm tốn vì 3000 dòng là bé — cả bảng vẫn nằm
+  gọn trong bộ nhớ nên quét tuần tự chưa phải trả giá đọc đĩa. Giá trị thật của
+  HNSW là ở chỗ chi phí của nó gần như không tăng theo số dòng, còn Seq Scan
+  thì tăng tuyến tính.
+
+- **Chỉ số buffer nói rõ hơn thời gian.** 1239 so với 9055 trang là tỉ lệ không
+  phụ thuộc vào việc máy đang bận hay rảnh, nên nó là con số nên trích vào báo
+  cáo thay vì mili giây đo trên Docker Desktop.
+
+==============================================================================
+3. CHƯA ĐO, NÓI THẲNG
+==============================================================================
+- **Chưa đo recall.** HNSW là tìm kiếm *xấp xỉ*: nó được phép bỏ sót láng giềng
+  thật để đi nhanh. Số ở trên chỉ chứng minh index được dùng và nhanh hơn, không
+  chứng minh top-5 nó trả về đúng bằng top-5 của quét toàn bảng. Phép đo đó cần
+  embedding thật (không phải vector ngẫu nhiên) nên để lại cho task ingest, đo
+  cùng lúc với precision@k của chatbot.
+
+- **Vector ngẫu nhiên là ca xấu nhất cho HNSW.** Trong không gian 768 chiều,
+  các vector ngẫu nhiên gần như cách đều nhau, đồ thị láng giềng gần như vô
+  nghĩa. Embedding thật có cụm, và HNSW ăn điểm chính ở chỗ có cụm — nên con số
+  4,4 lần ở đây là sàn, không phải trần.
+
+- **Không đo chi phí ghi.** Script chèn 3000 dòng mất 32 giây, nhưng phần lớn
+  thời gian đó là Python sinh 3000 × 768 số ngẫu nhiên và gửi qua mạng, không
+  phải Postgres cập nhật index. Muốn có số chi phí ghi thật thì phải đo bằng
+  COPY, và chỉ đáng đo khi pipeline ingest đã chạy trên dữ liệu thật.
+
+- Tham số `m` và `ef_construction` để mặc định. Chưa có gì để tinh chỉnh dựa
+  vào: tinh chỉnh HNSW là đánh đổi recall lấy tốc độ, mà recall thì mục trên
+  vừa nói là chưa đo được.

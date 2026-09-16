@@ -199,7 +199,7 @@ Ràng buộc:
 | `reports` | `reporter_id`, `target_type`, `target_id`, `reason`, `status` | `ix_reports_status`; CHECK `target_type IN ('course','review','qa_thread','qa_reply')` | reporter → CASCADE | `target_id` là UUID không có FK (đa hình) — chấp nhận, admin xử lý thủ công |
 | `xp_events` | `user_id`, `amount`, `reason`, `ref_type`, `ref_id` | `ix_xp_events_user_created` (`user_id`,`created_at`); `uq_xp_events_ref` (`user_id`,`reason`,`ref_type`,`ref_id`) | user → CASCADE | Unique chống cộng XP hai lần cho cùng một hành động |
 | `streaks` | `user_id`, `current_streak`, `longest_streak`, `last_active_date` | **`uq_streaks_user_id`** — 1 dòng/user | user → CASCADE | |
-| `doc_chunks` | `course_id`, `lesson_id`, `content`, `embedding` (vector), `token_count` | `ix_doc_chunks_course_id`; HNSW index trên `embedding` | course → CASCADE, lesson → CASCADE | Xóa/ingest lại theo `lesson_id` |
+| `doc_chunks` | `course_id`, `lesson_id`, **`chunk_index`**, `content`, `token_count`, `embedding` (`vector(768)`), **`embedding_model`** | **`uq_doc_chunks_lesson_chunk`** (`lesson_id`,`chunk_index`); `ix_doc_chunks_course_id`; `ix_doc_chunks_embedding` HNSW (`embedding` vector_cosine_ops); CHECK `chunk_index >= 0`, `length(content) > 0`, `token_count > 0` | course → CASCADE, lesson → CASCADE | Xóa/ingest lại theo `lesson_id`, và unique (`lesson_id`,`chunk_index`) làm việc ingest lại **idempotent** — job chết giữa chừng rồi chạy lại không nhân đôi chunk. `lesson_id` **không null**: chunk không trích nguồn được thì không dùng được, mà "trả lời kèm trích nguồn" là điều kiện gate của Phase 4. `course_id` là cột **denormalize** (đi vòng lesson → section → course vẫn ra) vì mọi truy vấn top-k đều lọc theo nó, trả giá hai phép join quanh một lần quét vector là cái giá trả mãi mãi. **768 chiều**: cỡ gốc của `text-embedding-004`, cũng là mức cắt Matryoshka hợp lệ của `gemini-embedding-001`, và nằm dưới trần 2000 chiều mà index HNSW của pgvector chấp nhận cho kiểu `vector` (3072 chiều thì phải đổi sang `halfvec`). **`embedding_model`** ghi model đã sinh ra vector: hai model cùng số chiều vẫn đặt cùng một câu ở hai chỗ khác nhau, bảng trộn cả hai trả kết quả vô nghĩa mà không báo lỗi gì |
 | `chat_sessions` | `user_id`, `course_id` | `ix_chat_sessions_user_course` | user → CASCADE, course → CASCADE | |
 | `chat_messages` | `session_id`, `role`, `content`, `cited_lesson_ids` (JSONB) | `ix_chat_messages_session_created` | session → CASCADE | `cited_lesson_ids` là mảng UUID |
 | `recommendations` | `user_id`, `course_ids` (JSONB), `strategy`, `computed_at` | `uq_recommendations_user_strategy` (`user_id`,`strategy`) | user → CASCADE | Cache batch; bản nóng ở Redis |
@@ -238,7 +238,8 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | ~~`ix_lesson_progress_enrollment`~~ | lesson_progress | — | **Không tạo.** `uq_lesson_progress_enrollment_lesson` đã dẫn đầu bằng `enrollment_id` nên index này là bản sao thứ hai của cùng một B-tree, phải trả giá ở mọi lần heartbeat mà không ai đọc | 2 |
 | `ix_submissions_user_exercise` | submissions | (`user_id`,`exercise_id`,`created_at DESC`) partial `WHERE is_trial = false` | Lịch sử nộp bài — điều kiện `where` vì lịch sử không bao giờ hiện bài chạy thử, mà học viên dùng "chạy thử" nhiều hơn hẳn | 3 |
 | `ix_submissions_status` | submissions | `status` partial `WHERE status IN ('pending','running')` | Giám sát hàng đợi chấm | 3 |
-| `ix_doc_chunks_embedding` | doc_chunks | HNSW (`embedding` vector_cosine_ops) | Truy vấn top-k RAG | 4 |
+| `ix_doc_chunks_course_id` | doc_chunks | `course_id` | Giới hạn top-k trong phạm vi một khóa học | 4 |
+| `ix_doc_chunks_embedding` | doc_chunks | HNSW (`embedding` vector_cosine_ops) | Truy vấn top-k RAG — lớp toán tử phải khớp toán tử `<=>` của truy vấn, sai thì planner bỏ qua index và quét tuần tự mà không báo lỗi; đã xác nhận bằng `EXPLAIN` trong `docs/report/assets/phase-4/hnsw-index.txt` | 4 |
 | `ix_notifications_user_unread` | notifications | (`user_id`,`created_at DESC`) partial `WHERE read_at IS NULL` | Chuông thông báo | 5 |
 | `ix_xp_events_user_created` | xp_events | (`user_id`,`created_at`) | Rebuild leaderboard, biểu đồ XP | 5 |
 | `ix_orders_user_status` | orders | (`user_id`,`status`) | Lịch sử đơn hàng | 5 |
@@ -268,7 +269,9 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `lesson_progress` | ✅ đã có trong DB | `b6dea13f199c` |
 | `notes`, `bookmarks` | ✅ đã có trong DB | `852a7bf2510b` |
 | `reviews` | ✅ đã có trong DB | `7b60984bf439` |
-| Bài tập code, quiz, thương mại, cộng đồng, AI | ⏳ Phase 3–5 | |
+| `code_exercises`, `test_cases`, `submissions`, `submission_results` | ✅ đã có trong DB | `86a5023fa0b8`, `123eb876dda5` (`is_trial`) |
+| `doc_chunks` | ✅ đã có trong DB | `a03e9e2f9ce9` |
+| Quiz, thương mại, cộng đồng, phần AI còn lại (`chat_sessions`, `chat_messages`, `recommendations`) | ⏳ Phase 4–5 | |
 
 `search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
 

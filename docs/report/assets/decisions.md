@@ -257,3 +257,17 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Đáp án và giải thích không có chỗ trên model trả về cho học viên đang làm bài** — `QuestionForAttempt` không có hai trường đó, `QuestionReview` (chỉ dựng sau khi đã nộp) mới có. Cùng một cách làm với test case ẩn ở Phase 3: quy tắc nằm ở chỗ *không có trường để lọt*, chứ không nằm ở việc nhớ xóa trường. Test kiểm trên **thân response dạng text**, không phải trên field đã parse.
 
 **Đạt quiz thì đóng bài học, trong cùng transaction** — đúng quy tắc AC đóng bài tập code ở Phase 3, và dùng lại chính `progress_service.mark_lesson_solved` chứ không viết bản thứ hai.
+
+**Collaborative filtering chọn item-based, không chọn ALS** — kiến trúc cho phép cả hai. Quyết định dựa trên dữ liệu nền tảng sẽ thực sự có: vài chục user, không phải vài chục nghìn. ALS học vector ẩn từ khởi tạo ngẫu nhiên; trên ma trận nhỏ cỡ này các vector đó phần lớn là nhiễu đổi theo seed — không kiểm tay được và không nói được vì sao gợi ý. Item-item cosine trên cùng ma trận thì tất định, mọi con số tính được trên giấy (test làm đúng như vậy), và mỗi gợi ý mang theo khóa học đã tạo ra nó — thứ trang "Học tiếp theo" trích được thành "vì bạn đã học …". ALS có tốt hơn không là câu hỏi cho `eval_recommender.py`, trả lời bằng precision@k chứ không bằng tranh luận.
+
+**Trọng số lấy mức mạnh nhất, không cộng dồn** — hoàn thành thì chắc chắn đã đăng ký, viết review thì chắc chắn đã đăng ký; cộng dồn là đếm một sự thật hai ba lần và đẩy thang 1–3 lên 6.
+
+**Đánh giá ≤2★ kéo trọng số về mức "đăng ký"** — ma trận implicit không có số âm, nên "học xong và thấy tệ" không đẩy được khóa học ra xa. Nhưng ít nhất nó không được tính là tín hiệu thích mạnh như một lần hoàn thành bình thường. 3★ không đổi gì.
+
+**Tính bằng cộng dồn theo từng user, không nhân ma trận** — mỗi user đóng góp `w_a · w_b` cho mọi cặp khóa họ cùng học. Chi phí là tổng (số khóa mỗi user)², đúng bằng số cặp thật sự xuất hiện; nhân ma trận thì trả giá cho mọi cặp trong catalogue dù không ai học chung. Trọng số là số nguyên nên tổng chính xác tuyệt đối và không phụ thuộc thứ tự nạp dữ liệu — hai lần chạy batch cho cùng một kết quả, kể cả thứ tự khi bằng điểm.
+
+**Người chưa có lịch sử nhận danh sách rỗng từ mô hình này** — cold start là việc của phần hybrid. Trả "khóa phổ biến" từ đây là giấu một mô hình thứ hai bên trong mô hình thứ nhất, và phép blend sau này sẽ cộng độ phổ biến hai lần.
+
+**Khóa nháp và khóa đã gỡ bị loại ngay ở truy vấn** — tương tác với khóa đã gỡ vẫn nói lên sở thích, nhưng giữ nó trong ma trận nghĩa là nó có thể được gợi ý, và lọc lại ở đầu ra là một quy tắc thứ hai mà mọi nơi đọc mô hình phải nhớ.
+
+**Chưa thêm shrinkage cho cặp khóa ít người học chung** — hai khóa chỉ có một người học chung vẫn ra cosine rất cao; đây là điểm yếu đã biết của item-based trên dữ liệu thưa. Không chỉnh bây giờ vì hệ số shrinkage là thứ phải chọn bằng precision@k, mà CSDL dev lúc viết mới có 5 tương tác / 4 user / 1 cặp học chung. Chỉnh trước khi đo là chỉnh mù — cùng lý do để mặc định tham số HNSW.

@@ -16,6 +16,7 @@ from app.models.grading import (
     TestCase,
 )
 from app.models.progress import LessonProgress
+from app.models.quiz import Quiz, QuizAttempt, QuizQuestion
 from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
 from app.models.refresh_token import RefreshToken
 from app.models.review import Review
@@ -35,6 +36,9 @@ __all__ = [
     "Lesson",
     "LessonProgress",
     "Note",
+    "Quiz",
+    "QuizAttempt",
+    "QuizQuestion",
     "RefreshToken",
     "Review",
     "Submission",

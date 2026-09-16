@@ -6,6 +6,7 @@ import { useId, useState } from "react";
 
 import { ExerciseEditor } from "@/components/exercise/exercise-editor";
 import { VideoUpload } from "@/components/curriculum/video-upload";
+import { QuizEditor } from "@/components/quiz/quiz-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -150,6 +151,10 @@ function LessonForm({
         // The exercise is four tables away from the lesson, so it edits itself
         // and saves on its own button rather than riding along with the title.
         <ExerciseEditor lessonId={lesson.id} />
+      ) : lesson.type === "quiz" ? (
+        // Same arrangement, same reason: the quiz, its questions and their
+        // answers are their own tables behind their own endpoints.
+        <QuizEditor lessonId={lesson.id} />
       ) : (
         <VideoUpload lesson={lesson} />
       )}

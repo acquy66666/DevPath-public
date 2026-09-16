@@ -8,6 +8,7 @@ import {
   Code2,
   FileText,
   GripVertical,
+  ListChecks,
   Loader2,
   Pencil,
   Trash2,
@@ -33,7 +34,7 @@ const TYPE_LABELS: Record<LessonType, string> = {
 const TYPE_ICONS: Record<LessonType, typeof FileText> = {
   video: Video,
   article: FileText,
-  quiz: FileText,
+  quiz: ListChecks,
   code_exercise: Code2,
 };
 

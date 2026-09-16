@@ -1,4 +1,4 @@
-import { FileText, Lock, PlayCircle } from "lucide-react";
+import { FileText, ListChecks, Lock, PlayCircle } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import type { Curriculum, LessonSummary, LessonType } from "@/lib/api/curriculum";
@@ -6,7 +6,7 @@ import type { Curriculum, LessonSummary, LessonType } from "@/lib/api/curriculum
 const TYPE_ICONS: Record<LessonType, typeof PlayCircle> = {
   video: PlayCircle,
   article: FileText,
-  quiz: FileText,
+  quiz: ListChecks,
   code_exercise: FileText,
 };
 

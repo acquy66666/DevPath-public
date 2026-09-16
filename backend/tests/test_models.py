@@ -19,6 +19,9 @@ from app.models import (
     Lesson,
     LessonProgress,
     Note,
+    Quiz,
+    QuizAttempt,
+    QuizQuestion,
     RefreshToken,
     Review,
     User,
@@ -58,6 +61,10 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "submission_results",
         # Phase 4 -- what the RAG assistant retrieves from.
         "doc_chunks",
+        # Phase 4 -- quizzes.
+        "quizzes",
+        "quiz_questions",
+        "quiz_attempts",
     }
 
 
@@ -352,3 +359,57 @@ def test_re_ingesting_a_lesson_cannot_double_its_chunks() -> None:
         "ck_doc_chunks_content_not_empty",
         "ck_doc_chunks_token_count",
     } <= constraint_names(DocChunk)
+
+
+def test_a_lesson_has_at_most_one_quiz() -> None:
+    """Two quizzes behind one lesson would make "the quiz" ambiguous."""
+    assert "uq_quizzes_lesson" in constraint_names(Quiz)
+    assert Quiz.__table__.c.lesson_id.nullable is False
+    fk = next(iter(Quiz.__table__.c.lesson_id.foreign_keys))
+    assert fk.ondelete == "CASCADE"
+
+
+def test_a_question_cannot_point_past_its_own_options() -> None:
+    """The rule that keeps a question answerable, in the table.
+
+    docs/database-design.md left this to the service. It is written into the
+    constraint instead, because the service is not the only writer: the quiz
+    generator of the next task inserts straight from a model's JSON output.
+    """
+    assert "ck_quiz_questions_options" in constraint_names(QuizQuestion)
+    check = next(
+        c for c in QuizQuestion.__table__.constraints if c.name == "ck_quiz_questions_options"
+    )
+    condition = str(check.sqltext)
+    assert "correct_index < jsonb_array_length(options)" in condition
+    # CASE, not AND: jsonb_array_length raises on a non-array rather than
+    # returning false, and only CASE promises the order of evaluation.
+    assert condition.strip().startswith("CASE")
+
+
+def test_only_one_attempt_at_a_time_and_only_while_unfinished() -> None:
+    """The index that makes a time limit mean anything.
+
+    Without it, four tabs are four clocks and the student keeps the best one.
+    Partial, so finished attempts pile up freely -- history is why they are
+    kept at all.
+    """
+    index = next(i for i in QuizAttempt.__table__.indexes if i.name == "uq_quiz_attempts_open")
+    assert index.unique is True
+    assert "submitted_at IS NULL" in str(index.dialect_options["postgresql"]["where"])
+
+
+def test_an_attempt_is_either_running_or_finished() -> None:
+    """A score with no submission time is a half-applied write, not a state."""
+    assert {
+        "ck_quiz_attempts_finished",
+        "ck_quiz_attempts_score",
+        "ck_quiz_attempts_expired_scores_zero",
+    } <= constraint_names(QuizAttempt)
+
+
+def test_the_attempt_keeps_the_clock_it_started_under() -> None:
+    """Editing the quiz must not move the deadline of someone sitting it."""
+    assert QuizAttempt.__table__.c.time_limit_s is not None
+    assert QuizAttempt.__table__.c.started_at.nullable is False
+    assert QuizAttempt.__table__.c.submitted_at.nullable is True

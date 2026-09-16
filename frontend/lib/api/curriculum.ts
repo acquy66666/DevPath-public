@@ -8,8 +8,8 @@ import type { VideoAsset } from "./video";
  */
 
 export type LessonType = "video" | "article" | "quiz" | "code_exercise";
-/** Quiz is the one still missing an editor behind it; it arrives in phase 4. */
-export type BuildableLessonType = "video" | "article" | "code_exercise";
+/** Every type now has an editor behind it -- `quiz` got one in phase 4. */
+export type BuildableLessonType = LessonType;
 
 export interface LessonSummary {
   id: string;

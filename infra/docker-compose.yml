@@ -134,6 +134,29 @@ services:
       retries: 3
       start_period: 30s
 
+  # The clock, and nothing else. It publishes the scheduled jobs in
+  # `beat_schedule` onto the queues; the worker above does them.
+  #
+  # Exactly one replica, always. Two beat processes would enqueue every
+  # nightly job twice, and the schedule file below is per-container state, so
+  # neither would notice the other.
+  beat:
+    build:
+      context: ../backend
+      target: development
+    image: devpath-backend:dev
+    command:
+      ["celery", "-A", "app.workers.celery_app", "beat", "--loglevel=info",
+       "--schedule=/tmp/celerybeat-schedule"]
+    environment: *backend-env
+    volumes: *backend-volumes
+    depends_on:
+      redis:
+        condition: service_healthy
+    # No healthcheck: beat answers no `inspect ping` -- it is a publisher, not
+    # a worker with a queue to reply on. Its liveness shows up in the worker's
+    # log at 03:00, and a missed night is what the cache's 48-hour TTL covers.
+
   # Submissions, and only submissions. Separate from the worker above because
   # the two jobs are nothing alike -- and because this is the one container in
   # the stack that can talk to the Docker daemon.

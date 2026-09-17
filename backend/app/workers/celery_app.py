@@ -1,7 +1,8 @@
 """Celery entrypoint. The worker containers run:
 
-    celery -A app.workers.celery_app worker -Q media      # transcoding
-    celery -A app.workers.celery_app worker -Q grading    # submissions
+    celery -A app.workers.celery_app worker -Q media,celery   # transcoding, batches
+    celery -A app.workers.celery_app worker -Q grading        # submissions
+    celery -A app.workers.celery_app beat                     # the nightly clock
 
 Two queues, two worker processes, because the two jobs are nothing alike. A
 transcode is one ffmpeg run that can hold a core for half an hour; a grading
@@ -12,9 +13,15 @@ afternoon start thirty containers on a two-core VPS.
 
 Task modules are registered in `include` below as they appear -- embedding and
 mail later.
+
+The third process is `beat`, which holds no work of its own: it publishes the
+scheduled jobs in `beat_schedule` onto the queues at the right times, and the
+workers above do them. One beat and one beat only -- two would enqueue every
+nightly job twice.
 """
 
 from celery import Celery
+from celery.schedules import crontab
 
 from app.core.config import get_settings
 
@@ -34,7 +41,11 @@ celery_app = Celery(
     # Task modules the worker imports on start. A task that is never imported
     # is never registered, and Celery answers the enqueue with
     # "unregistered task" long after the code looked correct.
-    include=["app.workers.video", "app.workers.grading"],
+    include=[
+        "app.workers.video",
+        "app.workers.grading",
+        "app.workers.recommendations",
+    ],
 )
 
 celery_app.conf.update(
@@ -55,6 +66,20 @@ celery_app.conf.update(
     task_routes={
         "app.workers.grading.*": {"queue": GRADING_QUEUE},
         "app.workers.video.*": {"queue": MEDIA_QUEUE},
+        # Nothing for `app.workers.recommendations`: it goes to the default
+        # `celery` queue, which the media worker already consumes. A batch
+        # that runs once a night does not need a container of its own, and it
+        # must not sit on the grading queue -- those cores belong to
+        # submissions somebody is watching a page for.
+    },
+    beat_schedule={
+        # 03:00 Asia/Ho_Chi_Minh (the timezone set above). Chosen for when it
+        # is *not*: nobody is studying, and the job reads every enrolment on
+        # the platform.
+        "rebuild-recommendations-nightly": {
+            "task": "app.workers.recommendations.rebuild_recommendations",
+            "schedule": crontab(hour=3, minute=0),
+        },
     },
 )
 

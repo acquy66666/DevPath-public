@@ -1,0 +1,82 @@
+GỢI Ý TÍNH OFFLINE: JOB HẰNG ĐÊM, CACHE REDIS, ENDPOINT ĐỌC CACHE
+Ngày đo: 18/09/2026 · máy dev (Windows 11, Docker Desktop)
+Thành phần: celery beat (container `beat`) → task
+      `app.workers.recommendations.rebuild_recommendations` trên queue mặc
+      định `celery` → worker `media,celery` → Redis → `GET /api/v1/recommendations`
+
+Vì sao tính offline: dựng ma trận tương đồng item-item phải đọc **toàn bộ**
+lượt đăng ký của nền tảng. Một đêm một lần thì hợp lý; mỗi lần tải trang một
+lần thì vô lý. Trang chỉ đọc cache.
+
+Cách tái tạo:
+  # stack dev đang chạy (infra/docker-compose.yml)
+  docker compose exec backend python -m scripts.rebuild_recommendations
+  docker compose exec redis redis-cli --scan --pattern 'rec:v1:*'
+
+==============================================================================
+1. JOB CHẠY THẬT
+==============================================================================
+  $ docker compose exec backend python -m scripts.rebuild_recommendations
+  Đã ghi gợi ý cho 4 người dùng (top 20 mỗi người).
+
+  $ docker compose exec redis redis-cli --scan --pattern 'rec:v1:*'
+  rec:v1:user:390f3c1d-5379-410f-8cff-8e8fca21ba1d
+  rec:v1:user:88c610df-9724-46d7-a96c-91af1074088e
+  rec:v1:user:67fb752d-36f4-4524-9380-442da6e6b10b
+  rec:v1:user:48859c05-01d4-4302-8165-58ac06f1db30
+
+  $ redis-cli get rec:v1:user:48859c05-...
+  {"generated_at": "2026-09-17T18:09:41.871253+00:00",
+   "items": [{"course_id": "051057ce-...",
+              "score": 0.7071067811865475,
+              "because": "b0245dd0-..."}]}
+
+  $ redis-cli ttl rec:v1:user:48859c05-...
+  172789        # ~48 giờ
+
+  Ba người còn lại: `{"generated_at": "...", "items": []}` — tính rồi, không
+  gợi ý được gì.
+
+==============================================================================
+2. ĐỌC ĐƯỢC GÌ
+==============================================================================
+- **Điểm 0,7071 = 1/√2, kiểm được bằng tay.** Hai khóa học có đúng một người
+  học chung, khóa "vì bạn đã học" có hai người học nên chuẩn vector là √2,
+  khóa được gợi ý có một người nên chuẩn là 1, tích vô hướng là 1 →
+  cosine = 1/√2. Con số này không phải kết quả của một mô hình hộp đen.
+
+- **`items: []` khác với "không có key".** Ba người kia có key với danh sách
+  rỗng, nghĩa là *đã tính và không gợi ý được gì*; một người mới chưa có key
+  nào thì API trả `generated_at: null`. Hai câu trả lời khác nhau, và chính là
+  chỗ phần hybrid sau này rẽ sang "khóa phổ biến theo danh mục".
+
+- **TTL 48 giờ dài hơn khoảng cách giữa hai lần chạy (24 giờ).** Có chủ đích:
+  mất một đêm — container beat chết, VPS tắt — thì gợi ý của hôm qua vẫn hơn
+  một trang trống, và `generated_at` đi kèm để trang biết dữ liệu cũ bao lâu.
+
+- **Job đi vào queue mặc định `celery`**, không phải queue `grading`. Lý do
+  nằm ở chỗ queue `grading` tồn tại: những core đó dành cho bài nộp đang có
+  người ngồi chờ trước màn hình.
+
+==============================================================================
+3. CHƯA ĐO, NÓI THẲNG
+==============================================================================
+- **Chưa đo precision@k / recall@k.** Số ở trên chứng minh đường ống chạy
+  đúng, không chứng minh gợi ý hay. CSDL dev lúc đo chỉ có **5 tương tác /
+  4 user / 4 khóa / 1 cặp khóa được học chung**, nên 3 trong 4 người không có
+  gợi ý nào — đúng như dự đoán, không phải lỗi. Phép đo thật cần task seed
+  ~50 user theo cụm sở thích, rồi tới `scripts/eval_recommender.py`.
+
+- **Chưa đo thời gian chạy job ở quy mô thật.** Với 5 tương tác thì mọi con số
+  thời gian đều vô nghĩa. Chi phí của thuật toán là tổng (số khóa mỗi user)²
+  nên nó tăng theo số tương tác, không theo bình phương số khóa trong
+  catalogue — nhưng đó là lập luận, chưa phải số đo.
+
+- **Chưa chạy qua một đêm thật.** Đã xác nhận beat khởi động, đọc đúng
+  `beat_schedule` và ghi lịch vào `/tmp/celerybeat-schedule`; chưa để máy chạy
+  tới 03:00 để xem nó tự đẩy job. Task được gọi tay bằng script và chạy đúng.
+
+- **Cache là nguồn duy nhất, không có đường tính nóng khi cache rỗng.** Người
+  dùng mới sẽ thấy khối gợi ý trống cho tới lần chạy batch kế tiếp. Đây là
+  đánh đổi có chủ đích (không cho một lần tải trang kéo theo cả ma trận), và
+  phần fallback của task hybrid là chỗ lấp khoảng đó.

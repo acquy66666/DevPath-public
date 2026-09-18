@@ -285,3 +285,23 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Thêm `scripts/rebuild_recommendations.py` thay vì bắt người ta gọi task Celery** — demo không chờ được cron, và số liệu trong báo cáo phải tái tạo được bằng một lệnh chứ không bằng cách để container chạy qua đêm. Script gọi đúng hàm `rebuild` mà task Celery gọi.
 
 **Một beat và chỉ một beat** — hai tiến trình beat sẽ đẩy mỗi job hằng đêm hai lần, mà file lịch nằm trong `/tmp` của từng container nên không bên nào biết bên nào. Đã ghi thành comment ở cả hai file compose.
+
+## Dữ liệu tương tác giả lập (18/09/2026)
+
+**Script sinh cả catalogue lẫn học viên, không chỉ học viên** — kế hoạch chỉ ghi "tạo ~50 user", nhưng CSDL dev khi đó có bốn khóa học. Trên bốn khóa thì "cụm sở thích" gần như không diễn đạt được, và precision@k đo kích thước catalogue chứ không đo mô hình. Nên script thêm 20 khóa chia bốn cụm, mỗi cụm neo vào một khóa seed thật để dữ liệu giả lập chạm được vào catalogue thật.
+
+**Một hạt giống cố định, viết thẳng trong code** — một số đo không tái tạo được là một giai thoại. `DEFAULT_SEED` là mặc định chứ không phải tham số bắt buộc, vì phép đo chỉ tái tạo được khi *mặc định* tái tạo được nó.
+
+**Phần sinh dữ liệu tách hẳn khỏi phần ghi CSDL** — `build_population()` thuần túy: không CSDL, không đồng hồ, không random toàn cục. Nhờ vậy tính chất quan trọng nhất (mô hình gợi ý đúng cụm) kiểm được bằng test chạy trong 2 giây, không cần Postgres.
+
+**Mỗi học viên bỏ trống ít nhất 2 khóa trong cụm của mình** — trần số khóa mỗi người đặt thấp hơn kích thước cụm đúng hai đơn vị. Người đã học hết cụm thì không còn gì đúng để gợi ý, và sẽ kéo precision@k xuống vì lý do nằm ở dữ liệu chứ không ở mô hình.
+
+**Mỗi cụm có 40% học viên học một khóa ngoài cụm** — không nhiễu thì các cụm thành đảo rời nhau và mô hình nào cũng đạt điểm tuyệt đối; nhiều nhiễu quá thì không còn cụm để tìm. Đây cũng là chỗ thang trọng số bị thử: khóa ngoài cụm được chấm 1–3★, đúng nhánh mà `interaction_weight` dùng để hủy tín hiệu "đã hoàn thành".
+
+**Hoàn thành và đánh giá được bốc độc lập, rồi để `interaction_weight` hòa giải** — nếu bốc thẳng ra trọng số thì dữ liệu đang *giả định* hàm đó đúng thay vì *chạy qua* nó.
+
+**Một khóa trong cụm được gán chứ không bốc, xoay vòng theo học viên** — đảm bảo không khóa nào không có người học. Khóa không ai học thì không bao giờ được gợi ý, và mỗi khóa như vậy kéo precision@k xuống vì một lý do không phải lỗi mô hình.
+
+**Có `--purge` ngay từ đầu** — 20 khóa giả lập là thứ làm cho recommender đo được và làm cho catalogue trông độn. Đường gỡ ra phải có sẵn trước khi có người cần nó gấp, và nó hoàn nguyên cả `students_count`/`rating_avg` của bốn khóa thật.
+
+**Test khẳng định trạng thái cuối, không khẳng định số dòng vừa tạo** — bài học trả giá ngay trong phiên: bộ test xanh trên CSDL trắng rồi đỏ ngay sau khi chính script được chạy thật, vì lần hai không tạo dòng nào. Trên máy đã seed một lần thì mọi bộ đếm đều bằng 0.

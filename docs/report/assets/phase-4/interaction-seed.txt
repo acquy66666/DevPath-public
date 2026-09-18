@@ -1,0 +1,146 @@
+DỮ LIỆU TƯƠNG TÁC GIẢ LẬP: 48 HỌC VIÊN THEO 4 CỤM SỞ THÍCH
+Ngày đo: 18/09/2026 · máy dev (Windows 11, Docker Desktop) · CSDL dev vừa dựng lại từ trắng
+Script: backend/scripts/seed_interactions.py (hạt giống mặc định 20261019)
+
+Vì sao cần: trước lần này, mô hình collaborative filtering chạy trên CSDL dev
+chỉ có **5 tương tác / 4 người dùng / 4 khóa học / đúng 1 cặp khóa được học
+chung**, nên 3 trong 4 người không nhận được gợi ý nào. Đó là hành vi đúng của
+mô hình, nhưng không có gì để đo. Bốn khóa học cũng quá ít để nói về "cụm sở
+thích": precision@k trên bốn khóa đo kích thước catalogue chứ không đo mô hình.
+
+DỮ LIỆU NÀY LÀ GIẢ LẬP — và báo cáo phải nói rõ. Nó chỉ chứng minh được một
+điều: đường ống có khôi phục lại được cấu trúc đã biết là có trong dữ liệu hay
+không. Nó KHÔNG chứng minh học viên thật sẽ thấy gợi ý hữu ích. Trên nền tảng
+này chưa có ai đăng ký khóa nào, nên đây là thứ trung thực nhất đo được ở
+giai đoạn này.
+
+Cách tái tạo (toàn bộ, từ CSDL trắng):
+  docker compose exec backend alembic upgrade head
+  docker compose exec backend python -m scripts.seed
+  docker compose exec backend python -m scripts.seed_interactions
+  docker compose exec backend python -m scripts.rebuild_recommendations
+  # gỡ ra khi cần demo trên catalogue sạch:
+  docker compose exec backend python -m scripts.seed_interactions --purge
+
+==============================================================================
+1. ĐÃ SINH RA GÌ
+==============================================================================
+  $ python -m scripts.seed_interactions
+  hạt giống  : 20261019
+  khóa học   : 20 tạo mới
+  học viên   : 48 tạo mới
+  đăng ký    : 190 tạo mới
+  đánh giá   : 97 tạo mới
+  tổng tương tác trong kế hoạch: 190
+
+  $ python -m scripts.seed_interactions      # chạy lần hai
+  khóa học   : 0 tạo mới
+  học viên   : 0 tạo mới
+  đăng ký    : 0 tạo mới
+  đánh giá   : 0 tạo mới
+
+Bốn cụm, mỗi cụm 6 khóa (5 khóa giả lập + 1 khóa seed thật làm neo), 12 học
+viên mỗi cụm:
+
+  frontend  ← neo: "JavaScript hiện đại: ES6+ và DOM"
+  backend   ← neo: "Xây dựng REST API với FastAPI"
+  python    ← neo: "Python cơ bản cho người mới bắt đầu"
+  cs        ← neo: "Cấu trúc dữ liệu & giải thuật với Python"
+
+Neo là chỗ dữ liệu giả lập chạm vào catalogue thật, để gợi ý không chỉ quanh
+quẩn giữa các khóa học bịa ra.
+
+==============================================================================
+2. MÔ HÌNH ĐỌC ĐƯỢC GÌ TỪ DỮ LIỆU NÀY
+==============================================================================
+  tương tác nạp từ CSDL : 190
+  khóa học xuất hiện    : 24
+  người dùng có lịch sử : 48
+  phân bố trọng số      : {1: 59, 2: 42, 3: 89}
+
+  học viên giả lập có gợi ý : 48/48  (trước: 1/4)
+  tỷ lệ top-3 đúng cụm      : 0.8333
+  mức ngẫu nhiên (4 cụm)    : 0.2500
+
+Cả ba mức của thang trọng số trong kế hoạch (enroll=1, completed=2, rating
+cao=3) đều xuất hiện với tỷ lệ đáng kể. Điều này có chủ đích: dữ liệu chỉ sinh
+ra một mức thì `interaction_weight` gần như không được chạy qua.
+
+==============================================================================
+3. KIỂM TRA NGƯỢC — TEST CÓ BẮT ĐƯỢC LỖI KHÔNG
+==============================================================================
+Bộ test xanh ngay lần chạy đầu, nên đã cố tình phá code để xem test có răng:
+
+  Đột biến 1 — học viên bốc khóa ngẫu nhiên từ cả catalogue thay vì từ cụm
+  của mình (xóa hẳn cấu trúc cụm):
+      tỷ lệ top-3 đúng cụm: 0.8333 → 0.2500
+      → đúng bằng mức ngẫu nhiên của 4 cụm. 3 test đỏ.
+
+  Đột biến 2 — không ai hoàn thành và không ai đánh giá:
+      tập trọng số {1,2,3} → {1}. 1 test đỏ.
+
+Sau mỗi lần, file được khôi phục và đối chiếu md5 với bản sao lưu.
+
+Con số 0,2500 đáng chú ý: nó là mức sàn mà một mô hình *không* học được gì sẽ
+đạt. Khoảng cách 0,8333 so với 0,2500 là thứ bảng precision@k ở task kế tiếp
+phải giải thích, và cũng là lý do bảng đó có nghĩa.
+
+==============================================================================
+4. HAI HỌC VIÊN, HAI CỤM — GATE "SỞ THÍCH KHÁC NHAU THẤY GỢI Ý KHÁC NHAU"
+==============================================================================
+Lấy thật qua HTTP: đăng nhập rồi `GET /api/v1/recommendations?limit=3`.
+
+  === hocvien13@seed.devpath.example · cụm 'backend' · HTTP 200 ===
+  generated_at: 2026-09-18T07:11:52.869635Z
+  đã học: postgresql-cho-lap-trinh-vien-ung-dung (xong, 4★)
+          thiet-ke-rest-api-va-tai-lieu-openapi
+          xay-dung-rest-api-voi-fastapi (5★)
+    - Docker và Docker Compose cho môi trường phát triển
+        score=3.4148 · danh mục=backend · vì đã học: Xây dựng REST API với FastAPI
+    - Redis: cache, hàng đợi và giới hạn truy cập
+        score=2.5325 · danh mục=backend · vì đã học: Xây dựng REST API với FastAPI
+    - Kiểm thử backend với pytest
+        score=1.7930 · danh mục=backend · vì đã học: PostgreSQL cho lập trình viên ứng dụng
+
+  === hocvien37@seed.devpath.example · cụm 'cs' · HTTP 200 ===
+  generated_at: 2026-09-18T07:11:52.869635Z
+  đã học: cau-truc-du-lieu-va-giai-thuat-voi-python (xong, 5★)
+          do-phuc-tap-va-toi-uu-ma-nguon (xong, 4★)
+          do-thi-va-cac-thuat-toan-duyet (4★)
+          he-dieu-hanh-tien-trinh-luong-va-bo-nho (xong, 4★)
+          xay-dung-rest-api-voi-fastapi          ← khóa "lạc cụm"
+    - Quy hoạch động qua 20 bài toán
+        score=5.7892 · danh mục=cau-truc-du-lieu-giai-thuat
+        vì đã học: Hệ điều hành: tiến trình, luồng và bộ nhớ
+    - Luyện phỏng vấn thuật toán trong 30 ngày
+        score=4.0483 · danh mục=cau-truc-du-lieu-giai-thuat
+        vì đã học: Đồ thị và các thuật toán duyệt
+    - PostgreSQL cho lập trình viên ứng dụng
+        score=1.2783 · danh mục=backend
+        vì đã học: Xây dựng REST API với FastAPI     ← chính khóa lạc cụm đó
+
+Hai danh sách không giao nhau ở hai vị trí đầu, và **gợi ý thứ ba của học viên
+thứ hai giải thích được bằng tay**: người này có đúng một khóa nằm ngoài cụm
+(FastAPI), và mô hình dùng đúng khóa đó — chứ không phải bốn khóa thuật toán —
+để đề xuất PostgreSQL. Trường `because` không phải nhãn trang trí: nó là khóa
+đóng góp nhiều nhất vào điểm, và ở đây nó chỉ đúng vào chỗ cần chỉ.
+
+==============================================================================
+5. CHƯA ĐO, NÓI THẲNG
+==============================================================================
+- **Chưa có precision@k / recall@k.** Tỷ lệ 0,8333 ở trên là "top-3 có đúng cụm
+  không", không phải precision@k trên tập held-out. Phép đo thật là task kế
+  tiếp (`backend/scripts/eval_recommender.py`), và nó phải giấu đi một khóa của
+  mỗi học viên rồi bắt mô hình tìm lại.
+
+- **Cụm là thứ do chính script đặt vào.** Mô hình tìm lại được cấu trúc mà
+  người sinh dữ liệu đã cố tình gài vào — đó là điều kiện cần, không phải điều
+  kiện đủ. Không suy ra được gì về hành vi người thật.
+
+- **20 khóa học giả lập chỉ có một bài học giới thiệu**, không video, không bài
+  tập. Chúng tồn tại để đo, không để học. Trước buổi bảo vệ, nếu muốn catalogue
+  sạch thì chạy `--purge`; script hoàn nguyên cả `students_count` và
+  `rating_avg` của bốn khóa thật về đúng giá trị trước đó.
+
+- **Chưa đo thời gian dựng mô hình ở quy mô thật.** 190 tương tác thì mọi con
+  số thời gian đều vô nghĩa.

@@ -21,7 +21,7 @@
 - [ ] Hybrid blend + fallback: user mới → content-based theo lịch sử xem + phổ biến theo danh mục
 - [x] Batch Celery beat hằng đêm → cache top-N vào Redis; API `/recommendations`
 - [ ] UI: khối "Gợi ý cho bạn" (trang chủ), "Khóa học tương tự" (trang chi tiết), "Học tiếp theo" (sau khi hoàn thành)
-- [ ] Seed thêm dữ liệu tương tác giả lập (script tạo ~50 user với hành vi enroll/rating theo cụm sở thích) để đo lường
+- [x] Seed thêm dữ liệu tương tác giả lập (script tạo ~50 user với hành vi enroll/rating theo cụm sở thích) để đo lường
 - [ ] `backend/scripts/eval_recommender.py`: precision@k, recall@k trên held-out — output script lưu vào `docs/report/assets/phase-4/recommender-eval.md`, ghi rõ lệnh chạy để tái tạo
 
 ## Gate cuối phase

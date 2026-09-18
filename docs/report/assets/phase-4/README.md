@@ -8,12 +8,13 @@ Phase đang chạy. Bảng dưới là gate cuối phase (chép từ [kế hoạ
 | 3–5 hội thoại chatbot có trích nguồn, kèm 1 ca từ chối ngoài phạm vi | — | chưa có |
 | Bộ 20 câu hỏi đánh giá chatbot + bảng kết quả | — | chưa có |
 | Ví dụ quiz sinh tự động kèm nhận xét chất lượng | — | chưa có |
-| Screenshot khối gợi ý của 2 user sở thích khác nhau | — | chưa có |
+| Screenshot khối gợi ý của 2 user sở thích khác nhau | `interaction-seed.txt` §4 | một nửa — đã có hai danh sách khác nhau lấy qua HTTP, còn thiếu ảnh chụp vì khối "Gợi ý cho bạn" chưa dựng |
 
 ## Ngoài gate, đã thu
 
 | Tệp | Nội dung | Dùng cho chương |
 |---|---|---|
+| `interaction-seed.txt` | 48 học viên giả lập theo 4 cụm sở thích, 190 tương tác, 24 khóa: 48/48 người có gợi ý (trước là 1/4), tỷ lệ top-3 đúng cụm **0,8333** so với mức ngẫu nhiên 0,2500. Kèm hai lần đột biến cố ý chứng minh test bắt được lỗi, và hai học viên khác cụm lấy thật qua HTTP | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |
 | `recommendation-batch.txt` | Job hằng đêm chạy thật: 4 key `rec:v1:user:*` trong Redis, TTL ~48 giờ, điểm `0,7071 = 1/√2` kiểm được bằng tay, log beat đọc đúng lịch 03:00. Kèm phần "chưa đo, nói thẳng": chưa có precision@k vì CSDL dev chỉ có 5 tương tác | 4 — Xây dựng hệ thống |
 | `hnsw-index.txt` | `EXPLAIN (ANALYZE, BUFFERS)` chứng minh planner **thật sự** chọn `ix_doc_chunks_embedding`: 1,33 ms / 1239 buffer so với 5,89 ms / 9055 buffer khi tắt index scan, trên 3000 chunk. Kèm phần "chưa đo, nói thẳng": chưa đo recall của tìm kiếm xấp xỉ | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |
 

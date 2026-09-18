@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, eval_recommender.py, rebuild_course_stats.py
+scripts/                   seed.py, seed_interactions.py, rebuild_recommendations.py, bench_grading.py
 ```
 
 ## Nguyên tắc
@@ -297,10 +297,31 @@ Script chạy lại bao nhiêu lần cũng được — lần thứ hai trở đ
 
 | Biến môi trường | Mặc định | Dùng cho |
 |---|---|---|
-| `SEED_ADMIN_EMAIL` | `admin@devpath.local` | Tài khoản quản trị |
+| `SEED_ADMIN_EMAIL` | `admin@devpath.example` | Tài khoản quản trị |
 | `SEED_ADMIN_PASSWORD` | `devpath-admin` (kèm cảnh báo) | Mật khẩu quản trị |
 | `SEED_INSTRUCTOR_PASSWORD` | `devpath-instructor` (kèm cảnh báo) | Mật khẩu 2 tài khoản giảng viên |
 | `SEED_SAMPLE_HLS_URL` | luồng demo công khai của hls.js | Video cho mọi bài học dạng video |
+
+### Dữ liệu tương tác để đo recommender
+
+Bốn khóa học seed đủ để demo nhưng không đủ để **đo** một hệ gợi ý: bốn khóa thì "cụm sở thích" gần như không diễn đạt được. `scripts/seed_interactions.py` thêm 20 khóa chia thành bốn cụm (frontend, backend, Python/dữ liệu, khoa học máy tính — mỗi cụm neo vào một khóa seed thật) và 48 học viên có lịch sử tập trung trong cụm của mình:
+
+```bash
+docker compose exec backend python -m scripts.seed_interactions
+docker compose exec backend python -m scripts.rebuild_recommendations
+```
+
+Chạy sau `scripts.seed` (script này tra cứu khóa neo và giảng viên, không tự tạo). Idempotent như phần seed còn lại; hạt giống cố định nên mọi máy sinh ra đúng cùng một tập dữ liệu, và đó là điều kiện để số đo trong báo cáo tái tạo được. Số liệu và cách kiểm: [docs/report/assets/phase-4/interaction-seed.txt](../docs/report/assets/phase-4/interaction-seed.txt).
+
+**Dữ liệu này là giả lập.** Nó chứng minh đường ống khôi phục được cấu trúc đã biết là có trong dữ liệu, không chứng minh học viên thật thấy gợi ý hữu ích. 20 khóa giả lập chỉ có một bài học giới thiệu — chúng tồn tại để đo, không để học. Gỡ sạch khi cần catalogue thật để demo:
+
+```bash
+docker compose exec backend python -m scripts.seed_interactions --purge
+```
+
+| Biến môi trường | Mặc định | Dùng cho |
+|---|---|---|
+| `SEED_LEARNER_PASSWORD` | `devpath-learner` (kèm cảnh báo) | Mật khẩu 48 tài khoản học viên giả lập |
 
 ### Đo hiệu năng chấm bài
 

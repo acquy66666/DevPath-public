@@ -10,7 +10,7 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 
 - [x] Đóng việc dở: key Gemini vào `infra/.env.prod.example` (compose prod đọc mà file mẫu không có), merge PR #31, dọn nhánh đã merge
 - [x] MLE bị chấm thành TLE khi Docker trả `State.OOMKilled=false` — `classify` đọc thêm thời gian sống container, exit 137 trước điểm giữa soft/hard CPU limit là MLE (skill `sandbox-grading`, TDD) — `docs/report/assets/phase-3/oom-classification.txt`
-- [ ] `run_grading` không chấm lại submission đã `done`/`error` khi Celery giao lại job — hiện chấm lại, ghi trùng `submission_results`, rồi bị park thành `error` và mất verdict (skill `sandbox-grading`, TDD)
+- [x] `run_grading` không chấm lại submission đã `done`/`error` khi Celery giao lại job — trước đây lần giao lại hỏng ở ràng buộc `ck_submissions_verdict_requires_done`, hết retry thì bị park thành `error` và mất verdict; nay trả `AlreadyFinished` + phát lại event kết thúc, và `park_submission` không ghi đè bài đã có kết quả (skill `sandbox-grading`, TDD)
 - [ ] MinIO trong compose dev thay R2 — mở khóa upload video/avatar/transcript trên máy dev, 0đ, không đụng compose prod
 - [ ] Ingest xóa chunk của bài học không còn chữ (hiện chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được) (TDD)
 - [ ] Đồng bộ tài liệu với thực tế (~12 file) + ghi các món nợ hoãn chưa có chủ vào checkbox Phase 5/6

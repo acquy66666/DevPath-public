@@ -28,6 +28,7 @@ import time
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
+from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 
@@ -322,9 +323,18 @@ def _start_and_wait(container: str, stdin_file: Path, limits: Limits, image: str
     if state is None:
         return _system_error(f"container {container} vanished before it could be inspected", image)
 
-    exit_code, oom_killed = state
+    exit_code, oom_killed, lifetime = state
     return Execution(
-        outcome=_classify(exit_code, oom_killed, hit_the_wall),
+        outcome=classify(
+            exit_code,
+            oom_killed=oom_killed,
+            hit_the_wall=hit_the_wall,
+            # The stopwatch above also times `docker start` itself, so it is
+            # only the fallback: it overstates, which keeps the rule safe but
+            # blunts it.
+            lifetime_seconds=duration if lifetime is None else lifetime,
+            limits=limits,
+        ),
         exit_code=exit_code,
         stdout=out.text,
         stderr=err.text,
@@ -335,24 +345,69 @@ def _start_and_wait(container: str, stdin_file: Path, limits: Limits, image: str
     )
 
 
-def _classify(exit_code: int, oom_killed: bool, hit_the_wall: bool) -> Outcome:
+def classify(
+    exit_code: int,
+    *,
+    oom_killed: bool,
+    hit_the_wall: bool,
+    lifetime_seconds: float,
+    limits: Limits,
+) -> Outcome:
     """Name the way the run ended, most specific cause first.
 
     A container over its memory limit also exits 137, so the kernel's own
     verdict has to be read before the exit code is interpreted.
+
+    That verdict is `State.OOMKilled`, and Docker does not always deliver it:
+    on CI runners a container killed for memory has come back with the flag
+    false, exit 137, a quarter of a second in -- and was charged a time limit.
+    So a 137 is also read against the clock. `cpus` of a core means N seconds
+    of CPU cost at least N / cpus seconds of wall time. The soft limit ends a
+    program with SIGXCPU (152), not SIGKILL; the CPU limit's SIGKILL only
+    comes at the hard limit, a CPU second later. So a 137 before the hard
+    limit could have been reached was not the CPU limit. The line is drawn
+    halfway between the two limits rather than at the hard one: half a CPU
+    second of wall time (a whole second on half a core) is far more than
+    Docker's timestamps or the scheduler's quota period could be off by. The
+    lifetime is the container's -- init and interpreter startup included --
+    so it only ever overstates how long the program ran: the rule can fail to
+    spot a memory kill that came late, but it cannot turn a real time limit
+    into a memory one.
     """
     if oom_killed:
         return Outcome.OUT_OF_MEMORY
     if hit_the_wall:
         return Outcome.WALL_TIME_EXCEEDED
+    before_the_hard_limit = (limits.cpu_seconds + HARD_LIMIT_MARGIN_SECONDS / 2) / limits.cpus
+    if exit_code == SIGKILL_EXIT and lifetime_seconds < before_the_hard_limit:
+        # A program that sends itself SIGKILL early lands here too and is
+        # charged a memory limit rather than a runtime error -- a misreading,
+        # but of a submission that was failing either way.
+        return Outcome.OUT_OF_MEMORY
     if exit_code in (SIGXCPU_EXIT, SIGKILL_EXIT):
         # 152 is the ordinary path: the soft limit, on time. 137 is the hard
         # limit that follows it for a program that caught the signal and kept
-        # going. A program that sends itself SIGKILL also lands here and is
-        # charged a time limit rather than a runtime error -- a misreading, but
-        # of a submission that was failing either way.
+        # going. A program that sends itself SIGKILL late also lands here and
+        # is charged a time limit rather than a runtime error.
         return Outcome.CPU_TIME_EXCEEDED
     return Outcome.EXITED
+
+
+def container_lifetime(started_at: str, finished_at: str) -> float | None:
+    """Seconds between Docker's StartedAt and FinishedAt, or None if unusable.
+
+    Unusable covers Docker's zero time (`0001-01-01T00:00:00Z`, a container
+    that never finished), anything unparseable, and a finish before the start.
+    The caller has a worse number to fall back on, so a doubtful one here is
+    better answered with "unknown" than with a guess.
+    """
+    try:
+        lived = (
+            datetime.fromisoformat(finished_at) - datetime.fromisoformat(started_at)
+        ).total_seconds()
+    except ValueError:
+        return None
+    return lived if lived >= 0 else None
 
 
 class _CappedReader(threading.Thread):
@@ -389,15 +444,18 @@ class _CappedReader(threading.Thread):
         return bytes(self._kept).decode("utf-8", errors="replace")
 
 
-def _inspect(container: str) -> tuple[int, bool] | None:
+def _inspect(container: str) -> tuple[int, bool, float | None] | None:
     finished = _docker(
-        "inspect", "--format", "{{.State.ExitCode}} {{.State.OOMKilled}}", container
+        "inspect",
+        "--format",
+        "{{.State.ExitCode}} {{.State.OOMKilled}} {{.State.StartedAt}} {{.State.FinishedAt}}",
+        container,
     )
     if finished.returncode != 0:
         return None
 
-    exit_code, oom_killed = finished.stdout.split()
-    return int(exit_code), oom_killed == "true"
+    exit_code, oom_killed, started_at, finished_at = finished.stdout.split()
+    return int(exit_code), oom_killed == "true", container_lifetime(started_at, finished_at)
 
 
 def _docker(*args: str) -> subprocess.CompletedProcess[str]:

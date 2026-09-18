@@ -333,3 +333,13 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Ingest móc vào lúc publish, không móc vào mỗi lần sửa bài học** — chatbot được quyền trích dẫn một khóa học đúng lúc học viên vào học được, không sớm hơn. Job được đẩy **sau** commit, vì worker mở connection riêng và sẽ đọc phải trạng thái cũ nếu đẩy trước.
 
 **Tiêu đề bài học đi kèm chữ của bài học vào từng chunk** — truy hồi so câu hỏi với chính chunk, không so với dòng `lessons` treo phía trên nó, nên một chunk không bao giờ nhắc tên chủ đề của mình chỉ có thể tìm thấy qua những từ tình cờ nằm bên trong.
+
+## Phân loại MLE khi Docker quên cờ OOM (18/09/2026)
+
+Bổ sung sau khi Phase 3 đã đóng — truy gốc và số đo ở `docs/report/assets/phase-3/oom-classification.txt`.
+
+**Exit 137 được đọc thêm theo đồng hồ, không chỉ theo `State.OOMKilled`** — quyết định "container không dùng `--rm`" ở trên coi cờ đó là câu trả lời duy nhất phân biệt giết vì bộ nhớ với giết vì lý do khác. Trên runner CI Docker đôi khi trả cờ false cho một container vừa bị nhân giết vì bộ nhớ, và bài ăn quá bộ nhớ bị chấm TLE. Ràng buộc vật lý của chính sandbox cho câu trả lời thứ hai: ở soft limit kernel kết thúc bằng SIGXCPU (152), SIGKILL của giới hạn CPU chỉ tới ở hard limit, sớm nhất (N+1)/cpus giây thật. Một 137 đến trước đó thì không phải giới hạn CPU. Cờ vẫn được tin khi nó nói true.
+
+**Ngưỡng ở điểm giữa soft và hard limit, không ở soft, không sát hard** — đặt ở soft (N/cpus) thì an toàn quá mức: trên máy dev, giới hạn 1 giây CPU (giảng viên đặt được, không chỉ là giá trị trong test) cứu được 15/20 lần giả lập mất cờ. Đặt sát hard thì cược vào độ chính xác của timestamp và quota CFS. Điểm giữa (N+0,5)/cpus cứu 20/20 lần mà vẫn cách hard limit một giây thật.
+
+**Đọc thời gian sống của container (`StartedAt` → `FinishedAt`), không đọc đồng hồ của worker** — bản sửa đầu dùng đồng hồ worker, và đo mới thấy nó bấm cả `docker start`: ~1 giây trên Docker Desktop, nhiều hơn trên máy chủ đang tải — đủ đẩy một lần giết vì bộ nhớ qua ngưỡng và làm quy tắc âm thầm vô dụng. Hai timestamp nằm trong đúng lời gọi `inspect` vốn đã có. Cả hai đồng hồ đều chỉ có thể đo *dư* thời gian chương trình chạy, nên quy tắc chỉ có thể lùi về gọi TLE thật là TLE, không bao giờ biến TLE thật thành MLE.

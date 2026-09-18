@@ -9,7 +9,7 @@
 Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và sửa thế nào: [don-no-2026-09-18.md](don-no-2026-09-18.md). Làm hết mục này trước các task tuần 9 bên dưới, mỗi dòng một phiên, một PR. Hai lỗi grader thuộc Phase 3 nhưng ghi ở đây: thêm checkbox vào file Phase 3 đã đóng sẽ kéo `start-session` lùi về Phase 3.
 
 - [x] Đóng việc dở: key Gemini vào `infra/.env.prod.example` (compose prod đọc mà file mẫu không có), merge PR #31, dọn nhánh đã merge
-- [ ] MLE bị chấm thành TLE khi Docker trả `State.OOMKilled=false` — `_classify` dùng thêm thời gian chạy (skill `sandbox-grading`, TDD)
+- [x] MLE bị chấm thành TLE khi Docker trả `State.OOMKilled=false` — `classify` đọc thêm thời gian sống container, exit 137 trước điểm giữa soft/hard CPU limit là MLE (skill `sandbox-grading`, TDD) — `docs/report/assets/phase-3/oom-classification.txt`
 - [ ] `run_grading` không chấm lại submission đã `done`/`error` khi Celery giao lại job — hiện chấm lại, ghi trùng `submission_results`, rồi bị park thành `error` và mất verdict (skill `sandbox-grading`, TDD)
 - [ ] MinIO trong compose dev thay R2 — mở khóa upload video/avatar/transcript trên máy dev, 0đ, không đụng compose prod
 - [ ] Ingest xóa chunk của bài học không còn chữ (hiện chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được) (TDD)

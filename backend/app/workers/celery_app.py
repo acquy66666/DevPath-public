@@ -11,8 +11,8 @@ Sharing one queue would let a single uploaded lecture put every submission
 behind it -- and the fair-sounding fix, more workers, would instead let a busy
 afternoon start thirty containers on a two-core VPS.
 
-Task modules are registered in `include` below as they appear -- embedding and
-mail later.
+Task modules are registered in `include` below as they appear -- video,
+grading, recommendations and RAG ingest so far; mail when it exists.
 
 The third process is `beat`, which holds no work of its own: it publishes the
 scheduled jobs in `beat_schedule` onto the queues at the right times, and the

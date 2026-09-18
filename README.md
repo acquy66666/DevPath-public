@@ -57,18 +57,33 @@ Ba tài liệu đi kèm:
 
 - [docs/huong-dan-chay-va-docker.md](docs/huong-dan-chay-va-docker.md) — chạy trang web từng bước, cấu trúc file, và vai trò của Docker trong dự án
 - [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md) — sửa từng phần của giao diện, luồng một request, và những chỗ dễ vấp
-- [docs/huong-dan-demo-truoc-giao-vien.md](docs/huong-dan-demo-truoc-giao-vien.md) — chuỗi lệnh chạy thủ công kèm giải thích, kịch bản demo 9 chặng, và câu trả lời cho những câu chắc chắn bị hỏi
+- [docs/huong-dan-demo-truoc-giao-vien.md](docs/huong-dan-demo-truoc-giao-vien.md) — chuỗi lệnh chạy thủ công kèm giải thích, kịch bản demo 10 chặng, và câu trả lời cho những câu chắc chắn bị hỏi
 
 ## Trạng thái
 
-**Phase 2 — Core Platform, tuần 5.** Đã chạy được đầu-cuối: đăng ký/đăng nhập (email + Google), phân quyền 3 vai trò, giảng viên tạo khóa học và dựng mục lục kéo-thả, upload video lên R2 kèm worker chuyển mã HLS, tìm kiếm toàn văn tiếng Việt, ghi danh khóa miễn phí, trình phát nhớ vị trí, ghi chú theo mốc thời gian, đánh dấu bài, đánh giá & xếp hạng. Hạ tầng deploy (compose production, nginx, HTTPS) đã viết và được CI kiểm chứng nhưng **chưa deploy lên máy chủ thật**.
+**Phase 4 — AI Features ⭐ đang chạy.** Phase 1–3 đã đóng (tag `phase-1-done`, `phase-2-done`, `phase-3-done`). Trạng thái chi tiết nằm ở checkbox trong [docs/plan/](docs/plan/00-overview.md); tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](CLAUDE.md).
 
-Kế tiếp: Phase 3 — chấm mã nguồn tự động trong Docker sandbox. Trạng thái chi tiết nằm ở checkbox trong [docs/plan/phase-2-core-platform.md](docs/plan/phase-2-core-platform.md).
+- **Nền tảng (Phase 2):**
+  - đăng ký/đăng nhập (email + Google), phân quyền 3 vai trò;
+  - giảng viên tạo khóa học và dựng mục lục kéo-thả, upload video kèm worker chuyển mã HLS;
+  - tìm kiếm toàn văn tiếng Việt, ghi danh khóa miễn phí, trình phát nhớ vị trí, ghi chú, đánh dấu, đánh giá.
+- **Chấm mã nguồn (Phase 3):**
+  - sandbox Docker cô lập (không mạng, không đặc quyền, rootfs chỉ đọc, timeout hai lớp), đủ 7 verdict;
+  - 7 ca tấn công sandbox đều bị chặn;
+  - hàng đợi Celery riêng, tiến độ từng test theo thời gian thực qua WebSocket.
+- **AI (Phase 4, đang làm):**
+  - đã có quiz tính giờ và gợi ý khóa học item-based chạy hằng đêm;
+  - dữ liệu RAG đã nạp từ bài viết vào pgvector;
+  - còn chatbot, sinh quiz bằng AI, content-based và đánh giá precision@k.
+
+Storage trên máy dev là MinIO chạy trong compose (xem [infra/README.md](infra/README.md)). Production dùng Cloudflare R2. Hạ tầng deploy (compose production, nginx, HTTPS) đã viết và được CI kiểm chứng, nhưng **chưa deploy lên máy chủ thật** — việc đó thuộc Phase 6.
 
 ## Quy ước
 
 - Code, tên biến, commit message: tiếng Anh. Tài liệu trong `docs/`: tiếng Việt. UI: tiếng Việt.
-- Commit theo Conventional Commits; nhánh `main` được bảo vệ bằng hook `.githooks/pre-push` (chặn force-push và xóa nhánh). Sau khi clone phải chạy:
+- Commit theo Conventional Commits, mỗi task một nhánh `feature/<tên>` và một PR. Nhánh `main` có hai lớp bảo vệ:
+  - ruleset `protect-main` phía GitHub (chặn force-push và xóa nhánh; không ai bypass được);
+  - hook `.githooks/pre-push`, lớp nhanh báo lỗi ngay trên máy trước khi tốn công push. Sau khi clone phải bật hook bằng lệnh:
 
 ```bash
 git config core.hooksPath .githooks

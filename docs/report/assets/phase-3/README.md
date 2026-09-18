@@ -48,7 +48,7 @@ Hai dòng cuối là lỗi chấm bài chứ không phải lỗi bảo mật, v�
 
 ### Còn nợ ở task sau
 
-Các ca tấn công thật — gọi network, fork bomb, đọc file ngoài mount, ghi rootfs — thuộc task *"Bộ test bảo mật"* của tuần 6 và sẽ nằm ở `attack-tests.txt`. Ở đây mới chỉ chứng minh **tính chất của image**: nó không chứa gì, chạy dưới danh nghĩa ai, và cái gì còn đứng vững khi runner thiếu một cờ.
+Các ca tấn công thật — gọi network, fork bomb, đọc file ngoài mount, ghi rootfs — thuộc task *"Bộ test bảo mật"* của tuần 6 và sẽ nằm ở `attack-tests.txt`. Ở đây mới chỉ chứng minh **tính chất của image**: nó không chứa gì, chạy dưới danh nghĩa ai, và cái gì còn đứng vững khi runner thiếu một cờ. *(Đã xử lý sau đó trong Phase 3: 7 ca tấn công ở `attack-tests.txt`, 0 ca thoát trên cả máy dev lẫn CI.)*
 
 ## Runner core (09/09/2026)
 
@@ -199,7 +199,7 @@ Bài nộp **giết được container của chính nó** bằng `SIGTERM` gửi
 - **Ba cảnh báo trên đều là bài tập hợp lệ với API.** Không có test case, toàn ẩn, toàn hiện — cả ba đều tạo được qua API và đều sai về mặt sư phạm. Đây là chỗ giao diện làm được việc mà ràng buộc CSDL không làm: nó khuyên, chứ không cấm.
 - **Ô “Ẩn với học viên” tự về mặc định ẩn sau mỗi lần thêm**, không giữ lựa chọn trước đó. Quên ô này một lần là đáp án nằm trên trang, nên giá trị an toàn phải là giá trị phải chủ động bỏ chọn mỗi lần.
 - **Chính sách so sánh output được nói ngay dưới ô nhập đáp án**: bỏ khoảng trắng cuối dòng và dòng trống cuối, giữ khoảng trắng giữa dòng. Giảng viên biết luật trước khi viết đáp án thì không mất buổi tối đi truy một WA không có thật.
-- Trang học của học viên tạm thời nói thẳng “trang nộp bài đang được xây dựng”. Nếu không sửa, bài tập code rơi vào nhánh bài đọc và hiện “Bài học này chưa có nội dung” — một câu sai, vì bài học có nội dung, chỉ là chưa có chỗ nộp (tuần 8).
+- Trang học của học viên tạm thời nói thẳng “trang nộp bài đang được xây dựng”. Nếu không sửa, bài tập code rơi vào nhánh bài đọc và hiện “Bài học này chưa có nội dung” — một câu sai, vì bài học có nội dung, chỉ là chưa có chỗ nộp (tuần 8). *(Đã thay bằng trang nộp bài thật ở task sau của Phase 3 — xem `submission-page.txt`.)*
 
 ## Hàng đợi chấm bài (12/09/2026)
 
@@ -516,7 +516,7 @@ Mục đầu tiên của gate cuối Phase 3, đi trọn một lượt trên gia
 ### Hai điều nói thẳng trong file bằng chứng
 
 - Ba bài nộp chậm trong lịch sử là **cùng lời giải sai cộng vòng lặp 6 triệu bước**, dựng riêng để chụp được ảnh lúc đang chấm — ở tốc độ thật cả lần chấm chỉ 4,4 giây, ngắn hơn một lượt chụp màn hình. Số trên hai ảnh đó là của bản cố tình chậm, không phải tốc độ hệ thống.
-- Khóa demo là khóa mới tạo, không phải khóa seed: bốn khóa seed đang thuộc hai tài khoản `@devpath.local` không đăng nhập được nữa (email-validator từ chối domain `.local`). Lệch dữ liệu của máy dev, cần dọn trước buổi bảo vệ.
+- Khóa demo là khóa mới tạo, không phải khóa seed: bốn khóa seed đang thuộc hai tài khoản `@devpath.local` không đăng nhập được nữa (email-validator từ chối domain `.local`). Lệch dữ liệu của máy dev, cần dọn trước buổi bảo vệ. *(Đã xử lý 18/09/2026: seed chuyển sang `@devpath.example`, CSDL dev dựng lại từ trắng rồi seed lại — mọi tài khoản seed đăng nhập được.)*
 
 
 ## CI xanh: test verdict + test bảo mật chạy trên máy không phải máy mình (13/09/2026)

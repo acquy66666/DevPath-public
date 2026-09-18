@@ -43,9 +43,9 @@ npm run build
 - `lib/api/error-messages.ts` — ánh xạ `code` của backend sang câu tiếng Việt cho **toàn** ứng dụng (auth, hồ sơ, khóa học, mục lục). Không bao giờ switch theo `message`.
 - `components/auth/google-button.tsx` — link thường (không phải `fetch`: OAuth là điều hướng cả trang), chỉ hiện khi `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true` để không mời người dùng bấm vào thứ chắc chắn lỗi 503.
 
-**Access token nằm trong bộ nhớ, không ở `localStorage` cũng không ở cookie JS đọc được.** Refresh token là cookie `HttpOnly` của backend, nên F5 xong `AuthProvider` gọi `/auth/refresh` để dựng lại phiên — đó là lúc header hiện ô xám chờ (`status === "loading"`). Đánh đổi: `middleware.ts` của Next không đọc được cookie đó nên guard route phải làm ở client; chưa có route nào cần guard cho tới khi có trang học.
+**Access token nằm trong bộ nhớ, không ở `localStorage` cũng không ở cookie JS đọc được.** Refresh token là cookie `HttpOnly` của backend, nên F5 xong `AuthProvider` gọi `/auth/refresh` để dựng lại phiên — đó là lúc header hiện ô xám chờ (`status === "loading"`). Đánh đổi: `middleware.ts` của Next không đọc được cookie đó nên guard route phải làm ở client. Trang học (`/hoc/...`) và các trang cần đăng nhập đều chặn ở client: chưa đăng nhập thì hiện lời mời kèm `?next=` quay lại đúng trang, ví dụ trong `components/learn/learn-view.tsx`. Chốt chặn thật vẫn là backend (401/403).
 
-**Cạm bẫy đã gặp: refresh gọi hai lần là mất phiên.** Backend xoay vòng refresh token và coi token đã thu hồi quay lại là bị đánh cắp (thu hồi sạch phiên). React StrictMode chạy effect hai lượt trong dev ⇒ hai request refresh song song ⇒ tự đăng xuất chính mình. `lib/api/auth.ts` vì thế gom mọi lời gọi refresh đang bay vào **một** promise duy nhất. Hệ quả còn lại: mở hai tab cùng lúc sau khi để lâu vẫn có thể chạm vào tình huống này — nếu thành phiền thì thêm khoảng ân hạn (leeway) phía backend.
+**Cạm bẫy đã gặp: refresh gọi hai lần là mất phiên.** Backend xoay vòng refresh token và coi token đã thu hồi quay lại là bị đánh cắp (thu hồi sạch phiên). React StrictMode chạy effect hai lượt trong dev ⇒ hai request refresh song song ⇒ tự đăng xuất chính mình. `lib/api/auth.ts` vì thế gom mọi lời gọi refresh đang bay vào **một** promise duy nhất. Hệ quả còn lại: mở hai tab cùng lúc sau khi để lâu vẫn có thể chạm vào tình huống này. Việc thêm khoảng ân hạn (leeway) phía backend đã được ghi thành checkbox của [Phase 6](../docs/plan/phase-6-hardening-deploy.md).
 
 ## Khu vực giảng viên (Phase 2)
 
@@ -82,7 +82,7 @@ Nằm trong chính trình soạn mục lục: thêm bài học loại **Bài t�
 
 **Thứ tự test case là dữ liệu, không phải trang trí** — “test case 3 sai” trỏ đúng dòng thứ ba. Nút lên/xuống gửi cả danh sách (`PUT .../test-cases/order`), cùng cách kéo-thả mục lục gửi.
 
-Đáp án của case ẩn **không bao giờ xuống trình duyệt học viên**: backend trả hai model khác nhau tùy người gọi, và model của học viên không có trường nào để chứa đáp án. `lib/api/grading.ts` vì thế chỉ khai kiểu của giảng viên — trang nộp bài (tuần 8) phải khai kiểu riêng, không dùng lại.
+Đáp án của case ẩn **không bao giờ xuống trình duyệt học viên**: backend trả hai model khác nhau tùy người gọi, và model của học viên không có trường nào để chứa đáp án. `lib/api/grading.ts` vì thế chỉ khai kiểu của giảng viên. Trang nộp bài có kiểu riêng ở `lib/api/submissions.ts`, không dùng lại kiểu của giảng viên.
 
 ### Trang nộp bài
 
@@ -111,6 +111,13 @@ Chép chứ không bundle vì bản ESM của Monaco cần plugin webpack, mà d
 Cả hai đường phát ra cùng một kiểu `GradingEvent`, nên component chỉ vẽ một thứ và không bao giờ biết dữ liệu đến bằng đường nào. Đó cũng là lý do `SubmissionDetail` mang `total_cases`: thiếu nó, đường polling đếm được số case đã xong nhưng không biết đang tiến tới con số nào.
 
 Hàm trả về một `stop()` — gọi khi component unmount. Nó gỡ `onclose` **trước** khi đóng socket, nếu không thì chính thao tác dọn dẹp sẽ khởi động vòng polling mà nó đang cố dừng.
+
+## Quiz (Phase 4)
+
+- **Giảng viên soạn:** `components/quiz/quiz-editor.tsx` + `question-form.tsx`, nằm trong lesson editor của mục lục cho bài học loại `quiz`. Client ở `lib/api/quiz-authoring.ts`, dùng kiểu của giảng viên (có đáp án đúng).
+- **Học viên làm bài:** `components/quiz/quiz-workspace.tsx`, nhánh `quiz` của `learn-view.tsx`. Client ở `lib/api/quiz.ts`, dùng kiểu **không có đáp án** cho tới khi nộp; giải thích chỉ về sau khi chấm.
+
+**Đồng hồ trên trang chỉ là hiển thị hạn chót, không phải hạn chót.** Nó khởi đầu từ `seconds_remaining` do server tính theo đồng hồ của server. Về 0 thì trang tự nộp bài, nhưng quyền quyết định vẫn ở backend: tab bị treo hay bị bóp CPU thì server vẫn từ chối bài nộp trễ quá 10 giây ân hạn. Hết giờ mà chưa nộp là 0 điểm, vì đáp án dở dang không được lưu (lý do ở `docs/report/assets/decisions.md`).
 
 ## Cấu trúc
 

@@ -20,6 +20,7 @@
 - [ ] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
 - [ ] Thông báo in-app (chuông + danh sách)
 - [ ] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports
+  - **Duyệt khóa học phải gọi `enqueue_ingest`** như `submit_for_review` đang làm khi auto-approve bật (`backend/app/services/courses.py`). Tắt auto-approve mà endpoint duyệt quên việc này thì không còn gì nạp khóa học vào kho chatbot. Viết test: duyệt → một job ingest được xếp hàng (ghi 19/09/2026, đợt dọn nợ)
 - [ ] Admin dashboard: doanh thu sàn, DAU, khóa học hot; quản lý category, coupon toàn sàn, banner trang chủ
 
 ## Gate cuối phase

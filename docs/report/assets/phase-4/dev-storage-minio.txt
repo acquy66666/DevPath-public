@@ -1,0 +1,99 @@
+MINIO THAY R2 TRÊN MÁY DEV — UPLOAD VIDEO, AVATAR CHẠY THẬT
+Ngày chạy: 18/09/2026 · stack dev (infra/docker-compose.yml) · Windows 11 + Docker Desktop
+Mục "Dọn nợ trước khi đi tiếp" của Phase 4, dòng 4/8 — docs/plan/don-no-2026-09-18.md (Phiên 3)
+
+Ảnh kèm theo
+------------
+  dev-minio-upload-playback.png   trang localhost:3000; khung trái: avatar tải từ
+                                  MinIO; khung phải: video HLS do worker chuyển mã,
+                                  đang phát bằng hls.js 1.7.1
+
+==============================================================================
+1. TRƯỚC ĐÓ
+==============================================================================
+infra/.env để trống R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY /
+R2_ENDPOINT_URL — Cloudflare bắt khai báo thẻ thanh toán mới cho bật R2. Hệ quả:
+nút tải video và nút đổi ảnh đại diện trả 503 STORAGE_NOT_CONFIGURED, và task
+Phase 4 kế tiếp (giảng viên upload transcript .srt/.txt) không chạy trọn được.
+
+==============================================================================
+2. THAY ĐỔI — CHỈ Ở infra/, KHÔNG MỘT DÒNG CODE APP
+==============================================================================
+- Service `minio` trong docker-compose.yml (compose prod không đụng tới).
+- Mọi R2_* để trống thì mặc định trỏ vào nó:
+    R2_ENDPOINT_URL     http://minio.localhost:9000
+    R2_PUBLIC_BASE_URL  http://minio.localhost:9000/devpath-media
+    R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY = MINIO_ROOT_USER / MINIO_ROOT_PASSWORD
+- Bucket tự tạo khi khởi động, policy `download` (GET ẩn danh như bucket R2
+  public; ghi vẫn phải có chữ ký). CORS mở đúng cho http://localhost:3000.
+- Cổng 9000 (API) và 9001 (console) chỉ bind 127.0.0.1.
+
+Vì sao `minio.localhost`: URL ký sẵn chỉ hợp lệ cho một host, và cùng một URL
+được trình duyệt dùng (PUT file, phát video) lẫn worker dùng (tải bản gốc, đẩy
+HLS). Chrome/Edge tự đưa *.localhost về 127.0.0.1 nơi cổng 9000 được publish;
+trong mạng compose cùng tên đó là alias của service.
+
+Image: bitnamilegacy/minio:2025.7.23-debian-12-r5. Đo ngày 18/09/2026 trên
+Docker Hub API: library/redis → 200, minio/minio → 404, minio/mc → 404,
+bitnami/minio → không còn tag nào. MinIO đã ngừng phát hành image bản cộng
+đồng; bản Bitnami legacy đông cứng từ 08/2025 là bản còn kéo về được. Chỉ dùng
+cho server local thay thế — xem infra/README.md.
+
+==============================================================================
+3. KIỂM TRA TỪNG LỚP
+==============================================================================
+a) Trong container backend, code thật (app.services.storage.build_storage()):
+
+  resolve minio.localhost -> 172.18.0.4
+  signed: http://minio.localhost:9000/devpath-media/selftest/hello.txt
+  PUT via presigned URL -> 200
+  anonymous GET ... -> b'xin chao minio\n'
+  download_file -> b'xin chao minio\n'
+  after delete_prefix -> HTTP Error 404: Not Found
+
+  boto3 ký kiểu path-style cho endpoint tùy biến (…:9000/devpath-media/<key>),
+  và MinIO chấp nhận region "auto" mà adapter R2 đang dùng — không cần sửa code.
+
+b) Từ host, CORS:
+
+  OPTIONS preflight, Origin http://localhost:3000, PUT + content-type
+    → 204, Access-Control-Allow-Origin: http://localhost:3000
+  cùng preflight, Origin http://evil.example
+    → 204 nhưng KHÔNG có Access-Control-Allow-Origin → trình duyệt chặn
+
+c) Luồng thật, qua API + trình duyệt (Playwright/Chromium, trang ở origin
+   http://localhost:3000). API gọi bằng tài khoản giảng viên seed trên một khóa
+   nháp tạo riêng để thử; trình duyệt làm phần chỉ trình duyệt làm được:
+
+  POST /users/me/avatar                 → 201  (trước: 503)
+  POST /lessons/{id}/video              → 201  (trước: 503)
+  trình duyệt PUT minio-avatar.png      → 200  (2 588 byte)
+  trình duyệt PUT minio-test.mp4        → 200  (65 324 byte, 4 s, 640x360)
+  PUT lại với Content-Type text/html    → 403  (chữ ký khóa loại file — đúng)
+  POST /users/me/avatar/complete        → 200  avatar_url = http://minio.localhost:9000/devpath-media/avatars/…/….png
+  POST /video-assets/{id}/complete      → 200  processing
+  worker: transcode_video succeeded in 3.73s: 'ready'
+  GET /video-assets/{id} sau 4,1 s      → ready, duration 4, hls_url = …/videos/<id>/hls/index.m3u8
+
+  Phía đọc, trong trình duyệt:
+  <img> avatar                          → tải được, 256x256
+  fetch index.m3u8                      → 200, application/vnd.apple.mpegurl
+  fetch segment_0000.ts                 → 200, video/mp2t, 97 948 byte
+  hls.js 1.7.1 phát                     → sau 2,5 s currentTime = 2,62 / 4,1 s, 640x360
+                                          (một cảnh báo bufferSeekOverHole — khe nhỏ đầu
+                                          segment, không liên quan storage)
+
+d) Dọn dẹp: khóa thử, section, bài học, video_assets đã xóa; avatar của tài
+   khoản seed trả về NULL; bucket còn 0 object.
+
+==============================================================================
+4. GIỚI HẠN ĐÃ BIẾT
+==============================================================================
+- Trình phân giải của Windows không biết *.localhost: Python chạy trên host
+  (socket.gethostbyname('minio.localhost') → getaddrinfo failed) không tới được
+  storage. Script đụng storage chạy trong container. Chrome/Edge và curl không bị.
+- Trình duyệt phải mở qua http://localhost:3000 (CORS chỉ mở cho origin đó).
+- URL demo công khai qua Cloudflare Quick Tunnel không phục vụ được file từ
+  MinIO (máy khác không tới được minio.localhost) — tunnel chạy compose prod,
+  vốn dùng R2. Phase 6 quyết định storage cho production.
+- Image MinIO không còn được cập nhật — chỉ dùng local.

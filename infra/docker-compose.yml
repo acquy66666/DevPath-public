@@ -26,16 +26,27 @@ x-backend-env: &backend-env
   # row is written or a job queued; see backend/app/services/rate_limit.py.
   SUBMISSION_COOLDOWN_SECONDS: ${SUBMISSION_COOLDOWN_SECONDS:-10}
   SUBMISSION_HOURLY_LIMIT: ${SUBMISSION_HOURLY_LIMIT:-40}
-  # Object storage (Cloudflare R2). Empty by default: the upload endpoints
-  # answer 503 until a bucket exists. See docs/huong-dan-cloudflare-r2.md.
-  # R2_ENDPOINT_URL overrides the endpoint for anything else that speaks S3 --
-  # a local MinIO, say -- and is empty for real R2.
+  # Object storage. Production uses Cloudflare R2; here every R2_* defaults to
+  # the `minio` service below, so video, avatar and transcript uploads work on
+  # a fresh clone with no account anywhere. The app only speaks S3 and never
+  # knows which one it is talking to.
+  #
+  # To use a real R2 bucket from this stack instead, set all of them in
+  # infra/.env -- R2_ENDPOINT_URL included, as
+  # https://<account id>.r2.cloudflarestorage.com. Left empty it falls back to
+  # MinIO, not to R2. See docs/huong-dan-cloudflare-r2.md.
+  #
+  # `minio.localhost`, not `minio`: a presigned URL is signed for one host, and
+  # the same URL is used by the browser (PUT an upload, GET a video) and by the
+  # workers (download the original, upload the HLS output). Browsers send any
+  # *.localhost to 127.0.0.1, where port 9000 is published; inside the compose
+  # network the same name is an alias of the service. One name, both sides.
   R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
-  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
-  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-${MINIO_ROOT_USER:-devpath}}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-${MINIO_ROOT_PASSWORD:-devpath-minio}}
   R2_BUCKET: ${R2_BUCKET:-devpath-media}
-  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
-  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-http://minio.localhost:9000/${R2_BUCKET:-devpath-media}}
+  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-http://minio.localhost:9000}
   # Gemini. Empty by default: the ingest job and the chat endpoints say
   # "chưa cấu hình" rather than failing. Put a real key in infra/.env.
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
@@ -80,6 +91,45 @@ services:
       - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # S3-compatible storage standing in for Cloudflare R2, on this machine only.
+  # docker-compose.prod.yml has no counterpart: production talks to R2.
+  #
+  # Bitnami's frozen build, not minio/minio: MinIO stopped publishing images
+  # of its community edition and both minio/minio and minio/mc are gone from
+  # Docker Hub (checked 18/09/2026). This one still pulls, and it creates the
+  # bucket itself, so there is no init container. It is not updated any more,
+  # which is acceptable for a local stand-in bound to 127.0.0.1 and not for
+  # anything else. Swapping it for another S3 server touches only this block.
+  minio:
+    image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-devpath}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-devpath-minio}
+      # `download` = anonymous GET, which is what a public R2 bucket gives the
+      # HLS player and <img>. Writes still need a signature.
+      MINIO_DEFAULT_BUCKETS: ${R2_BUCKET:-devpath-media}:download
+      # The page PUTs uploads and hls.js fetches segments straight from here,
+      # both cross-origin.
+      MINIO_API_CORS_ALLOW_ORIGIN: http://localhost:${FRONTEND_PORT:-3000}
+    ports:
+      # Fixed at 9000, unlike the other ports: it is part of the URLs signed
+      # and stored above, and inside the network the service listens on 9000.
+      # Loopback only -- the dev credentials are in this file.
+      - "127.0.0.1:9000:9000"
+      # Web console, for looking inside the bucket.
+      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/bitnami/minio/data
+    networks:
+      default:
+        aliases:
+          - minio.localhost
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 3s
       retries: 12
@@ -130,6 +180,9 @@ services:
     volumes: *backend-volumes
     depends_on:
       redis:
+        condition: service_healthy
+      # Transcoding reads the original from the bucket and writes HLS back.
+      minio:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
@@ -260,3 +313,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  minio_data:

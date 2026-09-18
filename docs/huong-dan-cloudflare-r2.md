@@ -4,6 +4,8 @@ Cần cho task **upload video** (Phase 2) và dùng lại cho avatar, phụ đ�
 
 Toàn bộ phần này bạn phải tự làm: nó liên quan tới tài khoản và khóa bí mật, tôi không tạo hộ được. Xong bước 6 thì dán giá trị vào `infra/.env` (bước 7) là chạy được — code phía server đã xong và đã kiểm thử.
 
+> **Cập nhật 18/09/2026 — máy dev không cần R2 nữa.** Stack dev có sẵn MinIO: để trống mọi `R2_*` là upload chạy được ngay, xem mục "Object storage trên máy dev" trong [infra/README.md](../infra/README.md). Hướng dẫn này giờ dành cho production (Phase 6), hoặc khi muốn thử R2 thật từ stack dev. Trường hợp sau thì phải điền **cả** `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com`, vì để trống thì nó rơi về MinIO.
+
 ---
 
 ## 1. Kích hoạt R2
@@ -116,9 +118,11 @@ R2_ACCESS_KEY_ID=<bước 4>
 R2_SECRET_ACCESS_KEY=<bước 4>
 R2_BUCKET=devpath-media
 R2_PUBLIC_BASE_URL=https://pub-xxxxxxxx.r2.dev
+# Chỉ bắt buộc ở stack dev (infra/docker-compose.yml), nơi để trống nghĩa là MinIO.
+R2_ENDPOINT_URL=https://<32 ký tự hex ở bước 3>.r2.cloudflarestorage.com
 ```
 
-Để trống bất kỳ dòng nào trong ba dòng đầu thì các endpoint upload trả **503 `STORAGE_NOT_CONFIGURED`** — có chủ đích, giống hệt cách Google OAuth đang làm, để phần còn lại của hệ thống vẫn chạy và test vẫn xanh khi chưa có khóa.
+Ở **production** (`infra/.env.prod`), để trống bất kỳ dòng nào trong ba dòng đầu thì các endpoint upload trả **503 `STORAGE_NOT_CONFIGURED`**. Đây là có chủ đích, giống hệt cách Google OAuth đang làm, để phần còn lại của hệ thống vẫn chạy và test vẫn xanh khi chưa có khóa. Ở **stack dev** thì khác: từ 18/09/2026, để trống là rơi về MinIO local, không ra 503.
 
 Cả `infra/.env` lẫn `backend/.env` đều đã nằm trong `.gitignore`. **Đừng bao giờ commit Secret Access Key** — nếu lỡ đẩy lên GitHub thì vào R2 → Manage API Tokens → xóa token đó và tạo cái mới, đừng chỉ sửa file.
 

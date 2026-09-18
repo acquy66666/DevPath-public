@@ -77,4 +77,4 @@ COMPOSE_PROJECT_NAME=devpath-prodtest ./scripts/deploy.sh --seed
 
 Đặt tên project khác để volume của bản chạy thử không đè lên database của máy dev. Trên VPS thì không cần — ở đó chỉ có một stack.
 
-Các bước còn lại của gate Phase 2 (đăng nhập Google, tạo khóa học, ảnh chụp player đang phát) thu khi deploy lên VPS thật; xem `docs/huong-dan-deploy-vps.md` mục 5.
+Ảnh tạo khóa học và player đang phát đã thu qua tunnel (`phase2-07-…`, `phase2-04-…` ở bảng trên). Còn lại duy nhất **đăng nhập Google**: redirect URI phải cố định nên chỉ chạy được trên tên miền thật — thu khi deploy lên VPS ở Phase 6, xem `docs/huong-dan-deploy-vps.md` mục 5.

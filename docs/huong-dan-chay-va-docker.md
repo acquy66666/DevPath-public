@@ -26,7 +26,7 @@ powershell -ExecutionPolicy Bypass -File C:\Users\Admin\start-docker.ps1
 
 Script chạy xong sẽ in `DOCKER DA SAN SANG`. Nếu chưa thấy dòng đó thì đừng làm bước 2.
 
-**Bước 2 — Dựng 5 container.**
+**Bước 2 — Dựng 8 container.**
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d
@@ -68,7 +68,7 @@ Bốn bước ở trên là cách gõ lệnh. Có hai cách khác làm đúng nh
 
 `C:\Users\Admin\chay-devpath.bat`
 
-Kéo ra Desktop (giữ **Alt** khi kéo để tạo shortcut) rồi nhấp đôi. Nó bật Docker, dựng 5 container, đợi tất cả healthy rồi tự mở trình duyệt. Hợp lý nhất khi chỉ cần **chạy trang web để xem**, không sửa code.
+Kéo ra Desktop (giữ **Alt** khi kéo để tạo shortcut) rồi nhấp đôi. Nó bật Docker, dựng 8 container, đợi tất cả healthy rồi tự mở trình duyệt. Hợp lý nhất khi chỉ cần **chạy trang web để xem**, không sửa code.
 
 ### Cách B — Trong VS Code
 
@@ -134,7 +134,7 @@ docker compose -f infra/docker-compose.yml down -v
 E-learning/
 ├── backend/     API và worker xử lý nền      (Python, FastAPI)
 ├── frontend/    Giao diện người dùng          (TypeScript, Next.js)
-├── grader/      Sandbox chấm code             (Phase 3, còn trống)
+├── grader/      Sandbox chấm code             (Python, Docker — Phase 3)
 ├── infra/       Docker, nginx, script deploy
 ├── docs/        Thiết kế và kế hoạch
 └── de-cuong-khoa-luan-elearning.md            Đề cương gốc
@@ -199,7 +199,7 @@ Hai quy ước dễ bị hỏi:
 |---|---|
 | `README.md` | Trang đầu của repo: mô tả, lệnh chạy, trạng thái |
 | `CLAUDE.md` | Quy ước dự án |
-| `.github/workflows/ci.yml` | 4 job kiểm tra tự động mỗi lần push |
+| `.github/workflows/ci.yml` | 5 job kiểm tra tự động mỗi lần push: backend, frontend, migration + seed trên CSDL trắng, grader (sandbox thật), cấu hình deploy |
 | `.gitignore` | Danh sách không đưa lên GitHub: `.env`, `node_modules`, `.venv` |
 
 ---
@@ -226,21 +226,26 @@ Extension trong Postgres: vector, pg_trgm, unaccent, plpgsql
 ffmpeg trong image backend: 7.1.5
 ```
 
-## 3.2 Năm container và việc của từng cái
+## 3.2 Tám container và việc của từng cái
+
+Kích thước đo ngày 19/09/2026.
 
 | Container | Image | Việc |
 |---|---|---|
 | `postgres` | `pgvector/pgvector:pg16` (621 MB) | Database. Bản pgvector nên có sẵn kiểu vector |
-| `redis` | `redis:7-alpine` (57.8 MB) | Hàng đợi việc cho worker |
-| `backend` | `devpath-backend:dev` (1.08 GB) | API FastAPI, cổng 8000 |
-| `worker` | **cùng image với backend** | Celery, chạy việc nặng: chuyển mã video |
-| `frontend` | `devpath-frontend:dev` (1.34 GB) | Next.js, cổng 3000 |
+| `redis` | `redis:7-alpine` (57.8 MB) | Hàng đợi việc cho worker, cache gợi ý, kênh tiến độ chấm bài |
+| `minio` | `bitnamilegacy/minio` (399 MB) | Storage S3 thay Cloudflare R2 trên máy dev: video, ảnh đại diện. Xem `infra/README.md` |
+| `backend` | `devpath-backend:dev` (1.1 GB) | API FastAPI, cổng 8000 |
+| `worker` | **cùng image với backend** | Celery, chạy việc nặng: chuyển mã video, nạp dữ liệu RAG, dựng gợi ý |
+| `beat` | **cùng image với backend** | Đồng hồ của Celery: đẩy job gợi ý lúc 03:00 mỗi đêm, không tự làm việc gì |
+| `grading-worker` | `devpath-grading:dev` (1.16 GB) | Celery hàng đợi `grading`: chấm bài nộp. Container **duy nhất** cầm Docker socket, vì chấm bài chính là khởi động container sandbox (`devpath-sandbox-python:v1`, 187 MB) |
+| `frontend` | `devpath-frontend:dev` (1.64 GB) | Next.js, cổng 3000 |
 
 **`backend` và `worker` dùng chung một image** — Docker build một lần thay vì hai. Hệ quả: container API cũng mang theo ffmpeg dù không dùng tới, tốn thêm khoảng 250 MB. Đổi lại không phải bảo trì hai Dockerfile. Đây là một đánh đổi có chủ đích, nói ra được thì tốt.
 
 ## 3.3 Mạng nội bộ — tên service chính là hostname
 
-Docker Compose tạo một mạng riêng tên `devpath_default` và cắm cả 5 container vào đó. Trong mạng này, **tên service là tên miền dùng được luôn**:
+Docker Compose tạo một mạng riêng tên `devpath_default` và cắm cả 8 container vào đó. Trong mạng này, **tên service là tên miền dùng được luôn**:
 
 ```
 Từ trong container backend:
@@ -264,8 +269,9 @@ Trên máy chủ thì **trình duyệt không cần địa chỉ nào cả**: ng
 Container bị xóa là mất sạch những gì ghi bên trong nó. Nên dữ liệu cần giữ được đặt trong **named volume** — vùng lưu trữ Docker quản lý, tồn tại độc lập với container:
 
 ```
-devpath_postgres_data    toàn bộ database (hiện 9.2 MB)
-devpath_redis_data       hàng đợi việc
+devpath_postgres_data    toàn bộ database
+devpath_redis_data       hàng đợi việc, cache gợi ý
+devpath_minio_data       file đã upload: video gốc, HLS, ảnh đại diện
 ```
 
 Hệ quả thực tế cần nhớ:
@@ -287,7 +293,7 @@ Nhờ đó `depends_on` mới có nghĩa: backend chỉ khởi động **sau khi
 Thứ tự thực tế lúc `up -d`:
 
 ```
-redis + postgres  →  (chờ healthy)  →  backend + worker  →  (chờ backend healthy)  →  frontend
+redis + postgres + minio  →  (chờ healthy)  →  backend + worker + beat + grading-worker  →  (chờ backend healthy)  →  frontend
 ```
 
 ## 3.6 Bind mount — vì sao sửa backend là reload, frontend thì không

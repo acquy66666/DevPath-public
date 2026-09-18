@@ -177,6 +177,8 @@ CÒN THIẾU, NÓI THẲNG
   @devpath.example và những khóa cũ ở lại với chủ cũ. Đây là lệch dữ liệu của
   máy dev, không phải lỗi code, nhưng cần dọn trước buổi bảo vệ — hoặc trỏ lại
   chủ sở hữu, hoặc dựng lại CSDL rồi seed từ đầu.
+  [Đã xử lý 18/09/2026: dựng lại CSDL dev từ trắng và seed lại với
+   @devpath.example — mọi tài khoản seed đăng nhập được.]
 
 - Chưa có test tự động cho đường đi này (Playwright là việc của Phase 6). Bằng
   chứng ở đây là hai bảng mốc thời gian đọc từ DOM, sáu ảnh chụp, và các truy

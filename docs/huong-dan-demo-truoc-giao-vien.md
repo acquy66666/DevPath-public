@@ -21,6 +21,7 @@ Làm hết, đừng để tới sáng hôm sau.
 - [ ] **Chuẩn bị dữ liệu tiến độ.** Đăng ký một tài khoản học viên, ghi danh một khóa miễn phí, xem video chừng một phút rồi thoát. Có sẵn dữ liệu này thì màn "vào lại đúng chỗ cũ" diễn được ngay, không phải ngồi chờ trước mặt thầy.
 - [ ] **Đặt bookmark trình duyệt** trỏ đúng `http://localhost:3000` — **không phải `127.0.0.1`**. Lý do ở Phần 5, mục 4.
 - [ ] **Chạy test một lần** để biết con số thật mà nói (xem Phần 6, câu 7).
+- [ ] **Kiểm tra image sandbox chấm bài** có sẵn: `docker image ls devpath-sandbox-python` phải ra tag `v1`. Thiếu thì build một lần (cần mạng): `cd grader` rồi `python -m runner.images`. Runner chạy với `--pull never` nên thiếu image là Chặng 8 báo lỗi hệ thống ngay.
 - [ ] **Đừng build lại image, đừng chạy `npm ci`** trong vòng 24 giờ trước demo. Cả hai đều phụ thuộc mạng và đều có thể làm hỏng thứ đang chạy tốt.
 
 ---
@@ -45,7 +46,7 @@ Script đẩy thư mục socket cũ của Docker sang một bên rồi mới kh�
 
 ✅ Đạt khi in ra `DOCKER DA SAN SANG`.
 
-### Bước 2 — Dựng 5 container
+### Bước 2 — Dựng 8 container
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d --wait
@@ -59,7 +60,7 @@ docker compose -f infra/docker-compose.yml up -d --wait
 | `-d` | Chạy nền, trả lại con trỏ dòng lệnh. Bỏ `-d` thì Ctrl+C sẽ tắt luôn cả stack |
 | `--wait` | **Chặn cho tới khi mọi healthcheck xanh.** Nhờ nó không phải ngồi gõ `ps` để đoán xem đã lên chưa |
 
-Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` → chờ healthy → `backend` + `worker` → chờ backend healthy → `frontend`.
+Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` + `minio` → chờ healthy → `backend`, `worker`, `beat`, `grading-worker` → chờ backend healthy → `frontend`.
 
 ✅ Đạt khi lệnh tự thoát không báo lỗi. Khoảng 20–40 giây.
 
@@ -69,7 +70,7 @@ Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` 
 docker compose -f infra/docker-compose.yml ps
 ```
 
-Xem trạng thái từng service. Cả 5 dòng phải ghi `(healthy)`. Chữ `(health: starting)` nghĩa là còn đang khởi động — chờ thêm 30 giây.
+Xem trạng thái từng service. 7 dòng phải ghi `(healthy)`; riêng `beat` chỉ ghi `Up` vì nó không có healthcheck (nó chỉ phát lịch, không nhận việc). Chữ `(health: starting)` nghĩa là còn đang khởi động — chờ thêm 30 giây.
 
 ```bash
 curl -s "http://localhost:8000/api/v1/courses?page_size=3"
@@ -77,7 +78,7 @@ curl -s "http://localhost:8000/api/v1/courses?page_size=3"
 
 **Đây mới là phép thử thật.** `-s` tắt thanh tiến trình cho output sạch. Phải làm bước này vì `(healthy)` của backend chỉ chứng minh tiến trình còn sống — endpoint `/health` cố ý **không** chạm database. Chỉ khi `/courses` trả về `"total":4` mới chắc là migration đã chạy và dữ liệu đã có.
 
-✅ Đạt khi thấy `"total":4`.
+✅ Đạt khi thấy `"total":4`. Thấy `"total":24` nghĩa là còn 20 khóa giả do `scripts/seed_interactions.py` tạo để đo hệ gợi ý (CSDL dev hiện đang như vậy). Chúng làm bẩn catalog, nên trước buổi demo hãy gỡ bằng lệnh `python -m scripts.seed_interactions --purge` chạy trong thư mục `backend`, rồi kiểm lại thấy `4`.
 
 Nếu `total` bằng 0 hoặc lệnh báo lỗi thì database còn trắng, chạy hai lệnh sau. Bản PowerShell:
 
@@ -100,20 +101,20 @@ Nạp 1 admin, 2 giảng viên, 8 danh mục và 4 khóa học kèm mục lục 
 | Tab | Địa chỉ | Dùng lúc nào |
 |---|---|---|
 | 1 | `http://localhost:3000` | Toàn bộ kịch bản demo |
-| 2 | `http://localhost:8000/docs` | Chặng 9 — tài liệu API tự sinh |
+| 2 | `http://localhost:8000/docs` | Chặng 10 — tài liệu API tự sinh |
 | 3 | `http://localhost:8000/api/v1/health` | Dự phòng khi bị hỏi "backend có sống không" |
 
 Mở tab 1 bằng **`localhost`**, không phải `127.0.0.1`.
 
 ---
 
-## Phần 3 — Kịch bản demo, 9 chặng
+## Phần 3 — Kịch bản demo, 10 chặng
 
 Tài khoản có sẵn (mật khẩu hard-code trong seed, chỉ dùng ở máy local):
 
 | Email | Mật khẩu | Vai trò | Dùng để |
 |---|---|---|---|
-| `khoa.tran@devpath.example` | `devpath-instructor` | instructor | Chặng 8 — khu giảng viên |
+| `khoa.tran@devpath.example` | `devpath-instructor` | instructor | Chặng 9 — khu giảng viên |
 | `mai.anh@devpath.example` | `devpath-instructor` | instructor | Dự phòng |
 | `admin@devpath.example` | `devpath-admin` | admin | **Không dùng để demo** — chưa có giao diện quản trị, đăng nhập vào thì màn hình y hệt khách vãng lai |
 
@@ -140,9 +141,23 @@ Giải thích: nhịp tim 10 giây một lần, cộng với lưu khi pause, khi
 
 **Chặng 7 · Ghi chú, bookmark, đánh giá (2 phút).** Vẫn ở trang học: gõ một ghi chú, nó hiện kèm nhãn `mm:ss`; tua video đi chỗ khác rồi **bấm vào nhãn thời gian** — video nhảy về đúng giây đó và tự phát. Bấm "Đánh dấu để xem lại", rồi "Đánh dấu hoàn thành" → thanh tiến độ nhích lên dạng `2/12 bài · 17%`. Quay lại trang chi tiết khóa học, cuộn xuống mục Đánh giá: vì đã ghi danh nên form hiện ra — chọn sao, gõ nhận xét, gửi. F5 thấy điểm trung bình ở đầu trang đã đổi.
 
-**Chặng 8 · Khu giảng viên (3 phút).** Bấm avatar → Đăng xuất. Đăng nhập `khoa.tran@devpath.example` / `devpath-instructor` → menu avatar mọc thêm mục **"Khóa học tôi dạy"** → `/giang-day` đã có sẵn 2 khóa để nói chuyện. Mở một khóa, tới thẻ "Nội dung khóa học": **giữ chuột vào tay nắm 6 chấm và kéo một bài học sang chương khác** — thứ tự lưu ngay, không có nút Lưu. Diễn thêm bản bàn phím: chọn tay nắm, bấm Space, mũi tên lên/xuống, Space lần nữa — có thông báo tiếng Việt cho trình đọc màn hình. Cuối cùng bấm "Gửi duyệt" ở thẻ Trạng thái → badge nhảy sang "đã xuất bản" và mọc link "Xem trang công khai →".
+**Chặng 8 · Chấm code tự động (3 phút).** Vẫn là tài khoản học viên, ở khóa Python mở bài **"Bài tập: đếm số chẵn"** (chương 3). Dán lời giải *cố tình sai*:
 
-**Chặng 9 · Tài liệu API (1 phút).** Mở `http://localhost:8000/docs` — Swagger sinh tự động từ Pydantic v2, 11 nhóm endpoint. Bấm "Try it out" trên `POST /api/v1/auth/login` để gọi API sống ngay tại chỗ. Câu chốt: tài liệu này không bao giờ lệch code, vì nó **là** code.
+```python
+n = int(input())
+a = list(map(int, input().split()))
+print(sum(1 for x in a if x % 2 == 0 and x > 0))
+```
+
+1. Bấm **"Chạy thử"** → qua cả 2 test mẫu. Nói kèm: chạy thử chỉ chấm với test mẫu và không tính vào lịch sử.
+2. Bấm **"Nộp bài"** → từng test đổi màu **theo thời gian thực** (WebSocket), và bài trượt ở một test **ẩn**: dãy có số âm và số 0. Test ẩn chỉ báo đúng/sai, không lộ đầu vào hay đáp án.
+3. Sửa điều kiện thành `if x % 2 == 0`, nộp lại → **AC**, và bài học tự đánh dấu hoàn thành.
+
+Câu nói kèm: mỗi test chạy trong một container dùng một lần — không mạng, không quyền root, filesystem chỉ đọc, giới hạn CPU/RAM/số tiến trình, timeout hai lớp. Bảy kiểu tấn công (đọc file ngoài, gọi mạng, fork bomb…) đều bị chặn, có test tự động trong CI.
+
+**Chặng 9 · Khu giảng viên (3 phút).** Bấm avatar → Đăng xuất. Đăng nhập `khoa.tran@devpath.example` / `devpath-instructor` → menu avatar mọc thêm mục **"Khóa học tôi dạy"** → `/giang-day` đã có sẵn 2 khóa để nói chuyện. Mở một khóa, tới thẻ "Nội dung khóa học": **giữ chuột vào tay nắm 6 chấm và kéo một bài học sang chương khác** — thứ tự lưu ngay, không có nút Lưu. Diễn thêm bản bàn phím: chọn tay nắm, bấm Space, mũi tên lên/xuống, Space lần nữa — có thông báo tiếng Việt cho trình đọc màn hình. Cuối cùng bấm "Gửi duyệt" ở thẻ Trạng thái → badge nhảy sang "đã xuất bản" và mọc link "Xem trang công khai →". Muốn khoe quiz: dữ liệu mẫu **chưa có** bài quiz nào, nên thêm một bài học loại *Quiz* trong mục lục, soạn 2 câu ngay tại chỗ; phía học viên có đồng hồ đếm ngược do server giữ giờ.
+
+**Chặng 10 · Tài liệu API (1 phút).** Mở `http://localhost:8000/docs` — Swagger sinh tự động từ Pydantic v2, 14 nhóm endpoint. Bấm "Try it out" trên `POST /api/v1/auth/login` để gọi API sống ngay tại chỗ. Câu chốt: tài liệu này không bao giờ lệch code, vì nó **là** code.
 
 ---
 

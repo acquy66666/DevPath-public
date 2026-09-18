@@ -59,7 +59,7 @@ class VideoAsset(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     """One uploaded video and whatever the transcode worker made of it.
 
     Created here so `lessons.video_asset_id` has a real foreign key from the
-    start; the upload flow that fills it in is the next task.
+    start; `services/video.py` fills it in from the presigned-upload flow.
     """
 
     __tablename__ = "video_assets"

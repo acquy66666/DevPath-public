@@ -13,24 +13,26 @@ Làm theo thứ tự này, đừng bỏ bước nào:
 - [ ] **Có dữ liệu.** Trang `/khoa-hoc` phải hiện 4 khóa học. Chưa có thì chạy seed (mục 3.5).
 - [ ] **Đăng nhập được** bằng tài khoản seed, vào được một khóa học, video chạy.
 - [ ] **Sửa thử một chỗ** theo mục 5 rồi hoàn tác (`git checkout -- <file>`), để chắc chắn hot reload hoạt động trên máy bạn.
-- [ ] **Biết mình đang ở đâu trong kế hoạch:** đọc lại `docs/plan/phase-2-core-platform.md`, các checkbox là trạng thái thật.
+- [ ] **Biết mình đang ở đâu trong kế hoạch:** mở file phase đầu tiên còn checkbox chưa tick trong `docs/plan/` (hiện là `phase-4-ai-features.md`); các checkbox là trạng thái thật.
 
 ---
 
 ## 1. Hệ thống này là gì
 
-Nền tảng học lập trình trực tuyến kiểu Udemy. Ba điểm nhấn kỹ thuật của khóa luận là **chấm code tự động trong sandbox Docker**, **hệ gợi ý khóa học**, và **chatbot RAG trợ giảng** — cả ba nằm ở Phase 3–4, chưa làm. Phần đã chạy được hiện nay là nền tảng: tài khoản, khóa học, học và theo dõi tiến độ.
+Nền tảng học lập trình trực tuyến kiểu Udemy. Ba điểm nhấn kỹ thuật của khóa luận là **chấm code tự động trong sandbox Docker**, **hệ gợi ý khóa học**, và **chatbot RAG trợ giảng** — chấm code (Phase 3) đã xong, hai cái còn lại thuộc Phase 4 đang làm. Nền tảng bên dưới (tài khoản, khóa học, học và theo dõi tiến độ) xong từ Phase 2.
 
-Đã hoàn thành (Phase 1 và gần hết Phase 2):
+Đã hoàn thành (Phase 1–3 đã đóng, Phase 4 đang làm — cập nhật 19/09/2026):
 
 | Nhóm | Nội dung |
 |---|---|
 | Tài khoản | Đăng ký/đăng nhập email + mật khẩu, đăng nhập Google, 3 vai trò `student`/`instructor`/`admin`, hồ sơ, đổi mật khẩu, ảnh đại diện |
 | Khóa học | CRUD, trình dựng mục lục kéo-thả, upload video lên R2 + worker chuyển mã HLS, trang chi tiết công khai có SEO |
 | Học viên | Tìm kiếm toàn văn tiếng Việt, lọc, ghi danh khóa miễn phí, trình phát HLS nhớ vị trí, ghi chú theo mốc thời gian, đánh dấu bài, đánh giá & xếp hạng |
-| Hạ tầng | Docker Compose cho máy dev và cho VPS, nginx + HTTPS, CI 4 job |
+| Chấm code (Phase 3) | Sandbox Docker cô lập, đủ 7 verdict, 7 ca tấn công bị chặn, hàng đợi Celery riêng, tiến độ từng test qua WebSocket, trang nộp bài có editor Monaco |
+| AI (Phase 4, một phần) | Quiz tính giờ; gợi ý khóa học item-based chạy hằng đêm; nạp bài viết vào pgvector cho chatbot |
+| Hạ tầng | Docker Compose cho máy dev (có MinIO thay R2) và cho VPS, nginx + HTTPS, CI 5 job |
 
-Chưa làm: chấm code, quiz, AI, thanh toán, gamification, trang quản trị.
+Chưa làm: chatbot RAG, sinh quiz bằng AI, gợi ý content-based (Phase 4); thanh toán, gamification, trang quản trị (Phase 5).
 
 ---
 
@@ -59,7 +61,7 @@ E-learning/
 │   └── lib/api/          Gọi backend, mỗi domain một file
 ├── infra/            Docker Compose, nginx, script deploy
 ├── docs/             Thiết kế + kế hoạch 14 tuần
-└── grader/           Sandbox chấm bài — Phase 3, hiện còn trống
+└── grader/           Sandbox chấm bài: runner, image Python, test tấn công (Phase 3)
 ```
 
 **Quy tắc phân lớp backend, hỏi là phải trả lời được:** router → service → model. Router nhận request, gọi service, trả response. Service quyết định *chuyện gì xảy ra* và ném lỗi nghiệp vụ. Model chỉ mô tả bảng.
@@ -352,7 +354,7 @@ Docker Compose trên VPS, nginx làm reverse proxy và kết thúc TLS, chứng 
 
 ## 8. Đọc thêm theo thứ tự ưu tiên
 
-1. [`docs/plan/phase-2-core-platform.md`](plan/phase-2-core-platform.md) — trạng thái thật của dự án
+1. [`docs/plan/00-overview.md`](plan/00-overview.md) và file phase đang chạy (hiện là [`phase-4-ai-features.md`](plan/phase-4-ai-features.md)) — trạng thái thật của dự án
 2. [`docs/database-design.md`](database-design.md) — mọi bảng, ràng buộc, và lý do
 3. [`docs/architecture.md`](architecture.md) — sơ đồ tổng thể
 4. [`backend/README.md`](../backend/README.md) và [`infra/README.md`](../infra/README.md) — chi tiết vận hành từng phần

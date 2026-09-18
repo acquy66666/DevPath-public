@@ -11,11 +11,11 @@ Kế hoạch đã chốt **không thuê máy chủ** cho tới Phase 6 ([lý do 
 | Chặng | Dùng gì | Được gì | Không được gì |
 |---|---|---|---|
 | Phase 2–5 | **Cloudflare Quick Tunnel** trỏ vào stack chạy trên máy dev | URL `https://….trycloudflare.com` có chứng chỉ thật, không cần tài khoản, không cần tên miền | URL đổi sau mỗi lần khởi động, chỉ sống khi máy dev bật, giới hạn 200 request đồng thời. Đăng nhập Google không chạy được vì redirect URI phải cố định |
-| Phase 6 | **GitHub Student Developer Pack**: $200 credit DigitalOcean + tên miền `.me` miễn phí 1 năm | Đúng mọi thứ trong tài liệu này, tên miền thật, chứng chỉ Let's Encrypt thật | Phải nộp hồ sơ sinh viên và chờ duyệt vài ngày — nộp sớm |
+| Phase 6 | Máy chủ: **Azure for Students** ($100 credit, qua GitHub Student Developer Pack) hoặc **Oracle Cloud Always Free**. Tên miền: `.me` miễn phí 1 năm của Student Pack | Đúng mọi thứ trong tài liệu này, tên miền thật, chứng chỉ Let's Encrypt thật | Azure có thể đòi xác minh bằng email học thuật. Oracle là ARM (arm64), phải kiểm mọi image build được, và thường khó xin được máy |
 
-Cùng cái pack đó còn cho GitHub Pro, thứ đang chặn ruleset bảo vệ `main` từ Phase 1. Một lần đăng ký gỡ được ba nút thắt.
+Student Pack đã có từ 08/09/2026. Phần GitHub Pro đã dùng ngay để bật ruleset bảo vệ `main`. **DigitalOcean đã rút khỏi pack**: mọi credit từ pack, kể cả credit đã nhận, hết hạn 31/07/2026, nên đừng đi tìm thẻ DigitalOcean trên trang pack nữa. Heroku trong pack thì không dùng được, vì worker chấm bài cần Docker daemon. Với Azure, VM ở trạng thái *deallocated* không tính tiền compute (chỉ tính đĩa): dựng máy sát ngày bảo vệ và tắt giữa các buổi là đủ giữ credit.
 
-Tài liệu này viết cho chặng thứ hai. Mọi bước đều không phụ thuộc nhà cung cấp — DigitalOcean, VPS Việt Nam hay máy nào khác đều chạy y hệt, chỉ khác chỗ bấm nút tạo máy.
+Tài liệu này viết cho chặng thứ hai. Mọi bước đều không phụ thuộc nhà cung cấp — Azure, Oracle, VPS Việt Nam hay máy nào khác đều chạy y hệt, chỉ khác chỗ bấm nút tạo máy.
 
 ---
 

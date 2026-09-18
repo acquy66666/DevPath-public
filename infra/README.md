@@ -5,7 +5,7 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ## Cấu trúc
 
 ```
-docker-compose.yml       Máy dev: postgres (pgvector), redis, backend, worker, grading-worker, frontend
+docker-compose.yml       Máy dev: postgres (pgvector), redis, minio, backend, worker, beat, grading-worker, frontend
 docker-compose.prod.yml  VPS: thêm nginx + certbot, bỏ cổng DB, bỏ bind mount
 docker-compose.tunnel.yml  Overlay: thêm cloudflared, cho stack production một URL công khai
 .env.prod.example        Mẫu biến môi trường cho VPS
@@ -36,8 +36,10 @@ Lần đầu mất vài phút để build image. Sau đó:
 | http://localhost:8000/docs | Tài liệu API (tự tắt khi `ENV=production`) |
 | localhost:5432 | Postgres — dùng cho Alembic chạy từ venv trên host |
 | localhost:6379 | Redis |
+| http://minio.localhost:9000 | MinIO — storage S3 thay R2 trên máy dev (xem mục bên dưới) |
+| http://localhost:9001 | Console web của MinIO |
 
-Cả sáu service đều có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
+Tám service; bảy cái có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". Riêng `beat` không có, vì nó chỉ phát lịch chứ không nhận việc nên không trả lời `inspect ping` (lý do ghi trong compose). `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
 
 Mã nguồn `backend/` và `frontend/` được bind mount nên sửa file là reload, không cần build lại. Chỉ build lại khi đổi `pyproject.toml`, `package.json` hoặc `Dockerfile`:
 
@@ -45,7 +47,7 @@ Mã nguồn `backend/` và `frontend/` được bind mount nên sửa file là r
 docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-Xóa sạch dữ liệu (Postgres, Redis) để dựng lại từ đầu — script khởi tạo extension chỉ chạy khi volume rỗng:
+Xóa sạch dữ liệu (Postgres, Redis, MinIO) để dựng lại từ đầu — script khởi tạo extension chỉ chạy khi volume rỗng:
 
 ```bash
 docker compose -f infra/docker-compose.yml down -v
@@ -111,7 +113,7 @@ Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy nga
 - **code người nộp không bao giờ chạy trong container này** — mọi dòng của nó chạy trong container dùng một lần mà worker tạo ra, với `--network none`, `--read-only`, `--cap-drop ALL`, uid 10001;
 - image production chạy uid 10001 chứ không phải root, nên còn phải cho vào nhóm `docker` của host mới chạm được socket (`group_add`). Chạy bằng root sẽ ngắn hơn một dòng và mở hơn rất nhiều.
 
-Hướng làm chặt hơn (chưa làm, ghi để nhắc): đặt một proxy socket chỉ cho phép `create`/`start`/`wait`/`rm` thay vì đưa nguyên socket.
+Hướng làm chặt hơn (chưa làm, đã thành checkbox của [Phase 6](../docs/plan/phase-6-hardening-deploy.md), mục "Nợ hoãn lại"): đặt một proxy socket chỉ cho phép `create`/`start`/`wait`/`rm` thay vì đưa nguyên socket.
 
 ### Trước lần chấm đầu tiên: build image sandbox
 
@@ -246,5 +248,4 @@ Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không 
 
 ## Chưa có gì ở đây
 
-- Service `grader` — thêm ở [Phase 3](../docs/plan/phase-3-code-grading.md) cùng lúc với code grader, qua checklist skill `sandbox-grading`.
 - `scripts/` backup và restore DB — [Phase 6](../docs/plan/phase-6-hardening-deploy.md).

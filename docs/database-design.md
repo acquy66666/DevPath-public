@@ -271,7 +271,10 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `reviews` | ✅ đã có trong DB | `7b60984bf439` |
 | `code_exercises`, `test_cases`, `submissions`, `submission_results` | ✅ đã có trong DB | `86a5023fa0b8`, `123eb876dda5` (`is_trial`) |
 | `doc_chunks` | ✅ đã có trong DB | `a03e9e2f9ce9` |
-| Quiz, thương mại, cộng đồng, phần AI còn lại (`chat_sessions`, `chat_messages`, `recommendations`) | ⏳ Phase 4–5 | |
+| `quizzes`, `quiz_questions`, `quiz_attempts` | ✅ đã có trong DB | `50ccf4fc23fb` |
+| `chat_sessions`, `chat_messages` | ⏳ Phase 4 (task Chat API) | |
+| `recommendations` | ⛔ **không dựng bảng** — kết quả gợi ý nằm ở cache Redis (`rec:v1:user:*`, TTL 48 giờ), job Celery beat dựng lại mỗi đêm; bảng chỉ cần nếu sau này phải truy vết gợi ý cũ. Lý do: `docs/report/assets/decisions.md`, mục "Gợi ý tính offline, endpoint chỉ đọc cache"; số đo ở `phase-4/recommendation-batch.txt` | |
+| Thương mại (`orders`, `order_items`, `coupons`, `payment_events`, `wishlists`, `cart_items`), cộng đồng và gamification | ⏳ Phase 5 | |
 
 `search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
 

@@ -279,9 +279,26 @@ Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất b�
 
 ## Trạng thái
 
-Đã có: app factory, `/api/v1/health`, cấu hình pydantic-settings, engine SQLAlchemy async + `get_db`, base model (UUID PK + timestamps), exception handler dùng chung, Alembic đã nối vào `Base.metadata`, auth email + mật khẩu và đăng nhập Google (bảng trên) với `get_current_user`.
+Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration: `576c29b76f4e` tạo `users`, `categories`, `courses` cùng ba extension `vector`, `unaccent`, `pg_trgm`; `adab7334f140` thêm `refresh_tokens`. Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
+Migration là một chuỗi thẳng 12 revision, một head (`alembic heads` để kiểm):
+
+| Revision | Nội dung |
+|---|---|
+| `576c29b76f4e` | `users`, `categories`, `courses` + extension `vector`, `unaccent`, `pg_trgm` |
+| `adab7334f140` | `refresh_tokens` |
+| `f7d37ee5caf2` | `course_sections`, `lessons`, `video_assets` |
+| `0c55c726cc39` | trigger `search_vector` cho tìm kiếm toàn văn |
+| `991bc02a257b` | `enrollments` |
+| `b6dea13f199c` | `lesson_progress` |
+| `852a7bf2510b` | `notes`, `bookmarks` |
+| `7b60984bf439` | `reviews` |
+| `86a5023fa0b8` | `code_exercises`, `test_cases`, `submissions`, `submission_results` |
+| `123eb876dda5` | `submissions.is_trial` (chạy thử) |
+| `a03e9e2f9ce9` | `doc_chunks` + index HNSW |
+| `50ccf4fc23fb` | `quizzes`, `quiz_questions`, `quiz_attempts` |
+
+Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 
 ```bash
 .venv\Scripts\python.exe -m alembic upgrade head
@@ -358,4 +375,4 @@ Nó dựng một khóa học, một bài tập và **một học viên cho mỗi
 
 Nội dung khóa học nằm ở `scripts/seed_courses.py`. **Video là của người khác:** mọi bài học video đều trỏ vào một luồng HLS mẫu công khai, nên khóa học seed phát được cả trên máy chưa cấu hình R2 — đặt `SEED_SAMPLE_HLS_URL` để trỏ sang manifest của bạn. Seed không upload gì lên bucket; upload thật đi qua luồng presigned URL và worker transcode.
 
-Chưa có: endpoint readiness kiểm tra DB/Redis, upload avatar (dùng lại `services/storage.py`, chỉ thiếu endpoint), job dọn object mồ côi (Phase 6 — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới).
+Chưa có (đã ghi thành checkbox Phase 6): endpoint readiness kiểm tra DB/Redis, và job dọn object mồ côi — một URL đã ký mà không ai tải lên, hoặc bài học bị xóa, đều để lại file trong bucket không còn hàng nào trỏ tới. Upload avatar đã có từ Phase 2 (`POST /users/me/avatar` + `/complete`).

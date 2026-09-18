@@ -91,3 +91,25 @@ class MemoryRateLimiter:
         if self.used[key] <= limit:
             return 0
         return self.window_ends[key] - self.now
+
+
+class MemoryRecommendationCache:
+    """The recommendation cache as a dictionary.
+
+    Holds `CachedList` objects rather than their JSON, because the encoding is
+    tested on its own (`tests/test_recommendations.py`) and a test about the
+    endpoint should not have to spell out a payload to make its point.
+
+    The distinction the endpoint turns on is kept exactly: a user with no key
+    reads as None ("nothing computed yet"), and a user whose entry holds an
+    empty list reads as a computed empty list.
+    """
+
+    def __init__(self) -> None:
+        self.entries: dict[object, object] = {}
+
+    async def read(self, user_id):
+        return self.entries.get(user_id)
+
+    def write(self, user_id, cached) -> None:
+        self.entries[user_id] = cached

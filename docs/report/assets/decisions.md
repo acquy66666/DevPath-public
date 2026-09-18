@@ -271,3 +271,17 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Khóa nháp và khóa đã gỡ bị loại ngay ở truy vấn** — tương tác với khóa đã gỡ vẫn nói lên sở thích, nhưng giữ nó trong ma trận nghĩa là nó có thể được gợi ý, và lọc lại ở đầu ra là một quy tắc thứ hai mà mọi nơi đọc mô hình phải nhớ.
 
 **Chưa thêm shrinkage cho cặp khóa ít người học chung** — hai khóa chỉ có một người học chung vẫn ra cosine rất cao; đây là điểm yếu đã biết của item-based trên dữ liệu thưa. Không chỉnh bây giờ vì hệ số shrinkage là thứ phải chọn bằng precision@k, mà CSDL dev lúc viết mới có 5 tương tác / 4 user / 1 cặp học chung. Chỉnh trước khi đo là chỉnh mù — cùng lý do để mặc định tham số HNSW.
+
+**Gợi ý tính offline, endpoint chỉ đọc cache** — dựng ma trận tương đồng phải đọc toàn bộ lượt đăng ký của nền tảng; một đêm một lần thì hợp lý, mỗi lần tải trang một lần thì vô lý. Job Celery beat 03:00 ghi top-20 mỗi người vào Redis, endpoint đọc ra.
+
+**Nhưng cache vẫn bị kiểm lại ở đầu ra** — cache cũ tới một ngày, và trong một ngày đó khóa học có thể bị gỡ xuất bản, bị xóa mềm, hoặc — ca hay xảy ra nhất — được chính người đang được gợi ý đăng ký mất rồi. Job không thể biết những chuyện xảy ra sau khi nó chạy, nên ba phép kiểm đó nằm ở tầng đọc. Đây cũng là lý do cache giữ 20 khóa trong khi trang chỉ hiện 8: lọc xong vẫn còn đủ.
+
+**Không có key khác với key chứa danh sách rỗng** — "chưa ai tính cho người này" (`generated_at: null`) và "đã tính, không gợi ý được gì" (`items: []` kèm mốc thời gian) là hai câu trả lời khác nhau. Gộp chúng lại thì phần hybrid sau này không biết lúc nào nên rẽ sang "khóa phổ biến theo danh mục".
+
+**TTL 48 giờ, dài gấp đôi khoảng cách giữa hai lần chạy** — mất một đêm thì gợi ý hôm qua vẫn hơn một trang trống, và `generated_at` đi kèm để trang tự biết dữ liệu cũ bao lâu.
+
+**Job đi vào queue mặc định `celery`, không tạo queue mới** — compose đã để worker `media` nghe cả `media,celery` với comment ghi rõ là để dành cho task thêm về sau. Một job chạy vài giây mỗi đêm không cần container riêng, và tuyệt đối không được nằm trên queue `grading`: những core đó dành cho bài nộp đang có người ngồi chờ.
+
+**Thêm `scripts/rebuild_recommendations.py` thay vì bắt người ta gọi task Celery** — demo không chờ được cron, và số liệu trong báo cáo phải tái tạo được bằng một lệnh chứ không bằng cách để container chạy qua đêm. Script gọi đúng hàm `rebuild` mà task Celery gọi.
+
+**Một beat và chỉ một beat** — hai tiến trình beat sẽ đẩy mỗi job hằng đêm hai lần, mà file lịch nằm trong `/tmp` của từng container nên không bên nào biết bên nào. Đã ghi thành comment ở cả hai file compose.

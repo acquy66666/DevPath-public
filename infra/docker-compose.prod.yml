@@ -148,6 +148,29 @@ services:
       retries: 3
       start_period: 30s
 
+  # The clock. One replica, always: two would enqueue every nightly job twice.
+  beat:
+    build:
+      context: ../backend
+      target: production
+    image: devpath-backend:prod
+    restart: unless-stopped
+    command:
+      - celery
+      - -A
+      - app.workers.celery_app
+      - beat
+      - --loglevel=info
+      # /tmp, because the schedule file is written on every tick and the
+      # working directory in the production image is not a place to keep state.
+      - --schedule=/tmp/celerybeat-schedule
+    environment: *backend-env
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
   # The only container on this host that can talk to the Docker daemon.
   #
   # It holds the socket because starting a sandbox container is what grading

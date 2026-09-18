@@ -45,6 +45,7 @@ celery_app = Celery(
         "app.workers.video",
         "app.workers.grading",
         "app.workers.recommendations",
+        "app.workers.rag",
     ],
 )
 

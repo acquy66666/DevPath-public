@@ -43,6 +43,11 @@ x-backend-env: &backend-env
   R2_BUCKET: ${R2_BUCKET:-devpath-media}
   R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
   R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  # Gemini. Empty by default: the ingest job and the chat endpoints say
+  # "chưa cấu hình" rather than failing. Put a real key in infra/.env.prod --
+  # this file runs with --env-file .env.prod, so infra/.env is never read.
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
   # One origin, and it is the site's own. The browser calls /api on the same
   # host it loaded the page from, so this only ever matters if something else
   # is pointed at this API on purpose.

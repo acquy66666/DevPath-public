@@ -113,3 +113,23 @@ class MemoryRecommendationCache:
 
     def write(self, user_id, cached) -> None:
         self.entries[user_id] = cached
+
+
+class FakeQueue:
+    """Records what was handed to Celery, and hands it to nobody.
+
+    Shared rather than redefined per module: `TaskQueue` grows a method every
+    time a feature schedules something, and a local fake that implements only
+    yesterday's methods fails as an AttributeError in the middle of an
+    unrelated test.
+    """
+
+    def __init__(self) -> None:
+        self.enqueued: list = []
+        self.ingested: list = []
+
+    def enqueue_transcode(self, video_asset_id) -> None:
+        self.enqueued.append(video_asset_id)
+
+    def enqueue_ingest(self, course_id) -> None:
+        self.ingested.append(course_id)

@@ -26,8 +26,12 @@ from app.schemas.courses import (
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.services import catalog as catalog_service
 from app.services import courses as courses_service
+from app.services.tasks import TaskQueue, get_task_queue
 
 router = APIRouter(prefix="/courses", tags=["courses"])
+
+#: Celery, and overridden in tests.
+Queue = Annotated[TaskQueue, Depends(get_task_queue)]
 
 Instructor = Annotated[User, Depends(require_role("instructor"))]
 
@@ -168,10 +172,19 @@ async def delete_course(
 
 @router.post("/{course_id}/submit", response_model=CourseOut)
 async def submit_course(
-    course_id: uuid.UUID, current_user: CurrentUser, session: DbSession
+    course_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: DbSession,
+    queue: Queue,
 ) -> CourseOut:
-    """Send a draft for review. Auto-approved until Phase 5 builds the queue."""
-    course = await courses_service.submit_for_review(session, course_id, current_user)
+    """Send a draft for review. Auto-approved until Phase 5 builds the queue.
+
+    Publishing is also what schedules the RAG ingest: the chatbot may quote a
+    course the moment students can enrol in it, and not before.
+    """
+    course = await courses_service.submit_for_review(
+        session, course_id, current_user, queue
+    )
     return CourseOut.model_validate(course)
 
 

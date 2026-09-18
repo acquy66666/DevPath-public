@@ -14,6 +14,8 @@ Phase đang chạy. Bảng dưới là gate cuối phase (chép từ [kế hoạ
 
 | Tệp | Nội dung | Dùng cho chương |
 |---|---|---|
+| `embedding-model.txt` | Chọn model embedding bằng số đo: `gemini-embedding-001` vs `gemini-embedding-2` — bản 2 **bỏ qua `taskType`** (cosine giữa vector DOCUMENT và QUERY = 1,000000) nên chọn bản 001 (0,893094). Kèm đo token tiếng Việt bằng `countTokens` (3,92 ký tự/token có dấu, 2,32 với mã nguồn) — cơ sở cho `CHARS_PER_TOKEN` | 4 — Xây dựng hệ thống |
+| `rag-ingest.txt` | Ingest chạy thật trên 24 khóa: 26 chunk, lần chạy thứ hai tốn **0 quota**. Truy hồi thật: câu trong phạm vi d≈0,30, câu ngoài phạm vi d≈0,52 — cách biệt đủ để đặt ngưỡng từ chối. Kèm phần "chưa đo": 43/69 bài học không có chữ vì nội dung thật là video | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |
 | `interaction-seed.txt` | 48 học viên giả lập theo 4 cụm sở thích, 190 tương tác, 24 khóa: 48/48 người có gợi ý (trước là 1/4), tỷ lệ top-3 đúng cụm **0,8333** so với mức ngẫu nhiên 0,2500. Kèm hai lần đột biến cố ý chứng minh test bắt được lỗi, và hai học viên khác cụm lấy thật qua HTTP | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |
 | `recommendation-batch.txt` | Job hằng đêm chạy thật: 4 key `rec:v1:user:*` trong Redis, TTL ~48 giờ, điểm `0,7071 = 1/√2` kiểm được bằng tay, log beat đọc đúng lịch 03:00. Kèm phần "chưa đo, nói thẳng": chưa có precision@k vì CSDL dev chỉ có 5 tương tác | 4 — Xây dựng hệ thống |
 | `hnsw-index.txt` | `EXPLAIN (ANALYZE, BUFFERS)` chứng minh planner **thật sự** chọn `ix_doc_chunks_embedding`: 1,33 ms / 1239 buffer so với 5,89 ms / 9055 buffer khi tắt index scan, trên 3000 chunk. Kèm phần "chưa đo, nói thẳng": chưa đo recall của tìm kiếm xấp xỉ | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |

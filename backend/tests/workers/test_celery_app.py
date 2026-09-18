@@ -62,3 +62,30 @@ def test_the_nightly_rebuild_stays_off_the_grading_queue() -> None:
 
     assert queue.name != GRADING_QUEUE
     assert queue.name == "celery"
+
+
+INGEST = "app.workers.rag.ingest_course"
+
+
+def test_the_worker_is_told_to_import_the_ingest_module() -> None:
+    """Publishing a course enqueues this by name. A name no worker recognises
+    fails on the worker's side, where nobody is looking -- the publish itself
+    succeeds and the instructor sees nothing wrong."""
+    assert "app.workers.rag" in celery_app.conf.include
+
+
+def test_the_ingest_registers_under_the_name_the_api_enqueues() -> None:
+    """`CeleryTaskQueue.enqueue_ingest` sends this task; the decorator names
+    it. Two files, one string."""
+    import app.workers.rag  # noqa: F401  -- what `include` does at startup
+
+    assert INGEST in celery_app.tasks
+
+
+def test_the_ingest_stays_off_the_grading_queue() -> None:
+    """Ingest is a burst of waiting on Gemini. The grading cores belong to
+    submissions somebody is watching a page for."""
+    queue = celery_app.amqp.router.route({}, INGEST)["queue"]
+
+    assert queue.name != GRADING_QUEUE
+    assert queue.name == "celery"

@@ -305,3 +305,31 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 **Có `--purge` ngay từ đầu** — 20 khóa giả lập là thứ làm cho recommender đo được và làm cho catalogue trông độn. Đường gỡ ra phải có sẵn trước khi có người cần nó gấp, và nó hoàn nguyên cả `students_count`/`rating_avg` của bốn khóa thật.
 
 **Test khẳng định trạng thái cuối, không khẳng định số dòng vừa tạo** — bài học trả giá ngay trong phiên: bộ test xanh trên CSDL trắng rồi đỏ ngay sau khi chính script được chạy thật, vì lần hai không tạo dòng nào. Trên máy đã seed một lần thì mọi bộ đếm đều bằng 0.
+
+## Đường ống ingest RAG (18/09/2026)
+
+**Chọn `gemini-embedding-001` chứ không phải `gemini-embedding-2`** — đo được chứ không suy từ số phiên bản: bản 2 trả về **cùng một vector** cho `RETRIEVAL_DOCUMENT` và `RETRIEVAL_QUERY` (cosine = 1,000000), tức `taskType` không có tác dụng; bản 001 cho 0,893094. Bất đối xứng câu hỏi/đoạn văn là thứ RAG cần. Bản 2 nhỉnh hơn ở phép thử truy hồi ba tài liệu (cách biệt 0,1904 so với 0,1758) nhưng chênh lệch đó nằm trong nhiễu nên không lấy làm căn cứ.
+
+**Tự chuẩn hóa vector ngay trong adapter** — ở 768 chiều, model 001 trả về vector chưa chuẩn hóa (norm ≈ 0,57) vì đó là bản cắt Matryoshka từ 3072 gốc. Cosine distance vốn tự chuẩn hóa nên không làm gì vẫn ra đúng thứ hạng — nhưng mọi con số kiểm tay trong tệp bằng chứng sẽ sai, và nếu sau này đổi sang inner product thì sẽ sai âm thầm. Vector norm = 0 bị từ chối thay vì chia cho 0.
+
+**Ước lượng token thay vì gọi `countTokens` cho từng chunk** — một lần gọi mạng cho mỗi chunk còn chậm hơn chính lần gọi embedding mà nó đang lập ngân sách. Hằng số 3,5 ký tự/token đo được từ 4 mẫu thật và cố tình thấp hơn mọi số đo văn xuôi: ước lượng cao số token thì chunk ra nhỏ hơn mục tiêu, thay vì vượt giới hạn model.
+
+**`MAX_CHUNK_TOKENS = 700` dù model nhận tới 2048** — khoảng dư đó để hấp thụ sai số của chính phép ước lượng trên, vì mã nguồn đặc gấp rưỡi văn xuôi (2,32 so với 3,92 ký tự/token).
+
+**Overlap tính theo đơn vị trọn vẹn, và có đường lui xuống mức câu** — cắt overlap giữa câu là tái tạo đúng cái mảnh vụn mà việc chia theo đoạn/câu sinh ra để tránh. Bài học trả giá trong phiên: bản đầu chỉ mang được **nguyên đoạn**, mà một đoạn văn xuôi thường 80–100 token, lớn hơn ngân sách overlap 75 → không mang được gì, và các chunk lát kín bài học **không chồng nhau chút nào**. Test vẫn xanh vì dữ liệu test lặp lại một đoạn duy nhất nên câu nào cũng có mặt ở mọi chunk. Sửa cả hai: khẳng định overlap bằng dấu hiệu vị trí thay vì tìm chuỗi con, và thêm đường lui cắt theo câu.
+
+**Nhúng theo lô** — `batchEmbedContents` nhận cả `taskType` lẫn `outputDimensionality`, nên một bài học 40 chunk tốn 1 lần gọi mạng chứ không phải 40. Thứ tự là thứ duy nhất nối một vector về đúng chunk của nó, nên nó được khẳng định bằng test chứ không giả định.
+
+**Ingest theo từng bài học, commit theo từng bài học** — một khóa học là hàng chục lần gọi API trên một key mà kế hoạch đã ghi là rủi ro quota. Làm cả khóa trong một transaction nghĩa là key chết ở hai phần ba đường sẽ không để lại gì. Commit dần thì lần chạy sau tiếp tục được, và phép so sánh dưới đây làm việc tiếp tục đó gần như miễn phí.
+
+**So sánh trước khi nhúng lại, kèm cả tên model** — publish là cái nút bấm được nhiều lần. Trước khi tốn quota, so từng chunk sẽ sinh ra với dòng đang có: cùng số lượng, cùng nội dung, cùng model → bỏ qua. Đo thật: lần chạy thứ hai trên 24 khóa tốn 0 lần gọi API. Tên model nằm trong phép so sánh vì hai model có thể cùng 768 chiều mà đặt cùng một câu ở hai chỗ khác hẳn nhau.
+
+**Xóa rồi ghi lại, không cập nhật tại chỗ** — chữ mới có thể sinh ra ít chunk hơn chữ cũ, và các dòng ở những chỉ số không còn nữa sẽ nằm lại, vẫn truy hồi được, vẫn trích dẫn một phiên bản bài học mà không ai đọc được nữa. `uq_doc_chunks_lesson_chunk` không bắt được lỗi này vì những chỉ số đó đơn giản là không bao giờ được ghi lại.
+
+**Task ingest không tự retry** — lỗi mong đợi là hết quota, và retry mặc định của Celery sẽ tiêu lần thử tiếp theo vào đúng cái key đang cạn, rồi lại nữa. Vì đã commit theo từng bài, chạy lại sau khi quota hồi là tiếp tục chứ không làm lại. Chạy lại là cái nút trong tay giảng viên (publish) và một lệnh trong tay người vận hành — tốt hơn một cơn bão retry không ai nhìn thấy.
+
+**Thiếu key thì bỏ qua chứ không làm task đỏ** — phần còn lại của nền tảng chạy được mà không cần chatbot. Một task đỏ sau mỗi lần publish sẽ dạy mọi người quen với việc bỏ qua task đỏ.
+
+**Ingest móc vào lúc publish, không móc vào mỗi lần sửa bài học** — chatbot được quyền trích dẫn một khóa học đúng lúc học viên vào học được, không sớm hơn. Job được đẩy **sau** commit, vì worker mở connection riêng và sẽ đọc phải trạng thái cũ nếu đẩy trước.
+
+**Tiêu đề bài học đi kèm chữ của bài học vào từng chunk** — truy hồi so câu hỏi với chính chunk, không so với dòng `lessons` treo phía trên nó, nên một chunk không bao giờ nhắc tên chủ đề của mình chỉ có thể tìm thấy qua những từ tình cờ nằm bên trong.

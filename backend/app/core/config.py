@@ -69,6 +69,27 @@ class Settings(BaseSettings):
     # something to show.
     auto_approve_courses: bool = True
 
+    # Gemini. Empty until somebody creates a key in Google AI Studio;
+    # `gemini_enabled` is what the ingest job and the chat routes check, and
+    # everything they do degrades to a stated "chưa cấu hình" rather than a
+    # stack trace when it is off.
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta"
+    # Chosen on measurements, not on the version number -- `gemini-embedding-2`
+    # exists and was tried. This is the model whose 768-wide truncation
+    # `doc_chunks.embedding` was sized for, and the one that still gives a
+    # different vector for a passage than for a question about it. See
+    # docs/report/assets/phase-4/embedding-model.txt.
+    gemini_embedding_model: str = "gemini-embedding-001"
+    # How many chunks go into one `batchEmbedContents` call. A lesson is
+    # usually fewer than this, so most lessons cost one round trip.
+    gemini_embedding_batch_size: int = 50
+    gemini_timeout_s: float = 60.0
+    # Attempts, not retries: 3 means the original call plus two more. Quota
+    # limits on the free tier are the expected failure, and they are the kind
+    # that goes away on its own.
+    gemini_max_attempts: int = 3
+
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"
 
@@ -101,6 +122,11 @@ class Settings(BaseSettings):
     def google_oauth_enabled(self) -> bool:
         """Both halves or neither -- a client id without its secret cannot sign in."""
         return bool(self.google_client_id and self.google_client_secret)
+
+    @property
+    def gemini_enabled(self) -> bool:
+        """A key and nothing else -- the model names all have defaults."""
+        return bool(self.gemini_api_key)
 
     @property
     def storage_enabled(self) -> bool:

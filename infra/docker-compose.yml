@@ -36,6 +36,10 @@ x-backend-env: &backend-env
   R2_BUCKET: ${R2_BUCKET:-devpath-media}
   R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
   R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  # Gemini. Empty by default: the ingest job and the chat endpoints say
+  # "chưa cấu hình" rather than failing. Put a real key in infra/.env.
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
   CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
   # The Windows host's filesystem events do not cross into the Linux VM, so
   # the reloader has to poll for changes instead of waiting to be told.

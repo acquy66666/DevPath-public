@@ -1,0 +1,88 @@
+CHỌN MODEL EMBEDDING VÀ ĐO TOKEN — BẰNG SỐ ĐO, KHÔNG BẰNG SỐ PHIÊN BẢN
+Ngày đo: 18/09/2026 · key Gemini thật (Google AI Studio), 50 model truy cập được
+Liên quan: backend/app/services/llm.py, backend/app/services/chunking.py,
+           backend/app/models/rag.py (EMBEDDING_DIMENSIONS = 768)
+
+Cách tái tạo: các lệnh gọi dưới đây là `embedContent` / `batchEmbedContents` /
+`countTokens` của Gemini v1beta, `outputDimensionality=768`. Key đọc từ
+`infra/.env` (không commit).
+
+==============================================================================
+1. HAI MODEL EMBEDDING ỔN ĐỊNH, VÀ VÌ SAO CHỌN BẢN CŨ HƠN
+==============================================================================
+  model                  | chiều | input tối đa | taskType | chuẩn hóa sẵn
+  -----------------------|-------|--------------|----------|---------------
+  gemini-embedding-001   |  768  |  2048 token  | CÓ tác dụng | KHÔNG (norm 0,57)
+  gemini-embedding-2     |  768  |  8192 token  | BỊ BỎ QUA   | CÓ  (norm 1,00)
+
+Phép thử taskType: nhúng **cùng một đoạn văn** hai lần, một lần là
+RETRIEVAL_DOCUMENT, một lần là RETRIEVAL_QUERY, rồi đo cosine giữa hai vector:
+
+  gemini-embedding-001 : cosine = 0,893094  → hai vector khác nhau thật
+  gemini-embedding-2   : cosine = 1,000000  → y hệt nhau, taskType vô nghĩa
+
+Phép thử truy hồi (3 đoạn, 1 câu hỏi "Lam sao de khai bao bien trong Python?"):
+
+  gemini-embedding-001 : 0,8203 python-vars | 0,6445 python-loop | 0,5174 docker-net
+                         → ĐÚNG, cách biệt top1–top2 = 0,1758
+  gemini-embedding-2   : 0,8611 python-vars | 0,6707 python-loop | 0,5421 docker-net
+                         → ĐÚNG, cách biệt top1–top2 = 0,1904
+
+**Chọn `gemini-embedding-001`.** Ba lý do, xếp theo sức nặng:
+
+1. **Bất đối xứng câu hỏi/đoạn văn là thứ RAG cần.** Một câu hỏi và một đoạn
+   văn trả lời nó không phải cùng một loại văn bản; model 001 phân biệt được
+   (cosine 0,893 chứ không phải 1,0), model 2 thì không.
+2. **`doc_chunks.embedding` được thiết kế quanh nó.** Comment trong
+   `models/rag.py` từ task trước đã ghi rõ 768 là bản cắt Matryoshka hợp lệ của
+   model này.
+3. Cách biệt 0,1904 so với 0,1758 là **chênh lệch trong nhiễu** của một phép
+   thử ba tài liệu, không đủ để kết luận model nào truy hồi tốt hơn. Không lấy
+   nó làm lý do chọn.
+
+Giới hạn 2048 token của 001 không ràng buộc gì: chunk nhắm 500 token.
+
+==============================================================================
+2. HỆ QUẢ: PHẢI TỰ CHUẨN HÓA VECTOR
+==============================================================================
+Ở 768 chiều, `gemini-embedding-001` trả về **vector chưa chuẩn hóa** — đo được
+norm ≈ 0,57–0,58 qua nhiều lần gọi. Đây là hệ quả của việc cắt bớt chiều từ
+3072 gốc, và tài liệu của Google cũng dặn phải tự chuẩn hóa.
+
+`services/llm.py` chuẩn hóa ngay khi nhận. Cosine distance vốn tự chuẩn hóa nên
+*không chuẩn hóa vẫn ra đúng thứ hạng* — nhưng:
+  - mọi con số kiểm tay trong các tệp bằng chứng sẽ sai,
+  - và nếu sau này đổi sang inner product cho nhanh, nó sẽ sai **âm thầm**.
+Vector norm = 0 bị từ chối thay vì chia cho 0: một dòng như vậy nằm trong index
+sẽ cách đều mọi câu hỏi.
+
+==============================================================================
+3. ĐO TOKEN TIẾNG VIỆT (countTokens)
+==============================================================================
+  mẫu             ký tự  token  ký tự/token  từ/token
+  vi-có-dấu         149     38         3,92      0,87
+  vi-không-dấu      117     32         3,66      0,78
+  en                115     27         4,26      0,89
+  code               65     28         2,32      0,43
+
+`chunking.py` dùng **CHARS_PER_TOKEN = 3,5**, thấp hơn mọi số đo văn xuôi ở
+trên. Cố tình: ước lượng thấp số ký tự trên mỗi token nghĩa là ước lượng **cao**
+số token, nên chunk ra hơi nhỏ hơn mục tiêu thay vì vượt giới hạn của model.
+
+Mã nguồn đặc hơn nhiều (2,32) nên một chunk toàn code chứa nhiều token thật hơn
+con số ước lượng. Đó là lý do MAX_CHUNK_TOKENS = 700 nằm rất xa giới hạn thật
+2048: khoảng dư đó hấp thụ sai số này.
+
+Không gọi `countTokens` cho từng chunk: một lần gọi mạng cho mỗi chunk còn chậm
+hơn chính lần gọi embedding mà nó đang lập ngân sách.
+
+==============================================================================
+4. BATCH
+==============================================================================
+`batchEmbedContents` nhận cả `taskType` lẫn `outputDimensionality`, trả về đúng
+số vector đã gửi, đúng thứ tự. Đã xác nhận 3/3 vector, 768 chiều.
+
+Nhờ vậy một bài học 40 chunk tốn **1** lần gọi mạng chứ không phải 40.
+`GEMINI_EMBEDDING_BATCH_SIZE = 50`. Thứ tự là thứ duy nhất nối một vector về
+đúng chunk của nó — response không mang theo dấu hiệu nào khác — nên
+`tests/test_llm.py` khẳng định thứ tự thay vì giả định.

@@ -12,7 +12,7 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 - [x] MLE bị chấm thành TLE khi Docker trả `State.OOMKilled=false` — `classify` đọc thêm thời gian sống container, exit 137 trước điểm giữa soft/hard CPU limit là MLE (skill `sandbox-grading`, TDD) — `docs/report/assets/phase-3/oom-classification.txt`
 - [x] `run_grading` không chấm lại submission đã `done`/`error` khi Celery giao lại job — trước đây lần giao lại hỏng ở ràng buộc `ck_submissions_verdict_requires_done`, hết retry thì bị park thành `error` và mất verdict; nay trả `AlreadyFinished` + phát lại event kết thúc, và `park_submission` không ghi đè bài đã có kết quả (skill `sandbox-grading`, TDD)
 - [x] MinIO trong compose dev thay R2 — mở khóa upload video/avatar/transcript trên máy dev, 0đ, không đụng compose prod (`bitnamilegacy/minio` vì image chính thức đã bị gỡ; host `minio.localhost` dùng chung cho trình duyệt và container) — `docs/report/assets/phase-4/dev-storage-minio.txt`
-- [ ] Ingest xóa chunk của bài học không còn chữ (hiện chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được) (TDD)
+- [x] Ingest xóa chunk của bài học không còn chữ (trước đây chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được); report có thêm `removed` (TDD) — `docs/report/assets/phase-4/rag-ingest.txt` mục 5
 - [ ] Đồng bộ tài liệu với thực tế (~12 file) + ghi các món nợ hoãn chưa có chủ vào checkbox Phase 5/6
 - [ ] Build tái lập được: lockfile backend, pin `ubuntu-24.04` + action Node 24 trước mốc 19/10, pin tag image, CI guard cho `importorskip`
 - [ ] Lỗi UX làm vấp demo (2 nút `disabled` ở trang chủ, `/khoa-hoc` trắng trang khi backend chết, lỗi avatar nói về video) + `courses.duration_total_s` không bao giờ được cập nhật
@@ -22,7 +22,7 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 - [x] Bật pgvector, bảng `doc_chunks` (index HNSW)
 - [x] Pipeline ingest **bài viết**: article → chunk ~500 token có overlap → Gemini embedding → lưu (job Celery, chạy khi content published)
 - [ ] Pipeline ingest **transcript video**: giảng viên upload .srt/.txt lên R2 → đọc về, đi tiếp cùng đường ống trên
-- [ ] API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời trong phạm vi khóa học, kèm trích nguồn bài học) → stream response
+- [ ] API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời trong phạm vi khóa học, kèm trích nguồn bài học) → stream response. **Bắt buộc:** top-k chỉ lấy chunk của khóa đang `published` và người hỏi đã ghi danh — unpublish cố ý không xóa chunk (xem `docs/plan/don-no-2026-09-18.md`, Phiên 4)
 - [ ] UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson), lịch sử phiên
 - [x] Quiz model + attempt flow: làm quiz tính giờ (giờ tính ở backend), tự chấm, xem giải thích
 - [ ] Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) → instructor duyệt/sửa từng câu trước khi publish

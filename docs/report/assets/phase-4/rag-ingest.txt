@@ -92,3 +92,38 @@ câu hỏi quiz. Cả hai đều nằm ở bảng khác nên `_lesson_text` chư
 - **Chưa thử đường Celery đầu-cuối trên máy dev.** Đã có test khẳng định
   publish đẩy đúng tên task và task đăng ký đúng tên đó, và script chạy tay gọi
   đúng hàm mà task gọi; chưa bấm publish trên UI rồi xem worker nhận job.
+
+==============================================================================
+5. BỔ SUNG 18/09/2026 — BÀI HỌC HẾT CHỮ THÌ CHUNK CŨ PHẢI ĐI THEO
+==============================================================================
+Mục "Dọn nợ trước khi đi tiếp", dòng 5/8 (docs/plan/don-no-2026-09-18.md, Phiên 4).
+
+Lỗi: bài học không còn chữ (article bị xóa nội dung, hay đổi thành video chưa có
+transcript) chỉ được đếm là `skipped`. Chunk từ lần ingest trước nằm lại trong
+doc_chunks — vẫn truy hồi được, vẫn được trích dẫn như nguồn của một bài học
+không còn nói câu đó nữa. Test viết trước, đỏ đúng chỗ:
+
+  assert [<DocChunk ... #0>, ... 4 dòng] == []
+  AttributeError: 'IngestReport' object has no attribute 'removed'
+
+Sửa: bài không có chunk nào để nạp thì xóa luôn chunk cũ theo `lesson_id`;
+report có thêm trường `removed` — chỉ đếm bài thật sự mất dòng, không đếm video/
+quiz/bài tập vốn chưa từng có chunk. `_lesson_text` đổi thành `lesson_text`
+(script vốn import một hàm "private").
+
+Chạy thật trên CSDL dev, khóa cau-truc-du-lieu-va-giai-thuat-voi-python, bài
+"Đo thời gian chạy thật bằng timeit" (641 ký tự, 1 chunk) — sao lưu nội dung,
+xóa chữ, chạy `python -m scripts.ingest_course <slug>` trong container worker:
+
+  0 bài nạp mới, 0 chunk, 0 bài không đổi, 10 bài không có chữ, 1 bài hết chữ đã gỡ chunk
+  chunks của bài đó: 0                                  (0 lần gọi embedding)
+
+Khôi phục nội dung, chạy lại:
+
+  1 bài nạp mới, 1 chunk, 0 bài không đổi, 9 bài không có chữ
+  chunks của bài đó: 1 · nội dung khớp bản lưu: true · tổng chunk: 26 (như trước)
+
+Không đổi (cố ý): **unpublish không xóa chunk** — publish lại sẽ phải trả tiền
+embedding cho cả khóa lần nữa. Giữ chunk của khóa bị gỡ khỏi câu trả lời là
+việc của truy vấn top-k (lọc khóa đang published + người hỏi đã ghi danh), đã
+ghi thành yêu cầu bắt buộc của task Chat API trong phase-4-ai-features.md.

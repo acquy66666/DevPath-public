@@ -49,7 +49,7 @@ async def _run(course_id: str) -> dict[str, int]:
         # of the platform works without a chatbot, and a red task on every
         # publish would train everyone to ignore red tasks.
         logger.warning("Bỏ qua ingest khóa %s: %s", course_id, error.message)
-        return {"lessons": 0, "chunks": 0, "unchanged": 0, "skipped": 0}
+        return {"lessons": 0, "chunks": 0, "unchanged": 0, "skipped": 0, "removed": 0}
 
     # A fresh engine per run, like the other workers: the worker process is
     # synchronous, so there is no long-lived loop a pooled connection could
@@ -65,16 +65,19 @@ async def _run(course_id: str) -> dict[str, int]:
         await engine.dispose()
 
     logger.info(
-        "Ingest khóa %s: %d bài học, %d chunk, %d bài không đổi, %d bài bỏ qua",
+        "Ingest khóa %s: %d bài học, %d chunk, %d bài không đổi, %d bài bỏ qua, "
+        "%d bài hết chữ đã gỡ chunk",
         course_id,
         report.lessons,
         report.chunks,
         report.unchanged,
         report.skipped,
+        report.removed,
     )
     return {
         "lessons": report.lessons,
         "chunks": report.chunks,
         "unchanged": report.unchanged,
         "skipped": report.skipped,
+        "removed": report.removed,
     }

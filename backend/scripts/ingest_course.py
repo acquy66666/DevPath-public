@@ -27,7 +27,7 @@ from sqlalchemy import select
 from app.core.db import SessionLocal
 from app.models import Course
 from app.services.chunking import chunk_text
-from app.services.ingest import _lesson_text, ingest_course
+from app.services.ingest import ingest_course, lesson_text
 from app.services.llm import LLMError, build_embedder
 
 
@@ -69,7 +69,7 @@ async def _dry_run(session, courses: list[Course]) -> None:
         chunks = 0
         with_text = 0
         for lesson in lessons:
-            text = _lesson_text(lesson)
+            text = lesson_text(lesson)
             if not text:
                 continue
             with_text += 1
@@ -129,7 +129,7 @@ async def main() -> None:
             ) from None
 
         print(f"model embedding: {embedder.model}\n")
-        totals = [0, 0, 0, 0]
+        totals = [0, 0, 0, 0, 0]
 
         for course in courses:
             report = await ingest_course(session, course.id, embedder=embedder)
@@ -138,17 +138,20 @@ async def main() -> None:
                 totals[1] + report.chunks,
                 totals[2] + report.unchanged,
                 totals[3] + report.skipped,
+                totals[4] + report.removed,
             ]
             print(
                 f"{course.slug}: {report.lessons} bài nạp mới, "
                 f"{report.chunks} chunk, {report.unchanged} bài không đổi, "
                 f"{report.skipped} bài không có chữ"
+                + (f", {report.removed} bài hết chữ đã gỡ chunk" if report.removed else "")
             )
 
         if len(courses) > 1:
             print(
                 f"\nTổng: {totals[0]} bài nạp mới, {totals[1]} chunk, "
-                f"{totals[2]} bài không đổi, {totals[3]} bài không có chữ"
+                f"{totals[2]} bài không đổi, {totals[3]} bài không có chữ, "
+                f"{totals[4]} bài hết chữ đã gỡ chunk"
             )
         if totals[1] == 0 and totals[2]:
             print("Không có gì thay đổi nên không tốn quota nào.", file=sys.stderr)

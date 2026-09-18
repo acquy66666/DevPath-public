@@ -272,6 +272,43 @@ async def test_a_course_with_nothing_to_ingest_reports_so(
     assert await chunks_of(db_session, course.id) == []
 
 
+async def test_a_lesson_that_loses_its_text_loses_its_chunks(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """An emptied article must stop being something the chatbot can quote.
+
+    Before this, a lesson with no text was only counted as skipped, and the
+    rows from its last ingest stayed in the index -- retrievable, citing a
+    lesson that no longer says any of it.
+    """
+    await ingest_course(db_session, course.id, embedder=FakeEmbedder())
+    assert await chunks_of(db_session, course.id), "the article was ingested first"
+
+    lesson = await article_lesson(db_session, course.id)
+    lesson.article_content = ""
+    await db_session.flush()
+
+    report = await ingest_course(db_session, course.id, embedder=FakeEmbedder())
+
+    assert await chunks_of(db_session, course.id) == []
+    assert report.removed == 1
+    assert report.skipped == 4
+
+
+async def test_only_lessons_that_had_chunks_are_counted_as_removed(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """The video, the quiz and the exercise never had rows to lose.
+
+    `removed` says how much the index shrank. Counting every skipped lesson
+    would report a deletion on every run of every course.
+    """
+    report = await ingest_course(db_session, course.id, embedder=FakeEmbedder())
+
+    assert report.skipped == 3
+    assert report.removed == 0
+
+
 async def test_running_out_of_quota_keeps_what_was_already_ingested(
     db_session: AsyncSession, course: Course
 ) -> None:

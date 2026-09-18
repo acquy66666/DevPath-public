@@ -365,3 +365,11 @@ Dòng 4/8 của mục "Dọn nợ trước khi đi tiếp". Bằng chứng: `doc
 **Để trống thì về MinIO, kể cả khi định dùng R2** — ba biến `R2_*` mặc định trỏ vào MinIO để một bản clone mới chạy upload được ngay. Mặt trái: ai điền R2 thật mà quên `R2_ENDPOINT_URL` sẽ âm thầm nói chuyện với MinIO. Đã ghi rõ ở `.env.example`, `infra/README.md` và hướng dẫn R2, thay vì thêm một biến chuyển chế độ riêng.
 
 **Image `bitnamilegacy/minio`, đông cứng** — `minio/minio` và `minio/mc` đã bị gỡ khỏi Docker Hub (API trả 404, trong khi `library/redis` trả 200), `bitnami/minio` không còn tag nào. Bản legacy của Bitnami là bản còn kéo về được, và nó tự tạo bucket kèm policy nên khỏi cần container init. Nó không còn được cập nhật, nên chỉ bind `127.0.0.1` và chỉ dùng ở dev. Điều này cũng loại "MinIO trên VPS" khỏi các lựa chọn production ở Phase 6, trừ khi tự build từ source.
+
+## Chunk của bài học hết chữ (18/09/2026)
+
+Dòng 5/8 của mục "Dọn nợ trước khi đi tiếp". Bằng chứng: `docs/report/assets/phase-4/rag-ingest.txt` mục 5.
+
+**Bài không còn gì để nạp thì cũng không còn gì trong kho** — trước đây bài học hết chữ (xóa nội dung article, đổi sang video chưa có transcript) chỉ được đếm `skipped`, còn chunk của lần trước vẫn nằm trong `doc_chunks` cho chatbot trích dẫn như nguồn. Giờ lần ingest sau xóa chúng theo `lesson_id`, trong cùng vòng lặp từng bài với commit từng bài như phần còn lại. Report có thêm `removed`, chỉ đếm bài thật sự mất dòng, để con số nói kho vừa co lại bao nhiêu chứ không lặp lại số bài video mỗi lần chạy.
+
+**Unpublish không xóa chunk** — publish lại là nút bấm được nhiều lần; xóa khi unpublish nghĩa là trả tiền embedding cho cả khóa ở lần publish sau, trên đúng cái quota mà kế hoạch gọi tên là rủi ro. Giữ chunk của khóa không còn public khỏi câu trả lời thuộc về truy vấn top-k (lọc `courses.status = 'published'` và người hỏi đã ghi danh), đã ghi thành yêu cầu bắt buộc của task Chat API. Chỗ này rẻ hơn và đúng hơn: một bộ lọc ở chỗ đọc bảo vệ được cả những đường đưa chunk vào kho mà chưa ai nghĩ tới.

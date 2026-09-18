@@ -23,8 +23,16 @@ others from the same model.
 
 Video transcripts are not here yet. `video_assets.transcript_key` points into
 R2, so reading one needs the storage client and an upload route for instructors
-to put a `.srt` there -- the next task. `_lesson_text` is the single place that
+to put a `.srt` there -- the next task. `lesson_text` is the single place that
 decides what a lesson's words are, so that task adds a branch to one function.
+
+**A lesson with no text has no chunks either.** Emptying an article, or
+turning it into a video with no transcript yet, removes its rows on the next
+run -- otherwise the assistant would keep citing words the lesson no longer
+has. Unpublishing a course does *not* remove its chunks: publishing it again
+would pay for every embedding a second time. Keeping an unpublished course's
+chunks out of answers is the retrieval query's job (filter on the course being
+published and the asker being enrolled), not this module's.
 """
 
 import uuid
@@ -53,9 +61,12 @@ class IngestReport:
     #: exercises. Not a failure; the number is here so a course that ingested
     #: nothing can be told apart from a course that has nothing to ingest.
     skipped: int
+    #: Of the skipped, lessons that still had chunks from an earlier run --
+    #: text since emptied -- and lost them in this one.
+    removed: int = 0
 
 
-def _lesson_text(lesson: Lesson) -> str:
+def lesson_text(lesson: Lesson) -> str:
     """The words of a lesson, or empty if it has none.
 
     The title is prepended rather than left in the `lessons` row: retrieval
@@ -93,17 +104,23 @@ async def ingest_course(
         )
     )
 
-    lessons_done = chunks_written = unchanged = skipped = 0
+    lessons_done = chunks_written = unchanged = skipped = removed = 0
 
     for lesson in lessons:
-        text = _lesson_text(lesson)
-        if not text:
-            skipped += 1
-            continue
-
-        chunks = chunk_text(text)
+        text = lesson_text(lesson)
+        chunks = chunk_text(text) if text else []
         if not chunks:
             skipped += 1
+            # No text now does not mean there never was any. Rows from an
+            # earlier run would stay retrievable, quoting a lesson that no
+            # longer says any of it -- so a lesson with nothing to ingest is
+            # also a lesson with nothing in the index.
+            gone = await session.execute(
+                delete(DocChunk).where(DocChunk.lesson_id == lesson.id)
+            )
+            if gone.rowcount:
+                removed += 1
+                await session.commit()
             continue
 
         existing = list(
@@ -146,6 +163,7 @@ async def ingest_course(
         chunks=chunks_written,
         unchanged=unchanged,
         skipped=skipped,
+        removed=removed,
     )
 
 

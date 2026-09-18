@@ -61,7 +61,10 @@ celery_app.conf.update(
     # The other half of acks_late: without this, a worker killed by the OOM
     # reaper -- the way a grading worker dies -- takes its job with it, because
     # only an *exception* counts as a failure by default. With it, the broker
-    # redelivers, and `run_grading` is written to be safe to run twice.
+    # redelivers -- including, when the worker dies between committing a
+    # verdict and the ack, a job that already finished. `run_grading` answers
+    # that one from the row instead of grading it again (`AlreadyFinished`);
+    # until 18/09/2026 it did not, and the retries ended by erasing the verdict.
     task_reject_on_worker_lost=True,
     worker_prefetch_multiplier=1,
     task_routes={

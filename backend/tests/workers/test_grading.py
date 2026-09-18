@@ -850,3 +850,113 @@ async def test_grading_still_works_for_somebody_with_no_enrolment(
     await db_session.refresh(submission)
     assert submission.status == "done"
     assert await completion_of(db_session, submission, exercise) is None
+
+
+# --- The same job, delivered twice ------------------------------------------
+#
+# The queue acknowledges a grading job only after it finishes, and redelivers
+# it when the worker running it dies (`task_acks_late` + `task_reject_on_worker
+# _lost`). A worker that dies *after* committing the verdict but *before* the
+# ack is therefore followed by a second delivery of a job that is already done.
+# Grading it again used to re-mark the row `running` -- which the verdict it
+# already carries forbids (`ck_submissions_verdict_requires_done`) -- so every
+# attempt failed on its first commit, the retries ran out, and the submission
+# was parked as `error`: the one write that is allowed to clear a verdict,
+# erasing one the student had already been shown.
+
+
+def never_called(code, cases, **limits):
+    raise AssertionError("a finished submission must not be judged again")
+
+
+async def test_a_job_delivered_again_after_grading_leaves_the_result_alone(
+    db_session: AsyncSession,
+) -> None:
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+    await run_grading(db_session, submission.id, judge=judging("AC", "AC"))
+
+    await run_grading(db_session, submission.id, judge=never_called)
+
+    await db_session.refresh(submission)
+    assert submission.status == "done"
+    assert submission.verdict == "AC"
+    assert submission.score == 100
+    assert len(await results_of(db_session, submission)) == 2
+
+
+async def test_a_job_delivered_again_ends_the_wait_again(
+    db_session: AsyncSession,
+) -> None:
+    """The first `done` may have gone out to nobody -- pub/sub keeps no copy.
+
+    A page that connected between the two deliveries is waiting for an event
+    that was already spent, so the second delivery repeats it from the row.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+    await run_grading(db_session, submission.id, judge=judging("AC", "WA"))
+    announce = Recorder()
+
+    await run_grading(db_session, submission.id, judge=never_called, announce=announce)
+
+    assert [event.status for event in announce.events] == ["done"]
+    assert announce.events[0].verdict == "WA"
+    assert announce.events[0].score == 50
+
+
+async def test_a_job_delivered_again_after_being_parked_stays_parked(
+    db_session: AsyncSession,
+) -> None:
+    """Giving up is final too: a parked row is not quietly re-attempted."""
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+    await park_submission(db_session, submission.id, "docker is down")
+    announce = Recorder()
+
+    await run_grading(db_session, submission.id, judge=never_called, announce=announce)
+
+    await db_session.refresh(submission)
+    assert submission.status == "error"
+    assert [event.status for event in announce.events] == ["error"]
+
+
+async def test_a_job_delivered_again_after_a_worker_died_mid_run_is_graded(
+    db_session: AsyncSession,
+) -> None:
+    """`running` is the one unfinished state a redelivery must still grade.
+
+    It is what a worker killed halfway leaves behind, and results are written
+    in the same commit as the verdict, so a `running` row has none to collide
+    with.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+    submission.status = "running"
+    await db_session.commit()
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    await db_session.refresh(submission)
+    assert submission.status == "done"
+    assert submission.verdict == "AC"
+
+
+async def test_parking_never_erases_a_verdict(db_session: AsyncSession) -> None:
+    """The last line of defence, for a retry that gives up after a success.
+
+    Whatever route leads to `park_submission` for a submission that has
+    already been judged, the judgement is the thing to keep.
+    """
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+    announce = Recorder()
+
+    await park_submission(db_session, submission.id, "docker is down", announce=announce)
+
+    await db_session.refresh(submission)
+    assert submission.status == "done"
+    assert submission.verdict == "AC"
+    assert submission.message != "docker is down"
+    assert announce.events == []

@@ -17,6 +17,12 @@ Cấu hình đang chạy
   của máy 2 vCPU, chừa chỗ cho Postgres, Redis và API.
 - acks_late + reject_on_worker_lost: worker bị OOM killer giết không phải là
   exception, không có cờ thứ hai thì job biến mất cùng nó.
+  [18/09/2026: mặt trái của hai cờ này — worker chết sau khi commit verdict mà
+   trước khi ack thì job được giao lại cho một bài đã chấm xong. Trước ngày đó
+   lần giao lại hỏng ở commit đầu (ck_submissions_verdict_requires_done), hết
+   retry thì park thành error và xóa verdict. Giờ run_grading trả lời từ dòng
+   DB (AlreadyFinished) và park không bao giờ ghi đè một bài đã có kết quả —
+   xem decisions.md, mục "Job chấm bài bị giao lại".]
 - Chỉ container grading-worker chạm được Docker daemon. Nó không phục vụ HTTP,
   không nhận request từ ngoài, và không bao giờ tự chạy code người nộp.
 

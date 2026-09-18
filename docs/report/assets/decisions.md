@@ -343,3 +343,13 @@ Bổ sung sau khi Phase 3 đã đóng — truy gốc và số đo ở `docs/repo
 **Ngưỡng ở điểm giữa soft và hard limit, không ở soft, không sát hard** — đặt ở soft (N/cpus) thì an toàn quá mức: trên máy dev, giới hạn 1 giây CPU (giảng viên đặt được, không chỉ là giá trị trong test) cứu được 15/20 lần giả lập mất cờ. Đặt sát hard thì cược vào độ chính xác của timestamp và quota CFS. Điểm giữa (N+0,5)/cpus cứu 20/20 lần mà vẫn cách hard limit một giây thật.
 
 **Đọc thời gian sống của container (`StartedAt` → `FinishedAt`), không đọc đồng hồ của worker** — bản sửa đầu dùng đồng hồ worker, và đo mới thấy nó bấm cả `docker start`: ~1 giây trên Docker Desktop, nhiều hơn trên máy chủ đang tải — đủ đẩy một lần giết vì bộ nhớ qua ngưỡng và làm quy tắc âm thầm vô dụng. Hai timestamp nằm trong đúng lời gọi `inspect` vốn đã có. Cả hai đồng hồ đều chỉ có thể đo *dư* thời gian chương trình chạy, nên quy tắc chỉ có thể lùi về gọi TLE thật là TLE, không bao giờ biến TLE thật thành MLE.
+
+## Job chấm bài bị giao lại (18/09/2026)
+
+Bổ sung sau khi Phase 3 đã đóng — dòng 3/8 của mục "Dọn nợ trước khi đi tiếp", `docs/plan/don-no-2026-09-18.md`.
+
+**Bài đã có kết quả thì không chấm lại, kể cả khi hàng đợi giao lại job** — `task_acks_late` + `task_reject_on_worker_lost` (chọn để worker bị OOM killer giết không làm mất job) có một mặt trái: worker chết *sau* khi commit verdict mà *trước* khi ack thì job được giao cho worker khác, cho một bài đã chấm xong. Trước đây `run_grading` không nhìn `status`, đặt lại `running` trên một dòng còn mang verdict — ràng buộc `ck_submissions_verdict_requires_done` chặn ngay ở commit đầu — mọi lần thử đều hỏng, hết retry thì park thành `error` và **xóa verdict học viên đã thấy**. Nay bài ở trạng thái kết thúc (`done`/`error`) được trả lời từ chính dòng DB bằng kiểu riêng `AlreadyFinished`, task Celery không coi đó là lỗi để retry. `running` vẫn được chấm lại: đó là dấu vết của worker chết giữa chừng, và kết quả ghi cùng một commit với verdict nên dòng `running` không có kết quả nào để va chạm.
+
+**Lần giao lại vẫn phát lại event kết thúc** — Redis pub/sub không giữ bản sao; `done` của lần đầu có thể đã tới tay không ai. Trang nào kết nối giữa hai lần giao đang chờ đúng event đó.
+
+**`park_submission` không bao giờ ghi đè một bài đã có kết quả** — park là thao tác duy nhất được phép xóa verdict, nên nó là hàng rào cuối: dù đường nào dẫn tới việc bỏ cuộc cho một bài đã chấm (ví dụ CSDL chập chờn làm các lần giao lại hỏng trước cả khi đọc được `status`), phán quyết đã có vẫn được giữ.

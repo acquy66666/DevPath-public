@@ -222,3 +222,28 @@ def test_the_student_is_not_shown_the_technical_reason() -> None:
     them to reread correct code; the log is where that sentence belongs."""
     assert "docker" not in worker.GAVE_UP_MESSAGE.lower()
     assert "Hệ thống chấm bài" in worker.GAVE_UP_MESSAGE
+
+
+def test_a_job_for_a_finished_submission_is_neither_retried_nor_parked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A redelivered job is the end of the story, not a failure.
+
+    `run_grading` answers it with `AlreadyFinished` (see test_grading.py). If
+    the task read that as trouble, the retries would end in `park`, which is
+    exactly the write that erases a verdict.
+    """
+
+    async def already_done(session, submission_id):
+        return worker.AlreadyFinished("done")
+
+    async def without_a_database(work):
+        return await work(None)
+
+    gave_up = []
+    monkeypatch.setattr(worker, "run_grading", already_done)
+    monkeypatch.setattr(worker, "_with_session", without_a_database)
+    monkeypatch.setattr(worker, "_retry_or_park", lambda *args: gave_up.append(args))
+
+    assert worker.grade_submission.run(str(uuid.uuid4())) == "already done"
+    assert gave_up == []

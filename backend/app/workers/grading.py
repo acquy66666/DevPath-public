@@ -44,7 +44,7 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase
-from app.schemas.grading import GradingCaseEvent, GradingEvent
+from app.schemas.grading import TERMINAL_STATUSES, GradingCaseEvent, GradingEvent
 from app.services import progress as progress_service
 from app.services.grading_events import publish_event
 from app.workers.celery_app import celery_app
@@ -109,6 +109,18 @@ class GradingOutcome:
     verdict: str
     message: str = ""
     cases: tuple[CaseOutcome, ...] = ()
+
+
+@dataclass(frozen=True)
+class AlreadyFinished:
+    """What a job finds when its submission already has an answer.
+
+    Not an outcome of judging -- nothing was judged -- so it is its own type
+    rather than a `GradingOutcome` the Celery task could mistake for a system
+    error and retry.
+    """
+
+    status: str
 
 
 Judge = Callable[..., GradingOutcome]
@@ -224,13 +236,13 @@ async def run_grading(
     *,
     judge: Judge = judge,
     announce: Announce = publish_event,
-) -> GradingOutcome | None:
+) -> GradingOutcome | AlreadyFinished | None:
     """Grade one submission and write down everything except a system error.
 
     Returns what the judge said, or None when the submission is gone -- a job
     can outlive the row that queued it, and an exercise deleted mid-grading
     takes its submissions with it. That is not a failure and must not be
-    retried.
+    retried. Nor is `AlreadyFinished`, a job delivered a second time.
 
     Every `announce` below happens **after** the commit it describes. The
     database is what a page reloaded in five seconds will show, so an event
@@ -240,6 +252,24 @@ async def run_grading(
     submission = await session.get(Submission, submission_id)
     if submission is None:
         return None
+
+    if submission.status in TERMINAL_STATUSES:
+        # The same job, delivered again. The queue acknowledges a job only
+        # once it returns, so a worker that dies between the commit below and
+        # the ack hands it to the next worker -- for a submission that already
+        # has its answer. The row is that answer. It is announced once more
+        # because the first announcement may have reached nobody (pub/sub
+        # keeps no copy), and it is all a page that connected in between is
+        # still waiting for.
+        announce(
+            GradingEvent(
+                submission_id=submission.id,
+                status=submission.status,
+                verdict=submission.verdict,
+                score=submission.score,
+            )
+        )
+        return AlreadyFinished(submission.status)
 
     exercise = await session.get(CodeExercise, submission.exercise_id)
     if exercise is None:
@@ -396,6 +426,11 @@ async def park_submission(
     submission = await session.get(Submission, submission_id)
     if submission is None:
         return
+    if submission.status in TERMINAL_STATUSES:
+        # Already answered. Giving up is a statement about a submission nobody
+        # managed to judge; said about one that was judged, it would erase the
+        # verdict -- this is the one write allowed to clear it.
+        return
 
     submission.status = "error"
     submission.verdict = None
@@ -451,6 +486,8 @@ def grade_submission(self, submission_id: str) -> str:
 
     if outcome is None:
         return "missing"
+    if isinstance(outcome, AlreadyFinished):
+        return f"already {outcome.status}"
     if outcome.verdict == SYSTEM_ERROR:
         return _retry_or_park(self, identifier, outcome.message)
     return outcome.verdict

@@ -81,7 +81,25 @@ docker compose -f infra/docker-compose.yml down -v
 docker compose -f infra/docker-compose.yml up -d --build backend worker
 ```
 
-Biến `R2_*` truyền từ `infra/.env` vào cả hai service. Để trống thì endpoint upload trả 503 và mọi thứ khác chạy bình thường — xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md). `R2_ENDPOINT_URL` là lối trỏ sang một server S3 khác (MinIO chạy local chẳng hạn) khi cần thử luồng upload mà chưa có tài khoản Cloudflare.
+## Object storage trên máy dev: MinIO thay cho R2
+
+Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy ngay trên máy, đứng thay Cloudflare R2. Các biến `R2_*` để trống trong `infra/.env` thì tự trỏ vào nó, nên upload video, avatar và (sắp tới) transcript chạy được ngay trên một bản clone mới, không cần tài khoản nào. Code chỉ nói giao thức S3, không biết mình đang nói chuyện với MinIO hay R2. `docker-compose.prod.yml` **không** có MinIO; production vẫn dùng R2.
+
+| Thứ | Giá trị |
+|---|---|
+| API S3 | `http://minio.localhost:9000`, bucket `devpath-media` (đọc ẩn danh được, ghi phải có chữ ký) |
+| Console web | `http://localhost:9001`, đăng nhập bằng `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (mặc định `devpath` / `devpath-minio`) |
+| Dữ liệu | volume `minio_data`, còn nguyên qua các lần restart |
+
+**Vì sao là `minio.localhost` chứ không phải `minio`:** URL ký sẵn chỉ hợp lệ cho đúng một host, và cùng một URL được cả trình duyệt lẫn worker dùng. Trình duyệt dùng nó để PUT file và phát video; worker dùng nó để tải bản gốc và đẩy HLS lên. Chrome và Edge tự đưa mọi `*.localhost` về `127.0.0.1`, nơi cổng 9000 được publish; trong mạng compose, cũng cái tên đó là alias của service. Một tên dùng được cho cả hai phía. Hệ quả:
+
+- mở web bằng **Chrome/Edge** qua `http://localhost:3000`. CORS của MinIO chỉ mở cho đúng origin đó;
+- **Trình phân giải của Windows không biết `*.localhost`**, nên script chạy bằng venv trên host không tới được storage. Script nào đụng storage thì chạy trong container: `docker compose exec worker python -m scripts.<tên>`;
+- cổng 9000 cố định, không đổi qua biến được, vì nó nằm trong URL đã ký và URL đã lưu. Cổng chỉ bind vào `127.0.0.1`, vì mật khẩu dev nằm ngay trong file compose.
+
+**Image:** `bitnamilegacy/minio:2025.7.23-debian-12-r5`. MinIO đã ngừng phát hành image cho bản cộng đồng: `minio/minio` và `minio/mc` đã bị gỡ khỏi Docker Hub (kiểm tra 18/09/2026), `bitnami/minio` không còn tag nào. Bản Bitnami "legacy" này đông cứng từ tháng 8/2025 và không được cập nhật nữa. Chấp nhận được cho một server thay thế chỉ chạy local trên `127.0.0.1`, không chấp nhận được cho bất cứ chỗ nào khác. Nếu một ngày nó cũng biến mất, chỉ cần thay khối `minio:` trong compose bằng một server S3 khác; app không phải sửa gì.
+
+**Dùng R2 thật từ stack dev:** điền **đủ** các biến `R2_*`, kể cả `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com`. Để trống biến nào thì biến đó rơi về MinIO chứ không rơi về R2. Xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
 
 ## Worker chấm bài, và cái socket nó cầm
 

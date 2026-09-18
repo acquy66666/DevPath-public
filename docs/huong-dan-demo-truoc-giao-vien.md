@@ -151,8 +151,8 @@ Giải thích: nhịp tim 10 giây một lần, cộng với lưu khi pause, khi
 | Thứ | Chuyện gì xảy ra | Nói gì nếu bị hỏi |
 |---|---|---|
 | Hai nút to giữa trang chủ | `disabled`, bấm không có gì | Đường vào catalog là link "Khóa học" trên header |
-| Nút "Chọn video để tải lên" | Lỗi 503 `STORAGE_NOT_CONFIGURED` vì chưa gắn bucket R2 | Phần 6, câu 2 |
-| Nút đổi ảnh đại diện | Cũng 503, và câu thông báo lại nói về *video* vì dùng chung mã lỗi | Phần 6, câu 3 |
+| Nút "Chọn video để tải lên" | **Chạy được từ 18/09/2026** — file lên MinIO chạy trong stack dev, worker chuyển mã HLS xong trong vài giây. Mở bằng Chrome/Edge qua `localhost:3000` (không phải `127.0.0.1`) | Phần 6, câu 2 |
+| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Chỉ khi MinIO chết mới ra 503, và khi đó câu thông báo lại nói về *video* vì dùng chung mã lỗi | Phần 6, câu 3 |
 | Nút "Mua khóa học" ở khóa 499.000₫ | Nút mờ kèm dòng "Thanh toán đang được hoàn thiện" | **Đây là điểm cộng chứ không phải lỗi** — Phần 6, câu 4 |
 
 Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component tự trả về `null` khi thiếu `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true`. Đó là thiết kế có chủ đích để không mời người dùng bấm vào thứ chắc chắn lỗi — nên ở đây không có bẫy.
@@ -189,7 +189,7 @@ docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes fr
 > Dạ luồng OAuth Google em code xong rồi, có test tự động ở `backend/tests/api/test_google_auth.py`, gồm cả chống CSRF bằng cookie `state`. Trên máy demo em cố ý không bật vì client secret không được nằm trong repo. Hệ thống xử lý đúng: nút bị ẩn đi thay vì để thầy bấm rồi lỗi, còn gọi thẳng API thì trả 503 với mã `GOOGLE_OAUTH_NOT_CONFIGURED` chứ không phải 500.
 
 **2. "Em thử upload một video xem."**
-> Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên R2 nên file hàng trăm MB không đi qua FastAPI. Code và test xong rồi, em chưa gắn bucket thật vì Cloudflare bắt khai báo thẻ thanh toán. Thiếu cấu hình thì hệ thống trả 503 `STORAGE_NOT_CONFIGURED` và chỉ đúng chức năng đó hỏng, phần còn lại vẫn chạy.
+> Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên object storage nên file hàng trăm MB không đi qua FastAPI. Trên máy này storage là MinIO chạy trong Docker — cùng giao thức S3 với Cloudflare R2 mà bản production dùng, nên code không biết mình đang nói chuyện với bên nào; đổi sang R2 chỉ là đổi biến môi trường. (Em chưa gắn R2 thật vì Cloudflare bắt khai báo thẻ thanh toán.) Chữ ký còn khóa luôn loại file: PUT một file khác kiểu với cái đã khai thì MinIO trả 403.
 
 **3. "Sao đổi ảnh đại diện lại báo lỗi về video?"**
 > Dạ avatar dùng lại đúng luồng presigned URL của video nên chung mã lỗi; câu thông báo em viết cho ngữ cảnh video, đây là chỗ em sẽ tách riêng. Về bảo mật thì key upload luôn bị kiểm tra phải nằm trong `avatars/<id-của-chính-mình>` trước khi gắn vào tài khoản, nên không gắn được file của người khác.

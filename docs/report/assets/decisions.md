@@ -353,3 +353,15 @@ Bổ sung sau khi Phase 3 đã đóng — dòng 3/8 của mục "Dọn nợ trư
 **Lần giao lại vẫn phát lại event kết thúc** — Redis pub/sub không giữ bản sao; `done` của lần đầu có thể đã tới tay không ai. Trang nào kết nối giữa hai lần giao đang chờ đúng event đó.
 
 **`park_submission` không bao giờ ghi đè một bài đã có kết quả** — park là thao tác duy nhất được phép xóa verdict, nên nó là hàng rào cuối: dù đường nào dẫn tới việc bỏ cuộc cho một bài đã chấm (ví dụ CSDL chập chờn làm các lần giao lại hỏng trước cả khi đọc được `status`), phán quyết đã có vẫn được giữ.
+
+## Storage trên máy dev: MinIO thay R2 (18/09/2026)
+
+Dòng 4/8 của mục "Dọn nợ trước khi đi tiếp". Bằng chứng: `docs/report/assets/phase-4/dev-storage-minio.txt`.
+
+**Server S3 local trong compose dev, không phải bucket R2 thật cho máy dev** — R2 đòi thẻ thanh toán, còn kế hoạch giữ hạ tầng 0đ tới Phase 6. App chỉ nói S3 qua `R2Storage`/boto3, và `R2_ENDPOINT_URL` vốn đã cho ghi đè endpoint, nên thay storage ở máy dev là thay cấu hình, không đụng code. Compose prod không có MinIO: production vẫn là R2.
+
+**Một tên host cho cả hai phía: `minio.localhost`** — URL ký sẵn chỉ hợp lệ cho đúng host đã ký, mà cùng một URL được trình duyệt (PUT, phát video) và worker (tải bản gốc, đẩy HLS) dùng. `localhost:9000` thì container không tới được, `minio:9000` thì trình duyệt không phân giải được. Chrome/Edge tự đưa `*.localhost` về loopback, còn alias mạng compose làm cùng tên đó trỏ vào service. Cái giá: trình phân giải của Windows không biết tên này, nên script đụng storage phải chạy trong container.
+
+**Để trống thì về MinIO, kể cả khi định dùng R2** — ba biến `R2_*` mặc định trỏ vào MinIO để một bản clone mới chạy upload được ngay. Mặt trái: ai điền R2 thật mà quên `R2_ENDPOINT_URL` sẽ âm thầm nói chuyện với MinIO. Đã ghi rõ ở `.env.example`, `infra/README.md` và hướng dẫn R2, thay vì thêm một biến chuyển chế độ riêng.
+
+**Image `bitnamilegacy/minio`, đông cứng** — `minio/minio` và `minio/mc` đã bị gỡ khỏi Docker Hub (API trả 404, trong khi `library/redis` trả 200), `bitnami/minio` không còn tag nào. Bản legacy của Bitnami là bản còn kéo về được, và nó tự tạo bucket kèm policy nên khỏi cần container init. Nó không còn được cập nhật, nên chỉ bind `127.0.0.1` và chỉ dùng ở dev. Điều này cũng loại "MinIO trên VPS" khỏi các lựa chọn production ở Phase 6, trừ khi tự build từ source.

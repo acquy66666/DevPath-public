@@ -18,17 +18,9 @@ from app.core.security import hash_password
 from app.models import Category, Course, CourseSection, Lesson, User, VideoAsset
 from app.services.storage import get_storage
 from app.services.tasks import get_task_queue
-from tests.api.fakes import FakeStorage
+from tests.api.fakes import FakeQueue, FakeStorage
 
 PASSWORD = "mật-khẩu-đủ-dài"
-
-
-class FakeQueue:
-    def __init__(self) -> None:
-        self.enqueued: list[uuid.UUID] = []
-
-    def enqueue_transcode(self, video_asset_id: uuid.UUID) -> None:
-        self.enqueued.append(video_asset_id)
 
 
 @pytest.fixture

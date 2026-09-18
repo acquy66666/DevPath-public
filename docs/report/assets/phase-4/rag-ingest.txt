@@ -1,0 +1,94 @@
+ĐƯỜNG ỐNG INGEST: BÀI HỌC → CHUNK → EMBEDDING → doc_chunks
+Ngày đo: 18/09/2026 · máy dev · key Gemini thật · CSDL dev sau khi dựng lại
+Thành phần: publish khóa học → `TaskQueue.enqueue_ingest` → Celery task
+      `app.workers.rag.ingest_course` (queue mặc định `celery`) →
+      `services/ingest.py` → `services/chunking.py` → `services/llm.py` → Gemini
+
+Cách tái tạo:
+  docker compose exec backend python -m scripts.ingest_course --all --dry-run
+  docker compose exec backend python -m scripts.ingest_course --all
+
+==============================================================================
+1. CHẠY THẬT
+==============================================================================
+  $ python -m scripts.ingest_course --all
+  model embedding: gemini-embedding-001
+  ...
+  Tổng: 26 bài nạp mới, 26 chunk, 0 bài không đổi, 43 bài không có chữ
+
+  $ python -m scripts.ingest_course --all      # chạy lần hai, ngay sau đó
+  Tổng: 0 bài nạp mới, 0 chunk, 26 bài không đổi, 43 bài không có chữ
+
+**Lần hai không tốn một lần gọi API nào.** Trước khi nhúng, mỗi bài học được so
+sánh với các dòng `doc_chunks` đang có: cùng số chunk, cùng nội dung từng chunk,
+cùng tên model → bỏ qua. Publish là một cái nút giảng viên bấm được nhiều lần,
+và kế hoạch đã ghi "Gemini API đổi/giới hạn quota" là rủi ro sống; "bấm hai lần,
+trả tiền hai lần" là lỗi phải chặn trước khi nó thành hóa đơn.
+
+Tên model nằm trong phép so sánh có lý do: hai model có thể cùng 768 chiều mà
+đặt cùng một câu ở hai chỗ khác hẳn nhau. Đổi model là lý do chính đáng để nhúng
+lại toàn bộ dù chữ không đổi — và đó là công dụng của cột `embedding_model`.
+
+==============================================================================
+2. TRUY HỒI THẬT, KỂ CẢ CÂU HỎI NGOÀI PHẠM VI
+==============================================================================
+Nhúng câu hỏi bằng RETRIEVAL_QUERY, tìm trong đúng course_id, cosine distance:
+
+  [python-co-ban] "Làm sao để khai báo biến trong Python?"
+    d=0,2951  bài 'Phạm vi biến: local, global và vì sao nên tránh global'
+    d=0,3442  bài 'Đọc hiểu thông báo lỗi'
+
+  [redis-cache-hang-doi] "Khi nào thì nên dùng cache?"
+    d=0,3057  bài 'Khóa học này dạy gì'
+
+  [python-co-ban] "Cách nướng bánh mì bằng lò vi sóng?"      ← NGOÀI PHẠM VI
+    d=0,5223  bài 'Phạm vi biến: local, global...'
+    d=0,5302  bài 'Ép kiểu và những cái bẫy quen thuộc'
+
+**Khoảng cách chính là tín hiệu để từ chối.** Câu hỏi trong phạm vi rơi vào
+0,295–0,306; câu hỏi ngoài phạm vi rơi vào 0,522–0,530. Cách biệt đủ rộng để
+đặt ngưỡng (khoảng 0,45) cho gate "hỏi ngoài phạm vi → từ chối lịch sự". Con số
+ngưỡng chính thức phải chốt ở task API chat với nhiều câu hỏi hơn, chứ không
+chốt từ ba câu ở đây.
+
+==============================================================================
+3. ĐỌC ĐƯỢC GÌ VỀ CHÍNH DỮ LIỆU
+==============================================================================
+**43/69 bài học không có chữ để nạp.** Bảng chi tiết của bốn khóa học thật:
+
+  javascript-hien-dai-es6-va-dom              1/12 bài có chữ
+  xay-dung-rest-api-voi-fastapi               1/11
+  cau-truc-du-lieu-va-giai-thuat-voi-python   1/10
+  python-co-ban-cho-nguoi-moi-bat-dau         3/16
+
+Nội dung thật của các khóa này là **video** và **bài tập code**, không phải bài
+viết. Nghĩa là: đường ống chạy đúng, nhưng kho ngữ liệu hiện còn mỏng, và thứ
+làm nó dày lên không phải tinh chỉnh chunking mà là **transcript video** —
+`video_assets.transcript_key` đã có sẵn cột, còn thiếu endpoint để giảng viên
+upload `.srt/.txt` và đường đọc file đó từ R2. Đó là nửa sau của task này.
+
+Hai nguồn chữ khác đang bị bỏ qua và đáng cân nhắc ở task sau:
+`code_exercises.statement_md` (đề bài, là văn bản giảng dạy thật) và nội dung
+câu hỏi quiz. Cả hai đều nằm ở bảng khác nên `_lesson_text` chưa chạm tới.
+
+==============================================================================
+4. CHƯA ĐO, NÓI THẲNG
+==============================================================================
+- **Index HNSW chưa được dùng ở quy mô này, và đúng như vậy.** `EXPLAIN
+  (ANALYZE, BUFFERS)` trên 26 dòng cho `Seq Scan on doc_chunks`, 0,357 ms.
+  Planner chọn đúng: quét tuần tự 26 dòng rẻ hơn đi qua index. Bằng chứng index
+  thật sự hoạt động nằm ở `hnsw-index.txt`, đo trên 3000 chunk.
+
+- **Chưa có transcript nào.** Mọi số ở trên là của bài viết.
+
+- **Chưa đánh giá chất lượng trả lời.** Ba câu hỏi ở mục 2 chứng minh đường ống
+  trả về đúng đoạn văn, không chứng minh chatbot trả lời hay. Bộ 20 câu hỏi và
+  bảng chấm là task riêng trong kế hoạch.
+
+- **Ước lượng token chưa đối chiếu lại sau khi chunk.** `CHARS_PER_TOKEN = 3,5`
+  đo trên 4 mẫu (`embedding-model.txt` mục 3); chưa chạy `countTokens` trên
+  chính 26 chunk đã sinh để xem sai số thật là bao nhiêu.
+
+- **Chưa thử đường Celery đầu-cuối trên máy dev.** Đã có test khẳng định
+  publish đẩy đúng tên task và task đăng ký đúng tên đó, và script chạy tay gọi
+  đúng hàm mà task gọi; chưa bấm publish trên UI rồi xem worker nhận job.

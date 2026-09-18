@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, rebuild_recommendations.py, bench_grading.py
+scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, bench_grading.py
 ```
 
 ## Nguyên tắc
@@ -322,6 +322,29 @@ docker compose exec backend python -m scripts.seed_interactions --purge
 | Biến môi trường | Mặc định | Dùng cho |
 |---|---|---|
 | `SEED_LEARNER_PASSWORD` | `devpath-learner` (kèm cảnh báo) | Mật khẩu 48 tài khoản học viên giả lập |
+
+### Nạp dữ liệu cho chatbot RAG
+
+Khi một khóa học được publish, API đẩy job Celery `app.workers.rag.ingest_course`: mỗi bài học có chữ được cắt thành chunk ~500 token có overlap, nhúng bằng Gemini và ghi vào `doc_chunks`. Chạy tay khi cần demo hoặc tái tạo số liệu:
+
+```bash
+docker compose exec backend python -m scripts.ingest_course --all --dry-run   # chỉ đếm, 0 quota
+docker compose exec backend python -m scripts.ingest_course --all
+docker compose exec backend python -m scripts.ingest_course <slug-hoặc-id>
+```
+
+Chạy lại **không tốn quota**: trước khi nhúng, mỗi bài học được so với các dòng đang có (cùng số chunk, cùng nội dung, cùng tên model thì bỏ qua). Đổi `GEMINI_EMBEDDING_MODEL` là lý do chính đáng để nhúng lại toàn bộ — hai model có thể cùng 768 chiều mà đặt cùng một câu ở hai chỗ khác hẳn nhau.
+
+Chưa có key thì job ghi log cảnh báo rồi kết thúc êm, không làm task đỏ; phần còn lại của nền tảng chạy bình thường.
+
+| Biến môi trường | Mặc định | Dùng cho |
+|---|---|---|
+| `GEMINI_API_KEY` | trống (tắt) | Khóa Google AI Studio |
+| `GEMINI_EMBEDDING_MODEL` | `gemini-embedding-001` | Model nhúng; đổi là nhúng lại toàn bộ |
+
+Lý do chọn model và cách đo: [docs/report/assets/phase-4/embedding-model.txt](../docs/report/assets/phase-4/embedding-model.txt). Số liệu chạy thật: [rag-ingest.txt](../docs/report/assets/phase-4/rag-ingest.txt).
+
+**Transcript video chưa nạp được.** `video_assets.transcript_key` đã có cột nhưng chưa có endpoint để giảng viên upload `.srt/.txt`, nên hiện chỉ bài học dạng article được nạp — 26/69 bài học của CSDL dev.
 
 ### Đo hiệu năng chấm bài
 

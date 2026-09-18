@@ -23,6 +23,7 @@ from app.core.exceptions import DomainError, PermissionDeniedError
 from app.models import Category, Course, User
 from app.schemas.courses import CourseCreate, CourseUpdate
 from app.services.slug import unique_slug
+from app.services.tasks import TaskQueue
 
 
 class CourseNotFoundError(DomainError):
@@ -208,7 +209,10 @@ async def delete_course(session: AsyncSession, course_id: uuid.UUID, user: User)
 
 
 async def submit_for_review(
-    session: AsyncSession, course_id: uuid.UUID, user: User
+    session: AsyncSession,
+    course_id: uuid.UUID,
+    user: User,
+    queue: TaskQueue | None = None,
 ) -> Course:
     """draft | rejected -> pending_review, and on to published while the flag is on.
 
@@ -224,13 +228,22 @@ async def submit_for_review(
 
     course.status = "pending_review"
     course.rejection_reason = None
+    published_now = False
 
     if get_settings().auto_approve_courses:
         course.status = "published"
         # The check constraint refuses a published course with no timestamp.
         course.published_at = datetime.now(tz=UTC)
+        published_now = True
 
     await session.commit()
+
+    # After the commit, never before: the worker opens its own connection and
+    # would find the old status -- or no course at all, if the commit failed.
+    # Publishing is also what makes a course answerable by the chatbot, which
+    # is why the ingest hangs off this moment rather than off every lesson edit.
+    if published_now and queue is not None:
+        queue.enqueue_ingest(course.id)
     # updated_at is filled by Postgres, so the attribute is expired after the
     # UPDATE. Refresh here rather than let the response model trip over lazy IO.
     await session.refresh(course)

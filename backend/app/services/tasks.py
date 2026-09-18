@@ -12,6 +12,8 @@ from typing import Protocol
 class TaskQueue(Protocol):
     def enqueue_transcode(self, video_asset_id: uuid.UUID) -> None: ...
 
+    def enqueue_ingest(self, course_id: uuid.UUID) -> None: ...
+
 
 class CeleryTaskQueue:
     """The real one. Imported lazily so the API process only pulls in the
@@ -21,6 +23,11 @@ class CeleryTaskQueue:
         from app.workers.video import transcode_video
 
         transcode_video.delay(str(video_asset_id))
+
+    def enqueue_ingest(self, course_id: uuid.UUID) -> None:
+        from app.workers.rag import ingest_course_task
+
+        ingest_course_task.delay(str(course_id))
 
 
 def get_task_queue() -> TaskQueue:

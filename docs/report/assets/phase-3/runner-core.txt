@@ -62,6 +62,8 @@ bên trong tồn tại. Đã có test riêng chặn hồi quy.
 4. CÁC ĐƯỜNG KẾT THÚC KHÁC
 ------------------------------------------------------------------------------
   eat_memory.py    → out_of_memory, exit 137 (nhân OOM-kill, đọc từ State.OOMKilled)
+                     [18/09/2026: cờ này có lúc sai trên CI — giờ đọc thêm thời gian sống
+                      container, xem oom-classification.txt]
   crash.py         → exited, exit 1
       stdout 'truoc khi loi\n' và stderr tách riêng — traceback không lẫn vào bài làm
       stderr: 'ValueError: khong chia duoc cho 0'

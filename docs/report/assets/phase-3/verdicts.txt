@@ -49,6 +49,8 @@ TLE  sleep_forever.py
 ------------------------------------------------------------------------------
 MLE  eat_memory.py
      xin bo nho vuot tran -> nhan giet, doc tu State.OOMKilled
+     (18/09/2026: co nay co luc sai tren CI -- gio doc them thoi gian song
+      container, xem oom-classification.txt)
      so test case gui vao : 1
      so case thuc su chay : 1
      tong thoi gian       : 1.64s

@@ -123,6 +123,20 @@ def test_a_program_that_asks_for_too_much_memory_is_killed_by_the_kernel():
     assert result.outcome is Outcome.OUT_OF_MEMORY
 
 
+def test_a_program_that_ignores_the_cpu_warning_is_still_a_time_limit():
+    """The hard CPU limit exits 137 too, and must not be read as memory.
+
+    A 137 that comes early is read as a memory kill even when Docker forgets
+    to say so (see test_classify.py). This is the other side of that line, on
+    a real kernel: a program that survives SIGXCPU is SIGKILLed at the hard
+    limit, and that has to come late enough to stay a time limit.
+    """
+    result = execute(submission("ignore_sigxcpu.py"), limits=QUICK)
+
+    assert result.outcome is Outcome.CPU_TIME_EXCEEDED
+    assert result.exit_code == 137
+
+
 def test_a_flood_of_output_is_cut_at_the_limit():
     """The output is read with a cap, not read and then trimmed.
 

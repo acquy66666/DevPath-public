@@ -1,0 +1,152 @@
+MLE BỊ CHẤM THÀNH TLE KHI DOCKER QUÊN CỜ OOM — TRUY GỐC VÀ SỬA
+Ngày chạy: 18/09/2026 · máy dev: Docker 29.7.2 trên Docker Desktop/WSL2
+(kernel 6.6.87.2, cgroup v2, 8 CPU) · image devpath-sandbox-python:v1
+Bổ sung sau khi Phase 3 đã đóng — mục "Dọn nợ trước khi đi tiếp" của Phase 4,
+lý do xem docs/plan/don-no-2026-09-18.md (Phiên 1).
+
+==============================================================================
+1. TRIỆU CHỨNG: JOB "GRADER" TRÊN CI THỈNH THOẢNG ĐỎ, LUÔN CÙNG MỘT CHỮ KÝ
+==============================================================================
+Test: test_runner_core.py::test_a_program_that_asks_for_too_much_memory_is_killed_by_the_kernel
+Đã đỏ ở PR #29 (17/09), PR #30 (18/09) và run 35316581356 trên main (18/09).
+
+  mong đợi  Outcome.OUT_OF_MEMORY
+  nhận được Outcome.CPU_TIME_EXCEEDED   exit_code=137   duration≈0,21–0,26 s
+
+Không phải chỉ là test chập chờn: cùng đường code đó chấm bài thật, nên một
+học viên có chương trình ăn quá bộ nhớ có thể bị báo "Quá thời gian" (TLE)
+thay vì "Quá bộ nhớ" (MLE) — và đi tối ưu tốc độ một chương trình vốn không chậm.
+
+==============================================================================
+2. GỐC RỄ
+==============================================================================
+grader/runner/sandbox.py, hàm phân loại cách tiến trình kết thúc:
+
+  if oom_killed:                 -> OUT_OF_MEMORY      (cờ State.OOMKilled của Docker)
+  if hit_the_wall:               -> WALL_TIME_EXCEEDED
+  if exit_code in (152, 137):    -> CPU_TIME_EXCEEDED
+  else                           -> EXITED
+
+Kernel giết vì bộ nhớ bằng SIGKILL → exit 137, trùng mã với hard limit CPU.
+Thứ duy nhất phân biệt hai trường hợp là cờ State.OOMKilled. Trên runner CI
+Docker đôi khi trả cờ đó là false, và 137 rơi xuống nhánh CPU. Trên máy dev cờ
+đúng 58/58 lần đo — lỗi chỉ lộ ra ở CI, nên không tái hiện được bằng container
+thật theo ý muốn.
+
+==============================================================================
+3. CÁCH SỬA: ĐỌC THÊM ĐỒNG HỒ, KHÔNG CHỈ TIN CỜ
+==============================================================================
+Ràng buộc vật lý của sandbox (--cpus 0.5, --ulimit cpu=N:N+1):
+
+  - Container có `cpus` phần lõi, nên N giây CPU tốn ít nhất N / cpus giây thật.
+  - Soft limit (N giây CPU) kết thúc chương trình bằng SIGXCPU → exit 152, không phải 137.
+  - Chương trình bắt SIGXCPU để chạy tiếp chỉ bị SIGKILL ở hard limit (N+1 giây CPU),
+    tức sớm nhất (N+1) / cpus giây thật.
+
+→ Một exit 137 đến TRƯỚC khi hard limit kịp chạm tới thì không thể là giới hạn CPU.
+  Ngưỡng đặt ở điểm giữa soft và hard: (N + 0,5) / cpus — còn dư nửa giây CPU
+  (1 giây thật ở nửa lõi) so với hard limit, lớn hơn nhiều sai số timestamp của
+  Docker (mili giây) và phần CPU vượt được trong một chu kỳ quota CFS (~0,1 s).
+
+  Giới hạn                        ngưỡng   hard limit sớm nhất
+  QUICK trong test (N=1)          3,0 s    4,0 s
+  mặc định (N=5)                  11,0 s   12,0 s
+  giảng viên đặt 100–1000 ms      3,0 s    4,0 s   (làm tròn lên N=1 — không chỉ là test)
+
+Tác dụng phụ đã chấp nhận: chương trình tự gửi SIGKILL cho chính nó quá sớm
+giờ bị báo MLE thay vì TLE. Trước đây nó cũng đã bị đọc sai (TLE thay vì RE);
+đằng nào đó cũng là một bài đang sai.
+
+==============================================================================
+4. ĐO BẰNG ĐỒNG HỒ NÀO — ĐO THỰC TẾ ĐÃ ĐỔI THIẾT KẾ
+==============================================================================
+Bản sửa đầu dùng `duration` do worker tự bấm giờ. Đo trên máy dev cho thấy
+đồng hồ đó bấm luôn cả `docker start`:
+
+  hello.py (in một dòng rồi thoát), 5 lần:
+    container sống 0,54–0,72 s   ·   worker đo 1,25–1,67 s   ·   phí docker 0,71–0,95 s
+
+Phí đó (~1 s trên Docker Desktop, sẽ lớn hơn trên VPS đang tải) đủ đẩy một lần
+giết vì bộ nhớ qua ngưỡng, và quy tắc âm thầm hết tác dụng. Nên bản cuối đọc
+thời gian sống của chính container từ `docker inspect` (State.StartedAt →
+State.FinishedAt) — cùng lời gọi inspect vốn đã có, không tốn thêm lượt nào.
+Worker vẫn giữ đồng hồ của mình làm phương án dự phòng khi timestamp không dùng
+được (thời điểm 0 của Docker, không parse được, kết thúc trước khi bắt đầu).
+
+Số đo thời gian sống container, máy dev, giới hạn QUICK:
+
+  giết vì bộ nhớ (eat_memory.py, 58 lần)       1,25 – 2,84 s
+  hard limit CPU (ignore_sigxcpu.py, 8 lần)     4,13 – 4,32 s   (lý thuyết ≥ 4,0 s)
+  ngưỡng                                        3,0 s
+
+Chữ ký lỗi trên CI (0,21–0,26 s, đã gồm cả phí docker) nằm xa dưới ngưỡng.
+
+==============================================================================
+5. 20 LẦN CHẠY THẬT, MỖI LẦN PHÂN LOẠI LẠI NHƯ THỂ DOCKER ĐÃ QUÊN CỜ
+==============================================================================
+Script thu (không commit — đặt ở scratchpad phiên làm việc): chạy eat_memory.py
+qua execute() thật, giữ exit code và thời gian sống container thật, rồi gọi lại
+classify() với oom_killed=False — đúng tình huống của CI.
+
+  threshold: QUICK 3.0s, defaults 11.0s
+   1 real=out_of_memory flag=true exit=137 container= 1.58s worker= 2.12s | flag lost -> QUICK:out_of_memory defaults:out_of_memory
+   ...
+  15 real=out_of_memory flag=true exit=137 container= 2.25s worker= 3.16s | flag lost -> QUICK:out_of_memory defaults:out_of_memory
+   ...
+  real: {'out_of_memory': 20}
+  flag lost, QUICK: {'out_of_memory': 20}
+  flag lost, defaults: {'out_of_memory': 20}
+
+Lần 15 là lý do của mục 4: worker đo 3,16 s — quá ngưỡng — trong khi container
+chỉ sống 2,25 s. Đọc đồng hồ của worker thì lần đó thành TLE.
+
+Để so sánh, lượt đo trước khi đổi thiết kế (ngưỡng soft N/cpus = 2,0 s, vẫn đọc
+thời gian sống container): flag lost, QUICK → 15 MLE / 5 TLE. Đổi sang điểm giữa
+hai limit cứu nốt 5 lần đó.
+
+==============================================================================
+6. TEST
+==============================================================================
+grader/tests/test_classify.py — 16 ca, hàm thuần, không cần Docker:
+  - chữ ký CI (137, cờ false, 0,26 s) → MLE                       [đỏ trước khi sửa]
+  - memory kill chậm nhất đo được ban đầu trên dev (2,37 s) → MLE  [đỏ với ngưỡng soft]
+  - 137 ở 4,5 s dưới QUICK (bắt SIGXCPU, chạy tới hard limit) → TLE
+  - cùng 4,5 s: MLE dưới giới hạn mặc định, TLE dưới QUICK — ngưỡng theo giới hạn
+  - cờ true luôn là MLE; chạm wall là WALL; 152 luôn là TLE; exit 0/1 là EXITED
+  - container_lifetime: đọc timestamp nano giây; thời điểm 0 / rác / đi lùi → None
+
+grader/tests/test_runner_core.py — ca container thật mới:
+  test_a_program_that_ignores_the_cpu_warning_is_still_a_time_limit
+  (fixture ignore_sigxcpu.py). Kiểm tra test biết fail: nhân ngưỡng lên 10 lần
+  → "assert OUT_OF_MEMORY is CPU_TIME_EXCEEDED", đỏ đúng chỗ; trả ngưỡng về → xanh.
+
+Toàn bộ bộ test grader trên máy dev, container thật:
+  106 passed in 242.06s (0:04:02)          (trước khi sửa: 89 test)
+
+==============================================================================
+7. CHECKLIST BẢO MẬT SANDBOX (skill sandbox-grading)
+==============================================================================
+Không đổi một cờ `docker run` nào — chỉ đổi cách đọc kết quả sau khi container
+đã kết thúc (thêm hai trường vào chuỗi --format của `docker inspect`).
+  1 network none · 2 memory/swap/cpus/pids · 3 timeout hai lớp · 4 uid không
+  đặc quyền · 5 rootfs read-only + tmpfs · 6 no-new-privileges + cap-drop ALL ·
+  7 cắt output · 8 code người dùng qua mount + argv · 9 test ẩn không rời server
+  → cả 9 giữ nguyên. 7 ca tấn công trong test_sandbox_attacks.py vẫn xanh.
+
+==============================================================================
+8. CHƯA LÀM / PHÁT HIỆN THÊM
+==============================================================================
+- Chưa xác nhận trên CI qua nhiều lần chạy. Lỗi gốc chỉ lộ ở CI và không đều, nên
+  bằng chứng thật là job "Grader" không còn đỏ với chữ ký trên trong các run sau
+  khi merge. Theo dõi 5 run kế tiếp.
+
+- MỘT KIỂU CHẬP CHỜN KHÁC, CHỈ THẤY TRÊN MÁY DEV, CHƯA SỬA: 3/80 lần chạy
+  eat_memory.py, chương trình kẹt sát trần bộ nhớ ~5,9 s mà kernel không gọi
+  OOM killer, tới khi đồng hồ ngoài giết → WALL_TIME_EXCEEDED (cờ false vì
+  chính worker giết). Giả thuyết: kernel đòi lại page cache của chính interpreter
+  (được tính vào cgroup) rồi lại đọc vào — thrash trước khi chịu OOM, nặng hơn
+  trên đĩa ảo của WSL2. Chưa kiểm chứng. Gốc khác hẳn lỗi ở mục 2 (ở đây cờ
+  không sai — OOM killer chưa hề chạy), nên không gộp vào đây. Trên CI chưa thấy.
+  Cần đo lại trên VPS thật ở Phase 6.
+
+- Tác dụng phụ ở mục 3 (tự SIGKILL sớm → MLE) — chấp nhận.

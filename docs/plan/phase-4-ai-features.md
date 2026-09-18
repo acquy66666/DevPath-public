@@ -4,6 +4,19 @@
 
 > Mọi call LLM đi qua adapter (`backend/app/services/llm.py`) — đổi model/provider không sửa business code. Luôn xử lý lỗi/quota: timeout, retry, fallback thông báo tử tế.
 
+## Dọn nợ trước khi đi tiếp (thêm 18/09/2026)
+
+Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và sửa thế nào: [don-no-2026-09-18.md](don-no-2026-09-18.md). Làm hết mục này trước các task tuần 9 bên dưới, mỗi dòng một phiên, một PR. Hai lỗi grader thuộc Phase 3 nhưng ghi ở đây: thêm checkbox vào file Phase 3 đã đóng sẽ kéo `start-session` lùi về Phase 3.
+
+- [x] Đóng việc dở: key Gemini vào `infra/.env.prod.example` (compose prod đọc mà file mẫu không có), merge PR #31, dọn nhánh đã merge
+- [ ] MLE bị chấm thành TLE khi Docker trả `State.OOMKilled=false` — `_classify` dùng thêm thời gian chạy (skill `sandbox-grading`, TDD)
+- [ ] `run_grading` không chấm lại submission đã `done`/`error` khi Celery giao lại job — hiện chấm lại, ghi trùng `submission_results`, rồi bị park thành `error` và mất verdict (skill `sandbox-grading`, TDD)
+- [ ] MinIO trong compose dev thay R2 — mở khóa upload video/avatar/transcript trên máy dev, 0đ, không đụng compose prod
+- [ ] Ingest xóa chunk của bài học không còn chữ (hiện chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được) (TDD)
+- [ ] Đồng bộ tài liệu với thực tế (~12 file) + ghi các món nợ hoãn chưa có chủ vào checkbox Phase 5/6
+- [ ] Build tái lập được: lockfile backend, pin `ubuntu-24.04` + action Node 24 trước mốc 19/10, pin tag image, CI guard cho `importorskip`
+- [ ] Lỗi UX làm vấp demo (2 nút `disabled` ở trang chủ, `/khoa-hoc` trắng trang khi backend chết, lỗi avatar nói về video) + `courses.duration_total_s` không bao giờ được cập nhật
+
 ## Tuần 9 — RAG chatbot + sinh quiz
 
 - [x] Bật pgvector, bảng `doc_chunks` (index HNSW)

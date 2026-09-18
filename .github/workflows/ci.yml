@@ -168,6 +168,18 @@ jobs:
           python -m scripts.seed
           python -m scripts.seed
 
+      # The interaction seed runs on top of the catalogue seed and has the same
+      # promise to keep. It is the one that would hurt most to get wrong: a
+      # second run that doubled the enrolments would double every weight in the
+      # recommender's matrix, and the evaluation would move for a reason
+      # nobody could see in the numbers.
+      - name: Seed interactions, then seed them again
+        env:
+          SEED_LEARNER_PASSWORD: ci-not-a-real-password
+        run: |
+          python -m scripts.seed_interactions
+          python -m scripts.seed_interactions
+
   grader:
     name: Grader — sandbox image
     runs-on: ubuntu-latest

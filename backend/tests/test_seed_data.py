@@ -19,7 +19,9 @@ from app.models import (
     CodeExercise,
     Course,
     CourseSection,
+    Enrollment,
     Lesson,
+    Review,
     TestCase,
     VideoAsset,
 )
@@ -180,6 +182,20 @@ async def test_the_seed_really_writes_the_code_exercise_and_its_cases(
         select(Course).where(Course.slug == python_course.slug)
     )
     if existing is not None:
+        # `enrollments.course_id` is ON DELETE RESTRICT -- a course is never
+        # pulled out from under somebody who signed up for it -- so anyone who
+        # enrolled has to go first. On a developer's machine that is whoever
+        # clicked through the demo, plus the synthetic learners
+        # `scripts.seed_interactions` writes, which enrol in this very course.
+        # Inside the test transaction, and rolled back with everything else.
+        await db_session.execute(
+            delete(Review).where(Review.course_id == existing.id)
+        )
+        await db_session.execute(
+            delete(Enrollment).where(Enrollment.course_id == existing.id)
+        )
+        await db_session.flush()
+
         await db_session.delete(existing)
         # The video assets do not go with it: `lessons.video_asset_id` is SET
         # NULL, deliberately, so losing a video does not delete the lesson and

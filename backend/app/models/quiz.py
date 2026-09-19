@@ -143,7 +143,29 @@ class QuizQuestion(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     explanation: Mapped[str | None] = mapped_column(Text)
     position: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    # Whether a model wrote this question, and when its instructor signed it
+    # off. Per question rather than per quiz: a quiz can mix questions the
+    # instructor typed with ones Gemini drafted, and only the drafted ones need
+    # reading before a student may see them.
+    #
+    # The rule they carry is that a quiz with an AI question nobody has
+    # reviewed cannot be published. The generator is measurably wrong
+    # sometimes -- a cheaper model marked `int("12.9")` as returning 12
+    # (docs/report/assets/phase-4/quiz-generation.txt) -- and an answer key
+    # that is wrong is marked against a student, not against the model.
+    ai_generated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     __table_args__ = (
+        # Only a drafted question has anything to sign off. A reviewed_at on a
+        # question the instructor wrote would read as "an AI question, checked"
+        # in every count the thesis makes of how often drafts were accepted.
+        CheckConstraint(
+            "ai_generated OR reviewed_at IS NULL",
+            name="ck_quiz_questions_review_ai_only",
+        ),
         # Deferrable for the reason the curriculum's is: renumbering rewrites
         # several rows in one transaction and passes through states where two
         # of them briefly claim the same slot.

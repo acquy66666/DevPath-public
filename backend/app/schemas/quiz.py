@@ -138,6 +138,39 @@ class QuestionOut(BaseModel):
     correct_index: int
     explanation: str | None
     position: int
+    #: Drafted by a model. Only these can be waiting for review.
+    ai_generated: bool
+    #: When the instructor approved or edited the draft. A quiz with a draft
+    #: still at null cannot be published.
+    reviewed_at: datetime | None
+
+
+#: How many questions one request may draft. Ten fills a quiz; more than that
+#: is more than an instructor will review carefully in one sitting, and review
+#: is the point.
+GENERATE_MIN = 1
+GENERATE_MAX = 10
+GENERATE_DEFAULT = 5
+
+
+class QuizGenerateRequest(BaseModel):
+    """Which lesson to draft from, and how many questions."""
+
+    source_lesson_id: uuid.UUID
+    count: int = Field(default=GENERATE_DEFAULT, ge=GENERATE_MIN, le=GENERATE_MAX)
+
+
+class QuizGenerateOut(BaseModel):
+    #: The drafts that were stored, in quiz order. Fewer than `requested` when
+    #: some did not survive the checks (`dropped`) or the model wrote fewer.
+    questions: list["QuestionOut"]
+    requested: int
+    created: int
+    dropped: int
+    #: Which model drafted them -- the thesis compares models by exactly this.
+    model: str
+    #: The lesson was longer than the model was shown; the rest was cut.
+    truncated: bool
 
 
 class QuestionForAttempt(BaseModel):

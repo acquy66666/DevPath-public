@@ -97,6 +97,17 @@ class Settings(BaseSettings):
     # take a budget instead and reject a level.
     gemini_chat_thinking_level: str = "minimal"
     gemini_chat_max_output_tokens: int = 2048
+    # The model that drafts quiz questions. Not the chat model: measured on a
+    # seed lesson, flash-lite marked `int("12.9")` as returning 12 in both of
+    # two runs -- the lesson says `int(12.9)` -- while flash got every answer
+    # key right, at ~9.5 s instead of ~2 s. An instructor waits once per quiz;
+    # a wrong key is marked against every student who sits it. See
+    # docs/report/assets/phase-4/quiz-generation.txt.
+    gemini_quiz_model: str = "gemini-3.5-flash"
+    gemini_quiz_thinking_level: str = "minimal"
+    # Ten questions measured at ~2 000 tokens. The limit is well above that
+    # because a cut-off JSON document is worth nothing, not half of something.
+    gemini_quiz_max_output_tokens: int = 8192
 
     # The course assistant. `chat_top_k` passages are read per question (about
     # 500 tokens each), and the last `chat_history_messages` messages of the
@@ -110,6 +121,11 @@ class Settings(BaseSettings):
     # limit a script; both are far above a student reading answers.
     chat_cooldown_seconds: int = 3
     chat_hourly_limit: int = 60
+    # Drafting quiz questions: one call of ~10 s on the larger model. The
+    # cooldown absorbs a double click; twenty an hour is several quizzes' worth
+    # of drafts, reviewed properly.
+    quiz_generation_cooldown_seconds: int = 10
+    quiz_generation_hourly_limit: int = 20
 
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"

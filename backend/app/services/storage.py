@@ -20,6 +20,7 @@ exactly which key.
 import logging
 import mimetypes
 import uuid
+from collections.abc import Callable
 from functools import lru_cache
 from pathlib import PurePosixPath
 from typing import Protocol
@@ -264,6 +265,16 @@ def build_storage() -> ObjectStorage:
 def get_storage() -> ObjectStorage:
     """FastAPI dependency. Tests override this; nothing else builds a client."""
     return build_storage()
+
+
+def get_storage_factory() -> Callable[[], ObjectStorage]:
+    """FastAPI dependency for a route that needs the bucket only sometimes.
+
+    Drafting quiz questions reads it for a video's transcript and never for an
+    article. `get_storage` would refuse the whole request on a server with no
+    bucket configured -- including every article, which never needed one.
+    """
+    return build_storage
 
 
 def delete_quietly(storage: ObjectStorage, prefix: str) -> None:

@@ -390,6 +390,14 @@ def test_a_question_cannot_point_past_its_own_options() -> None:
     assert condition.strip().startswith("CASE")
 
 
+def test_only_a_drafted_question_can_carry_a_review() -> None:
+    """`reviewed_at` means "an AI draft, signed off". On a question the
+    instructor typed it would count as an accepted draft that never was."""
+    assert "ck_quiz_questions_review_ai_only" in constraint_names(QuizQuestion)
+    assert QuizQuestion.__table__.c.ai_generated.nullable is False
+    assert QuizQuestion.__table__.c.reviewed_at.nullable is True
+
+
 def test_only_one_attempt_at_a_time_and_only_while_unfinished() -> None:
     """The index that makes a time limit mean anything.
 

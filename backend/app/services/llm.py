@@ -485,6 +485,165 @@ def build_chat_model(
     )
 
 
+class JsonModel(Protocol):
+    """What the quiz generator depends on: one prompt in, one JSON document out."""
+
+    @property
+    def model(self) -> str:
+        """Which model drafted the document, for the evidence and the logs."""
+
+    async def generate(self, *, system: str, prompt: str, schema: dict[str, Any]) -> Any:
+        """The model's answer, parsed, in the shape `schema` asks for."""
+        ...
+
+
+class _NotRetryable(Exception):
+    """A 200 whose content no second call would improve."""
+
+
+class GeminiJson:
+    """Gemini's `generateContent` in JSON mode, with the retries.
+
+    Not streamed: a half-written JSON document is of no use to anybody, and the
+    person waiting is an instructor who pressed a button, not a student reading
+    along. The schema goes to Gemini as `responseSchema`, which constrains the
+    shape; whether the *content* makes sense -- an answer key pointing past the
+    options, two identical options -- is for the caller to check.
+    """
+
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        base_url: str,
+        timeout_s: float,
+        max_attempts: int,
+        max_output_tokens: int,
+        thinking_level: str,
+        retry_base_delay_s: float = 1.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._api_key = api_key
+        self._model = model
+        self._base_url = base_url.rstrip("/")
+        self._timeout_s = timeout_s
+        self._max_attempts = max(1, max_attempts)
+        self._max_output_tokens = max_output_tokens
+        self._thinking_level = thinking_level
+        self._retry_base_delay_s = retry_base_delay_s
+        self._transport = transport
+
+    @property
+    def model(self) -> str:
+        return self._model
+
+    def _payload(self, system: str, prompt: str, schema: dict[str, Any]) -> dict[str, Any]:
+        config: dict[str, Any] = {
+            "responseMimeType": "application/json",
+            "responseSchema": schema,
+            "maxOutputTokens": self._max_output_tokens,
+        }
+        if self._thinking_level:
+            config["thinkingConfig"] = {"thinkingLevel": self._thinking_level}
+        return {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": config,
+        }
+
+    @staticmethod
+    def _document(data: dict[str, Any]) -> Any:
+        """The JSON inside one response, or why there is none.
+
+        Raises `_NotRetryable` for the answers the same prompt would get again
+        -- blocked, empty, cut off -- and ValueError for text that is not JSON,
+        which sampling makes unlikely to recur.
+        """
+        blocked = (data.get("promptFeedback") or {}).get("blockReason")
+        candidates = data.get("candidates") or []
+        if blocked or not candidates:
+            raise _NotRetryable(f"mô hình không trả về nội dung (blockReason={blocked})")
+
+        candidate = candidates[0]
+        finish = candidate.get("finishReason")
+        if finish == "MAX_TOKENS":
+            # Half a JSON document. The same limit cuts the same prompt in the
+            # same place, so the fix is a larger limit or a smaller request.
+            raise _NotRetryable("câu trả lời bị cắt vì chạm maxOutputTokens")
+
+        text = "".join(
+            part.get("text", "")
+            for part in (candidate.get("content") or {}).get("parts") or []
+            if not part.get("thought")
+        )
+        if not text.strip():
+            raise _NotRetryable(f"mô hình trả về rỗng (finishReason={finish})")
+        return json.loads(text)
+
+    async def generate(self, *, system: str, prompt: str, schema: dict[str, Any]) -> Any:
+        url = f"{self._base_url}/models/{self._model}:generateContent"
+        headers = {"x-goog-api-key": self._api_key, "Content-Type": "application/json"}
+        payload = self._payload(system, prompt, schema)
+        last = ""
+
+        async with httpx.AsyncClient(
+            timeout=self._timeout_s, transport=self._transport
+        ) as client:
+            for attempt in range(self._max_attempts):
+                try:
+                    response = await client.post(url, json=payload, headers=headers)
+                except httpx.HTTPError as error:
+                    last = f"{type(error).__name__}: {error}"
+                else:
+                    if response.status_code == 200:
+                        try:
+                            return self._document(response.json())
+                        except _NotRetryable as error:
+                            raise LLMUnavailableError(f"Gemini: {error}") from error
+                        except ValueError as error:
+                            last = f"không phải JSON hợp lệ ({error})"
+                    else:
+                        last = f"HTTP {response.status_code}: {response.text[:200]}"
+                        if response.status_code not in RETRYABLE_STATUS:
+                            break
+
+                if attempt + 1 < self._max_attempts and self._retry_base_delay_s:
+                    await asyncio.sleep(self._retry_base_delay_s * (2**attempt))
+
+        raise LLMUnavailableError(f"Gọi Gemini thất bại ({last})")
+
+
+def build_quiz_model(
+    *,
+    api_key: str | None = None,
+    model: str | None = None,
+) -> JsonModel:
+    """The model that drafts quiz questions, or a stated refusal."""
+    settings = get_settings()
+    key = settings.gemini_api_key if api_key is None else api_key
+
+    if not key:
+        raise LLMNotConfiguredError(
+            "Chưa cấu hình GEMINI_API_KEY nên chưa sinh được câu hỏi bằng AI",
+        )
+
+    return GeminiJson(
+        api_key=key,
+        model=model or settings.gemini_quiz_model,
+        base_url=settings.gemini_base_url,
+        timeout_s=settings.gemini_timeout_s,
+        max_attempts=settings.gemini_max_attempts,
+        max_output_tokens=settings.gemini_quiz_max_output_tokens,
+        thinking_level=settings.gemini_quiz_thinking_level,
+    )
+
+
+def get_quiz_model_factory() -> Callable[[], JsonModel]:
+    """FastAPI dependency, a factory for the same reason as the embedder's."""
+    return build_quiz_model
+
+
 def get_chat_model_factory() -> Callable[[], ChatModel]:
     """FastAPI dependency, a factory for the same reason as the embedder's."""
     return build_chat_model

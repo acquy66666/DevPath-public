@@ -299,7 +299,7 @@ Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất b�
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 13 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 14 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -316,6 +316,7 @@ Migration là một chuỗi thẳng 13 revision, một head (`alembic heads` đ�
 | `a03e9e2f9ce9` | `doc_chunks` + index HNSW |
 | `50ccf4fc23fb` | `quizzes`, `quiz_questions`, `quiz_attempts` |
 | `42fff7804290` | `chat_sessions`, `chat_messages` |
+| `ca9e1c7ffdbb` | `quiz_questions.ai_generated`, `reviewed_at` (duyệt câu hỏi AI sinh) |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

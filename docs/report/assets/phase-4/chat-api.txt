@@ -260,6 +260,8 @@ thử hỏi lại sau ít phút nhé."; chi tiết "HTTP 503 …" chỉ nằm tr
   cả 2 ca; và cách gộp ở mục 5 KÉO ĐIỂM của câu lạc đề sau một câu trong phạm vi lên (phở bò:
   0,531 khi hỏi riêng → 0,604 khi gộp), nên một ngưỡng đặt theo câu hỏi đơn sẽ sai với câu
   nối tiếp. Để task "Đánh giá chatbot: bộ 20 câu hỏi" quyết định bằng số liệu đủ hơn.
+  (20/09/2026: đã quyết — KHÔNG đặt ngưỡng; hai nhóm chồng lên nhau 0,059 trên 31 câu, xem
+  chatbot-eval.txt mục 8.)
 - Kho ngữ liệu mỏng: khóa tốt nhất có 4 bài có chữ (41/42 video seed không có lời giảng).
   Mọi top-k ở đây trả về cả khóa; truy hồi chưa bị thử thách thật.
 - Chưa EXPLAIN lại câu truy vấn có JOIN + EXISTS + iterative_scan trên bảng lớn (hnsw-index.txt

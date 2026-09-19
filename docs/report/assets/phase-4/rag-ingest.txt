@@ -90,10 +90,12 @@ câu hỏi quiz. Cả hai đều nằm ở bảng khác nên `_lesson_text` chư
 - **Ước lượng token chưa đối chiếu lại sau khi chunk.** `CHARS_PER_TOKEN = 3,5`
   đo trên 4 mẫu (`embedding-model.txt` mục 3); chưa chạy `countTokens` trên
   chính 26 chunk đã sinh để xem sai số thật là bao nhiêu.
+  (20/09/2026: đã đo trên 43 chunk, xem mục 6.)
 
 - **Chưa thử đường Celery đầu-cuối trên máy dev.** Đã có test khẳng định
   publish đẩy đúng tên task và task đăng ký đúng tên đó, và script chạy tay gọi
   đúng hàm mà task gọi; chưa bấm publish trên UI rồi xem worker nhận job.
+  (20/09/2026: đã chạy xuất bản → worker nạp, xem mục 6.)
 
 ==============================================================================
 5. BỔ SUNG 18/09/2026 — BÀI HỌC HẾT CHỮ THÌ CHUNK CŨ PHẢI ĐI THEO
@@ -129,3 +131,21 @@ Không đổi (cố ý): **unpublish không xóa chunk** — publish lại sẽ 
 embedding cho cả khóa lần nữa. Giữ chunk của khóa bị gỡ khỏi câu trả lời là
 việc của truy vấn top-k (lọc khóa đang published + người hỏi đã ghi danh), đã
 ghi thành yêu cầu bắt buộc của task Chat API trong phase-4-ai-features.md.
+
+==============================================================================
+6. BỔ SUNG 20/09/2026 — HAI MÓN NỢ CỦA MỤC 4 ĐÃ ĐÓNG
+==============================================================================
+Làm cùng task "Đánh giá chatbot: bộ 20 câu hỏi". Chi tiết: chatbot-eval.txt mục 3 và mục 9.
+
+Đường Celery đầu-cuối. Khóa python-co-ban hạ về nháp, tải 12 lời giảng lên (lúc nháp thì
+không ingest), rồi gọi POST /api/v1/courses/{id}/submit — đúng endpoint nút "Xuất bản" gọi:
+  18:12:31,266 UTC  submit → 200, status published
+  18:12:31,606      worker nhận app.workers.rag.ingest_course (0,34 s sau)
+  18:12:40,367      11 bài học, 16 chunk, 4 bài không đổi, 2 bài bỏ qua — xong trong 8,67 s
+Cú bấm chuột trên UI thì chưa: cần mật khẩu để đăng nhập (chatbot-eval.txt mục 3).
+
+Ước lượng token. scripts/eval_token_estimate.py hỏi countTokens cho cả 43 chunk (token-estimate.txt):
+gộp cả kho 3,41 ký tự/token, lời giảng 3,34, tệ nhất 2,88 — nên 3,5 ước THẤP 2,5% (tệ nhất
+17,7% một chunk), trái với giả định cũ. Chunk lớn nhất 557 token thật so với giới hạn 2048:
+MAX_CHUNK_TOKENS mới là lớp an toàn. Giữ 3,5, sửa lời chú thích trong chunking.py.
+

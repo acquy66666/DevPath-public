@@ -102,6 +102,8 @@ giải thích có [1], nhưng các ví dụ thì không trích nguồn nào. Pro
 từ kiến thức bên ngoài". Ví dụ minh họa là vùng xám: nó không phải dữ kiện mới, nhưng cũng
 không nằm trong khóa học. Bộ 20 câu đánh giá nên có một cột riêng cho chuyện này, thay vì
 gộp vào "đúng/sai".
+(20/09/2026: đã có cột "mã không nguyên văn"; quyết định cho phép ví dụ ghép từ tài liệu,
+bắt câu dẫn ghi nguồn — chatbot-eval.txt mục 7.)
 
 ==============================================================================
 7. CHƯA CÓ, NÓI THẲNG

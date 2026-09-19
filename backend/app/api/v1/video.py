@@ -8,10 +8,17 @@ worker's queue -- see `services/storage.py` for why.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 
 from app.core.deps import CurrentUser, DbSession
-from app.schemas.video import VideoAssetOut, VideoUploadRequest, VideoUploadTicket
+from app.schemas.video import (
+    TranscriptOut,
+    TranscriptUpload,
+    VideoAssetOut,
+    VideoUploadRequest,
+    VideoUploadTicket,
+)
+from app.services import transcripts as transcripts_service
 from app.services import video as video_service
 from app.services.storage import ObjectStorage, get_storage
 from app.services.tasks import TaskQueue, get_task_queue
@@ -33,6 +40,7 @@ async def create_video_upload(
     current_user: CurrentUser,
     session: DbSession,
     storage: Storage,
+    queue: Queue,
 ) -> VideoUploadTicket:
     """Ask for somewhere to put a video.
 
@@ -41,7 +49,7 @@ async def create_video_upload(
     keeps working without object storage, this one endpoint does not.
     """
     return await video_service.create_upload_ticket(
-        session, lesson_id, current_user, storage, payload
+        session, lesson_id, current_user, storage, payload, queue
     )
 
 
@@ -86,3 +94,39 @@ async def get_video_asset(
         session, video_asset_id, current_user
     )
     return video_service.video_out(asset)
+
+
+@router.put("/lessons/{lesson_id}/transcript", response_model=TranscriptOut)
+async def put_transcript(
+    lesson_id: uuid.UUID,
+    payload: TranscriptUpload,
+    current_user: CurrentUser,
+    session: DbSession,
+    storage: Storage,
+    queue: Queue,
+) -> TranscriptOut:
+    """Give a video its transcript (`.srt` or `.txt`), replacing any earlier one.
+
+    The file comes through here rather than to the bucket directly so it can be
+    read first: 422 `TRANSCRIPT_UNREADABLE` for a file that is not UTF-8 or an
+    `.srt` with no timings, 422 `TRANSCRIPT_EMPTY` for one with nothing said.
+    409 `LESSON_HAS_NO_VIDEO` until the video itself is uploaded.
+    """
+    return await transcripts_service.put_transcript(
+        session, lesson_id, current_user, storage, queue, payload
+    )
+
+
+@router.delete("/lessons/{lesson_id}/transcript", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_transcript(
+    lesson_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: DbSession,
+    storage: Storage,
+    queue: Queue,
+) -> Response:
+    """Take the transcript off a video. On a live course its chunks go too."""
+    await transcripts_service.delete_transcript(
+        session, lesson_id, current_user, storage, queue
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

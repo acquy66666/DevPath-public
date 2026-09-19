@@ -2,9 +2,11 @@
 
 `ObjectStorage` is a Protocol precisely so the routes can be exercised without
 a bucket: the fake below records what was asked of it and signs nothing real.
-Videos and avatars both go through it, so it lives here rather than in either
-test module.
+Videos, avatars and transcripts all go through it, so it lives here rather
+than in any one test module.
 """
+
+from app.services.storage import StorageError
 
 
 class FakeStorage:
@@ -15,6 +17,8 @@ class FakeStorage:
         self.deleted_prefixes: list[str] = []
         self.uploaded: list[tuple[str, str]] = []
         self.downloaded: list[str] = []
+        # Small objects the API writes itself (transcripts): key -> (bytes, type).
+        self.objects: dict[str, tuple[bytes, str]] = {}
 
     def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
         self.signed.append((key, content_type, expires_in))
@@ -29,8 +33,25 @@ class FakeStorage:
     def upload_file(self, source: str, key: str, content_type: str | None = None) -> None:
         self.uploaded.append((source, key))
 
+    def upload_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        self.objects[key] = (data, content_type)
+
+    def read_bytes(self, key: str) -> bytes:
+        if key not in self.objects:
+            raise StorageError(f"Không đọc được {key} từ kho lưu trữ")
+        return self.objects[key][0]
+
     def delete_prefix(self, prefix: str) -> None:
         self.deleted_prefixes.append(prefix)
+        for key in [key for key in self.objects if key.startswith(prefix)]:
+            del self.objects[key]
+
+
+class UnwritableStorage(FakeStorage):
+    """A bucket that takes no new objects -- a 502 the API has to survive."""
+
+    def upload_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        raise StorageError("Kho lưu trữ không nhận tệp")
 
 
 class RefusingStorage(FakeStorage):

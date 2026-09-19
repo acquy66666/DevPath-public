@@ -145,6 +145,8 @@ Không phân trang vì đây là bảng phân loại do admin biên tập, cỡ 
 | `POST /video-assets/{id}/complete` | Trình duyệt báo đã tải xong → `processing` + đẩy job Celery |
 | `POST /video-assets/{id}/retry` | Xử lý lại một video `failed` — tệp vẫn còn trong bucket |
 | `GET /video-assets/{id}` | Trạng thái xử lý — màn hình upload hỏi lại theo chu kỳ |
+| `PUT /lessons/{id}/transcript` | Gắn transcript `.srt`/`.txt` cho video của bài học (thay tệp cũ nếu có) |
+| `DELETE /lessons/{id}/transcript` | Gỡ transcript; khóa đang xuất bản thì chunk của bài đó bị gỡ ở lần nạp kế |
 
 Vòng đời: `uploading → processing → ready`, nhánh hỏng là `failed` kèm `error_message` viết cho giảng viên đọc, không phải cho log. `failed → processing` là đường quay lại: phần lớn lỗi không phải tại tệp mà tại bucket chớp nháy hay worker bị giết giữa chừng, và bắt tải lên nửa gigabyte lần nữa là câu trả lời sai.
 
@@ -377,7 +379,14 @@ Chưa có key thì job ghi log cảnh báo rồi kết thúc êm, không làm ta
 
 Lý do chọn model và cách đo: [docs/report/assets/phase-4/embedding-model.txt](../docs/report/assets/phase-4/embedding-model.txt). Số liệu chạy thật: [rag-ingest.txt](../docs/report/assets/phase-4/rag-ingest.txt).
 
-**Transcript video chưa nạp được.** `video_assets.transcript_key` đã có cột nhưng chưa có endpoint để giảng viên upload `.srt/.txt`, nên hiện chỉ bài học dạng article được nạp — 26/69 bài học của CSDL dev.
+**Transcript video** (từ 19/09/2026). Giảng viên gắn tệp `.srt` hoặc `.txt` cho video của bài học qua `PUT /lessons/{id}/transcript` (khối "Transcript cho trợ giảng AI" trong trình soạn bài học). Tệp **đi qua API chứ không qua URL đã ký** như video. Transcript chỉ vài chục KB, nên đi qua backend thì đọc được trước khi giữ:
+- tệp không phải UTF-8 (trình duyệt giải mã ra `U+FFFD`) hoặc `.srt` không có dòng thời gian bị trả 422 `TRANSCRIPT_UNREADABLE`, kèm câu hướng dẫn sửa;
+- tệp không còn câu thoại nào bị trả 422 `TRANSCRIPT_EMPTY`;
+- chưa có video thì trả 409 `LESSON_HAS_NO_VIDEO`.
+
+Tệp **gốc** được lưu cạnh video (`videos/<asset>/transcript.srt`), ghi vào `video_assets.transcript_key`. Ingest đọc lại tệp đó từ bucket và bóc chữ bằng đúng hàm đã kiểm lúc upload: bỏ số thứ tự, dòng thời gian, thẻ `<i>`/`{\an8}`, và gộp câu lặp của phụ đề cuộn. Khóa đang xuất bản thì upload/gỡ/thay video đều xếp hàng nạp lại ngay. Khóa nháp thì nạp khi xuất bản.
+
+**Transcript đọc không được thì giữ nguyên chunk cũ**, và bài đó được đếm là `unreadable` chứ không phải "hết chữ". Tình huống này xảy ra khi bucket chớp nháy, hoặc worker thiếu khóa lưu trữ. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota lần nữa. Script `ingest_course` đọc transcript từ MinIO nên phải chạy **trong container** (`docker compose exec worker ...`), vì Windows không phân giải được `minio.localhost`. Bằng chứng: [transcript-ingest.txt](../docs/report/assets/phase-4/transcript-ingest.txt).
 
 ### Đo hiệu năng chấm bài
 

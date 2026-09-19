@@ -64,6 +64,8 @@ npm run build
 
 Sau khi tải xong, màn hình hỏi lại trạng thái mỗi 4 giây trong lúc `processing`. TanStack Query **tạm dừng hỏi khi tab bị ẩn** và hỏi lại ngay lúc tab được focus — đúng thứ ta muốn: giảng viên chuyển tab đi làm việc khác trong lúc chờ chuyển mã, quay lại là thấy kết quả, không có ai hỏi vòng vo suốt mấy phút vào một tab không ai nhìn.
 
+**Transcript thì ngược lại: đi qua backend.** `components/curriculum/transcript-upload.tsx` đọc tệp `.srt`/`.txt` bằng `file.text()` rồi gửi chữ trong body JSON tới `PUT /lessons/{id}/transcript`. Transcript chỉ vài chục KB, và backend cần đọc nó trước khi giữ. Tệp không phải UTF-8 khi `file.text()` giải mã sẽ ra `U+FFFD`, và backend nhận ra điều đó. Câu lỗi 422 của backend (vì sao đọc không được, sửa thế nào) được hiện nguyên văn, vì `TRANSCRIPT_UNREADABLE` cố ý không có câu chung trong `error-messages.ts`. Upload xong, khối này báo số ký tự lời giảng đã nhận, và cho biết khi nào trợ giảng AI đọc được: ngay nếu khóa đang xuất bản, còn không thì khi xuất bản.
+
 **Bàn phím dùng được:** chọn tay nắm → phím cách → phím mũi tên → phím cách để thả, kèm thông báo tiếng Việt cho screen reader (dnd-kit chỉ có sẵn tiếng Anh và đọc ra UUID). Trong lúc kéo *chương*, mọi bài học bị tắt vai trò điểm thả (`disabled: { droppable: true }`) — nếu không, mũi tên xuống sẽ dừng ở từng bài học nằm trong chính chương đang kéo.
 
 **Cạm bẫy dnd-kit:** khi trang còn cuộn được và đích đến nằm dưới điểm giữa màn hình, mũi tên **cuộn trang** trước rồi mới di chuyển phần tử — đó là hành vi có sẵn của `KeyboardSensor`, không phải lỗi. Test tự động vì thế phải đặt viewport đủ cao để trang hết cuộn.

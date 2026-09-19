@@ -26,6 +26,7 @@ from typing import Protocol
 
 import boto3
 from botocore.client import Config
+from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import status
 
 from app.core.config import get_settings
@@ -60,7 +61,16 @@ ALLOWED_IMAGE_TYPES = (
 # phone, and the answer to that is to resize it rather than to store it.
 MAX_AVATAR_BYTES = 5 * 1024 * 1024
 
-# Past this a filename is not worth reading. Both upload flows cut it here.
+# Transcripts, keyed by extension. No .vtt yet: nothing has asked for it, and
+# a format accepted is a format that has to keep parsing correctly.
+TRANSCRIPT_FORMATS = {".srt": "srt", ".txt": "txt"}
+
+# Characters, not bytes: the transcript arrives as text in a JSON body. Two
+# hours of speech transcribed is around 150 000; a million is a file that is
+# not a transcript.
+TRANSCRIPT_MAX_CHARS = 1_000_000
+
+# Past this a filename is not worth reading. Every upload flow cuts it here.
 FILENAME_MAX_LENGTH = 255
 
 
@@ -98,6 +108,12 @@ def hls_prefix(video_asset_id: uuid.UUID) -> str:
     return f"{asset_prefix(video_asset_id)}/hls"
 
 
+def transcript_key(video_asset_id: uuid.UUID, fmt: str) -> str:
+    """Where a video's transcript lives: beside the video, so replacing the
+    video (which deletes everything under its prefix) takes it along."""
+    return f"{asset_prefix(video_asset_id)}/transcript.{fmt}"
+
+
 def avatar_prefix(user_id: uuid.UUID) -> str:
     """Everything one account has ever used as a picture."""
     return f"avatars/{user_id}"
@@ -133,6 +149,14 @@ class ObjectStorage(Protocol):
     def download_file(self, key: str, destination: str) -> None: ...
 
     def upload_file(self, source: str, key: str, content_type: str | None = None) -> None: ...
+
+    def upload_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        """Store a small object the API already holds in memory -- a transcript."""
+        ...
+
+    def read_bytes(self, key: str) -> bytes:
+        """Fetch a small object whole. Not for videos."""
+        ...
 
     def delete_prefix(self, prefix: str) -> None:
         """Delete every object under a prefix. Used when a video is replaced."""
@@ -188,6 +212,24 @@ class R2Storage:
         self._client.upload_file(
             source, self._bucket, key, ExtraArgs={"ContentType": guessed}
         )
+
+    def upload_bytes(self, data: bytes, key: str, content_type: str) -> None:
+        # Wrapped, unlike the presigning above: this is a request the API makes
+        # on the instructor's behalf, and a bucket that refuses should reach
+        # them as a 502 with a sentence, not as a 500 with a traceback.
+        try:
+            self._client.put_object(
+                Bucket=self._bucket, Key=key, Body=data, ContentType=content_type
+            )
+        except (BotoCoreError, ClientError) as exc:
+            raise StorageError("Kho lưu trữ không nhận tệp") from exc
+
+    def read_bytes(self, key: str) -> bytes:
+        try:
+            response = self._client.get_object(Bucket=self._bucket, Key=key)
+            return response["Body"].read()
+        except (BotoCoreError, ClientError) as exc:
+            raise StorageError(f"Không đọc được {key} từ kho lưu trữ") from exc
 
     def delete_prefix(self, prefix: str) -> None:
         paginator = self._client.get_paginator("list_objects_v2")

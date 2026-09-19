@@ -5,6 +5,7 @@ import { Check, Loader2 } from "lucide-react";
 import { useId, useState } from "react";
 
 import { ExerciseEditor } from "@/components/exercise/exercise-editor";
+import { TranscriptUpload } from "@/components/curriculum/transcript-upload";
 import { VideoUpload } from "@/components/curriculum/video-upload";
 import { QuizEditor } from "@/components/quiz/quiz-editor";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -156,7 +157,10 @@ function LessonForm({
         // answers are their own tables behind their own endpoints.
         <QuizEditor lessonId={lesson.id} />
       ) : (
-        <VideoUpload lesson={lesson} />
+        <div className="space-y-3">
+          <VideoUpload lesson={lesson} />
+          <TranscriptUpload lesson={lesson} />
+        </div>
       )}
 
       <div className="flex items-start gap-2">

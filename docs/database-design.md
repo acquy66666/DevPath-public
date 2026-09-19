@@ -297,4 +297,10 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 - **Nguồn:** `sum(video_assets.duration_s)` của các video `status = 'ready'` gắn vào bài học của khóa. Video đang chuyển mã chưa có độ dài, video `failed` sẽ không bao giờ phát được, nên cả hai không tính.
 - **Tính lại, không cộng dồn**, trong cùng transaction với thay đổi, ở bốn chỗ: worker transcode xong (cả khi `failed`), thay video (asset cũ bị xóa lúc cấp URL upload mới), xóa bài học có video, xóa chương. Cùng quy tắc với `rating_avg`: khóa dòng `courses` trước khi tính, và ghim `updated_at`. Worker chạy nền xong việc cũng không phải là giảng viên sửa khóa học.
 
+`video_assets.transcript_key` **đã có hành vi** từ 19/09/2026 (cột có sẵn từ `f7d37ee5caf2`, không có revision mới), xem `app/services/transcripts.py`:
+
+- Trỏ tới tệp **gốc** giảng viên tải lên, lưu cạnh video: `videos/<asset>/transcript.srt` hoặc `.txt`. Dòng thời gian được giữ để về sau làm phụ đề và trích nguồn tới từng phút.
+- Chỉ ghi sau khi tệp đã lên bucket thành công. Bucket từ chối thì hàng giữ nguyên. Tải lại ở định dạng khác thì tệp cũ bị xóa.
+- Thuộc về asset. Thay video là xóa asset cũ cùng mọi object dưới prefix của nó, transcript đi theo. Ingest đọc lại tệp từ bucket. Đọc không được thì bài đó giữ nguyên chunk cũ (`unreadable`), không bị coi là hết chữ.
+
 `backend/scripts/rebuild_course_stats.py` (`--dry-run` để chỉ báo) tính lại cả bốn cột từ nguồn cho mọi khóa, kể cả khóa đã xóa mềm. Script dùng đúng các định nghĩa mà đường ghi dùng, khóa dòng trước khi đọc, và in ra từng số đã sửa. Chạy trên CSDL lành mạnh thì báo 0 chỗ lệch, và đó là bằng chứng "số liệu tái tạo được": `docs/report/assets/phase-4/course-stats-rebuild.txt`. `scripts/seed_courses.py` và `scripts/seed_interactions.py` cũng tính lại qua module này thay vì tự viết phép tính riêng.

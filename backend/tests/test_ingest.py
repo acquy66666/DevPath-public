@@ -21,11 +21,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import NotFoundError
-from app.models import Category, Course, CourseSection, DocChunk, Lesson, User
+from app.models import Category, Course, CourseSection, DocChunk, Lesson, User, VideoAsset
 from app.models.rag import EMBEDDING_DIMENSIONS
 from app.services.chunking import chunk_text
 from app.services.ingest import ingest_course
 from app.services.llm import LLMUnavailableError
+from tests.api.fakes import FakeStorage
 
 LONG_ARTICLE = "\n\n".join(
     f"Đoạn số {index}. Trong phần {index}, biến được tạo ra ngay khi bạn gán "
@@ -370,3 +371,138 @@ async def test_switching_embedding_model_re_embeds_everything(
     assert newer.calls, "should have paid for new vectors"
     rows = await chunks_of(db_session, course.id)
     assert {row.embedding_model for row in rows} == {"fake-embedding-002"}
+
+
+# --- Video transcripts -------------------------------------------------------
+
+TRANSCRIPT = (
+    "1\n00:00:01,000 --> 00:00:04,000\nVòng lặp for duyệt qua từng phần tử\n\n"
+    "2\n00:00:04,000 --> 00:00:07,000\ncủa một danh sách, theo thứ tự.\n"
+)
+
+
+async def video_lesson(session: AsyncSession, course_id: uuid.UUID) -> Lesson:
+    return await session.scalar(
+        select(Lesson)
+        .join(CourseSection, CourseSection.id == Lesson.section_id)
+        .where(CourseSection.course_id == course_id, Lesson.type == "video")
+    )
+
+
+async def give_transcript(
+    session: AsyncSession, course_id: uuid.UUID, storage: FakeStorage
+) -> Lesson:
+    """The fixture's video lesson, now with a video and a transcript on it."""
+    lesson = await video_lesson(session, course_id)
+    asset_id = uuid.uuid4()
+    key = f"videos/{asset_id}/transcript.srt"
+    asset = VideoAsset(
+        id=asset_id,
+        storage_key=f"videos/{asset_id}/original.mp4",
+        status="ready",
+        transcript_key=key,
+    )
+    session.add(asset)
+    lesson.video_asset = asset
+    await session.flush()
+    storage.objects[key] = (TRANSCRIPT.encode("utf-8"), "application/x-subrip")
+    return lesson
+
+
+async def chunks_of_lesson(session: AsyncSession, lesson_id: uuid.UUID) -> list[DocChunk]:
+    return list(
+        await session.scalars(
+            select(DocChunk)
+            .where(DocChunk.lesson_id == lesson_id)
+            .order_by(DocChunk.chunk_index)
+        )
+    )
+
+
+async def test_a_video_with_a_transcript_is_ingested_from_what_was_said(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """Read back from the bucket, timings and cue numbers gone -- the same
+    words the upload was checked against, under the lesson's title."""
+    storage = FakeStorage()
+    lesson = await give_transcript(db_session, course.id, storage)
+
+    report = await ingest_course(
+        db_session, course.id, embedder=FakeEmbedder(), storage=storage
+    )
+
+    assert report.lessons == 2
+    [row] = await chunks_of_lesson(db_session, lesson.id)
+    assert row.content == (
+        "Video bài giảng\n\n"
+        "Vòng lặp for duyệt qua từng phần tử của một danh sách, theo thứ tự."
+    )
+
+
+async def test_a_transcript_that_cannot_be_read_keeps_the_chunks_it_had(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """A bucket that blinks during one run is not a lesson that lost its words.
+    Treating it as one would empty the chatbot's memory of every video on the
+    next network hiccup, and refilling it costs the embedding quota again."""
+    storage = FakeStorage()
+    lesson = await give_transcript(db_session, course.id, storage)
+    await ingest_course(db_session, course.id, embedder=FakeEmbedder(), storage=storage)
+    before = [row.content for row in await chunks_of_lesson(db_session, lesson.id)]
+
+    storage.objects.clear()
+    report = await ingest_course(
+        db_session, course.id, embedder=FakeEmbedder(), storage=storage
+    )
+
+    assert report.unreadable == 1
+    assert report.removed == 0
+    assert [row.content for row in await chunks_of_lesson(db_session, lesson.id)] == before
+
+
+async def test_with_no_storage_at_all_a_transcript_is_unreadable_not_empty(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """A worker started without bucket credentials must not read that as every
+    transcript having been deleted."""
+    storage = FakeStorage()
+    lesson = await give_transcript(db_session, course.id, storage)
+    await ingest_course(db_session, course.id, embedder=FakeEmbedder(), storage=storage)
+
+    report = await ingest_course(db_session, course.id, embedder=FakeEmbedder())
+
+    assert report.unreadable == 1
+    assert await chunks_of_lesson(db_session, lesson.id)
+
+
+async def test_taking_the_transcript_off_takes_its_chunks_out(
+    db_session: AsyncSession, course: Course
+) -> None:
+    storage = FakeStorage()
+    lesson = await give_transcript(db_session, course.id, storage)
+    await ingest_course(db_session, course.id, embedder=FakeEmbedder(), storage=storage)
+
+    lesson.video_asset.transcript_key = None
+    await db_session.flush()
+    report = await ingest_course(
+        db_session, course.id, embedder=FakeEmbedder(), storage=storage
+    )
+
+    assert report.removed == 1
+    assert await chunks_of_lesson(db_session, lesson.id) == []
+
+
+async def test_an_unchanged_transcript_is_not_embedded_twice(
+    db_session: AsyncSession, course: Course
+) -> None:
+    """The same re-ingest check as articles: publish is pressed often, and a
+    lecture transcript is the longest text a course has."""
+    storage = FakeStorage()
+    await give_transcript(db_session, course.id, storage)
+    await ingest_course(db_session, course.id, embedder=FakeEmbedder(), storage=storage)
+
+    again = FakeEmbedder()
+    report = await ingest_course(db_session, course.id, embedder=again, storage=storage)
+
+    assert again.calls == []
+    assert report.unchanged == 2

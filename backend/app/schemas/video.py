@@ -2,6 +2,8 @@
 
 import uuid
 from datetime import datetime
+from pathlib import PurePosixPath
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -9,6 +11,8 @@ from app.services.storage import (
     ALLOWED_VIDEO_TYPES,
     FILENAME_MAX_LENGTH,
     MAX_UPLOAD_BYTES,
+    TRANSCRIPT_FORMATS,
+    TRANSCRIPT_MAX_CHARS,
 )
 
 
@@ -72,3 +76,37 @@ class VideoAssetOut(BaseModel):
 
     # Filled in by the service once the transcode finishes; None until then.
     hls_url: str | None = None
+
+    # `srt` or `txt` when an instructor has uploaded one, else None. Only the
+    # format, not the file: the curriculum builder needs to say "có transcript",
+    # and nothing a student sees reads it.
+    transcript_format: Literal["srt", "txt"] | None = None
+
+
+class TranscriptUpload(BaseModel):
+    """A transcript, as the text the browser read out of the file.
+
+    Text rather than bytes because the browser has already decoded it as UTF-8
+    -- which is exactly what lets the service spot a file that was not.
+    """
+
+    filename: str = Field(min_length=1, max_length=FILENAME_MAX_LENGTH)
+    content: str = Field(min_length=1, max_length=TRANSCRIPT_MAX_CHARS)
+
+    @field_validator("filename")
+    @classmethod
+    def srt_or_txt(cls, value: str) -> str:
+        if PurePosixPath(value).suffix.lower() not in TRANSCRIPT_FORMATS:
+            raise ValueError("Chỉ nhận tệp .srt hoặc .txt")
+        return value
+
+
+class TranscriptOut(BaseModel):
+    """What was kept, told back so the instructor can tell it was read right."""
+
+    format: Literal["srt", "txt"]
+    #: Characters the chatbot will read -- after timings and tags are gone.
+    characters: int
+    #: True when the course is live and an ingest was queued; False for a
+    #: draft, which is ingested when it is published.
+    ingest_queued: bool

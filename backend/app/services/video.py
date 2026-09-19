@@ -29,6 +29,7 @@ from app.services.storage import (
     original_video_key,
 )
 from app.services.tasks import TaskQueue
+from app.services.transcripts import format_of_key
 
 
 class VideoAssetNotFoundError(DomainError):
@@ -80,6 +81,9 @@ def video_out(asset: VideoAsset) -> VideoAssetOut:
         created_at=asset.created_at,
         updated_at=asset.updated_at,
         hls_url=public_media_url(asset.hls_manifest_key),
+        transcript_format=(
+            format_of_key(asset.transcript_key) if asset.transcript_key else None
+        ),
     )
 
 
@@ -98,12 +102,15 @@ async def create_upload_ticket(
     user: User,
     storage: ObjectStorage,
     data: VideoUploadRequest,
+    queue: TaskQueue | None = None,
 ) -> VideoUploadTicket:
     """Sign a URL the browser can upload one video to, and remember that we did.
 
     Uploading again replaces whatever was there: the row is dropped and its
     objects are scheduled for deletion. Keeping the old asset around would
-    leave a lesson pointing at one video while the bucket paid for two.
+    leave a lesson pointing at one video while the bucket paid for two. Its
+    transcript goes with it; on a live course the lesson is re-ingested, so the
+    chatbot stops quoting a recording nobody can watch any more.
     """
     lesson, _, course = await curriculum_service.lesson_for_management(
         session, lesson_id, user
@@ -114,6 +121,7 @@ async def create_upload_ticket(
 
     previous = lesson.video_asset
     stale_prefix = asset_prefix(previous.id) if previous is not None else None
+    loses_transcript = previous is not None and previous.transcript_key is not None
 
     # The id is minted here rather than by `gen_random_uuid()`, because the
     # storage key is built from it and the key has to be known before the row
@@ -148,6 +156,9 @@ async def create_upload_ticket(
         # After the commit: the objects should only go once the row is really
         # gone, and a failed delete must not cost the instructor their upload.
         delete_quietly(storage, stale_prefix)
+
+    if loses_transcript and course.status == "published" and queue is not None:
+        queue.enqueue_ingest(course.id)
 
     ttl = get_settings().upload_url_ttl_seconds
     return VideoUploadTicket(

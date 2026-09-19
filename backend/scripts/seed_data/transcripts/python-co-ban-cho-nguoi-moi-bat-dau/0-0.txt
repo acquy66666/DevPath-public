@@ -1,0 +1,15 @@
+Chào các bạn. Bài đầu tiên của khóa học, chúng ta chuẩn bị môi trường: cài Python và cài trình soạn thảo VS Code.
+
+Trước hết là Python. Các bạn vào trang python.org, mục Downloads, tải bản Python 3 mới nhất. Trong khóa này mình dùng Python 3.12, nhưng bản nào từ 3.10 trở lên đều chạy được mọi ví dụ. Đừng tải Python 2: nó đã ngừng được hỗ trợ từ năm 2020.
+
+Trên Windows có một ô rất quan trọng ở màn hình cài đặt đầu tiên: "Add python.exe to PATH". Nhớ đánh dấu ô này trước khi bấm Install Now. Nếu quên, cài xong mở terminal gõ python sẽ không chạy: Windows báo không nhận ra lệnh, hoặc mở ra Microsoft Store, vì hệ điều hành không biết Python nằm ở đâu. Cách sửa nhanh nhất là chạy lại bộ cài, chọn Modify hoặc gỡ ra cài lại, và lần này đánh dấu ô đó.
+
+Cài xong, mở terminal và gõ python --version. Thấy dòng Python 3.12 gì đó là thành công. Trên macOS và Linux, lệnh thường là python3 thay vì python, vì chữ python trơn có thể trỏ tới bản cũ của hệ thống.
+
+Tiếp theo là VS Code, tải ở code.visualstudio.com. Mở VS Code, vào mục Extensions ở thanh bên trái, tìm "Python" và cài extension của Microsoft. Extension này cho ta tô màu cú pháp, gợi ý code, báo lỗi ngay khi gõ, và nút chạy file.
+
+Nếu máy có nhiều bản Python, bấm Ctrl+Shift+P, gõ "Python: Select Interpreter" và chọn đúng bản vừa cài. Đây là lỗi hay gặp: code chạy trong terminal được, nhưng VS Code lại báo không tìm thấy thư viện, vì hai bên đang dùng hai bản Python khác nhau.
+
+Một thói quen mình khuyên tập từ đầu: mỗi dự án một môi trường ảo. Trong thư mục dự án, gõ python -m venv .venv để tạo môi trường ảo tên .venv. Kích hoạt nó trên Windows bằng .venv\Scripts\activate, trên macOS hay Linux bằng source .venv/bin/activate. Khi đã kích hoạt, đầu dòng terminal hiện chữ (.venv), và mọi thư viện cài bằng pip sẽ nằm gọn trong dự án đó, không lẫn sang dự án khác.
+
+Cuối cùng, tạo một file tên hello.py, gõ một dòng print, rồi bấm nút hình tam giác ở góc trên bên phải, hoặc gõ python hello.py trong terminal. Thấy chữ hiện ra là môi trường của bạn đã sẵn sàng. Bài sau chúng ta viết chương trình đầu tiên cho đàng hoàng.

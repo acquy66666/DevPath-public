@@ -1,0 +1,25 @@
+Bài này nói về hai cách làm cho việc gọi hàm linh hoạt hơn: tham số có giá trị mặc định, và đối số truyền theo tên.
+
+Tham số mặc định là tham số được gán sẵn giá trị ngay trong dòng def: def chao(ten, loi_chao="Xin chào"). Gọi chao("An") thì loi_chao nhận giá trị mặc định; gọi chao("An", "Hello") thì giá trị mặc định bị thay. Quy tắc: tham số có mặc định phải đứng SAU các tham số không có mặc định. Viết def f(a=1, b) sẽ bị SyntaxError.
+
+Khi gọi hàm, ngoài cách truyền theo vị trí, ta có thể truyền theo tên, gọi là đối số từ khóa: chao(loi_chao="Hi", ten="Bình"). Truyền theo tên thì thứ tự không quan trọng, và code dễ đọc hơn hẳn khi hàm có nhiều tham số, nhất là tham số kiểu True/False: ve(True, False) không ai hiểu, còn ve(to_mau=True, vien=False) thì tự giải thích. Được trộn hai cách, nhưng đối số theo vị trí phải đứng trước đối số theo tên; viết chao(ten="An", "Hi") sẽ báo SyntaxError: positional argument follows keyword argument.
+
+Giờ là cái bẫy nổi tiếng nhất của Python: dùng danh sách làm giá trị mặc định. Xem hàm này:
+
+def them(mon, gio=[]):
+    gio.append(mon)
+    return gio
+
+Gọi them("táo") được ["táo"]. Gọi tiếp them("cam"), ta tưởng được ["cam"], nhưng thực tế được ["táo", "cam"]. Lý do: giá trị mặc định được tạo ra MỘT LẦN, lúc Python chạy dòng def, chứ không phải mỗi lần gọi hàm. Mọi lần gọi không truyền gio đều dùng chung đúng một danh sách đó, và nó cứ dài dần.
+
+Cách sửa chuẩn là dùng None làm mặc định, rồi tạo danh sách mới bên trong hàm:
+
+def them(mon, gio=None):
+    if gio is None:
+        gio = []
+    gio.append(mon)
+    return gio
+
+Quy tắc bỏ túi: giá trị mặc định chỉ nên là thứ không sửa được, như số, chuỗi, True/False hay None; tuyệt đối không dùng list hay dict.
+
+Cuối cùng, bạn sẽ gặp *args và **kwargs trong code của người khác: *args gom các đối số theo vị trí còn thừa thành một tuple, **kwargs gom các đối số theo tên còn thừa thành một dict. Khóa học này chưa dùng tới chúng, chỉ cần nhận ra khi đọc.

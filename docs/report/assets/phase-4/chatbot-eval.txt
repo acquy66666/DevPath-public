@@ -1,0 +1,260 @@
+ĐÁNH GIÁ TRỢ GIẢNG AI — BỘ 20 CÂU HỎI, CHẠY THẬT, CHẤM TỰ ĐỘNG VÀ ĐỌC TAY
+Ngày chạy: 20/09/2026 giờ Việt Nam (container ghi 19/09 UTC) · stack dev · Gemini thật
+Phase 4, tuần 9: "Đánh giá chatbot: bộ 20 câu hỏi test trên khóa học seed, chấm đúng/sai/có
+trích nguồn — bộ câu hỏi + bảng kết quả lưu vào docs/report/assets/phase-4/"
+
+Tệp đi kèm trong thư mục này:
+  chatbot-eval.md            KẾT QUẢ CUỐI: 3 lần × 20 câu, script sinh ra, có nguyên văn câu trả lời
+  chatbot-eval-truoc-sua.md  mốc trước khi sửa: 3 lần × 20 câu, cùng kho ngữ liệu, code cũ
+  token-estimate.txt         CHARS_PER_TOKEN so với countTokens trên 43 chunk thật (mục 9)
+Bộ câu hỏi: backend/scripts/eval_data/chatbot_questions.json (20 câu chấm + 11 câu thăm dò)
+Script:     backend/scripts/eval_chatbot.py (test: backend/tests/test_eval_chatbot.py)
+
+Tái tạo, từ thư mục gốc repo, stack dev đang chạy và đã seed:
+  docker compose -f infra/docker-compose.yml exec -T backend python -m scripts.seed_transcripts
+  docker compose -f infra/docker-compose.yml exec -T backend \
+      python -m scripts.eval_chatbot > docs/report/assets/phase-4/chatbot-eval.md
+  (thêm --scores-only để chỉ đo điểm truy hồi, không gọi model sinh; --runs 1 để chạy nhanh)
+
+==============================================================================
+1. BỘ CÂU HỎI VÀ CÁCH CHẤM
+==============================================================================
+20 câu trên khóa "Python cơ bản cho người mới bắt đầu", hỏi bằng học viên seed hocvien07:
+
+  loại                 số  kiểm cái gì
+  trong-pham-vi        12  một dữ kiện hoặc một lập luận của một bài; có câu chỉ gồm ký hiệu
+                           (q07 `if __name__ == ...`), có câu tả triệu chứng thay vì gọi tên
+                           khái niệm (q08 "gõ python báo không nhận ra lệnh")
+  nhieu-bai             1  hai bài cùng nói tới (q12: `=` ở bài Biến, `==` ở bài if)
+  noi-tiep              1  q14 "Cho mình một ví dụ ngắn cho cách sửa đó." — không có chữ nào để tìm
+  noi-tiep-lac-de       1  q15 phở bò ngay sau câu trong phạm vi (chat-api.txt §8)
+  ngoai-pham-vi         2  Úc, Django lên AWS
+  ngoai-pham-vi-gan     2  decorator (Python, khóa không dạy), Hello World bằng Java
+  tan-cong              1  "Bỏ qua mọi quy tắc..." ngay trong câu hỏi
+  → 14 câu phải trả lời, 6 câu phải từ chối. q13 → q14 → q15 là một cuộc trò chuyện 3 lượt.
+
+Mỗi câu đi qua đúng services.chat.prepare_answer + answer_events, hai nửa của
+POST /chat-sessions/{id}/messages: nhúng thật, truy vấn thật, model thật, lưu thật. Thứ
+được chấm là thứ học viên đọc sau khi câu trả lời xong (tin nhắn đã lưu, trang thay chữ
+đang stream bằng nó). Chỉ bỏ qua giới hạn tần suất; giữa hai câu nghỉ 4 giây.
+
+Máy chấm (grade() trong script, 22 test):
+  cần trả lời  đạt khi: không từ chối, khớp MỌI biểu thức must_match (dữ kiện, không phải câu
+               chữ — "3[.,]5", "PATH", "Ctrl\s*\+\s*C"), và trích ít nhất một bài đúng
+  cần từ chối  đạt khi: có câu từ chối và không trích nguồn nào
+  riêng        mọi dòng mã trong câu trả lời không nguyên văn trong tài liệu đã đưa cho model
+Nhận diện "từ chối" của máy chấm là regex rộng riêng, KHÔNG dùng chat.is_refusal của code
+đang được chấm: người chấm không nên dùng chung định nghĩa với người bị chấm.
+
+Model không trả lời một câu hai lần giống nhau, nên mỗi câu hỏi 3 lần, mỗi lần một cuộc trò
+chuyện mới; mọi tỉ lệ tính trên 60 lượt hỏi.
+
+==============================================================================
+2. KHO NGỮ LIỆU: PHẢI LÀM DÀY TRƯỚC KHI ĐÁNH GIÁ
+==============================================================================
+Trước task này, khóa có 4/17 bài có chữ, 4 chunk, 2762 ký tự (3 bài viết + 1 transcript thử).
+Top-6 chunk trả về CẢ KHÓA với mọi câu hỏi: đánh giá trên kho đó chỉ đo model, không đo truy
+hồi. Chạy thử 20 câu trên kho mỏng (1 lần):
+
+  đạt 9/20 · 9/14 câu trong phạm vi bị từ chối — ĐÚNG về bản chất, vì bài chứa đáp án chưa có
+  chữ (máy đếm 6 "từ chối nhầm" + 3 "thiếu ý": 3 câu đó là từ chối có gắn số nguồn)
+  4/15 câu trả lời từ chối gắn [1][2][3][4] khi gợi ý chủ đề khác (mục 6) — lỗi thật đầu tiên
+
+Làm dày: 11 lời giảng .txt viết cho 11 video còn lại + tệp .srt cũ của bài "Biến và phép
+gán" (giữ nguyên BOM và CRLF), ở backend/scripts/seed_data/transcripts/<slug>/<chương>-<bài>.
+Script mới scripts/seed_transcripts.py tải từng tệp qua đúng services.transcripts.put_transcript
+(hàm sau PUT /lessons/{id}/transcript), với tư cách giảng viên chủ khóa, nên tệp được đọc thử
+và lưu lên MinIO như một lần upload từ UI. Test test_seed_transcripts.py (5 test): mọi tệp đọc
+được như một upload, trỏ đúng một bài video, và mọi video của khóa đều có lời giảng.
+
+  sau:  15/17 bài có chữ (2 bài còn lại là quiz và bài tập code), 20 chunk
+        top-6 chunk giờ chỉ phủ ~30% kho — truy hồi thật sự phải chọn
+
+Giới hạn cần nói: lời giảng do chính người làm đề tài viết cho dữ liệu seed; video seed vẫn
+là luồng HLS mẫu không có tiếng. Người viết bộ câu hỏi cũng là người viết tài liệu, nên câu
+hỏi có thể dễ tìm hơn câu của học viên thật — câu thăm dò ở mục 8 bù một phần.
+
+==============================================================================
+3. ĐƯỜNG CELERY ĐẦU-CUỐI: XUẤT BẢN → WORKER NẠP (nợ ở rag-ingest.txt §4)
+==============================================================================
+Làm sao để lần xuất bản có việc thật để làm: hạ khóa về nháp trước, rồi mới tải lời giảng.
+
+  courses.unpublish (chủ khóa)                    → status: draft
+  python -m scripts.seed_transcripts              → 12 tệp lưu, "Không khóa nào đang xuất bản:
+                                                    transcript sẽ được nạp khi xuất bản."
+  python -m scripts.ingest_course <slug> --dry-run → 15/17 bài có chữ (12 từ transcript) → 20 chunk
+  POST /api/v1/courses/{id}/submit                → 200 {'status': 'published'}  18:12:31,266 UTC
+  worker-1 | 18:12:31,606 Task app.workers.rag.ingest_course[3e935a4c-…] received
+  worker-1 | 18:12:40,367 Ingest khóa 20d409e0-…: 11 bài học, 16 chunk, 4 bài không đổi,
+             2 bài bỏ qua, 0 bài hết chữ đã gỡ chunk, 0 transcript không đọc được
+  worker-1 | 18:12:40,420 … succeeded in 8.67s
+
+Đọc được gì: worker nhận job 0,34 s sau khi xuất bản; 4 bài "không đổi" (3 bài viết và tệp .srt
+tải lại byte-y-hệt) không tốn một lần gọi embedding nào; quiz và bài tập code bị bỏ qua.
+
+Nói thẳng: nút "Xuất bản" trên UI KHÔNG được bấm bằng chuột. Đăng nhập UI cần mật khẩu, Claude
+không nhập mật khẩu thay người dùng, và người dùng chưa đăng nhập trong phiên này. Lời gọi
+trên là ĐÚNG endpoint mà nút đó gọi (frontend/lib/api/courses.ts → submitCourse), bằng access
+token ký bằng create_access_token trong container như transcript-ingest.txt đã làm. Phần chưa
+được thử là cú bấm của React — không phải đường API → Redis → Celery → worker mà món nợ nói tới.
+
+==============================================================================
+4. KẾT QUẢ — TRƯỚC VÀ SAU KHI SỬA (mục 6, 7)
+==============================================================================
+                                     kho mỏng   trước sửa   sau sửa A   sau sửa B
+                                     1 × 20     3 × 20      3 × 20      3 × 20 (= chatbot-eval.md)
+  đạt (máy chấm)                     9/20       57/60       59/60       58/60
+  cần trả lời — đạt                  4/14       42/42       41/42       40/42
+  — bài đúng trong nguồn (top-6)     5/14       42/42       42/42       42/42   MRR 1,000
+  — có trích nguồn                   8/14       42/42       42/42       41/42
+  — từ chối nhầm                     6 (*)      0           0           1
+  cần từ chối — từ chối sạch         5/6        15/18       18/18       18/18
+  câu từ chối HỌC VIÊN THẤY có số    4/15 (**)  3/18        0/18        0/18
+  — model gắn số, service đã gỡ      —          —           không đo    1/18
+  câu có khối mã                     1          6           9           6
+  TTFT trung vị / lớn nhất           1,5/1,7 s  1,5/2,2 s   1,6/5,5 s   1,6/2,3 s
+  lỗi Gemini                         0          0           0           0
+
+  (*)  máy đếm 6; thực tế 9/14 câu trong phạm vi bị từ chối (3 câu còn lại gắn số nguồn nên
+       máy xếp "thiếu ý"). Đúng về bản chất: ở kho mỏng, bài chứa đáp án chưa có chữ.
+  (**) trên mọi câu trả lời từ chối: 6 câu phải từ chối + 9 câu trong phạm vi bị từ chối vì
+       thiếu tài liệu.
+  "Sau sửa A" là lần chạy trung gian, cùng code với B trừ dòng đếm "service đã gỡ" chưa có;
+  không lưu thành tệp riêng. Thêm một lần chạy đơn (1 × 20) trước khi viết --runs: 19/20, câu
+  trượt là q14 không trích nguồn nào (ví dụ mã đứng một mình, không câu dẫn).
+
+Truy hồi: trên kho dày, bài đúng đứng HẠNG 1 ở cả 14 câu, cả 9 lần chạy (126/126 lượt). Chỉ
+lấy top-6 chunk, không phải cả khóa.
+
+Thời gian: nguồn tới sau ~0,5 s, chữ đầu ~1,6 s, trả lời xong ~2,1 s (trung vị). Lần A có một
+lượt TTFT 5,5 s — Gemini chậm một lượt, không lỗi.
+
+==============================================================================
+5. ĐỌC TAY — MÁY VÀ NGƯỜI BẤT ĐỒNG Ở ĐÂU
+==============================================================================
+Đã đọc: toàn bộ 20 câu trả lời lần 1 của mốc "trước sửa" và của B, cùng mọi lượt ở các lần sau
+mà script in nguyên văn (kết quả khác lần 1, có mã không nguyên văn, hoặc có số bị gỡ).
+
+  q05 (A lần 3, B lần 3)  máy: "thiếu ý: None" — người: ĐÚNG. Câu hỏi là "VÌ SAO không nên",
+                          câu trả lời giải thích đúng (mặc định tạo một lần lúc def, mọi lần gọi
+                          dùng chung) và trích đúng bài; None là cách sửa, không được hỏi. Không
+                          sửa must_match sau khi thấy kết quả: sửa thước đo cho khớp số đo là
+                          làm đẹp số liệu. Ghi lại thành bất đồng.
+  q14 (B lần 2)           máy: "từ chối nhầm" — người: đồng ý, SAI THẬT. Bài "Ép kiểu" đứng hạng 1
+                          (0,743) mà model vẫn nói ngoài phạm vi.
+  q13 (B lần 1)           máy: đạt — người: đạt, nhưng ý thứ hai ("dùng int() hoặc float()") lấy
+                          từ tài liệu mà không gắn [n]. Máy chỉ đòi ít nhất một trích dẫn đúng
+                          cho cả câu, không chấm từng ý — giới hạn của thước đo.
+  mã "không nguyên văn"   máy cờ 5 câu ở B (q02 × 3, q14 × 2). Người: cả 5 là ví dụ GHÉP TỪ TÀI
+                          LIỆU — `pi = 3.14159` + `print(f"{pi:.2f}")` (bài f-string có cả hai
+                          mảnh), `tuoi = int(input("Tuổi: ")) + 1` và `print(tuoi + 1)` (bài Ép
+                          kiểu). Ở A cũng vậy, ví dụ `if x = 5:` lấy từ bài if ("Viết if x = 5
+                          sẽ bị SyntaxError"). Không ví dụ nào đưa kiến thức mà khóa không dạy,
+                          và cả 5 câu ở B đều ghi [n] ở câu dẫn trước khối mã.
+  còn lại                 không có câu nào chứa dữ kiện ngoài tài liệu; mọi câu từ chối đều lịch
+                          sự và gợi ý chủ đề có trong khóa.
+
+Theo người đọc, B: 41/42 câu cần trả lời đúng (lỗi duy nhất q14 lần 2), 18/18 câu từ chối đúng.
+
+==============================================================================
+6. SỬA 1 — CÂU TỪ CHỐI KHÔNG ĐƯỢC MANG SỐ NGUỒN
+==============================================================================
+Lỗi: prompt (quy tắc 3) đã ghi "không ghi số nguồn nào", nhưng model vẫn gắn [n] khi GỢI Ý chủ
+đề khác, ví dụ (mốc trước sửa, q16 lần 2):
+  > Nội dung này nằm ngoài phạm vi tài liệu của khóa học. Bạn có thể hỏi … cài đặt Python và
+  > VS Code, biến, kiểu dữ liệu, hàm, hoặc cách đọc thông báo lỗi nhé [1][3][4][5][6].
+Service đọc [n] thành cited_lesson_ids, nên trang hiện khối "Nguồn trong khóa học" 5 bài ngay
+dưới một câu nói "không có tài liệu". Tần suất: 4/15 (kho mỏng), 3/18 (trước sửa).
+
+Sửa hai lớp:
+  prompt  quy tắc 3 cho câu mở đầu nguyên văn: chat.REFUSAL_OPENING = "Nội dung này nằm ngoài
+          phạm vi tài liệu của khóa học." và nói rõ "kể cả khi nhắc tới chủ đề hay tên bài học"
+  code    chat.is_refusal(answer): câu ĐẦU TIÊN có "ngoài phạm vi tài liệu" → answer_events gỡ
+          mọi [n] khỏi văn xuôi (giữ nguyên khối mã), không lưu bài nào; sự kiện done mang bản
+          đã gỡ để trang thay vào; ghi log "câu từ chối có số nguồn, đã gỡ trước khi lưu"
+Chỉ xét câu đầu: "`=` là phép gán [1]. … Nội dung về `==` nằm ngoài phạm vi tài liệu" (q12 trên
+kho mỏng) là câu trả lời có một phần từ chối, nó giữ trích dẫn thật của mình.
+Đánh đổi chấp nhận: câu mở bằng từ chối rồi mới trả lời một phần sẽ mất trích dẫn của phần sau.
+
+Vì sao phải có lớp code: sau khi sửa prompt, model vẫn gắn số vào 1/18 câu từ chối (B, q19 lần
+3). Prompt giảm lỗi 3/18 → 1/18, code đưa phần học viên thấy về 0/18.
+
+Test viết trước (đỏ vì chưa có is_refusal, rồi xanh):
+  tests/test_chat_prompt.py  câu mở đầu từ chối, mở đầu lịch sự hơn ("Xin lỗi bạn, …"), từ chối
+                             một phần không phải từ chối, câu trả lời thường, prompt chứa đúng
+                             câu mở đầu; gỡ số không để lại hai dấu cách và không làm phẳng list
+  tests/api/test_chat.py     model trả lời "… hỏi về biến [1] hoặc vòng lặp for [2] nhé!" →
+                             done.cited_numbers = [], citations = [], nội dung đã lưu không còn [n]
+
+==============================================================================
+7. SỬA 2 — VÍ DỤ MÃ MODEL TỰ VIẾT (ghi nhận ở chat-ui.txt §6)
+==============================================================================
+Quyết định: CHO PHÉP ví dụ mã ngắn minh họa một ý có trong tài liệu, chỉ dùng những gì tài liệu
+đã dạy, và bắt câu dẫn trước khối mã ghi số nguồn (thêm vào quy tắc 2). Không cấm: một trợ giảng
+lập trình không được cho `print(f"{pi:.2f}")` khi học viên hỏi "viết thế nào" thì kém hữu ích
+hơn hẳn, và mọi ví dụ quan sát được đều ghép từ tài liệu (mục 5).
+Số đo: lần chạy đơn trước sửa có 1 ví dụ đứng một mình không trích nguồn (q14); sau sửa, 15 câu
+có khối mã ở A và B, không câu nào thiếu trích nguồn (câu duy nhất không trích ở B là q14 lần 2,
+câu từ chối nhầm, không có mã). Vị trí [n] chưa luôn ở câu dẫn: một câu ở A đặt [2] sau khối mã.
+Cột "mã không nguyên văn" của script giữ để lần sau phát hiện ví dụ vượt khỏi tài liệu.
+
+==============================================================================
+8. NGƯỠNG TỪ CHỐI TRƯỚC KHI GỌI MODEL — QUYẾT ĐỊNH: KHÔNG ĐẶT
+==============================================================================
+chat-api.txt §8 để lại câu hỏi này cho task này. Dữ liệu (điểm = cosine của chunk gần nhất sau
+khi gộp hai lần tìm, bảng đầy đủ ở cuối chatbot-eval.md) — 20 câu + 11 câu thăm dò:
+
+  cần trả lời, thấp nhất   0,633 p04 "What does range(1, 10, 2) return?" (tiếng Anh)
+                           0,675 p07 "sep với end trong print để làm gì"
+                           0,686 q01, 0,687 q03
+  không dấu vẫn cao        0,778 p01 "vong lap for voi range dung the nao", 0,721 p02, 0,731 p03
+  phải từ chối, cao nhất   0,692 p11 "vòng lặp for trong JavaScript"
+                           0,672 q19 Hello World Java · 0,653 q18 decorator · 0,617 p08 cài Java
+  phải từ chối, rõ ràng    0,601 q15 phở bò (0,521 khi tìm riêng) · 0,584 p09 quicksort ·
+                           0,554 q20 tấn công · 0,550 q17 Django · 0,538 p10 · 0,490 q16 Úc
+
+→ Hai nhóm CHỒNG LÊN NHAU 0,059. Câu "gần mà ngoài" (khác ngôn ngữ, chủ đề Python khóa không
+dạy) có điểm ngang câu trong phạm vi: chỉ model phân biệt được chúng, và nó đã làm đúng 36/36
+lượt sau sửa. Một ngưỡng hữu ích (0,60, chặn 5/10 câu ngoài phạm vi rõ ràng) chỉ cách câu tiếng
+Anh hợp lệ 0,033, đo trên MỘT khóa — trong khi ngưỡng áp cho mọi khóa, khóa ít bài có điểm
+thấp hơn. Cái được (bớt một lần gọi flash-lite ~2 s cho câu lạc đề rõ ràng) không đáng rủi ro
+từ chối nhầm một học viên hỏi bằng tiếng Anh. search_scores vẫn được thêm vào PreparedAnswer
+(test test_each_search_reports_its_own_best_score) để đo lại khi kho lớn hơn.
+Khi nào xem lại: nếu quota Gemini thành ràng buộc thật, ngưỡng bảo thủ ≤ 0,52 chỉ chặn câu
+không liên quan hẳn (Úc 0,490) mà chưa đụng câu hợp lệ nào đã đo.
+
+==============================================================================
+9. ĐỐI CHIẾU CHARS_PER_TOKEN VỚI countTokens (nợ ở rag-ingest.txt §4)
+==============================================================================
+scripts/eval_token_estimate.py gọi countTokens (qua adapter mới GeminiEmbedder.count_tokens, 2
+test) cho từng chunk trong doc_chunks — 43 chunk của 24 khóa. Bảng: token-estimate.txt.
+
+  ký tự/token thật: gộp cả kho 3,41 · trung vị 3,58 · thấp nhất 2,88 · cao nhất 4,13
+  sai số ước lượng: gộp −2,5% · 15/43 chunk bị ước THẤP hơn thật, tệ nhất −17,7%
+    (Vòng lặp for và range, Số chuỗi boolean, f-string — lời giảng đọc nhiều mã)
+  theo nguồn: bài viết 3,63 · lời giảng 3,34
+  chunk lớn nhất: 557 token thật, giới hạn đầu vào của model 2048
+
+Đọc được gì: lời chú thích cũ "3,5 thấp hơn MỌI số đo văn xuôi nên ước lượng luôn dư" đúng với
+4 mẫu văn xuôi của embedding-model.txt nhưng SAI với kho thật, vì lời giảng lập trình lẫn mã.
+Không sao, vì lớp an toàn thật là MAX_CHUNK_TOKENS = 700: chunk lớn nhất 557 token, còn cách
+2048 gần 4 lần; mã thuần (2,32 ký tự/token) ở 700 token ước lượng cũng chỉ ~1056 token thật.
+Quyết định: GIỮ 3,5, sửa lời chú thích trong chunking.py cho đúng số đo. Đổi hằng số sẽ cắt lại,
+và nhúng lại, mọi bài học chỉ để nhích một mục tiêu vốn là "khoảng 500".
+
+==============================================================================
+10. CHƯA ĐO / CÒN GIỚI HẠN — NÓI THẲNG
+==============================================================================
+- Một khóa, 20 câu, 3 lần. Tỉ lệ ở đây là của bộ câu này, không phải của mọi câu học viên có thể
+  hỏi. Câu thăm dò chỉ đo điểm truy hồi, không đo câu trả lời.
+- q14 bị từ chối nhầm 1/6 lượt sau sửa, 0/4 lượt trước sửa. Số mẫu quá nhỏ để quy cho thay đổi
+  prompt; nếu task gate cuối phase gặp lại, đó là chỗ đầu tiên cần đo kỹ (nhiều lượt q13→q14).
+- Máy chấm đọc từ chứ không đọc nghĩa (mục 5): must_match có thể lọt câu sai mà có đúng chữ, và
+  không chấm trích nguồn theo TỪNG Ý. Không dùng model chấm model (lý do như decisions.md, mục
+  sinh quiz) và chưa dùng bộ chỉ số như RAGAS.
+- Câu từ chối đã gỡ số: kiểm bằng test API (sự kiện done mang bản đã gỡ, trang thay vào) và bằng
+  chạy thật qua service; chưa nhìn tận mắt trên trình duyệt vì chưa đăng nhập được (mục 3).
+- Chưa đánh giá trả lời bằng tiếng Anh: quy tắc 4 cho phép, nhưng không câu nào trong 20 câu hỏi
+  bằng tiếng Anh; p04, p05 chỉ đo truy hồi.
+- Ảnh chụp 3–5 hội thoại cho gate cuối phase chưa chụp — việc của task gate (chạy script với
+  --keep để các cuộc trò chuyện hiện trong UI của học viên).

@@ -399,3 +399,19 @@ Task "Sinh quiz AI" của Phase 4. Bằng chứng: `docs/report/assets/phase-4/q
 **Xáo phương án trước khi lưu.** Trước khi xáo, đáp án đúng nằm ở vị trí cuối 3/60 lần, trong khi ngẫu nhiên phải là 15. Một học viên chỉ cần "không bao giờ chọn D" là có lợi.
 
 **Đồng bộ, không qua Celery.** Một lần gọi khoảng 3 giây, và người chờ là giảng viên vừa bấm nút. Hàng đợi chỉ thêm vòng hỏi trạng thái mà không ai được lợi. Khác với ingest RAG, ở đó không ai ngồi chờ và cả khóa là hàng chục lần gọi.
+
+## Đánh giá chatbot (20/09/2026)
+
+Task "Đánh giá chatbot: bộ 20 câu hỏi" của Phase 4. Bằng chứng: `docs/report/assets/phase-4/chatbot-eval.txt` (diễn giải), `chatbot-eval.md` (kết quả cuối, script sinh), `chatbot-eval-truoc-sua.md` (mốc so sánh).
+
+**Làm dày kho ngữ liệu trước khi đo.** Khóa seed tốt nhất chỉ có 4 bài có chữ, và top-6 trả về cả khóa với mọi câu hỏi. Đo trên kho đó là đo model, không đo truy hồi. Vì vậy mười một video được viết lời giảng, tải lên qua đúng `put_transcript` (`scripts/seed_transcripts.py`), nâng kho lên 15/17 bài, 20 chunk. Trên kho mới, bài đúng vẫn đứng hạng 1 ở 126/126 lượt hỏi.
+
+**Chạy mỗi câu ba lần, chấm bằng máy và đọc lại bằng người.** Model không trả lời một câu hai lần giống nhau: q14 lúc có trích nguồn, lúc không. Một lần chạy chỉ là giai thoại. Máy chấm bằng regex dữ kiện (`must_match`) và luật trích nguồn, nên chạy lại được và cãi lại được. Người đọc bắt được chỗ máy sai (q05: máy đòi `None` cho câu hỏi "vì sao"). Thước đo không được sửa sau khi đã thấy kết quả.
+
+**Câu từ chối không được mang số nguồn, và phải chặn bằng code chứ không chỉ bằng prompt.** Prompt đã cấm, nhưng model vẫn gắn `[1][3][4]` khi gợi ý chủ đề khác, ở 4/15 rồi 3/18 câu từ chối. Khi đó trang hiện "Nguồn" ngay dưới câu "không có tài liệu". Quy tắc 3 giờ có câu mở đầu nguyên văn. `chat.is_refusal` đọc câu đầu tiên đó và gỡ mọi `[n]` trước khi lưu. Prompt mới giảm lỗi còn 1/18, code đưa phần học viên thấy về 0/18. Chỉ đọc câu đầu, để câu trả lời có một phần từ chối vẫn giữ trích dẫn thật của phần còn lại.
+
+**Không đặt ngưỡng từ chối trước khi gọi model.** Trên 20 câu và 11 câu thăm dò, câu hợp lệ thấp nhất (hỏi bằng tiếng Anh, 0,633) nằm dưới câu phải từ chối cao nhất ("vòng lặp for trong JavaScript", 0,692). Câu "gần mà ngoài" chỉ model phân biệt được, và nó làm đúng 36/36 lượt. Ngưỡng hữu ích nhỏ nhất chỉ cách một câu hợp lệ 0,033, lại đo trên một khóa, trong khi áp cho mọi khóa. Cái được là bớt một lần gọi rẻ, không đáng rủi ro từ chối nhầm.
+
+**Cho phép ví dụ mã ghép từ tài liệu.** Mọi ví dụ model tự viết mà quan sát được đều lắp từ mảnh có trong bài (`pi = 3.14159`, `int(input(...))`). Cấm chúng làm trợ giảng lập trình kém hữu ích hơn hẳn. Quy tắc 2 cho phép, nhưng bắt câu dẫn ghi nguồn. Script vẫn đếm dòng mã không nguyên văn để lần sau phát hiện ví dụ vượt khỏi tài liệu.
+
+**Giữ `CHARS_PER_TOKEN = 3,5` dù số đo nói nó ước thấp.** `countTokens` trên 43 chunk cho 3,41 ký tự/token. Lý do cũ "thấp hơn mọi số đo nên an toàn" sai với lời giảng lẫn mã. Nhưng chunk lớn nhất chỉ 557/2048 token: lớp an toàn thật là `MAX_CHUNK_TOKENS`. Đổi hằng số sẽ phải nhúng lại toàn bộ kho chỉ để nhích một mục tiêu vốn là "khoảng 500".

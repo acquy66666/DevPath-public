@@ -236,6 +236,31 @@ async def test_several_questions_go_in_one_call_as_questions() -> None:
     assert math.isclose(math.sqrt(sum(v * v for v in vectors[0])), 1.0, rel_tol=1e-9)
 
 
+async def test_counting_tokens_asks_the_embedding_model_itself() -> None:
+    """The chunker budgets in this model's tokens, so it is this model's
+    tokenizer that is asked. Used to check `CHARS_PER_TOKEN` against the real
+    chunks (scripts/eval_token_estimate.py), never on the ingest path."""
+    import json
+
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append((request.url.path, json.loads(request.content)))
+        return httpx.Response(200, json={"totalTokens": 207})
+
+    assert await embedder(handler).count_tokens("Biến và phép gán") == 207
+
+    path, body = calls[0]
+    assert path.endswith(f"/models/{MODEL}:countTokens")
+    assert body == {"contents": [{"parts": [{"text": "Biến và phép gán"}]}]}
+
+
+async def test_counting_tokens_is_retried_like_any_call() -> None:
+    answers = iter([httpx.Response(429), httpx.Response(200, json={"totalTokens": 3})])
+
+    assert await embedder(lambda request: next(answers)).count_tokens("a b c") == 3
+
+
 async def test_embedding_nothing_calls_nobody() -> None:
     """A video lesson with no transcript chunks to an empty list, and an empty
     request to Gemini is a wasted round trip that also counts against quota."""

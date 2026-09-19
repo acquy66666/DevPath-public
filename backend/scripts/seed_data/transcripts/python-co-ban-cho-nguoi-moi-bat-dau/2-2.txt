@@ -1,0 +1,19 @@
+Vòng lặp while lặp lại chừng nào điều kiện còn đúng. Điều kiện được kiểm tra TRƯỚC mỗi vòng, nên nếu ngay từ đầu điều kiện đã sai, thân vòng lặp không chạy lần nào.
+
+Ví dụ đếm: dem = 1, rồi while dem <= 5: print(dem) và dem += 1. Dòng dem += 1 là thứ đưa vòng lặp tới điểm dừng. Quên nó, dem mãi mãi bằng 1, điều kiện mãi mãi đúng, và ta có một vòng lặp vô hạn.
+
+Vòng lặp vô hạn là lỗi người mới gặp nhiều nhất với while. Dấu hiệu là chương trình chạy mãi không kết thúc, hoặc in ra liên tục không ngừng. Để dừng nó, bấm Ctrl+C trong terminal; Python sẽ dừng lại và báo KeyboardInterrupt. Sau đó kiểm tra lại: biến trong điều kiện có thật sự được thay đổi bên trong vòng lặp không, và có thay đổi theo hướng tiến về điểm dừng không.
+
+Khi nào dùng while thay vì for? Khi bạn KHÔNG biết trước sẽ lặp bao nhiêu lần. Ví dụ điển hình là hỏi người dùng cho đến khi họ nhập đúng. Mẫu viết thường gặp là while True kết hợp break:
+
+while True:
+    tra_loi = input("Nhập một số dương: ")
+    if tra_loi.isdigit() and int(tra_loi) > 0:
+        break
+    print("Chưa đúng, nhập lại nhé.")
+
+while True tự nó là vòng lặp vô hạn một cách có chủ ý; lối thoát duy nhất là break, được gọi khi dữ liệu đã hợp lệ. Cách viết này rõ ràng hơn việc gán sẵn một giá trị giả cho biến chỉ để lọt được vào vòng lặp đầu tiên.
+
+Một ví dụ khác không biết trước số vòng: đếm xem phải nhân đôi bao nhiêu lần thì số 1 vượt qua 1000. so = 1, lan = 0, rồi while so <= 1000: so *= 2 và lan += 1. Kết quả lan bằng 10, vì 2 mũ 10 bằng 1024.
+
+Tóm lại: biết trước đi qua cái gì thì dùng for; chỉ biết điều kiện dừng thì dùng while, và luôn tự hỏi dòng nào trong thân vòng lặp đưa nó tới chỗ dừng.

@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_stats.py, bench_grading.py, lock.sh
+scripts/                   seed.py, seed_interactions.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_stats.py, bench_grading.py, eval_chatbot.py, eval_token_estimate.py, lock.sh
 ```
 
 ## Nguyên tắc
@@ -370,6 +370,14 @@ docker compose exec backend python -m scripts.ingest_course --all
 docker compose exec backend python -m scripts.ingest_course <slug-hoặc-id>
 ```
 
+**Lời giảng cho khóa seed** (từ 20/09/2026). Video seed là luồng HLS mẫu không có tiếng, nên nếu chỉ có vài bài viết thì chatbot gần như không có gì để tìm. `scripts/seed_transcripts.py` gắn lời giảng viết sẵn (`scripts/seed_data/transcripts/<slug>/<chương>-<bài>.srt|txt`) cho video của khóa Python, qua đúng `put_transcript` với tư cách giảng viên chủ khóa. Chạy sau `scripts.seed`, **trong container** (cần MinIO). Khóa đang xuất bản thì được xếp một job ingest cho cả khóa:
+
+```bash
+docker compose exec backend python -m scripts.seed_transcripts
+```
+
+Không chạy bước này thì số đo của đánh giá chatbot (xem "Trợ giảng AI" bên dưới) không tái tạo được: khóa chỉ còn 4/17 bài có chữ thay vì 15/17.
+
 Chạy lại **không tốn quota**: trước khi nhúng, mỗi bài học được so với các dòng đang có (cùng số chunk, cùng nội dung, cùng tên model thì bỏ qua). Đổi `GEMINI_EMBEDDING_MODEL` là lý do chính đáng để nhúng lại toàn bộ — hai model có thể cùng 768 chiều mà đặt cùng một câu ở hai chỗ khác hẳn nhau.
 
 Chưa có key thì job ghi log cảnh báo rồi kết thúc êm, không làm task đỏ; phần còn lại của nền tảng chạy bình thường.
@@ -416,6 +424,17 @@ Câu trả lời chỉ dựa trên tài liệu, ghi `[n]` sau mỗi ý, trong đ
 | `GEMINI_CHAT_THINKING_LEVEL` | `minimal` | Mức "suy nghĩ" của model họ 3. Model họ 2.5 thì để trống, vì chúng nhận budget chứ không nhận level. Token suy nghĩ bị trừ vào giới hạn đầu ra |
 
 Bằng chứng chạy thật: chọn model (TTFT 1,3 s so với 6 s và 503/429 ở các model khác), luồng SSE qua HTTP, hạ khóa về nháp mà truy vấn trả 0 dòng, và lỗi 503 **giữa chừng** mà Gemini gửi dưới dạng JSON trần sau khi đã stream một phần. Tất cả ở [chat-api.txt](../docs/report/assets/phase-4/chat-api.txt).
+
+**Câu từ chối không bao giờ được lưu kèm số nguồn** (từ 20/09/2026). Quy tắc 3 của system prompt cho câu mở đầu nguyên văn (`REFUSAL_OPENING`: "Nội dung này nằm ngoài phạm vi tài liệu của khóa học."). Nếu câu đầu tiên của câu trả lời là câu đó, `is_refusal` coi đây là câu từ chối: service gỡ mọi `[n]` rồi mới lưu, và không lưu bài nào vào `cited_lesson_ids`. Sự kiện `done` mang bản đã gỡ, và trang thay chữ đang stream bằng bản này. Lý do: prompt đã cấm, nhưng model vẫn gắn `[1][3][4]` khi gợi ý chủ đề khác (3/18 câu từ chối), nên trang hiện "Nguồn" ngay dưới câu "không có tài liệu". Khi service phải gỡ, log ghi một dòng. **Không có ngưỡng điểm** để từ chối trước khi gọi model: câu hợp lệ thấp nhất đo được (0,633, hỏi bằng tiếng Anh) còn thấp hơn câu phải từ chối cao nhất (0,692).
+
+**Đánh giá** bằng bộ 20 câu (`scripts/eval_data/chatbot_questions.json`), mỗi câu hỏi 3 lần qua đúng `prepare_answer`/`answer_events`, chấm bằng máy và in nguyên văn để đọc lại:
+
+```bash
+docker compose -f infra/docker-compose.yml exec -T backend python -m scripts.eval_chatbot > docs/report/assets/phase-4/chatbot-eval.md   # từ thư mục gốc repo
+docker compose exec backend python -m scripts.eval_chatbot --scores-only   # chỉ điểm truy hồi, không gọi model sinh
+```
+
+Kết quả, cách chấm và những chỗ máy chấm sai: [chatbot-eval.txt](../docs/report/assets/phase-4/chatbot-eval.txt).
 
 ### Sinh quiz bằng AI
 

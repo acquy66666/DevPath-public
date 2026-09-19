@@ -219,6 +219,16 @@ class GeminiEmbedder:
         )
         return _normalise(data["embedding"]["values"], model=self._model)
 
+    async def count_tokens(self, text: str) -> int:
+        """What `text` really costs in this model's tokens.
+
+        Not on the ingest path -- one network call per chunk would be slower
+        than the embedding it budgets for, which is why `chunking.py` estimates
+        instead. This is how that estimate is checked.
+        """
+        data = await self._post("countTokens", {"contents": [{"parts": [{"text": text}]}]})
+        return int(data["totalTokens"])
+
 
 def build_embedder(
     *,

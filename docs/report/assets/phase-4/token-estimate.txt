@@ -1,0 +1,56 @@
+ƯỚC LƯỢNG TOKEN CỦA CHUNKER SO VỚI countTokens CỦA GEMINI
+Ngày chạy: 19/09/2026 18:13 UTC (20/09 giờ Việt Nam) · model: gemini-embedding-001 · CHARS_PER_TOKEN = 3,5 · MAX_CHUNK_TOKENS = 700
+Tái tạo: docker compose exec backend python -m scripts.eval_token_estimate
+
+khóa                     bài                                nguồn       #  ký tự   ước  thật ký tự/tok   sai số
+cau-truc-du-lieu-va-giai Đo thời gian chạy thật bằng timeit article     0    677   193   206      3,29    -6.3%
+docker-va-docker-compose Khóa học này dạy gì                article     0    201    57    49      4,10   +16.3%
+do-phuc-tap-va-toi-uu-ma Khóa học này dạy gì                article     0    170    49    50      3,40    -2.0%
+do-thi-va-cac-thuat-toan Khóa học này dạy gì                article     0    184    53    52      3,54    +1.9%
+he-dieu-hanh-tien-trinh- Khóa học này dạy gì                article     0    193    55    54      3,57    +1.9%
+html-css-hien-dai-flexbo Khóa học này dạy gì                article     0    173    49    46      3,76    +6.5%
+javascript-hien-dai-es6- Form và kiểm tra dữ liệu phía clie article     0    744   213   194      3,84    +9.8%
+kiem-thu-backend-voi-pyt Khóa học này dạy gì                article     0    187    53    52      3,60    +1.9%
+luyen-phong-van-thuat-to Khóa học này dạy gì                article     0    194    55    51      3,80    +7.8%
+nextjs-render-phia-may-c Khóa học này dạy gì                article     0    190    54    46      4,13   +17.4%
+nhap-mon-hoc-may-voi-sci Khóa học này dạy gì                article     0    189    54    51      3,71    +5.9%
+pandas-va-numpy-cho-xu-l Khóa học này dạy gì                article     0    178    51    48      3,71    +6.2%
+postgresql-cho-lap-trinh Khóa học này dạy gì                article     0    204    58    53      3,85    +9.4%
+python-co-ban-cho-nguoi- Biến và phép gán                   transcript  0    725   207   208      3,49    -0.5%
+python-co-ban-cho-nguoi- break, continue và vòng lặp lồng n transcript  0   1470   420   431      3,41    -2.6%
+python-co-ban-cho-nguoi- break, continue và vòng lặp lồng n transcript  1    607   173   162      3,75    +6.8%
+python-co-ban-cho-nguoi- Cài đặt Python và VS Code          transcript  0   1471   420   407      3,61    +3.2%
+python-co-ban-cho-nguoi- Cài đặt Python và VS Code          transcript  1    896   256   243      3,69    +5.3%
+python-co-ban-cho-nguoi- Câu lệnh if / elif / else          transcript  0   1695   484   501      3,38    -3.4%
+python-co-ban-cho-nguoi- Chia chương trình thành nhiều file transcript  0   1656   473   453      3,66    +4.4%
+python-co-ban-cho-nguoi- Chia chương trình thành nhiều file transcript  1    588   168   165      3,56    +1.8%
+python-co-ban-cho-nguoi- Chương trình đầu tiên: Hello, Worl transcript  0   1681   480   472      3,56    +1.7%
+python-co-ban-cho-nguoi- Định nghĩa hàm, tham số, giá trị t transcript  0   1590   454   479      3,32    -5.2%
+python-co-ban-cho-nguoi- Đọc hiểu thông báo lỗi             article     0    752   215   210      3,58    +2.4%
+python-co-ban-cho-nguoi- Ép kiểu và những cái bẫy quen thuộ article     0    619   177   206      3,00   -14.1%
+python-co-ban-cho-nguoi- f-string: ghép chuỗi cho người đọc transcript  0   1650   471   557      2,96   -15.4%
+python-co-ban-cho-nguoi- Phạm vi biến: local, global và vì  article     0    666   190   183      3,64    +3.8%
+python-co-ban-cho-nguoi- Số, chuỗi và boolean               transcript  0   1507   431   520      2,90   -17.1%
+python-co-ban-cho-nguoi- Số, chuỗi và boolean               transcript  1    490   140   141      3,48    -0.7%
+python-co-ban-cho-nguoi- Tham số mặc định và tham số từ khó transcript  0   1721   492   501      3,44    -1.8%
+python-co-ban-cho-nguoi- Tham số mặc định và tham số từ khó transcript  1    457   131   131      3,49    +0.0%
+python-co-ban-cho-nguoi- Vòng lặp for và range              transcript  0   1581   452   549      2,88   -17.7%
+python-co-ban-cho-nguoi- Vòng lặp while và điều kiện dừng   transcript  0   1669   477   506      3,30    -5.7%
+python-nang-cao-decorato Khóa học này dạy gì                article     0    188    54    52      3,62    +3.8%
+quy-hoach-dong-qua-20-ba Khóa học này dạy gì                article     0    172    49    50      3,44    -2.0%
+react-tu-so-0-component- Khóa học này dạy gì                article     0    213    61    54      3,94   +13.0%
+redis-cache-hang-doi-va- Khóa học này dạy gì                article     0    198    57    54      3,67    +5.6%
+tailwind-css-trong-du-an Khóa học này dạy gì                article     0    198    57    49      4,04   +16.3%
+thiet-ke-rest-api-va-tai Khóa học này dạy gì                article     0    204    58    54      3,78    +7.4%
+truc-quan-hoa-du-lieu-vo Khóa học này dạy gì                article     0    176    50    50      3,52    +0.0%
+tu-dong-hoa-cong-viec-ha Khóa học này dạy gì                article     0    190    54    55      3,45    -1.8%
+typescript-cho-nguoi-da- Khóa học này dạy gì                article     0    193    55    47      4,11   +17.0%
+xay-dung-rest-api-voi-fa Vì sao router không được chứa busi article     0    745   213   187      3,98   +13.9%
+
+Chunk đo: 43 · tổng 29452 ký tự · ước 8413 token · thật 8629 token
+Ký tự/token thật: gộp cả kho 3,41 · trung vị 3,58 · thấp nhất 2,88 · cao nhất 4,13
+Sai số của ước lượng: gộp -2.5% · trung vị +1.9%
+Ước THẤP hơn thật (phía nguy hiểm): 15/43 chunk — Đo thời gian chạy thật bằng ti #0 -6.3%, Khóa học này dạy gì #0 -2.0%, Biến và phép gán #0 -0.5%, break, continue và vòng lặp lồ #0 -2.6%, Câu lệnh if / elif / else #0 -3.4%, Định nghĩa hàm, tham số, giá t #0 -5.2%, Ép kiểu và những cái bẫy quen  #0 -14.1%, f-string: ghép chuỗi cho người #0 -15.4%, Số, chuỗi và boolean #0 -17.1%, Số, chuỗi và boolean #1 -0.7%, Tham số mặc định và tham số từ #0 -1.8%, Vòng lặp for và range #0 -17.7%, Vòng lặp while và điều kiện dừ #0 -5.7%, Khóa học này dạy gì #0 -2.0%, Khóa học này dạy gì #0 -1.8%
+Chunk lớn nhất: 557 token thật (f-string: ghép chuỗi cho người đọc #0), giới hạn đầu vào của model 2048
+  theo nguồn — article: 26 chunk, 3,63 ký tự/token
+  theo nguồn — transcript: 17 chunk, 3,34 ký tự/token

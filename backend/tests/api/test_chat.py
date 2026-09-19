@@ -299,6 +299,45 @@ async def test_the_model_is_given_the_rules_the_material_and_the_question(
     assert last.endswith("Biến là gì?")
 
 
+async def test_a_refusal_is_stored_without_the_citations_the_model_gave_it(
+    api_client: AsyncClient,
+    llm,
+    student,
+    course: Course,
+    chat_model: FakeChatModel,
+    db_session: AsyncSession,
+) -> None:
+    """Rule 3: a refusal cites nothing. When the model cites anyway -- 3 of 18
+    refusals in the evaluation, while suggesting other topics -- the marks are
+    dropped from what is stored, so the page shows no "sources" under an
+    answer that says there are none. `done` carries the cleaned message, and
+    that is what replaces the streamed text on the page."""
+    chat_model.pieces = [
+        "Xin lỗi bạn, nội dung này nằm ngoài phạm vi tài liệu của khóa học. ",
+        "Bạn có thể hỏi về biến [1] hoặc vòng lặp for [2] nhé!",
+    ]
+    chat_session = await new_session(api_client, course, student)
+
+    response = await ask(api_client, chat_session["id"], student, "Decorator là gì?")
+
+    done = parse_sse(response.text)[-1]
+    assert done[0] == "done"
+    assert done[1]["cited_numbers"] == []
+    assert done[1]["message"]["cited_lesson_ids"] == []
+    assert done[1]["message"]["citations"] == []
+    assert "[1]" not in done[1]["message"]["content"]
+    assert done[1]["message"]["content"].endswith("hỏi về biến hoặc vòng lặp for nhé!")
+
+    stored = await db_session.scalar(
+        select(ChatMessage).where(
+            ChatMessage.session_id == uuid.UUID(chat_session["id"]),
+            ChatMessage.role == "assistant",
+        )
+    )
+    assert stored.cited_lesson_ids == []
+    assert "[2]" not in stored.content
+
+
 async def test_a_follow_up_carries_the_conversation_so_far(
     api_client: AsyncClient,
     llm,
@@ -323,6 +362,45 @@ async def test_a_follow_up_carries_the_conversation_so_far(
         ["Biến là gì?"],
         ["Cho ví dụ?", "Biến là gì?\nCho ví dụ?"],
     ]
+
+
+async def test_each_search_reports_its_own_best_score(
+    api_client: AsyncClient,
+    llm,
+    student,
+    student_user: User,
+    course: Course,
+    chat_model: FakeChatModel,
+    db_session: AsyncSession,
+) -> None:
+    """Merging keeps each passage at its better score, so the merged list
+    cannot tell an off-topic follow-up (weak alone, strong when paired with
+    the question before it) from a vague one. The chatbot evaluation needs
+    both numbers to decide where a refusal threshold could sit."""
+    from app.services.chat import prepare_answer
+
+    chat_session = await new_session(api_client, course, student)
+    await ask(api_client, chat_session["id"], student, "Biến là gì?")
+
+    class AngleEmbedder(FakeEmbedder):
+        async def embed_queries(self, texts):
+            # Alone: 30° from the nearest lesson (50°). Paired: on top of the 5° one.
+            return [at_angle(80), at_angle(5)][: len(texts)]
+
+    prepared = await prepare_answer(
+        db_session,
+        uuid.UUID(chat_session["id"]),
+        student_user,
+        "Còn phở bò?",
+        limiter=MemoryRateLimiter(),
+        make_embedder=AngleEmbedder,
+        make_chat_model=lambda: chat_model,
+    )
+
+    assert prepared.search_scores == pytest.approx(
+        [math.cos(math.radians(30)), 1.0], abs=1e-6
+    )
+    assert prepared.sources[0].score == pytest.approx(1.0, abs=1e-6)
 
 
 async def test_the_first_answered_question_names_the_conversation(

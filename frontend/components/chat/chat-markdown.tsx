@@ -18,7 +18,7 @@ export interface CitedLesson {
  * An answer from the assistant: markdown, with each `[n]` drawn as a small
  * button that opens lesson n.
  *
- * No raw HTML, for the reason `Statement` gives: this is a model's output
+ * No raw HTML, for the reason `Markdown` gives: this is a model's output
  * over text other people wrote, and a `<script>` in either must read as the
  * characters it is. Ordinary links open in a new tab so the chat -- and the
  * video beside it -- stay where they are.

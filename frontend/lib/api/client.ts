@@ -81,6 +81,26 @@ export interface ApiRequestInit extends RequestInit {
 }
 
 export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Promise<T> {
+  const response = await apiResponse(path, init);
+
+  // 204 and friends have no body at all; parsing one would throw.
+  if (response.status === 204 || response.headers.get("content-length") === "0") {
+    return undefined as T;
+  }
+
+  return (await response.json()) as T;
+}
+
+/**
+ * The same call, handing back the response unread -- for a body that is not
+ * one JSON document, such as the course assistant's event stream. A refusal
+ * still arrives as an `ApiError`: the backend sends those as JSON before any
+ * stream begins.
+ */
+export async function apiResponse(
+  path: string,
+  init: ApiRequestInit = {},
+): Promise<Response> {
   const { accessToken, headers, ...rest } = init;
 
   const response = await fetch(`${baseUrl()}${path}`, {
@@ -116,10 +136,5 @@ export async function apiFetch<T>(path: string, init: ApiRequestInit = {}): Prom
     throw new ApiError(code, message, response.status, retryAfter);
   }
 
-  // 204 and friends have no body at all; parsing one would throw.
-  if (response.status === 204 || response.headers.get("content-length") === "0") {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  return response;
 }

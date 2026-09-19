@@ -407,6 +407,8 @@ Hỏi là SSE qua `POST`, đọc bằng `fetch`. `EventSource` không dùng đư
 
 Câu trả lời chỉ dựa trên tài liệu, ghi `[n]` sau mỗi ý, trong đó `n` là số của **bài học** trong `sources`. Nếu tài liệu không đủ thì trợ giảng từ chối lịch sự. Câu hỏi nối tiếp được tìm hai lần trong một lần gọi nhúng, một lần riêng câu đó và một lần ghép với câu hỏi trước, rồi gộp kết quả (lý do và số đo ở file bằng chứng).
 
+**Đọc lại một phiên cũ vẫn biết `[2]` là bài nào** nhờ trường `citations: [{number, lesson_id}]` của `ChatMessageOut` (thêm cùng UI chat). Câu trả lời lưu nguyên dấu `[n]` theo cách đánh số của lượt hỏi đó, nhưng cột `cited_lesson_ids` chỉ giữ các bài được trích theo thứ tự nhắc đến, không giữ số. Số được suy lại mà không cần migration (`numbered_citations`): số thật đều ≤ số nguồn, còn số bị loại đều lớn hơn, nên số thật chính là `len(cited_lesson_ids)` số nhỏ nhất xuất hiện trong bài, giữ thứ tự nhắc đến. Nếu hai bên không khớp nữa thì trả rỗng, vì thà không có link còn hơn link sai bài.
+
 | Biến môi trường | Mặc định | Dùng cho |
 |---|---|---|
 | `GEMINI_CHAT_MODEL` | `gemini-3.5-flash-lite` | Model viết câu trả lời, chọn theo số đo |

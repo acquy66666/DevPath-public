@@ -89,6 +89,27 @@ class Settings(BaseSettings):
     # limits on the free tier are the expected failure, and they are the kind
     # that goes away on its own.
     gemini_max_attempts: int = 3
+    # The model that writes the chatbot's answers. Chosen on measurements --
+    # see docs/report/assets/phase-4/chat-api.txt for the candidates tried.
+    gemini_chat_model: str = "gemini-3.5-flash-lite"
+    # Gemini 3 models think before answering, and the thinking is paid out of
+    # the output budget. Empty leaves the field out, for 2.5 models, which
+    # take a budget instead and reject a level.
+    gemini_chat_thinking_level: str = "minimal"
+    gemini_chat_max_output_tokens: int = 2048
+
+    # The course assistant. `chat_top_k` passages are read per question (about
+    # 500 tokens each), and the last `chat_history_messages` messages of the
+    # conversation go along with it -- enough for "giải thích thêm" to know
+    # what it refers to, bounded so a long session does not grow the prompt
+    # without end.
+    chat_top_k: int = 6
+    chat_history_messages: int = 6
+    # Every question costs an embedding and a generation on a quota the plan
+    # names as a risk. The cooldown stops a double-sent message, the hourly
+    # limit a script; both are far above a student reading answers.
+    chat_cooldown_seconds: int = 3
+    chat_hourly_limit: int = 60
 
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"

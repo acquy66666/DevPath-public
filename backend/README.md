@@ -297,9 +297,9 @@ Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất b�
 
 ## Trạng thái
 
-Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
+Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 12 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 13 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -315,6 +315,7 @@ Migration là một chuỗi thẳng 12 revision, một head (`alembic heads` đ�
 | `123eb876dda5` | `submissions.is_trial` (chạy thử) |
 | `a03e9e2f9ce9` | `doc_chunks` + index HNSW |
 | `50ccf4fc23fb` | `quizzes`, `quiz_questions`, `quiz_attempts` |
+| `42fff7804290` | `chat_sessions`, `chat_messages` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 
@@ -387,6 +388,31 @@ Lý do chọn model và cách đo: [docs/report/assets/phase-4/embedding-model.t
 Tệp **gốc** được lưu cạnh video (`videos/<asset>/transcript.srt`), ghi vào `video_assets.transcript_key`. Ingest đọc lại tệp đó từ bucket và bóc chữ bằng đúng hàm đã kiểm lúc upload: bỏ số thứ tự, dòng thời gian, thẻ `<i>`/`{\an8}`, và gộp câu lặp của phụ đề cuộn. Khóa đang xuất bản thì upload/gỡ/thay video đều xếp hàng nạp lại ngay. Khóa nháp thì nạp khi xuất bản.
 
 **Transcript đọc không được thì giữ nguyên chunk cũ**, và bài đó được đếm là `unreadable` chứ không phải "hết chữ". Tình huống này xảy ra khi bucket chớp nháy, hoặc worker thiếu khóa lưu trữ. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota lần nữa. Script `ingest_course` đọc transcript từ MinIO nên phải chạy **trong container** (`docker compose exec worker ...`), vì Windows không phân giải được `minio.localhost`. Bằng chứng: [transcript-ingest.txt](../docs/report/assets/phase-4/transcript-ingest.txt).
+
+### Trợ giảng AI (chat RAG)
+
+Từ 19/09/2026. Router `app/api/v1/chat.py`, logic ở `app/services/chat.py`:
+
+| Endpoint | Việc |
+|---|---|
+| `POST /courses/{id}/chat-sessions` | Tạo cuộc trò chuyện — chỉ học viên đã ghi danh khóa đang xuất bản (403 `NOT_ENROLLED`) |
+| `GET /courses/{id}/chat-sessions` | Phiên của mình trong khóa, phiên vừa được trả lời lên đầu |
+| `GET /chat-sessions/{id}/messages` | Đọc lại một phiên, tin cũ trước |
+| `DELETE /chat-sessions/{id}` | Xóa phiên và mọi tin nhắn |
+| `POST /chat-sessions/{id}/messages` | **Hỏi** — trả về luồng SSE: `sources` → `delta`… → `done` (hoặc `error`) |
+
+Hỏi là SSE qua `POST`, đọc bằng `fetch`. `EventSource` không dùng được vì nó không gửi được body, cũng không gửi được header `Authorization`. Mọi lời từ chối đều có mã trạng thái và JSON thường như các endpoint khác: chưa ghi danh, khóa đã gỡ xuất bản, hỏi quá nhanh (429 `CHAT_RATE_LIMITED`, cooldown 3 giây và 60 câu/giờ), chưa có key hay Gemini không trả lời (503). Các lời từ chối này xảy ra trước khi luồng bắt đầu. Chỉ khi model hỏng **giữa** câu trả lời (hoặc phiên bị xóa ở tab khác trong lúc đang trả lời) thì mới có `event: error`, và lúc đó không có gì được lưu.
+
+**Bắt buộc: chỉ khóa đang xuất bản, chỉ người đã ghi danh.** Hai điều kiện này được kiểm trước để báo lỗi rõ ràng, và **được viết thẳng vào câu truy vấn top-k** (`retrieve`). Unpublish cố ý giữ chunk lại (xuất bản lại khỏi tốn quota nhúng lại), nên câu truy vấn là lớp cuối giữ chunk đó khỏi câu trả lời. Giảng viên chủ khóa cũng không hỏi được, vì giảng viên không ghi danh được vào khóa của chính mình.
+
+Câu trả lời chỉ dựa trên tài liệu, ghi `[n]` sau mỗi ý, trong đó `n` là số của **bài học** trong `sources`. Nếu tài liệu không đủ thì trợ giảng từ chối lịch sự. Câu hỏi nối tiếp được tìm hai lần trong một lần gọi nhúng, một lần riêng câu đó và một lần ghép với câu hỏi trước, rồi gộp kết quả (lý do và số đo ở file bằng chứng).
+
+| Biến môi trường | Mặc định | Dùng cho |
+|---|---|---|
+| `GEMINI_CHAT_MODEL` | `gemini-3.5-flash-lite` | Model viết câu trả lời, chọn theo số đo |
+| `GEMINI_CHAT_THINKING_LEVEL` | `minimal` | Mức "suy nghĩ" của model họ 3. Model họ 2.5 thì để trống, vì chúng nhận budget chứ không nhận level. Token suy nghĩ bị trừ vào giới hạn đầu ra |
+
+Bằng chứng chạy thật: chọn model (TTFT 1,3 s so với 6 s và 503/429 ở các model khác), luồng SSE qua HTTP, hạ khóa về nháp mà truy vấn trả 0 dòng, và lỗi 503 **giữa chừng** mà Gemini gửi dưới dạng JSON trần sau khi đã stream một phần. Tất cả ở [chat-api.txt](../docs/report/assets/phase-4/chat-api.txt).
 
 ### Đo hiệu năng chấm bài
 

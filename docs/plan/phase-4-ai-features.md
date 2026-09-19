@@ -22,7 +22,8 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 - [x] Bật pgvector, bảng `doc_chunks` (index HNSW)
 - [x] Pipeline ingest **bài viết**: article → chunk ~500 token có overlap → Gemini embedding → lưu (job Celery, chạy khi content published)
 - [x] Pipeline ingest **transcript video**: giảng viên upload .srt/.txt lên R2 → đọc về, đi tiếp cùng đường ống trên — qua API (`PUT /lessons/{id}/transcript`) để đọc thử trước khi giữ; đọc lỗi thì giữ chunk cũ — `docs/report/assets/phase-4/transcript-ingest.txt`
-- [ ] API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời trong phạm vi khóa học, kèm trích nguồn bài học) → stream response. **Bắt buộc:** top-k chỉ lấy chunk của khóa đang `published` và người hỏi đã ghi danh — unpublish cố ý không xóa chunk (xem `docs/plan/don-no-2026-09-18.md`, Phiên 4)
+- [x] API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời trong phạm vi khóa học, kèm trích nguồn bài học) → stream response. **Bắt buộc:** top-k chỉ lấy chunk của khóa đang `published` và người hỏi đã ghi danh — unpublish cố ý không xóa chunk (xem `docs/plan/don-no-2026-09-18.md`, Phiên 4) — điều kiện nằm trong chính câu truy vấn; SSE `sources`/`delta`/`done`/`error`; bảng `chat_sessions`/`chat_messages` (migration `42fff7804290`); model `gemini-3.5-flash-lite` chọn bằng số đo — `docs/report/assets/phase-4/chat-api.txt`
+  - Để lại cho task đánh giá chatbot: ngưỡng điểm từ chối không cần gọi model (chưa đặt, lý do ở `chat-api.txt` §8). Kiểm SSE qua nginx của compose prod đã ghi thành checkbox ở mục "Nợ hoãn lại" của Phase 6
 - [ ] UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson), lịch sử phiên
 - [x] Quiz model + attempt flow: làm quiz tính giờ (giờ tính ở backend), tự chấm, xem giải thích
 - [ ] Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) → instructor duyệt/sửa từng câu trước khi publish

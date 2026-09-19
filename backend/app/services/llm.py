@@ -5,7 +5,7 @@ sửa business code." So the ingest job asks for embeddings and knows nothing
 about Gemini, about HTTP, or about the fact that a free-tier key runs out of
 quota on a bad afternoon.
 
-Three things live here that a caller should never have to think about:
+Four things live here that a caller should never have to think about:
 
 * **Normalisation.** At 768 dimensions `gemini-embedding-001` returns a
   *truncation* of its native 3072-wide vector, and truncated vectors are not
@@ -23,15 +23,25 @@ Three things live here that a caller should never have to think about:
   is not, because a malformed request will still be malformed the third time
   and the quota it burns is the thing the 429 was asking us to conserve.
 
+* **Streams that fail halfway.** Generation is streamed, and Gemini can
+  answer 200, send part of an answer, and then end with a bare JSON error
+  body instead of another SSE event (seen while choosing the model: `503
+  UNAVAILABLE, "high demand"` after six pieces). Before the first piece that
+  is retried like any other failure; after it, it is raised, because the
+  student has already read text that a second attempt would not continue.
+
 Everything that goes wrong leaves as a `DomainError`, so a router answers with
 the project's error envelope and the worker can record which lesson failed
 instead of dying on an `httpx` exception.
 """
 
 import asyncio
+import json
+import logging
 import math
-from collections.abc import Sequence
-from typing import Any, Protocol
+from collections.abc import AsyncIterator, Callable, Sequence
+from dataclasses import dataclass
+from typing import Any, Literal, Protocol
 
 import httpx
 from fastapi import status
@@ -39,6 +49,8 @@ from fastapi import status
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.models.rag import EMBEDDING_DIMENSIONS
+
+logger = logging.getLogger(__name__)
 
 #: Gemini's own names for the two sides of a retrieval pair.
 TASK_DOCUMENT = "RETRIEVAL_DOCUMENT"
@@ -78,6 +90,8 @@ class Embedder(Protocol):
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]: ...
 
     async def embed_query(self, text: str) -> list[float]: ...
+
+    async def embed_queries(self, texts: Sequence[str]) -> list[list[float]]: ...
 
 
 def _normalise(values: list[float], *, model: str) -> list[float]:
@@ -151,9 +165,20 @@ class GeminiEmbedder:
         raise LLMUnavailableError(f"Gọi Gemini thất bại ({last})")
 
     async def embed_documents(self, texts: Sequence[str]) -> list[list[float]]:
-        """Embed passages, in batches, preserving order.
+        """Embed passages, in batches, preserving order."""
+        return await self._embed_batched(texts, TASK_DOCUMENT)
 
-        Order is the only thing tying a vector back to the chunk it belongs
+    async def embed_queries(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed several questions in one call -- the chatbot searches a
+        follow-up both alone and together with the question before it."""
+        return await self._embed_batched(texts, TASK_QUERY)
+
+    async def _embed_batched(
+        self, texts: Sequence[str], task_type: str
+    ) -> list[list[float]]:
+        """`batchEmbedContents`, `batch_size` texts at a time, in order.
+
+        Order is the only thing tying a vector back to the text it belongs
         to -- nothing in the response identifies the input it came from.
         """
         vectors: list[list[float]] = []
@@ -165,7 +190,7 @@ class GeminiEmbedder:
                     {
                         "model": f"models/{self._model}",
                         "content": {"parts": [{"text": text}]},
-                        "taskType": TASK_DOCUMENT,
+                        "taskType": task_type,
                         "outputDimensionality": EMBEDDING_DIMENSIONS,
                     }
                     for text in batch
@@ -221,3 +246,245 @@ def build_embedder(
         max_attempts=settings.gemini_max_attempts,
         batch_size=settings.gemini_embedding_batch_size,
     )
+
+
+def get_embedder_factory() -> Callable[[], Embedder]:
+    """FastAPI dependency: how a route gets an embedder, *when it needs one*.
+
+    A factory rather than an embedder, because building one fails without a
+    key -- and a dependency that failed would answer 503 to a caller who is
+    not even signed in. The service calls it after its own checks. Tests
+    override this with one that returns a fake.
+    """
+    return build_embedder
+
+
+# --- Generation -------------------------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class ChatTurn:
+    """One turn of a conversation, in Gemini's own role names."""
+
+    role: Literal["user", "model"]
+    text: str
+
+
+class ChatModel(Protocol):
+    """What the chat service depends on: a system prompt and turns in, text out."""
+
+    @property
+    def model(self) -> str:
+        """Which model wrote the answer, for the evidence and the logs."""
+
+    def stream(self, *, system: str, turns: Sequence[ChatTurn]) -> AsyncIterator[str]:
+        """The answer, piece by piece, as the model produces it."""
+        ...
+
+
+class _StreamFailed(Exception):
+    """A 200 response that did not carry a usable answer."""
+
+    def __init__(self, message: str, *, retryable: bool) -> None:
+        super().__init__(message)
+        self.retryable = retryable
+
+
+def _pieces_of(event: dict[str, Any], state: dict[str, str | None]) -> list[str]:
+    """The answer text in one SSE event, noting why it stopped if it says."""
+    feedback = event.get("promptFeedback") or {}
+    state["blocked"] = feedback.get("blockReason") or state["blocked"]
+
+    pieces = []
+    for candidate in event.get("candidates") or []:
+        state["finish"] = candidate.get("finishReason") or state["finish"]
+        for part in (candidate.get("content") or {}).get("parts") or []:
+            # Thought summaries only arrive if asked for; skipped anyway,
+            # because they are the model talking to itself.
+            if part.get("text") and not part.get("thought"):
+                pieces.append(part["text"])
+    return pieces
+
+
+def _stream_error(lines: list[str]) -> _StreamFailed:
+    """What a non-SSE tail of a 200 response was trying to say."""
+    raw = "\n".join(lines)
+    try:
+        error = json.loads(raw).get("error") or {}
+        code = int(error.get("code") or 0)
+        detail = f"HTTP {code} {error.get('status', '')}: {str(error.get('message', ''))[:200]}"
+    except (ValueError, AttributeError):
+        code, detail = 0, f"phản hồi lạ: {raw[:200]}"
+    return _StreamFailed(detail, retryable=code in RETRYABLE_STATUS)
+
+
+async def _answer_pieces(response: httpx.Response) -> AsyncIterator[str]:
+    """The text inside one `streamGenerateContent?alt=sse` response.
+
+    Reads SSE properly -- `data:` lines up to a blank line make one event --
+    and keeps every line that is *not* SSE, because that is the shape an error
+    takes once the status code has already gone out as 200.
+    """
+    data: list[str] = []
+    stray: list[str] = []
+    state: dict[str, str | None] = {"finish": None, "blocked": None}
+    produced = False
+
+    def flush() -> list[str]:
+        nonlocal data
+        pieces = _pieces_of(json.loads("\n".join(data)), state) if data else []
+        data = []
+        return pieces
+
+    async for line in response.aiter_lines():
+        if line.startswith("data:"):
+            data.append(line[5:].lstrip())
+            continue
+        if line.strip():
+            if not line.startswith(":"):  # ":" opens an SSE comment
+                stray.append(line)
+            continue
+        for piece in flush():
+            produced = True
+            yield piece
+
+    for piece in flush():
+        produced = True
+        yield piece
+
+    if stray:
+        raise _stream_error(stray)
+    if not produced:
+        # A blocked prompt, or a candidate that finished with nothing in it.
+        # Not retried: the same prompt would be blocked the same way.
+        raise _StreamFailed(
+            "mô hình không trả về nội dung "
+            f"(blockReason={state['blocked']}, finishReason={state['finish']})",
+            retryable=False,
+        )
+    if state["finish"] == "MAX_TOKENS":
+        logger.warning("Câu trả lời bị cắt vì chạm maxOutputTokens")
+
+
+class GeminiChat:
+    """Gemini's streaming generation endpoint, with the retries."""
+
+    def __init__(
+        self,
+        *,
+        api_key: str,
+        model: str,
+        base_url: str,
+        timeout_s: float,
+        max_attempts: int,
+        max_output_tokens: int,
+        thinking_level: str,
+        retry_base_delay_s: float = 1.0,
+        transport: httpx.AsyncBaseTransport | None = None,
+    ) -> None:
+        self._api_key = api_key
+        self._model = model
+        self._base_url = base_url.rstrip("/")
+        self._timeout_s = timeout_s
+        self._max_attempts = max(1, max_attempts)
+        self._max_output_tokens = max_output_tokens
+        self._thinking_level = thinking_level
+        self._retry_base_delay_s = retry_base_delay_s
+        self._transport = transport
+
+    @property
+    def model(self) -> str:
+        return self._model
+
+    def _payload(self, system: str, turns: Sequence[ChatTurn]) -> dict[str, Any]:
+        config: dict[str, Any] = {"maxOutputTokens": self._max_output_tokens}
+        if self._thinking_level:
+            # Thinking is paid out of maxOutputTokens. Left to the model's
+            # default, a 200-token limit bought 188 tokens of thinking and an
+            # eight-token answer -- so the level is always stated.
+            config["thinkingConfig"] = {"thinkingLevel": self._thinking_level}
+        return {
+            "systemInstruction": {"parts": [{"text": system}]},
+            "contents": [
+                {"role": turn.role, "parts": [{"text": turn.text}]} for turn in turns
+            ],
+            "generationConfig": config,
+        }
+
+    async def stream(
+        self, *, system: str, turns: Sequence[ChatTurn]
+    ) -> AsyncIterator[str]:
+        url = f"{self._base_url}/models/{self._model}:streamGenerateContent"
+        headers = {"x-goog-api-key": self._api_key, "Content-Type": "application/json"}
+        payload = self._payload(system, turns)
+        last = ""
+
+        async with httpx.AsyncClient(
+            timeout=self._timeout_s, transport=self._transport
+        ) as client:
+            for attempt in range(self._max_attempts):
+                produced = False
+                retryable = True
+                try:
+                    async with client.stream(
+                        "POST", url, params={"alt": "sse"}, json=payload, headers=headers
+                    ) as response:
+                        if response.status_code == 200:
+                            async for piece in _answer_pieces(response):
+                                produced = True
+                                yield piece
+                            return
+
+                        body = (await response.aread()).decode("utf-8", "replace")
+                        last = f"HTTP {response.status_code}: {body[:200]}"
+                        retryable = response.status_code in RETRYABLE_STATUS
+                except _StreamFailed as error:
+                    if produced:
+                        raise LLMUnavailableError(
+                            f"Gemini ngắt giữa câu trả lời ({error})"
+                        ) from error
+                    last, retryable = str(error), error.retryable
+                except httpx.HTTPError as error:
+                    if produced:
+                        raise LLMUnavailableError(
+                            "Mất kết nối giữa câu trả lời "
+                            f"({type(error).__name__}: {error})"
+                        ) from error
+                    last = f"{type(error).__name__}: {error}"
+
+                if not retryable:
+                    break
+                if attempt + 1 < self._max_attempts and self._retry_base_delay_s:
+                    await asyncio.sleep(self._retry_base_delay_s * (2**attempt))
+
+        raise LLMUnavailableError(f"Gọi Gemini thất bại ({last})")
+
+
+def build_chat_model(
+    *,
+    api_key: str | None = None,
+    model: str | None = None,
+) -> ChatModel:
+    """The configured generation model, or a stated refusal."""
+    settings = get_settings()
+    key = settings.gemini_api_key if api_key is None else api_key
+
+    if not key:
+        raise LLMNotConfiguredError(
+            "Chưa cấu hình GEMINI_API_KEY nên trợ giảng AI chưa hoạt động",
+        )
+
+    return GeminiChat(
+        api_key=key,
+        model=model or settings.gemini_chat_model,
+        base_url=settings.gemini_base_url,
+        timeout_s=settings.gemini_timeout_s,
+        max_attempts=settings.gemini_max_attempts,
+        max_output_tokens=settings.gemini_chat_max_output_tokens,
+        thinking_level=settings.gemini_chat_thinking_level,
+    )
+
+
+def get_chat_model_factory() -> Callable[[], ChatModel]:
+    """FastAPI dependency, a factory for the same reason as the embedder's."""
+    return build_chat_model

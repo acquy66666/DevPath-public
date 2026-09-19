@@ -76,7 +76,10 @@ Query: câu hỏi học viên → embed → similarity search top-k (lọc theo 
 ```
 
 - Dùng **pgvector** ngay trong PostgreSQL — không thêm vector DB riêng.
-- Chat history lưu DB, giới hạn context window theo phiên.
+- Chat history lưu DB (`chat_sessions`, `chat_messages`), giới hạn context window theo phiên: 6 tin gần nhất đi vào prompt, tài liệu chỉ gửi kèm lượt hiện tại.
+- **Top-k chỉ lấy chunk của khóa đang `published` mà người hỏi đã ghi danh**, và điều kiện này nằm *trong câu truy vấn* (JOIN `courses` + EXISTS `enrollments`), không chỉ ở bước kiểm tra trước đó — unpublish cố ý giữ chunk lại để xuất bản lại khỏi tốn quota.
+- Câu trả lời **stream bằng SSE** (`sources` → `delta`… → `done`/`error`); mọi lời từ chối (chưa ghi danh, rate limit, hết quota trước khi bắt đầu) là mã trạng thái thường vì xảy ra trước byte đầu tiên. Gemini có thể hỏng *giữa chừng* sau khi đã trả 200 — lúc đó không lưu gì, học viên thấy `error` và hỏi lại.
+- Model sinh câu trả lời chọn bằng số đo (`gemini-3.5-flash-lite`), cấu hình qua `GEMINI_CHAT_MODEL`. Chi tiết và số liệu: `docs/report/assets/phase-4/chat-api.txt`.
 
 ### 3. Hybrid Recommender (⭐ điểm nhấn 2)
 

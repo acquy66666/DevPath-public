@@ -211,6 +211,31 @@ async def test_long_lists_are_sent_in_batches_and_come_back_in_order() -> None:
     assert calls[0][0] == "0" and calls[2][-1] == "119"
 
 
+async def test_several_questions_go_in_one_call_as_questions() -> None:
+    """The chatbot embeds a follow-up twice -- alone, and with the question
+    before it. One request, not two, and both on the query side of the pair."""
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        calls.append((request.url.path, json.loads(request.content)))
+        return batch_response(2)
+
+    vectors = await embedder(handler).embed_queries(["câu này", "câu trước\ncâu này"])
+
+    assert len(calls) == 1
+    path, body = calls[0]
+    assert path.endswith(":batchEmbedContents")
+    assert [r["taskType"] for r in body["requests"]] == ["RETRIEVAL_QUERY"] * 2
+    assert [r["content"]["parts"][0]["text"] for r in body["requests"]] == [
+        "câu này",
+        "câu trước\ncâu này",
+    ]
+    assert len(vectors) == 2
+    assert math.isclose(math.sqrt(sum(v * v for v in vectors[0])), 1.0, rel_tol=1e-9)
+
+
 async def test_embedding_nothing_calls_nobody() -> None:
     """A video lesson with no transcript chunks to an empty list, and an empty
     request to Gemini is a wasted round trip that also counts against quota."""

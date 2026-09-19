@@ -155,7 +155,7 @@ function LessonForm({
       ) : lesson.type === "quiz" ? (
         // Same arrangement, same reason: the quiz, its questions and their
         // answers are their own tables behind their own endpoints.
-        <QuizEditor lessonId={lesson.id} />
+        <QuizEditor lessonId={lesson.id} courseId={courseId} />
       ) : (
         <div className="space-y-3">
           <VideoUpload lesson={lesson} />

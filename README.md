@@ -73,8 +73,9 @@ Ba tài liệu đi kèm:
   - hàng đợi Celery riêng, tiến độ từng test theo thời gian thực qua WebSocket.
 - **AI (Phase 4, đang làm):**
   - đã có quiz tính giờ và gợi ý khóa học item-based chạy hằng đêm;
-  - dữ liệu RAG đã nạp từ bài viết vào pgvector;
-  - còn chatbot, sinh quiz bằng AI, content-based và đánh giá precision@k.
+  - dữ liệu RAG đã nạp từ bài viết và transcript video vào pgvector;
+  - API trợ giảng AI trả lời dạng stream, có trích nguồn bài học, chỉ đọc khóa đang xuất bản mà người hỏi đã ghi danh;
+  - còn giao diện chat, sinh quiz bằng AI, content-based và đánh giá precision@k.
 
 Storage trên máy dev là MinIO chạy trong compose (xem [infra/README.md](infra/README.md)). Production dùng Cloudflare R2. Hạ tầng deploy (compose production, nginx, HTTPS) đã viết và được CI kiểm chứng, nhưng **chưa deploy lên máy chủ thật** — việc đó thuộc Phase 6.
 

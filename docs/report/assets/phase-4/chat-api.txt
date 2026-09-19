@@ -1,0 +1,269 @@
+API CHAT RAG — TRỢ GIẢNG TRẢ LỜI TỪ TÀI LIỆU KHÓA HỌC, CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 19/09/2026 · stack dev (infra/docker-compose.yml) · Postgres + pgvector 0.8.6 + Gemini thật
+Phase 4, tuần 9: "API chat: embed câu hỏi → top-k theo course_id → prompt trợ giảng (chỉ trả lời
+trong phạm vi khóa học, kèm trích nguồn bài học) → stream response. Bắt buộc: top-k chỉ lấy chunk
+của khóa đang published và người hỏi đã ghi danh"
+
+Bốn script thăm dò nhắc tới bên dưới (probe_chat_models, e2e_chat, probe_followup,
+unpublish_check) là script chạy MỘT LẦN ngoài repo, gọi đúng các hàm của app/services/chat.py
+và llm.py, hoặc API thật qua HTTP. Chúng không được commit. Phép đo tái tạo được bằng một
+lệnh là việc của task "Đánh giá chatbot: bộ 20 câu hỏi". Phần có thể tái tạo ngay là bộ test
+ở mục 7.
+
+==============================================================================
+1. THIẾT KẾ, VÀ VÌ SAO
+==============================================================================
+  POST   /api/v1/courses/{course_id}/chat-sessions        tạo cuộc trò chuyện (201)
+  GET    /api/v1/courses/{course_id}/chat-sessions        phiên của mình, mới trả lời gần nhất trước
+  GET    /api/v1/chat-sessions/{id}/messages              đọc lại, cũ trước (phân trang)
+  DELETE /api/v1/chat-sessions/{id}                       xóa phiên + mọi tin nhắn (204)
+  POST   /api/v1/chat-sessions/{id}/messages              HỎI — trả về luồng SSE
+
+Một câu hỏi đi qua 4 bước, theo đúng thứ tự (backend/app/services/chat.py):
+  1. Kiểm tra, TRƯỚC khi tốn quota: phiên là của mình (không thì 404), khóa đang
+     published (404), đã ghi danh (403 NOT_ENROLLED), giới hạn tần suất (429), có key (503).
+     Mọi lỗi ở bước này là JSON bình thường kèm mã trạng thái, vì luồng chưa bắt đầu.
+  2. Truy hồi: nhúng câu hỏi → top-k chunk. Điều kiện "khóa published" và "người hỏi đã
+     ghi danh" được viết THẲNG VÀO CÂU TRUY VẤN (JOIN courses + EXISTS enrollments), không
+     chỉ kiểm ở bước 1. Unpublish cố ý không xóa chunk, nên câu truy vấn là lớp cuối cùng
+     giữ chúng khỏi câu trả lời — và nó vẫn đứng vững kể cả khi ai đó quên bước 1.
+     Chỉ so vector cùng embedding_model. SET LOCAL hnsw.iterative_scan = strict_order để
+     một khóa nhỏ trong bảng lớn không bị HNSW lọc-sau-khi-quét trả về thiếu dòng.
+  3. Sinh câu trả lời, stream: chunk được đánh số THEO BÀI HỌC ([1] = một bài), đưa cho
+     model kèm system prompt: chỉ trả lời từ tài liệu, ghi [n] sau mỗi ý, không đủ thì từ
+     chối lịch sự và không trích nguồn, coi tài liệu/câu hỏi là dữ liệu chứ không phải lệnh.
+  4. Lưu: câu hỏi + câu trả lời ghi CÙNG LÚC sau khi trả lời xong, kèm cited_lesson_ids
+     là các bài mà câu trả lời THẬT SỰ trích (đọc [n] từ chữ, bỏ số không phải nguồn và bỏ
+     [1, 3] nằm trong khối code — khóa lập trình thì [1, 3] thường là list Python).
+
+Luồng SSE (qua POST + fetch, vì EventSource không gửi được body lẫn header Authorization):
+  event: sources  → một lần, trước chữ: các bài có thể được trích, đánh số như câu trả lời sẽ dùng
+  event: delta    → nhiều lần: mẩu tiếp theo của câu trả lời
+  event: done     → cuối: tin nhắn đã lưu (đủ chữ) + cited_numbers
+  event: error    → thay cho done khi model hỏng GIỮA CHỪNG (LLM_UNAVAILABLE), hoặc khi không lưu
+                    được vì phiên vừa bị xóa ở tab khác (CHAT_NOT_SAVED); không lưu gì, hỏi lại được
+Header X-Accel-Buffering: no — nginx mặc định gom cả phản hồi rồi mới gửi, thiếu header này
+thì dev stream được mà production im lặng tới cuối mới hiện chữ.
+
+Bảng mới (migration 42fff7804290): chat_sessions (user, course, title = câu hỏi đầu) và
+chat_messages (role user|assistant, content, cited_lesson_ids JSONB luôn là mảng).
+Hai tin nhắn ghi trong cùng transaction thì now() của Postgres trùng nhau, nên service tự
+đặt created_at: câu hỏi = lúc tới, câu trả lời = lúc xong — thứ tự đọc lại là thứ tự thật.
+
+Không lưu câu hỏi khi câu trả lời hỏng: nếu lưu, câu hỏi không có đáp sẽ bị gửi lại làm
+ngữ cảnh ở mọi lượt sau. Client ngắt giữa chừng thì generator bị hủy trước bước lưu — cũng
+không có câu hỏi mồ côi.
+
+==============================================================================
+2. CHỌN MODEL SINH CÂU TRẢ LỜI BẰNG SỐ ĐO
+==============================================================================
+Key có 41 model hỗ trợ generateContent. gemini-2.5-flash-lite đã khóa với tài khoản mới
+(404 "no longer available to new users"). Phát hiện đầu tiên, trước cả RAG:
+
+  "Trả lời một câu ngắn…", maxOutputTokens 200, thinking mặc định:
+    gemini-2.5-flash    thoughtsTokenCount 188 → câu trả lời 8 token, MAX_TOKENS, cụt giữa câu
+    gemini-3.5-flash    190 token suy nghĩ → 6 token trả lời
+    gemini-3.8-flash    219 token suy nghĩ → 8 token trả lời
+  → token "suy nghĩ" bị trừ vào maxOutputTokens. Adapter vì vậy LUÔN nêu thinkingLevel
+    (GEMINI_CHAT_THINKING_LEVEL), và đặt maxOutputTokens 2048.
+  gemini-3.8-flash từ chối "minimal" (400 INVALID_ARGUMENT) — chỉ nhận từ "low".
+
+Rồi chạy chính đường ống RAG (dev DB, khóa "Python cơ bản cho người mới bắt đầu", 4 bài có
+chữ, học viên hocvien07 đã ghi danh), 6 câu: 4 trong phạm vi, 2 ngoài phạm vi.
+Script probe_chat_models (gọi retrieve/group_sources/build_turns thật,
+GeminiChat với từng model).
+
+  model (thinking)               TTFT        tổng       kết quả 6 câu
+  gemini-3.5-flash-lite (min)    1,22–1,46 s  1,65–2,83 s 4/4 trích đúng [1] = bài đúng; 2/2 từ chối, trích []
+  gemini-3.5-flash (min)         5,75–6,24 s  6,38–7,32 s 4/4 trích đúng; câu Django từ chối đúng nhưng
+                                                          ghi [1][2][3][4] khi GỢI Ý chủ đề (trái quy tắc 3)
+  gemini-3.8-flash (low)         7,38–7,79 s  —           2 câu trả lời xong; 1 câu 503 GIỮA CHỪNG (mục 6);
+                                                          1 câu 503 trước chữ đầu; 2 câu 429 hết quota
+
+→ Chọn gemini-3.5-flash-lite, thinkingLevel "minimal" (GEMINI_CHAT_MODEL, mặc định trong
+  config.py và cả hai compose). Nhanh gấp ~4 lần, không lỗi quota trong lần đo, và là model
+  duy nhất trong ba giữ đúng "từ chối thì không trích nguồn". Model mới nhất (3.8) thì
+  không dùng được trên free tier vào thời điểm đo.
+
+Câu trả lời của 3.5-flash-lite (nguyên văn, trích đoạn):
+  (trong phạm vi) "Khi gặp traceback thì nên đọc từ đâu?"
+    > Khi gặp traceback, bạn nên đọc từ **dưới lên** [1]. Dòng cuối cùng cho biết chuyện gì
+    > xảy ra, còn các dòng phía trên cho biết nó xảy ra ở đâu [1].
+  (ngoài phạm vi) "Làm sao để deploy ứng dụng Django lên AWS?"
+    > Nội dung này nằm ngoài phạm vi tài liệu của khóa học.
+    > Bạn có thể đặt câu hỏi về các chủ đề có trong khóa học như biến, phép gán, ép kiểu,
+    > phạm vi biến (local, global), hoặc cách đọc hiểu thông báo lỗi trong Python nhé!
+
+==============================================================================
+3. CHẠY THẬT ĐẦU-CUỐI QUA HTTP
+==============================================================================
+Đăng nhập hocvien07@seed.devpath.example (mật khẩu seed mặc định), tạo phiên, hỏi 3 câu liên
+tiếp trong cùng phiên, in từng khung SSE kèm thời điểm tới (script e2e_chat.py, httpx stream
+tới localhost:8000 — gọi thẳng backend, KHÔNG qua nginx, xem mục 8).
+
+POST chat-sessions -> 201 {'title': None, ...}
+
+### Hỏi: Vì sao input() + 1 bị lỗi, sửa thế nào?
+HTTP 200 text/event-stream; charset=utf-8 x-accel-buffering: no
+  + 0.57s sources:
+           [1] 0.731 Ép kiểu và những cái bẫy quen thuộc
+           [2] 0.651 Đọc hiểu thông báo lỗi
+           [3] 0.622 Biến và phép gán
+           [4] 0.618 Phạm vi biến: local, global và vì sao nên tránh global
+  + 1.77s delta '`input()` luôn trả về chuỗi, dẫn đến việc dùng `input(...) + 1` sẽ'
+  + 1.95s delta ' gây lỗi vì bạn đang cố cộng một chuỗi với một số [1]. \n\nĐể khắc phục lỗi này, bạn cần ép'
+  + 2.09s delta ' kiểu dữ liệu trả về từ `input()` sang số (ví dụ dùng `int()` hoặc `float()`) trước khi'
+  + 2.30s delta ' thực hiện phép cộng [1].'
+  + 2.37s done cited_numbers=[1] cited_lesson_ids=['e1ed2812-…']   ← bài "Ép kiểu…"
+
+### Hỏi: Cho mình một ví dụ ngắn cho cách sửa đó.        ← câu nối tiếp, xem mục 5
+  + 0.60s sources:
+           [1] 0.743 Ép kiểu và những cái bẫy quen thuộc
+           [2] 0.675 Đọc hiểu thông báo lỗi
+           [3] 0.645 Biến và phép gán
+           [4] 0.643 Phạm vi biến: local, global và vì sao nên tránh global
+  + 1.57s delta 'D'
+  + 1.75s delta 'ựa theo tài liệu khóa học, `input()` luôn trả về chuỗi nên'
+  + 1.89s delta ' không thể cộng trực tiếp với số [1]. \n\nĐể sửa lỗi này, bạn cần ép kiểu giá trị của `input()` sang'
+  + 2.23s delta ' số trước khi thực hiện phép cộng, ví dụ dùng `int()` [1]. \n\nVí dụ minh họa:\n\n'
+  + 2.23s delta '```python\ntuoi = int(input("Tuổi: ")) + 1\n```'
+  + 2.27s done cited_numbers=[1] cited_lesson_ids=['e1ed2812-…']
+
+### Hỏi: Cho mình công thức nấu phở bò.                  ← ngoài phạm vi
+  + 0.52s sources: [1] 0.604 Biến và phép gán, [2] 0.602 …, [3] 0.599 …, [4] 0.588 …
+  + 1.59s delta 'Nội'
+  + 1.73s delta ' dung này nằm ngoài phạm vi tài liệu của khóa học. \n\nBạn có thể'
+  + 1.93s delta ' hỏi về các chủ đề có trong khóa học như biến, kiểu dữ liệu, toán tử, thông báo lỗi, hàm'
+  + 2.10s delta ' hoặc các nội dung lập trình Python cơ bản khác nhé!'
+  + 2.17s done cited_numbers=[] cited_lesson_ids=[]
+
+GET messages -> 200, total=6
+  2026-09-19T08:16:27.494864Z  user       'Vì sao input() + 1 bị lỗi, sửa thế nào?'
+  2026-09-19T08:16:29.797730Z  assistant  '`input()` luôn trả về chuỗi, dẫn đến việc dùng `input(...) + 1` sẽ gây'
+  2026-09-19T08:16:33.318551Z  user       'Cho mình một ví dụ ngắn cho cách sửa đó.'
+  2026-09-19T08:16:35.575596Z  assistant  'Dựa theo tài liệu khóa học, `input()` luôn trả về chuỗi nên không thể '
+  2026-09-19T08:16:39.089353Z  user       'Cho mình công thức nấu phở bò.'
+  2026-09-19T08:16:41.246949Z  assistant  'Nội dung này nằm ngoài phạm vi tài liệu của khóa học. \n\nBạn có thể hỏi'
+GET chat-sessions -> 200 [('Vì sao input() + 1 bị lỗi, sửa thế nào?', '2026-09-19T08:16:41.246949Z')]
+
+Từ chối, cùng stack thật:
+  không đăng nhập          -> 401 NOT_AUTHENTICATED
+  chưa ghi danh (hocvien01) -> 403 {'code': 'NOT_ENROLLED', 'message': 'Trợ giảng AI dành cho học viên đã đăng ký khóa học'}
+  phiên của người khác      -> 404 CHAT_SESSION_NOT_FOUND   (404 chứ không 403: không xác nhận phiên tồn tại)
+  hỏi dồn                   -> 200 rồi 429 {'code': 'CHAT_RATE_LIMITED', 'retry_after': 1}, Retry-After: 1
+
+Đọc được gì: nguồn tới sau ~0,5 s (nhúng + truy vấn), chữ đầu tiên sau ~1,6–1,8 s, câu trả
+lời xong trong ~2,3 s. Chữ đến dần theo từng mẩu chứ không dồn một cục ở cuối.
+
+==============================================================================
+4. YÊU CẦU BẮT BUỘC: CHỈ KHÓA PUBLISHED, CHỈ NGƯỜI ĐÃ GHI DANH
+==============================================================================
+Trên dữ liệu thật (script unpublish_check.py): hạ khóa seed về draft bằng SQL, hỏi, rồi trả lại.
+
+  trước: status=published, doc_chunks của khóa=4, retrieve()=4 dòng
+  sau khi hạ về draft: doc_chunks còn=4 (unpublish không xóa chunk)
+    POST /chat-sessions/{id}/messages -> 404 COURSE_NOT_FOUND
+    retrieve() gọi thẳng, bỏ qua kiểm tra phía trước -> 0 dòng
+  trả về published: retrieve()=4 dòng
+
+Dòng thứ hai của khối "sau" là cái cần chứng minh: chunk vẫn nằm trong bảng, người hỏi vẫn
+ghi danh, vậy mà ngay cả khi gọi thẳng hàm truy vấn (không qua endpoint) cũng không ra dòng nào.
+
+Test bắt được lỗi — đột biến cố ý, bỏ từng điều kiện khỏi câu truy vấn rồi chạy
+tests/test_chat_retrieval.py (12 test):
+  bỏ Course.status == "published"           → 3 failed   (draft, pending_review, rejected)
+  bỏ EXISTS enrollment                       → 2 failed   (chưa ghi danh; giảng viên chủ khóa)
+  bỏ Course.deleted_at IS NULL               → 1 failed
+  bỏ DocChunk.embedding_model == model       → 1 failed
+  bỏ DocChunk.course_id == course_id         → 1 failed   (khóa khác gần hơn vẫn không được trích)
+và ở tầng API: thay course_for_chat bằng session.get(Course) trong prepare_answer
+  → test_a_course_unpublished_mid_conversation_stops_answering đỏ. Mọi đột biến đã hoàn tác.
+
+Giảng viên chủ khóa KHÔNG hỏi được trợ giảng của khóa mình (403 NOT_ENROLLED): kế hoạch ghi
+"người hỏi đã ghi danh", và giảng viên không ghi danh được vào khóa của mình
+(CANNOT_ENROL_OWN_COURSE). Giữ đúng câu chữ của yêu cầu; nếu sau này cần cho giảng viên
+thử trợ giảng trước khi xuất bản thì đó là một quyết định mới, không phải lỗ hổng cần vá.
+
+==============================================================================
+5. CÂU HỎI NỐI TIẾP: TÌM BẰNG GÌ
+==============================================================================
+Lần chạy đầu-cuối đầu tiên (chỉ nhúng câu hiện tại) lộ ra: "Cho mình một ví dụ ngắn cho cách
+sửa đó." không chứa chữ nào để tìm — bài "Ép kiểu" rơi từ hạng 1 (0,731) xuống hạng 4 (0,621).
+Khóa chỉ có 4 bài nên vẫn lọt top-6; khóa 40 bài thì không. Đo 3 cách trên 5 cặp câu
+(script probe_followup.py), cột là hạng của bài cần tìm:
+
+  câu trước → câu này                                        chỉ câu này  trước+này  gộp hai truy vấn
+  input()+1 lỗi → "Cho mình một ví dụ ngắn cho cách sửa đó."      4           1            1
+  traceback đọc từ đâu → "Còn NameError thì do đâu?"             1           1            1
+  biến là gì → "Vậy tên biến có được bắt đầu bằng số không?"     1           1            1
+  input()+1 lỗi → "Có nên dùng từ khóa global không?" (ĐỔI CHỦ ĐỀ) 1          1 (0,759)    1 (0,796)
+  global → "Khi gặp traceback thì nên đọc từ đâu?" (ĐỔI CHỦ ĐỀ)   1           2            1
+
+"Chỉ câu này" hỏng với câu nối tiếp mơ hồ; "trước+này" hỏng khi học viên đổi chủ đề. Gộp hai
+truy vấn (mỗi chunk lấy điểm cao hơn trong hai lần tìm, rồi cắt lại top-k) đúng cả 5.
+Chọn cách gộp: retrieval_queries() + merge_hits(). Hai câu nhúng trong MỘT lần gọi
+batchEmbedContents (embed_queries, taskType RETRIEVAL_QUERY), nên không tốn thêm request.
+Lịch sử (6 tin gần nhất) vẫn đi vào prompt riêng, bỏ dấu [n] cũ để [2] của lượt trước không
+bị đọc thành nguồn 2 của lượt này.
+
+==============================================================================
+6. GEMINI HỎNG GIỮA CHỪNG — THẤY THẬT, KHÔNG PHẢI TƯỞNG TƯỢNG
+==============================================================================
+Khi thăm dò định dạng streamGenerateContent?alt=sse với gemini-3.8-flash, phản hồi là HTTP 200,
+6 sự kiện "data: {...}" chứa chữ, rồi KẾT THÚC bằng một khối JSON trần, không phải sự kiện SSE:
+  {
+    "error": {
+      "code": 503,
+      "message": "This model is currently experiencing high demand. ...",
+      "status": "UNAVAILABLE"
+    }
+  }
+Parser chỉ đọc dòng "data:" sẽ bỏ qua khối này và coi nửa câu trả lời là câu trả lời đủ.
+Adapter (llm.py, _answer_pieces) giữ mọi dòng không phải SSE và biến chúng thành lỗi:
+  - hỏng TRƯỚC mẩu chữ đầu tiên → thử lại như mọi lỗi 503/429 (tối đa GEMINI_MAX_ATTEMPTS)
+  - hỏng SAU mẩu đầu tiên → không thử lại (lần hai không nối tiếp lần một mà viết câu khác),
+    ném LLMUnavailableError; endpoint gửi event: error, không lưu gì
+Trong lần đo ở mục 2, chính kiểu hỏng này xảy ra lại với câu "Vì sao input() + 1 bị lỗi?":
+  chữ đã tới: "Phép tính `input() + 1` bị lỗi vì" → LLMUnavailableError: Gemini ngắt giữa câu
+  trả lời (HTTP 503 UNAVAILABLE: ...)
+Test tái hiện đúng khối JSON ấy: tests/test_llm_chat.py
+  test_an_error_body_after_part_of_the_answer_is_an_error_not_an_ending
+  test_an_error_body_before_any_piece_is_retried_like_a_status_code
+Học viên thấy câu "Trợ giảng AI đang quá tải hoặc tạm ngừng. Câu hỏi của bạn chưa được lưu —
+thử hỏi lại sau ít phút nhé."; chi tiết "HTTP 503 …" chỉ nằm trong log backend.
+
+==============================================================================
+7. TEST
+==============================================================================
+.venv\Scripts\python.exe -m pytest tests/test_chat_prompt.py tests/test_chat_retrieval.py
+    tests/test_llm.py tests/test_llm_chat.py tests/api/test_chat.py tests/test_ingest.py
+→ 98 passed
+  test_chat_retrieval.py  14  lọc published/ghi danh/xóa mềm/model/khóa khác, gộp hai lần tìm
+  test_chat_prompt.py     12  prompt, [n] đọc đúng (kể cả list trong code), code trong lịch sử
+                              giữ nguyên ngoặc vuông, nối tiếp, tiêu đề
+  test_llm_chat.py        13  SSE, thinkingConfig, thử lại, hỏng giữa chừng, bị chặn, không key
+  api/test_chat.py        27  luồng SSE, lưu, lịch sử, 401/403/404/422/429/503, xóa, phân trang,
+                              phiên bị xóa giữa lúc trả lời → vẫn kết thúc bằng error CHAT_NOT_SAVED
+  test_llm.py             14  (+1: embed_queries — nhiều câu hỏi trong một lần gọi)
+  test_ingest.py          18  không đổi, chạy lại vì adapter embedding đã được tách hàm
+(bộ đầy đủ chạy lại trước khi commit, xem PR)
+
+==============================================================================
+8. CHƯA ĐO / CÒN GIỚI HẠN — NÓI THẲNG
+==============================================================================
+- Chưa đi qua nginx: stack dev không có nginx, lần chạy ở mục 3 gọi thẳng backend. Header
+  X-Accel-Buffering: no đã được gửi (thấy trong phản hồi), nhưng "production stream được" chỉ
+  thật sự được chứng minh khi chạy docker-compose.prod.yml — đã ghi thành checkbox ở mục
+  "Nợ hoãn lại" của docs/plan/phase-6-hardening-deploy.md.
+- Chưa đặt ngưỡng điểm để từ chối không cần gọi model. Số đo gợi ý có khoảng cách (top-1 trong
+  phạm vi 0,726–0,796; ngoài phạm vi 0,523–0,531), nhưng: mới 6 câu; model đã tự từ chối đúng
+  cả 2 ca; và cách gộp ở mục 5 KÉO ĐIỂM của câu lạc đề sau một câu trong phạm vi lên (phở bò:
+  0,531 khi hỏi riêng → 0,604 khi gộp), nên một ngưỡng đặt theo câu hỏi đơn sẽ sai với câu
+  nối tiếp. Để task "Đánh giá chatbot: bộ 20 câu hỏi" quyết định bằng số liệu đủ hơn.
+- Kho ngữ liệu mỏng: khóa tốt nhất có 4 bài có chữ (41/42 video seed không có lời giảng).
+  Mọi top-k ở đây trả về cả khóa; truy hồi chưa bị thử thách thật.
+- Chưa EXPLAIN lại câu truy vấn có JOIN + EXISTS + iterative_scan trên bảng lớn (hnsw-index.txt
+  đo câu truy vấn đơn giản trên 3000 chunk). Với 27 chunk trên dev, planner quét tuần tự.
+- Client ngắt giữa chừng thì câu trả lời đã sinh bị bỏ (không lưu) — cố ý, xem mục 1.
+- Câu trả lời của model không được kiểm "đúng hay sai" ở đây — đó là việc của task đánh giá
+  chatbot. Ở đây chỉ kiểm: có trích nguồn, trích đúng bài, từ chối đúng ca ngoài phạm vi.

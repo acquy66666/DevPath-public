@@ -36,6 +36,7 @@ Từ đợt rà tồn đọng 18/09 ([don-no-2026-09-18.md](don-no-2026-09-18.md
 
 - [ ] Endpoint readiness kiểm tra được DB + Redis. `/health` hiện cố ý không chạm DB
 - [ ] Job dọn object mồ côi trong bucket: URL đã ký mà không ai upload, bài học bị xóa (`backend/README.md`, mục "Trạng thái")
+- [ ] Kiểm luồng SSE của trợ giảng AI chạy **qua nginx** của `docker-compose.prod.yml`: chữ phải tới dần chứ không dồn một cục ở cuối. Backend đã gửi `X-Accel-Buffering: no`, nhưng stack dev không có nginx nên chưa ai thấy tận mắt (`docs/report/assets/phase-4/chat-api.txt` §8)
 - [ ] `metadataBase` lấy từ `NEXT_PUBLIC_SITE_URL`, nhưng compose prod và Dockerfile chưa truyền biến này nên canonical/Open Graph trên production sẽ trỏ `http://localhost:3000`. Cần truyền `https://${DOMAIN}` lúc build image frontend
 - [ ] Race refresh-token khi mở hai tab sau thời gian dài không dùng: thêm khoảng ân hạn (leeway) phía backend (`frontend/README.md`, mục Auth)
 - [ ] Quyết định storage cho production: Cloudflare R2 (cần khai thẻ thanh toán) hay tự host. MinIO đã ngừng phát hành image bản cộng đồng (kiểm 18/09/2026), nên tự host MinIO nghĩa là tự build từ source hoặc chọn server S3 khác

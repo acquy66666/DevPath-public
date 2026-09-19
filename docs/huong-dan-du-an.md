@@ -29,10 +29,10 @@ Nền tảng học lập trình trực tuyến kiểu Udemy. Ba điểm nhấn k
 | Khóa học | CRUD, trình dựng mục lục kéo-thả, upload video lên R2 + worker chuyển mã HLS, trang chi tiết công khai có SEO |
 | Học viên | Tìm kiếm toàn văn tiếng Việt, lọc, ghi danh khóa miễn phí, trình phát HLS nhớ vị trí, ghi chú theo mốc thời gian, đánh dấu bài, đánh giá & xếp hạng |
 | Chấm code (Phase 3) | Sandbox Docker cô lập, đủ 7 verdict, 7 ca tấn công bị chặn, hàng đợi Celery riêng, tiến độ từng test qua WebSocket, trang nộp bài có editor Monaco |
-| AI (Phase 4, một phần) | Quiz tính giờ; gợi ý khóa học item-based chạy hằng đêm; nạp bài viết vào pgvector cho chatbot |
+| AI (Phase 4, một phần) | Quiz tính giờ; gợi ý khóa học item-based chạy hằng đêm; nạp bài viết và transcript video vào pgvector; API trợ giảng AI trả lời dạng stream, có trích nguồn bài học |
 | Hạ tầng | Docker Compose cho máy dev (có MinIO thay R2) và cho VPS, nginx + HTTPS, CI 5 job |
 
-Chưa làm: chatbot RAG, sinh quiz bằng AI, gợi ý content-based (Phase 4); thanh toán, gamification, trang quản trị (Phase 5).
+Chưa làm: giao diện chat trong trang học, sinh quiz bằng AI, gợi ý content-based (Phase 4); thanh toán, gamification, trang quản trị (Phase 5).
 
 ---
 

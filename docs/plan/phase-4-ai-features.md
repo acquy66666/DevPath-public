@@ -27,7 +27,8 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 - [x] UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson), lịch sử phiên — tab "Trợ giảng AI" cạnh mục lục; `[n]` thành nút mở bài bên cạnh mà khung chat giữ nguyên; Dừng/Hỏi lại; backend thêm `citations` vào tin nhắn để phiên cũ vẫn biết `[2]` là bài nào (không migration, TDD) — `docs/report/assets/phase-4/chat-ui.txt`
   - Để lại cho task đánh giá chatbot: model tự viết ví dụ code không có trong tài liệu và không trích nguồn (`chat-ui.txt` §6)
 - [x] Quiz model + attempt flow: làm quiz tính giờ (giờ tính ở backend), tự chấm, xem giải thích
-- [ ] Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) → instructor duyệt/sửa từng câu trước khi publish
+- [x] Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) → instructor duyệt/sửa từng câu trước khi publish — `POST /quizzes/{id}/generate` + `/quiz-questions/{id}/approve`; cột `ai_generated`/`reviewed_at` (migration `ca9e1c7ffdbb`); còn câu AI chưa duyệt thì 409 `QUIZ_NEEDS_REVIEW`; mọi câu qua `check_question_shape`, xáo phương án, `key_warning` khi lời giải thích nói về phương án khác; model `gemini-3.5-flash-lite` chọn bằng số đo (30/30 đáp án đúng, 3,0 s) — `docs/report/assets/phase-4/quiz-generation.txt`
+  - Để lại cho gate cuối phase: học viên làm chính quiz vừa sinh trên trình duyệt + ảnh chụp (`quiz-generation.txt` §8)
 - [ ] Đánh giá chatbot: bộ 20 câu hỏi test trên khóa học seed, chấm đúng/sai/có trích nguồn — bộ câu hỏi + bảng kết quả lưu vào `docs/report/assets/phase-4/`
   - Kèm hai việc `rag-ingest.txt` mục 4 còn nợ: đối chiếu `CHARS_PER_TOKEN = 3,5` với `countTokens` trên chính các chunk đã sinh, và bấm publish trên UI rồi xem worker nhận job ingest (đường Celery đầu-cuối chưa ai thử trên máy dev)
 

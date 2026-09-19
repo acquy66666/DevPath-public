@@ -385,3 +385,17 @@ Task "Pipeline ingest transcript video" của Phase 4. Bằng chứng: `docs/rep
 **Transcript thuộc về video asset, không thuộc về bài học.** Cột `video_assets.transcript_key` có sẵn từ migration mục lục. Thay video là thay asset, và transcript của bản ghi hình cũ đi theo nó, thay vì âm thầm gắn vào một video mới có thể không khớp. Giá phải trả: giảng viên chỉ encode lại cùng một bài giảng cũng phải tải transcript lên lại. Khóa đang xuất bản thì lúc thay video sẽ được nạp lại, để chatbot thôi trích lời của một video không còn ai xem được.
 
 **Đọc lỗi không phải là hết chữ.** Transcript có mà đọc không được (bucket chớp nháy, worker thiếu khóa lưu trữ) thì bài đó được đếm `unreadable`, và chunk cũ được giữ nguyên. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota embedding lần nữa. Quy tắc "hết chữ thì gỡ chunk" (mục trên) chỉ áp dụng khi transcript thật sự bị gỡ.
+
+## Sinh quiz bằng AI (19/09/2026)
+
+Task "Sinh quiz AI" của Phase 4. Bằng chứng: `docs/report/assets/phase-4/quiz-generation.txt`.
+
+**Duyệt từng câu là bắt buộc, không phải tùy chọn.** Câu AI soạn được lưu với `reviewed_at = NULL`, và quiz còn câu như vậy thì không xuất bản được. Lý do là số đo, không phải thận trọng chung chung: với prompt trơn, `flash-lite` đổi `int(12.9)` của bài học thành `int("12.9")` nhưng vẫn giữ đáp án 12, trong khi Python báo lỗi. Còn `flash`, trên 30 câu, sinh một đáp án sai mà lời giải thích lại chép nguyên văn phương án đúng. Đáp án sai sẽ chấm sai học viên, chứ không chấm sai model. Không có nút "duyệt tất cả" vì cùng lý do.
+
+**Chọn model rẻ hơn, và đảo lại lựa chọn ban đầu.** Lần thăm dò đầu chọn `flash` vì `flash-lite` rơi vào bẫy trên. Sau khi thêm quy tắc "chép đúng đoạn mã trong tài liệu" vào prompt và đo lại trên 6 bài: `flash-lite` đúng 30/30 đáp án, mất 3,0 s; `flash` đúng 29/30, mất 11,5 s, và cạn quota free tier trước. Model không phải chỗ duy nhất có thể sửa: prompt tốt hơn làm model rẻ vượt model đắt. Và vì mọi câu đều qua duyệt, sai số còn lại của model rẻ không đi tới học viên.
+
+**Kiểm bằng code thay vì hỏi thêm model.** Câu nháp đi qua đúng `check_question_shape` như câu gõ tay, rồi bị loại nếu lặp câu đã có. Câu có lời giải thích mâu thuẫn với đáp án được gắn cờ bằng phép so từ đơn giản, bắt đúng 1/60 câu sai và không báo nhầm câu nào. Không gọi model lần hai để "tự kiểm": tốn gấp đôi quota, và vẫn là model chấm model.
+
+**Xáo phương án trước khi lưu.** Trước khi xáo, đáp án đúng nằm ở vị trí cuối 3/60 lần, trong khi ngẫu nhiên phải là 15. Một học viên chỉ cần "không bao giờ chọn D" là có lợi.
+
+**Đồng bộ, không qua Celery.** Một lần gọi khoảng 3 giây, và người chờ là giảng viên vừa bấm nút. Hàng đợi chỉ thêm vòng hỏi trạng thái mà không ai được lợi. Khác với ingest RAG, ở đó không ai ngồi chờ và cả khóa là hàng chục lần gọi.

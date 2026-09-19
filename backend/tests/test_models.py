@@ -65,6 +65,9 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "quizzes",
         "quiz_questions",
         "quiz_attempts",
+        # Phase 4 -- conversations with the RAG assistant.
+        "chat_sessions",
+        "chat_messages",
     }
 
 

@@ -28,12 +28,18 @@ WORKDIR /app
 # them. The empty app package exists only to satisfy the editable install --
 # `COPY . .` further down replaces it with the real one, and the .pth file
 # written into site-packages keeps pointing at /app either way.
-COPY pyproject.toml README.md ./
+#
+# Every install goes through requirements.lock: pyproject.toml only sets lower
+# bounds, so without it an image built on the morning of the defence could hold
+# a FastAPI or SQLAlchemy nobody has ever run the tests against. The lock also
+# lists the dev tools; as a constraints file it pins what is installed and
+# installs nothing by itself, so the production stages stay without them.
+COPY pyproject.toml requirements.lock README.md ./
 RUN mkdir -p app && touch app/__init__.py
 
 
 FROM base AS development
-RUN pip install -e ".[dev]"
+RUN pip install -e ".[dev]" -c requirements.lock
 COPY . .
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
@@ -56,7 +62,7 @@ CMD ["celery", "-A", "app.workers.celery_app", "worker", "-Q", "grading"]
 FROM base AS runtime
 # No dev extras: pytest and ruff have no business in a running server, and
 # every package that is not installed is a package that cannot be exploited.
-RUN pip install -e "."
+RUN pip install -e "." -c requirements.lock
 COPY . .
 
 # Alembic and the seed script run from this image too (`docker compose run`),

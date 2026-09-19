@@ -34,7 +34,10 @@
 
 services:
   cloudflared:
-    image: cloudflare/cloudflared:latest
+    # A version, not :latest, so the demo link does not change behaviour on
+    # the morning somebody happens to pull. --no-autoupdate below is the same
+    # decision made inside the container.
+    image: cloudflare/cloudflared:2026.9.1
     restart: unless-stopped
     command:
       - tunnel

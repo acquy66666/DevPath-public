@@ -17,6 +17,7 @@ from app.services.chat import (
     Source,
     build_turns,
     cited_numbers,
+    is_refusal,
     numbered_citations,
     retrieval_queries,
     session_title,
@@ -144,6 +145,60 @@ def test_lists_inside_code_are_not_citations() -> None:
 
 def test_a_refusal_cites_nothing() -> None:
     assert cited_numbers("Câu hỏi này nằm ngoài phạm vi khóa học.", source_count=3) == []
+
+
+# Rule 3 says a refusal cites nothing. The model did not always listen: on the
+# evaluation's thin corpus, 4 of 15 refusals ended "... hỏi về biến, phép gán
+# nhé [1][2][3][4]", and the page showed four lessons under "không trả lời được".
+# A refusal is told by its first sentence, which rule 3 prescribes word for word.
+
+
+def test_an_answer_that_opens_with_the_refusal_is_a_refusal() -> None:
+    assert is_refusal(
+        "Nội dung này nằm ngoài phạm vi tài liệu của khóa học. "
+        "Bạn có thể hỏi về biến, phép gán [1][2]."
+    )
+
+
+def test_a_politer_opening_is_still_a_refusal() -> None:
+    assert is_refusal(
+        "Xin lỗi bạn, nội dung về Decorator trong Python nằm ngoài phạm vi tài liệu "
+        "của khóa học này [1][2][3][4]. Bạn có thể hỏi về hàm nhé!"
+    )
+    assert is_refusal(
+        'Chào bạn, nội dung này nằm ngoài phạm vi tài liệu của khóa học "Python cơ bản".'
+        "\n\nBạn có thể hỏi về:\n- Đọc hiểu thông báo lỗi [1]"
+    )
+
+
+def test_an_answer_that_declines_only_part_of_the_question_is_not_a_refusal() -> None:
+    """Its first half is a real answer with a real citation."""
+    assert not is_refusal(
+        "Dựa trên tài liệu khóa học:\n\n* Dấu `=` là **phép gán** [1].\n\n"
+        "Nội dung về dấu `==` nằm ngoài phạm vi tài liệu của khóa học."
+    )
+
+
+def test_an_answer_is_not_a_refusal() -> None:
+    assert not is_refusal("`input()` luôn trả về chuỗi [1].")
+    assert not is_refusal("")
+
+
+def test_marks_leave_no_double_spaces_and_no_flattened_lists() -> None:
+    from app.services.chat import _strip_citations
+
+    assert (
+        _strip_citations("Hỏi về biến [1] hoặc vòng lặp [2][3] nhé [4].\n  * lồng [5]")
+        == "Hỏi về biến hoặc vòng lặp nhé.\n  * lồng"
+    )
+
+
+def test_the_system_prompt_gives_the_refusal_its_opening_words() -> None:
+    from app.services.chat import REFUSAL_OPENING
+
+    prompt = system_prompt("Lập trình Python cơ bản")
+    assert REFUSAL_OPENING in prompt
+    assert is_refusal(REFUSAL_OPENING)
 
 
 # --- Reading a stored answer back ---------------------------------------------

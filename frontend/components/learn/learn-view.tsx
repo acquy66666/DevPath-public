@@ -17,6 +17,7 @@ import {
 import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug } from "@/lib/api/courses";
@@ -272,10 +273,12 @@ export function LearnView({
                     queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
                   }}
                 />
-              ) : (
-                <article className="whitespace-pre-line text-pretty">
-                  {lesson.data.article_content ?? "Bài học này chưa có nội dung."}
+              ) : lesson.data.article_content?.trim() ? (
+                <article className="max-w-prose">
+                  <Markdown>{lesson.data.article_content}</Markdown>
                 </article>
+              ) : (
+                <p className="text-muted-foreground">Bài học này chưa có nội dung.</p>
               )}
 
               <div className="flex items-center gap-3">

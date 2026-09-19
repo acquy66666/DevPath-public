@@ -7,10 +7,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { CodeEditorHandle } from "@/components/exercise/code-editor";
 import { RunResult } from "@/components/exercise/run-result";
-import { Statement } from "@/components/exercise/statement";
 import { SubmissionHistory } from "@/components/exercise/submission-history";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Markdown } from "@/components/ui/markdown";
 import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getExerciseOfLesson } from "@/lib/api/grading";
@@ -230,7 +230,7 @@ export function ExerciseWorkspace({
   return (
     <div className="space-y-6">
       <section className="space-y-3 rounded-xl border p-4">
-        <Statement markdown={exercise.data.statement_md} />
+        <Markdown className="text-sm">{exercise.data.statement_md}</Markdown>
         <p className="text-xs text-muted-foreground">
           Giới hạn: {exercise.data.time_limit_ms} ms ·{" "}
           {exercise.data.memory_limit_mb} MB · {sampleCases.length} test mẫu

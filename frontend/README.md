@@ -104,6 +104,8 @@ Chép chứ không bundle vì bản ESM của Monaco cần plugin webpack, mà d
 
 **Đề bài render bằng `react-markdown`**, không bật plugin HTML thô. Đây là chữ một người dùng viết cho người dùng khác đọc: một đề bài chứa `<script>` sẽ hiện ra đúng những ký tự đã gõ.
 
+Component là `components/ui/markdown.tsx`, dùng chung với bài học dạng **bài viết** trong `learn-view.tsx` để hai chỗ không lệch kiểu nhau — đề bài truyền `className="text-sm"`, bài viết để cỡ chữ thân bài; code tính bằng `em` nên đi theo cả hai. Nó bỏ prop `node` (cây hast) mà react-markdown truyền cho mọi component tùy biến: rải thẳng xuống thẻ DOM thì thành `node="[object Object]"`.
+
 ### Xem bài đang được chấm
 
 `lib/api/submissions.ts` là kiểu riêng ấy: `SubmissionResult.stdout_trunc` khai là `string | null` vì với case ẩn nó **luôn** null, và một kiểu nói "luôn có" là một giả định sai được viết thành code.
@@ -154,7 +156,7 @@ app/
 ├── (marketing)/     Trang public: home, danh sách + chi tiết khóa học (SSR, SEO)
 ├── (learn)/         Player, quiz, code editor (client-heavy) — Phase 2+
 └── (dashboard)/     Khu vực giảng viên: /giang-day (+ admin ở Phase 5)
-components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea
+components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea, markdown
 components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)

@@ -300,9 +300,13 @@ export function ChatPanel({
         : (current?.title ?? live?.question ?? "Cuộc trò chuyện");
 
   return (
+    // Sized for where the panel first appears -- about 13rem down, below the
+    // site header, the course title and the tabs -- not for where it sits once
+    // stuck to the top. Sized for the stuck position, the question box opened
+    // below the fold, and the first thing a reader had to do was scroll.
     <section
       aria-label="Trợ giảng AI"
-      className="flex h-[34rem] flex-col overflow-hidden rounded-xl border lg:h-[calc(100dvh-7rem)] lg:min-h-[28rem]"
+      className="flex h-[34rem] flex-col overflow-hidden rounded-xl border lg:h-[calc(100dvh-14rem)] lg:min-h-[28rem]"
     >
       <header className="flex items-center gap-1 border-b px-2 py-1.5">
         {view === "history" ? (

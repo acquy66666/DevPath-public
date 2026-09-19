@@ -173,4 +173,4 @@ def test_without_a_key_the_failure_says_so() -> None:
 
 
 def test_the_quiz_model_is_the_one_configured_for_quizzes() -> None:
-    assert build_quiz_model(api_key="k").model == "gemini-3.5-flash"
+    assert build_quiz_model(api_key="k").model == "gemini-3.5-flash-lite"

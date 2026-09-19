@@ -14,10 +14,11 @@ explanation is an explicit choice of model, made once, in the one place where
 the attempt is known to be over.
 """
 
+import re
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
 
 from app.models.quiz import (
     DEFAULT_PASS_SCORE,
@@ -57,6 +58,46 @@ def check_question_shape(question: str, options: list[str], correct_index: int) 
             f"correct_index phải nằm trong khoảng 0..{len(options) - 1} "
             f"(đang là {correct_index})"
         )
+
+
+_WORD = re.compile(r"\w+")
+
+
+def _words(text: str) -> set[str]:
+    # One-letter tokens are noise: "a", "x", the "i" of a loop.
+    return {word for word in _WORD.findall(text.lower()) if len(word) > 1}
+
+
+def explanation_points_elsewhere(
+    *, options: list[str], correct_index: int, explanation: str | None
+) -> bool:
+    """Whether the explanation quotes a wrong option far more than the key.
+
+    The one wrong answer key in 60 measured AI drafts looked like this: the key
+    said "use global variables", and the explanation quoted, word for word,
+    the option about passing parameters and returning a result
+    (docs/report/assets/phase-4/quiz-generation.txt). Either the key or the
+    explanation is wrong, and a reviewer should look before approving.
+
+    A word-overlap test, deliberately crude: an option counts as quoted when
+    80% of its words appear in the explanation, and it only counts against the
+    key if the key is covered 30 points less. "12 chứ không phải 13" mentions
+    both and flags neither. On the 60 drafts it flagged exactly the one.
+    """
+    if not explanation:
+        return False
+    said = _words(explanation)
+
+    def cover(option: str) -> float:
+        words = _words(option)
+        return len(words & said) / len(words) if words else 0.0
+
+    right = cover(options[correct_index])
+    rival = max(
+        (cover(option) for index, option in enumerate(options) if index != correct_index),
+        default=0.0,
+    )
+    return rival >= 0.8 and rival > right + 0.3
 
 
 # --- Quizzes ---------------------------------------------------------------
@@ -143,6 +184,24 @@ class QuestionOut(BaseModel):
     #: When the instructor approved or edited the draft. A quiz with a draft
     #: still at null cannot be published.
     reviewed_at: datetime | None
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def key_warning(self) -> bool:
+        """An unreviewed draft whose explanation argues for another option.
+
+        A hint for the reviewer, not a verdict: nothing is refused on it, and
+        it goes quiet once the instructor has approved or edited the question.
+        """
+        return (
+            self.ai_generated
+            and self.reviewed_at is None
+            and explanation_points_elsewhere(
+                options=self.options,
+                correct_index=self.correct_index,
+                explanation=self.explanation,
+            )
+        )
 
 
 #: How many questions one request may draft. Ten fills a quiz; more than that

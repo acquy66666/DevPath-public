@@ -13,11 +13,13 @@ three steps, and the second is the one worth reading:
    from repeating a question the quiz already has. Each draft goes through the
    same `check_question_shape` a question typed by hand goes through, and
    what fails is dropped and counted, not stored. Then the options of every
-   survivor are shuffled: asked for four questions, the model put the right
-   answer at index 2 in 9 of 16 (docs/report/assets/phase-4/quiz-generation.txt).
+   survivor are shuffled: across 60 measured drafts the right answer sat in
+   the last place 3 times, where chance says 15
+   (docs/report/assets/phase-4/quiz-generation.txt). "Never pick D" should
+   not be a strategy that works.
 3. **Stored as drafts.** `ai_generated = true`, `reviewed_at = NULL`, and the
    quiz cannot be published until every one of them is approved, edited or
-   deleted (`services/quiz.py`). The cheaper model was measured writing a
+   deleted (`services/quiz.py`). Both models tried were measured writing a
    wrong answer key that looked right; review is the reason that is safe.
 
 Synchronous rather than a Celery job: one call of ~10 s, made by an instructor

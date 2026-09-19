@@ -6,14 +6,15 @@ believed: a question whose answer key points past its options, two identical
 options, the same question twice, a question the quiz already has.
 
 The shuffle has a test of its own because the bias it corrects was measured.
-Asked for four questions, the model put the right answer at index 2 in 9 of 16
-(docs/report/assets/phase-4/quiz-generation.txt), and a student who learns
-"pick C" passes without reading.
+Across 60 drafts the right answer was in the last place 3 times, where chance
+says 15 (docs/report/assets/phase-4/quiz-generation.txt), and a student who
+learns "never pick D" gains marks without reading.
 """
 
 import random
 from collections import Counter
 
+from app.schemas.quiz import explanation_points_elsewhere
 from app.services.quiz_generation import (
     MATERIAL_MAX_CHARS,
     OPTIONS_PER_QUESTION,
@@ -197,3 +198,49 @@ def test_shuffling_spreads_the_right_answer_over_every_position() -> None:
 
     assert set(positions) == {0, 1, 2, 3}
     assert min(positions.values()) > 60  # 100 expected each
+
+
+# --- The explanation argues for another option ------------------------------------
+#
+# The one wrong answer key in 60 measured drafts had this shape: the key said
+# "use globals", the explanation quoted the option about parameters and return.
+# It is flagged for the reviewer, not dropped -- the question may be one click
+# from right, and the reviewer is the one who decides.
+
+
+def test_an_explanation_quoting_another_option_is_flagged() -> None:
+    """The measured case, verbatim (quiz-generation.txt)."""
+    assert explanation_points_elsewhere(
+        options=[
+            "Ghi đè biến bên ngoài bằng từ khóa `global` để tiết kiệm bộ nhớ.",
+            "Không dùng tham số đầu vào mà trực tiếp thay đổi trạng thái của hệ thống.",
+            "Truyền giá trị vào qua tham số và trả kết quả ra qua `return`.",
+            "Tách hàm thành nhiều phần và sử dụng các biến toàn cục để liên kết.",
+        ],
+        correct_index=3,
+        explanation=(
+            "Tài liệu nêu rõ: truyền giá trị vào qua tham số và trả kết quả ra qua "
+            "`return` sẽ giúp hàm kiểm thử được và đọc một mình cũng hiểu."
+        ),
+    )
+
+
+def test_an_explanation_that_names_the_wrong_answer_to_reject_it_is_not_flagged() -> None:
+    """"12, not 13" mentions both. The key is covered as fully as the rival."""
+    assert not explanation_points_elsewhere(
+        options=["13", "12.9", "12", "Lỗi"],
+        correct_index=2,
+        explanation="`int(12.9)` cho 12 chứ không phải 13, vì nó cắt phần thập phân.",
+    )
+
+
+def test_an_explanation_agreeing_with_the_key_is_not_flagged() -> None:
+    assert not explanation_points_elsewhere(
+        options=["float", "int", "round", "Decimal"],
+        correct_index=3,
+        explanation="Theo tài liệu, khi làm việc với tiền, dùng `Decimal`.",
+    )
+
+
+def test_no_explanation_is_nothing_to_disagree_with() -> None:
+    assert not explanation_points_elsewhere(options=["a", "b"], correct_index=0, explanation=None)

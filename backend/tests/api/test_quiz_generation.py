@@ -5,7 +5,7 @@ The model is a fake: which model writes *good* questions was measured live
 (docs/report/assets/phase-4/quiz-generation.txt), and what these tests ask is
 whether this code believes the right parts of an answer, stores drafts as
 drafts, and refuses to publish one nobody read. That last rule is why the
-feature is safe to have at all -- the cheaper model was measured writing a
+feature is safe to have at all -- both models tried were measured writing a
 wrong answer key that looked right.
 
 Every refusal that happens before the model is called asserts that it was not
@@ -537,3 +537,30 @@ async def test_the_instructors_list_says_which_questions_are_drafts(
     assert [(q["ai_generated"], q["reviewed_at"]) for q in listed] == [(True, None)] * 2
     # And the response is JSON all the way down -- no datetime left unserialised.
     json.dumps(listed)
+
+
+async def test_a_draft_whose_explanation_argues_for_another_option_is_flagged(
+    api_client: AsyncClient, fakes, owner, world, quiz_model
+) -> None:
+    """The shape of the one wrong key in 60 measured drafts: flagged for the
+    reviewer until they approve or edit it, never refused on its own."""
+    contradicted = {
+        "question": "Cách thiết kế hàm nào dễ kiểm thử?",
+        "options": [
+            "Tách hàm và liên kết bằng biến toàn cục",
+            "Truyền giá trị qua tham số và trả kết quả qua return",
+            "Ghi đè biến bên ngoài bằng global",
+            "Không dùng tham số",
+        ],
+        "correct_index": 0,
+        "explanation": "Truyền giá trị qua tham số và trả kết quả qua return giúp hàm dễ kiểm thử.",
+    }
+    quiz_model.document = {"questions": [contradicted, drafted("Câu bình thường?")]}
+
+    questions = (await generate(api_client, world, owner)).json()["questions"]
+
+    assert [q["key_warning"] for q in questions] == [True, False]
+    approved = await api_client.post(
+        f"/api/v1/quiz-questions/{questions[0]['id']}/approve", headers=owner
+    )
+    assert approved.json()["key_warning"] is False

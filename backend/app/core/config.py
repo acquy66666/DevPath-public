@@ -97,16 +97,18 @@ class Settings(BaseSettings):
     # take a budget instead and reject a level.
     gemini_chat_thinking_level: str = "minimal"
     gemini_chat_max_output_tokens: int = 2048
-    # The model that drafts quiz questions. Not the chat model: measured on a
-    # seed lesson, flash-lite marked `int("12.9")` as returning 12 in both of
-    # two runs -- the lesson says `int(12.9)` -- while flash got every answer
-    # key right, at ~9.5 s instead of ~2 s. An instructor waits once per quiz;
-    # a wrong key is marked against every student who sits it. See
-    # docs/report/assets/phase-4/quiz-generation.txt.
-    gemini_quiz_model: str = "gemini-3.5-flash"
+    # The model that drafts quiz questions -- the same as the chat model, and
+    # chosen separately, on measurements (docs/report/assets/phase-4/
+    # quiz-generation.txt). A first probe with a bare prompt had flash-lite turn
+    # the lesson's `int(12.9)` into `int("12.9")` and key it as 12; with the
+    # rule "copy the code exactly" in the prompt it got that right 5 runs of 5,
+    # and 30 of 30 answer keys across six lessons. flash, on the same 30, wrote
+    # one wrong key, took 11.5 s instead of 3.0 s, and ran out of free-tier
+    # quota first. Neither is trusted blind: every draft is reviewed.
+    gemini_quiz_model: str = "gemini-3.5-flash-lite"
     gemini_quiz_thinking_level: str = "minimal"
-    # Ten questions measured at ~2 000 tokens. The limit is well above that
-    # because a cut-off JSON document is worth nothing, not half of something.
+    # Five questions measured at ~600 output tokens. The limit is far above
+    # that because a cut-off JSON document is worth nothing, not half.
     gemini_quiz_max_output_tokens: int = 8192
 
     # The course assistant. `chat_top_k` passages are read per question (about

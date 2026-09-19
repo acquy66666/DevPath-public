@@ -150,9 +150,9 @@ class QuizQuestion(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     #
     # The rule they carry is that a quiz with an AI question nobody has
     # reviewed cannot be published. The generator is measurably wrong
-    # sometimes -- a cheaper model marked `int("12.9")` as returning 12
-    # (docs/report/assets/phase-4/quiz-generation.txt) -- and an answer key
-    # that is wrong is marked against a student, not against the model.
+    # sometimes -- both models tried wrote a wrong key that looked right at
+    # least once (docs/report/assets/phase-4/quiz-generation.txt) -- and an
+    # answer key that is wrong is marked against a student, not the model.
     ai_generated: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("false")
     )

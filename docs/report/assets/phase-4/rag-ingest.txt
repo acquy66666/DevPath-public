@@ -66,6 +66,7 @@ viết. Nghĩa là: đường ống chạy đúng, nhưng kho ngữ liệu hiệ
 làm nó dày lên không phải tinh chỉnh chunking mà là **transcript video** —
 `video_assets.transcript_key` đã có sẵn cột, còn thiếu endpoint để giảng viên
 upload `.srt/.txt` và đường đọc file đó từ R2. Đó là nửa sau của task này.
+(19/09/2026: đã có, xem transcript-ingest.txt.)
 
 Hai nguồn chữ khác đang bị bỏ qua và đáng cân nhắc ở task sau:
 `code_exercises.statement_md` (đề bài, là văn bản giảng dạy thật) và nội dung
@@ -79,7 +80,8 @@ câu hỏi quiz. Cả hai đều nằm ở bảng khác nên `_lesson_text` chư
   Planner chọn đúng: quét tuần tự 26 dòng rẻ hơn đi qua index. Bằng chứng index
   thật sự hoạt động nằm ở `hnsw-index.txt`, đo trên 3000 chunk.
 
-- **Chưa có transcript nào.** Mọi số ở trên là của bài viết.
+- **Chưa có transcript nào.** Mọi số ở trên là của bài viết. (Từ 19/09/2026
+  đường nạp transcript đã chạy, xem transcript-ingest.txt.)
 
 - **Chưa đánh giá chất lượng trả lời.** Ba câu hỏi ở mục 2 chứng minh đường ống
   trả về đúng đoạn văn, không chứng minh chatbot trả lời hay. Bộ 20 câu hỏi và

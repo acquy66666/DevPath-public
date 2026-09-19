@@ -27,8 +27,25 @@ from sqlalchemy import select
 from app.core.db import SessionLocal
 from app.models import Course
 from app.services.chunking import chunk_text
-from app.services.ingest import ingest_course, lesson_text
+from app.services.ingest import (
+    TranscriptUnavailable,
+    ingest_course,
+    lesson_text,
+    transcript_of,
+)
 from app.services.llm import LLMError, build_embedder
+from app.services.storage import StorageNotConfiguredError, build_storage
+
+
+def _storage():
+    """The bucket transcripts are read from, or None if there is none. Run the
+    script inside a container on the dev stack: Windows cannot resolve the
+    MinIO host name (see infra/README.md)."""
+    try:
+        return build_storage()
+    except StorageNotConfiguredError:
+        print("Chưa cấu hình kho lưu trữ: transcript video sẽ không đọc được.", file=sys.stderr)
+        return None
 
 
 async def _resolve(session, wanted: str) -> Course:
@@ -52,7 +69,7 @@ async def _resolve(session, wanted: str) -> Course:
     return course
 
 
-async def _dry_run(session, courses: list[Course]) -> None:
+async def _dry_run(session, courses: list[Course], storage) -> None:
     """What would be embedded, without embedding it."""
     from app.models import CourseSection, Lesson
 
@@ -68,17 +85,26 @@ async def _dry_run(session, courses: list[Course]) -> None:
         )
         chunks = 0
         with_text = 0
+        transcripts = 0
+        unreadable = 0
         for lesson in lessons:
-            text = lesson_text(lesson)
+            try:
+                transcript = transcript_of(lesson, storage)
+            except TranscriptUnavailable:
+                unreadable += 1
+                continue
+            text = lesson_text(lesson, transcript)
             if not text:
                 continue
             with_text += 1
+            transcripts += transcript is not None
             chunks += len(chunk_text(text))
 
         grand_total += chunks
         print(
             f"{course.slug}: {with_text}/{len(lessons)} bài học có chữ "
-            f"→ {chunks} chunk"
+            f"({transcripts} từ transcript video) → {chunks} chunk"
+            + (f", {unreadable} transcript không đọc được" if unreadable else "")
         )
 
     print(f"\nTổng: {grand_total} chunk sẽ phải gọi embedding.")
@@ -117,8 +143,10 @@ async def main() -> None:
         else:
             courses = [await _resolve(session, args.course)]
 
+        storage = _storage()
+
         if args.dry_run:
-            await _dry_run(session, courses)
+            await _dry_run(session, courses, storage)
             return
 
         try:
@@ -129,29 +157,38 @@ async def main() -> None:
             ) from None
 
         print(f"model embedding: {embedder.model}\n")
-        totals = [0, 0, 0, 0, 0]
+        totals = [0, 0, 0, 0, 0, 0]
 
         for course in courses:
-            report = await ingest_course(session, course.id, embedder=embedder)
+            report = await ingest_course(
+                session, course.id, embedder=embedder, storage=storage
+            )
             totals = [
                 totals[0] + report.lessons,
                 totals[1] + report.chunks,
                 totals[2] + report.unchanged,
                 totals[3] + report.skipped,
                 totals[4] + report.removed,
+                totals[5] + report.unreadable,
             ]
             print(
                 f"{course.slug}: {report.lessons} bài nạp mới, "
                 f"{report.chunks} chunk, {report.unchanged} bài không đổi, "
                 f"{report.skipped} bài không có chữ"
                 + (f", {report.removed} bài hết chữ đã gỡ chunk" if report.removed else "")
+                + (
+                    f", {report.unreadable} transcript không đọc được (giữ chunk cũ)"
+                    if report.unreadable
+                    else ""
+                )
             )
 
         if len(courses) > 1:
             print(
                 f"\nTổng: {totals[0]} bài nạp mới, {totals[1]} chunk, "
                 f"{totals[2]} bài không đổi, {totals[3]} bài không có chữ, "
-                f"{totals[4]} bài hết chữ đã gỡ chunk"
+                f"{totals[4]} bài hết chữ đã gỡ chunk, "
+                f"{totals[5]} transcript không đọc được"
             )
         if totals[1] == 0 and totals[2]:
             print("Không có gì thay đổi nên không tốn quota nào.", file=sys.stderr)

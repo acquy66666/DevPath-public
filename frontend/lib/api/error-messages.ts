@@ -63,6 +63,12 @@ const MESSAGES: Record<string, string> = {
   INVALID_VIDEO_STATUS:
     "Video đang ở trạng thái khác nên không làm được thao tác này. Tải lại trang nhé.",
 
+  // Transcript. TRANSCRIPT_UNREADABLE và TRANSCRIPT_EMPTY cố ý không có ở đây:
+  // backend gửi kèm câu viết cho đúng tệp đó (vì sao không đọc được, sửa thế
+  // nào), và câu đó đi thẳng tới giảng viên — tốt hơn mọi câu chung.
+  LESSON_HAS_NO_VIDEO: "Tải video lên trước, rồi mới gắn transcript cho nó.",
+  TRANSCRIPT_NOT_FOUND: "Video này chưa có transcript.",
+
   // Bài tập code. EXERCISE_NOT_FOUND cũng là câu trả lời bình thường cho một bài
   // học vừa tạo — nơi nào coi nó là trạng thái rỗng thì bắt riêng, không lấy câu
   // này.

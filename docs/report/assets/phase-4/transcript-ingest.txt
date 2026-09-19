@@ -1,0 +1,108 @@
+TRANSCRIPT VIDEO VÀO ĐƯỜNG ỐNG RAG — CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 19/09/2026 · stack dev (infra/docker-compose.yml) · MinIO + Celery worker + Gemini thật
+Phase 4, tuần 9: "Pipeline ingest transcript video: giảng viên upload .srt/.txt lên R2
+→ đọc về, đi tiếp cùng đường ống trên"
+
+==============================================================================
+1. THIẾT KẾ, VÀ VÌ SAO
+==============================================================================
+  giảng viên --> PUT /api/v1/lessons/{id}/transcript   (đọc thử, rồi lưu lên bucket)
+  khóa đang xuất bản --> Celery ingest_course --> đọc lại từ bucket --> chunk --> Gemini --> doc_chunks
+
+- Đi qua API, không qua URL đã ký như video. Video đi thẳng lên bucket vì nặng
+  hàng trăm MB; transcript chỉ vài chục KB, và đi qua backend thì được đọc trước
+  khi giữ. Tệp sai bảng mã, hay .srt thật ra là văn bản thường, bị trả về ngay
+  kèm câu hướng dẫn sửa, thay vì được nạp rồi vài tuần sau bị chatbot trích lại
+  thành chữ vỡ.
+- Lưu tệp GỐC (có dòng thời gian), không lưu chữ đã bóc. Nhờ vậy về sau vẫn làm
+  được phụ đề trong player, và một parser tốt hơn luôn đọc lại được tệp gốc.
+- Transcript thuộc về video asset (video_assets.transcript_key, cột có sẵn từ
+  migration mục lục, không cần migration mới). Thay video thì transcript đi theo
+  video cũ, và khóa đang xuất bản được nạp lại để gỡ chunk của nó.
+- Đọc lỗi ≠ hết chữ. Bucket chớp nháy, hay worker thiếu khóa lưu trữ, thì bài đó
+  được đếm "unreadable" và GIỮ NGUYÊN chunk cũ. Chỉ khi transcript thật sự bị gỡ,
+  chunk mới bị xóa.
+
+==============================================================================
+2. TỆP THỬ
+==============================================================================
+Bài "Biến và phép gán", khóa python-co-ban-cho-nguoi-moi-bat-dau (đang xuất bản).
+Tệp bien-va-phep-gan.srt, 9 cue, 1351 byte, cố ý có đủ thứ một tệp thật hay có:
+BOM UTF-8 ở đầu, xuống dòng CRLF (kiểu trình soạn phụ đề trên Windows), một thẻ
+<i>, một cue xuống hai dòng, và cue 5 lặp nguyên văn dòng cuối của cue 4 như phụ
+đề tự động cuộn.
+
+Gọi API bằng access token ký bằng chính hàm create_access_token trong container
+backend, cho giảng viên sở hữu khóa. Claude không nhập mật khẩu thay người dùng,
+nên luồng đăng nhập trên giao diện không được chạy trong lần kiểm này.
+
+==============================================================================
+3. KẾT QUẢ
+==============================================================================
+PUT  -> 200 {"format":"srt","characters":707,"ingest_queued":true}
+GET /lessons/{id} -> video.transcript_format = "srt"
+MinIO: videos/256f7d73-.../transcript.srt, 1351 byte, còn nguyên BOM (tệp gốc)
+
+Worker, 1,4 giây sau:
+  Ingest khóa 20d409e0-...: 1 bài học, 1 chunk, 3 bài không đổi, 12 bài bỏ qua,
+  0 bài hết chữ đã gỡ chunk, 0 transcript không đọc được
+  -> 3 bài viết không bị nhúng lại: không tốn quota cho thứ không đổi.
+
+Chunk ghi vào doc_chunks: 725 ký tự = tiêu đề bài + 707 ký tự lời giảng, 207 token,
+gemini-embedding-001. Kiểm trên chính dòng đó:
+  có dòng thời gian (-->)  : không
+  có thẻ <i>                : không
+  có BOM                    : không
+  câu cuộn bị lặp           : xuất hiện đúng 1 lần
+
+Tìm lại được không? Nhúng câu hỏi "Dấu bằng trong Python có phải là phép so sánh
+không?" rồi xếp hạng mọi chunk của khóa theo khoảng cách cosine (API chat chưa
+có, đây là truy vấn trực tiếp):
+  0.2489  [video]   Biến và phép gán                       <- transcript vừa nạp
+  0.3747  [article] Ép kiểu và những cái bẫy quen thuộc
+  0.3907  [article] Đọc hiểu thông báo lỗi
+  0.3933  [article] Phạm vi biến: local, global và vì sao nên tránh global
+
+Gỡ transcript:
+  DELETE -> 204; gọi lại -> 404 TRANSCRIPT_NOT_FOUND
+  Worker: 0 bài học, 0 chunk, 3 bài không đổi, 13 bài bỏ qua, 1 bài hết chữ đã gỡ chunk
+  doc_chunks của bài đó: 0 dòng. Object trên MinIO: đã xóa.
+
+Tệp sai bảng mã: cùng nội dung lưu bằng Windows-1258 ("ANSI" trên Windows tiếng
+Việt), giải mã UTF-8 như Blob.text() của trình duyệt làm, ra 139 ký tự U+FFFD:
+  PUT -> 422 TRANSCRIPT_UNREADABLE "Tệp không ở bảng mã UTF-8 nên chữ tiếng Việt
+  bị vỡ. Mở tệp bằng trình soạn thảo, lưu lại với bảng mã UTF-8 rồi tải lên lại."
+  video_assets.transcript_key: vẫn NULL, không có gì được lưu.
+
+Tải lại đúng tệp đó lần nữa (giảng viên bấm nhầm hai lần):
+  Worker: 0 bài học, 0 chunk, 4 bài không đổi, 12 bài bỏ qua -> 0 lần gọi Gemini.
+  Phép so chunk + model trước khi nhúng áp dụng cho transcript như cho bài viết.
+
+Sau cùng tải lại tệp đúng, nên CSDL dev giữ 1 bài có transcript cho buổi demo:
+  python -m scripts.ingest_course python-co-ban-cho-nguoi-moi-bat-dau --dry-run
+  python-co-ban-cho-nguoi-moi-bat-dau: 4/16 bài học có chữ (1 từ transcript video) → 4 chunk
+  Toàn hệ thống: 27 chunk (trước đó 26).
+
+==============================================================================
+4. TEST
+==============================================================================
+Viết trước, đỏ đúng lý do rồi mới viết code:
+  tests/test_transcripts.py        19 — bóc chữ .srt/.txt, từ chối tệp sai
+  tests/api/test_transcripts.py    19 — PUT/DELETE, 401/403/404/409/422/502,
+                                        thay video trên khóa đang xuất bản
+  tests/test_ingest.py             +5 — nạp từ transcript, đọc lỗi giữ chunk,
+                                        không có storage, gỡ transcript, không nhúng lại
+
+==============================================================================
+5. CHƯA LÀM, NÓI THẲNG
+==============================================================================
+- Giao diện (khối "Transcript cho trợ giảng AI" trong trình soạn bài học) mới qua
+  tsc + ESLint + build, chưa được bấm thử trên trình duyệt vì cần đăng nhập.
+- 41/42 bài video seed chưa có transcript: video seed là luồng HLS mẫu, không
+  có lời giảng thật. Kho ngữ liệu dày lên khi có video bài giảng thật, không phải
+  khi viết thêm code.
+- Chunk chưa mang mốc thời gian, nên chatbot trích nguồn được tới bài học nhưng
+  chưa tới phút thứ mấy. Tệp gốc vẫn còn dòng thời gian, nên làm được về sau.
+- Chưa nhận .vtt.
+
+Tái tạo: xem backend/README.md mục "Nạp dữ liệu cho chatbot RAG".

@@ -373,3 +373,15 @@ Dòng 5/8 của mục "Dọn nợ trước khi đi tiếp". Bằng chứng: `doc
 **Bài không còn gì để nạp thì cũng không còn gì trong kho** — trước đây bài học hết chữ (xóa nội dung article, đổi sang video chưa có transcript) chỉ được đếm `skipped`, còn chunk của lần trước vẫn nằm trong `doc_chunks` cho chatbot trích dẫn như nguồn. Giờ lần ingest sau xóa chúng theo `lesson_id`, trong cùng vòng lặp từng bài với commit từng bài như phần còn lại. Report có thêm `removed`, chỉ đếm bài thật sự mất dòng, để con số nói kho vừa co lại bao nhiêu chứ không lặp lại số bài video mỗi lần chạy.
 
 **Unpublish không xóa chunk** — publish lại là nút bấm được nhiều lần; xóa khi unpublish nghĩa là trả tiền embedding cho cả khóa ở lần publish sau, trên đúng cái quota mà kế hoạch gọi tên là rủi ro. Giữ chunk của khóa không còn public khỏi câu trả lời thuộc về truy vấn top-k (lọc `courses.status = 'published'` và người hỏi đã ghi danh), đã ghi thành yêu cầu bắt buộc của task Chat API. Chỗ này rẻ hơn và đúng hơn: một bộ lọc ở chỗ đọc bảo vệ được cả những đường đưa chunk vào kho mà chưa ai nghĩ tới.
+
+## Transcript video (19/09/2026)
+
+Task "Pipeline ingest transcript video" của Phase 4. Bằng chứng: `docs/report/assets/phase-4/transcript-ingest.txt`.
+
+**Transcript đi qua API, không qua URL đã ký.** Video và avatar đi thẳng từ trình duyệt lên bucket, vì một bài giảng nặng hàng trăm MB và đẩy qua FastAPI sẽ giữ chặt một tiến trình. Transcript chỉ vài chục KB, nên lý do đó không còn. Đi qua backend thì được một thứ URL đã ký không cho: tệp được đọc trước khi giữ. Tệp lưu bằng Windows-1258 (trình duyệt giải mã UTF-8 ra `U+FFFD`), hay `.srt` không có dòng thời gian, bị từ chối ngay kèm câu hướng dẫn sửa. Nếu đi đường khác, tệp đó sẽ được nạp, rồi vài tuần sau bị chatbot trích lại thành chữ vỡ. Được thêm cái lợi là không có object mồ côi từ những lần upload bỏ dở.
+
+**Lưu tệp gốc, không lưu chữ đã bóc.** Dòng thời gian vô ích với việc tìm kiếm, nhưng cần cho phụ đề trong player (có trong danh sách cắt giảm, mục 2) và cho việc trích nguồn tới từng phút về sau. Chữ đã bóc thì không dựng lại được tệp gốc. Tệp gốc thì một parser tốt hơn luôn đọc lại được.
+
+**Transcript thuộc về video asset, không thuộc về bài học.** Cột `video_assets.transcript_key` có sẵn từ migration mục lục. Thay video là thay asset, và transcript của bản ghi hình cũ đi theo nó, thay vì âm thầm gắn vào một video mới có thể không khớp. Giá phải trả: giảng viên chỉ encode lại cùng một bài giảng cũng phải tải transcript lên lại. Khóa đang xuất bản thì lúc thay video sẽ được nạp lại, để chatbot thôi trích lời của một video không còn ai xem được.
+
+**Đọc lỗi không phải là hết chữ.** Transcript có mà đọc không được (bucket chớp nháy, worker thiếu khóa lưu trữ) thì bài đó được đếm `unreadable`, và chunk cũ được giữ nguyên. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota embedding lần nữa. Quy tắc "hết chữ thì gỡ chunk" (mục trên) chỉ áp dụng khi transcript thật sự bị gỡ.

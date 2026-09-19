@@ -21,10 +21,14 @@ embedding bill for a republish that changed a typo in a different lesson. The
 comparison includes the model name, because a vector is only comparable with
 others from the same model.
 
-Video transcripts are not here yet. `video_assets.transcript_key` points into
-R2, so reading one needs the storage client and an upload route for instructors
-to put a `.srt` there -- the next task. `lesson_text` is the single place that
-decides what a lesson's words are, so that task adds a branch to one function.
+**Video lessons are read from their transcript**, which lives in the bucket
+(`video_assets.transcript_key`, uploaded through `services/transcripts.py`) and
+is fetched back here, parsed by the same function that checked it on upload.
+A transcript that exists but cannot be read on this run -- the bucket blinked,
+or the worker has no bucket credentials -- is **not** a lesson without text:
+its chunks stay as they were and the lesson is counted `unreadable`. Treating
+it as empty would wipe the chatbot's memory of every video on a network hiccup,
+and paying the embedding quota again to refill it.
 
 **A lesson with no text has no chunks either.** Emptying an article, or
 turning it into a video with no transcript yet, removes its rows on the next
@@ -35,6 +39,7 @@ chunks out of answers is the retrieval query's job (filter on the course being
 published and the asker being enrolled), not this module's.
 """
 
+import logging
 import uuid
 from dataclasses import dataclass
 
@@ -45,6 +50,10 @@ from app.core.exceptions import NotFoundError
 from app.models import Course, CourseSection, DocChunk, Lesson
 from app.services.chunking import chunk_text
 from app.services.llm import Embedder
+from app.services.storage import ObjectStorage
+from app.services.transcripts import format_of_key, transcript_text
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,27 +73,66 @@ class IngestReport:
     #: Of the skipped, lessons that still had chunks from an earlier run --
     #: text since emptied -- and lost them in this one.
     removed: int = 0
+    #: Videos whose transcript exists but could not be fetched or parsed this
+    #: time. Their chunks are left exactly as they were; run again later.
+    unreadable: int = 0
 
 
-def lesson_text(lesson: Lesson) -> str:
+class TranscriptUnavailable(Exception):
+    """A lesson has a transcript, and this run could not read it."""
+
+
+def transcript_of(lesson: Lesson, storage: ObjectStorage | None) -> str | None:
+    """A video lesson's transcript as plain words, or None if it has none.
+
+    Raises TranscriptUnavailable when there is one but it cannot be read now --
+    which the caller must tell apart from "none", see the module docstring.
+    """
+    asset = lesson.video_asset
+    if lesson.type != "video" or asset is None or asset.transcript_key is None:
+        return None
+    if storage is None:
+        raise TranscriptUnavailable("không có kho lưu trữ để đọc transcript")
+
+    key = asset.transcript_key
+    try:
+        raw = storage.read_bytes(key).decode("utf-8")
+        return transcript_text(raw, format_of_key(key))
+    except Exception as exc:
+        raise TranscriptUnavailable(f"{key}: {exc}") from exc
+
+
+def lesson_text(lesson: Lesson, transcript: str | None = None) -> str:
     """The words of a lesson, or empty if it has none.
+
+    An article's are its content; a video's are its transcript, which the
+    caller fetched (`transcript_of`) because reading it is IO.
 
     The title is prepended rather than left in the `lessons` row: retrieval
     compares a question against the chunk's own text, so a chunk that never
     names its subject can only be found through whatever words happen to fall
     inside it. It costs a few tokens per chunk and buys every chunk a heading.
     """
-    if lesson.type == "article" and lesson.article_content:
-        body = lesson.article_content.strip()
-        if body:
-            return f"{lesson.title}\n\n{body}"
-    return ""
+    if lesson.type == "article":
+        body = (lesson.article_content or "").strip()
+    elif lesson.type == "video":
+        body = (transcript or "").strip()
+    else:
+        body = ""
+    return f"{lesson.title}\n\n{body}" if body else ""
 
 
 async def ingest_course(
-    session: AsyncSession, course_id: uuid.UUID, *, embedder: Embedder
+    session: AsyncSession,
+    course_id: uuid.UUID,
+    *,
+    embedder: Embedder,
+    storage: ObjectStorage | None = None,
 ) -> IngestReport:
     """Chunk, embed and store every lesson of one course.
+
+    `storage` is where transcripts are read from; without one, every video that
+    has a transcript is `unreadable` and keeps whatever chunks it had.
 
     Raises whatever the embedder raises. The caller -- a Celery task -- turns
     that into a retry; the lessons already committed stay committed.
@@ -104,10 +152,17 @@ async def ingest_course(
         )
     )
 
-    lessons_done = chunks_written = unchanged = skipped = removed = 0
+    lessons_done = chunks_written = unchanged = skipped = removed = unreadable = 0
 
     for lesson in lessons:
-        text = lesson_text(lesson)
+        try:
+            transcript = transcript_of(lesson, storage)
+        except TranscriptUnavailable as error:
+            logger.warning("Không đọc được transcript bài %s: %s", lesson.id, error)
+            unreadable += 1
+            continue
+
+        text = lesson_text(lesson, transcript)
         chunks = chunk_text(text) if text else []
         if not chunks:
             skipped += 1
@@ -164,6 +219,7 @@ async def ingest_course(
         unchanged=unchanged,
         skipped=skipped,
         removed=removed,
+        unreadable=unreadable,
     )
 
 

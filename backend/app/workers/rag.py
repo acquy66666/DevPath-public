@@ -21,13 +21,15 @@ storm nobody can see.
 
 import asyncio
 import logging
+from dataclasses import asdict
 
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
-from app.services.ingest import ingest_course
+from app.services.ingest import IngestReport, ingest_course
 from app.services.llm import LLMError, build_embedder
+from app.services.storage import StorageNotConfiguredError, build_storage
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
@@ -49,7 +51,14 @@ async def _run(course_id: str) -> dict[str, int]:
         # of the platform works without a chatbot, and a red task on every
         # publish would train everyone to ignore red tasks.
         logger.warning("Bỏ qua ingest khóa %s: %s", course_id, error.message)
-        return {"lessons": 0, "chunks": 0, "unchanged": 0, "skipped": 0, "removed": 0}
+        return asdict(IngestReport(lessons=0, chunks=0, unchanged=0, skipped=0))
+
+    try:
+        storage = build_storage()
+    except StorageNotConfiguredError:
+        # Articles still ingest. Videos with a transcript count as unreadable
+        # and keep their chunks -- no bucket is not the same as no transcript.
+        storage = None
 
     # A fresh engine per run, like the other workers: the worker process is
     # synchronous, so there is no long-lived loop a pooled connection could
@@ -59,25 +68,21 @@ async def _run(course_id: str) -> dict[str, int]:
     try:
         async with factory() as session:
             report = await ingest_course(
-                session, uuid.UUID(course_id), embedder=embedder
+                session, uuid.UUID(course_id), embedder=embedder, storage=storage
             )
     finally:
         await engine.dispose()
 
     logger.info(
         "Ingest khóa %s: %d bài học, %d chunk, %d bài không đổi, %d bài bỏ qua, "
-        "%d bài hết chữ đã gỡ chunk",
+        "%d bài hết chữ đã gỡ chunk, %d transcript không đọc được",
         course_id,
         report.lessons,
         report.chunks,
         report.unchanged,
         report.skipped,
         report.removed,
+        report.unreadable,
     )
-    return {
-        "lessons": report.lessons,
-        "chunks": report.chunks,
-        "unchanged": report.unchanged,
-        "skipped": report.skipped,
-        "removed": report.removed,
-    }
+    # Every field of the report, so a counter added there shows up here too.
+    return asdict(report)

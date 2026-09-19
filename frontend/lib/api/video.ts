@@ -11,6 +11,22 @@ export interface VideoAsset {
   updated_at: string;
   /** Playable manifest. Present once the transcode finished. */
   hls_url: string | null;
+  /** Which transcript the instructor uploaded, if any. The file itself never
+   * reaches the browser — only the chatbot reads it. */
+  transcript_format: TranscriptFormat | null;
+}
+
+export type TranscriptFormat = "srt" | "txt";
+
+/** Mirrors TRANSCRIPT_MAX_CHARS in backend/app/services/storage.py. */
+export const TRANSCRIPT_MAX_CHARS = 1_000_000;
+
+export interface TranscriptResult {
+  format: TranscriptFormat;
+  /** Characters the chatbot will read, after timings and tags are gone. */
+  characters: number;
+  /** True on a published course: the re-ingest is already queued. */
+  ingest_queued: boolean;
 }
 
 export interface VideoUploadTicket {
@@ -73,4 +89,31 @@ export function getVideoAsset(
   videoAssetId: string,
 ): Promise<VideoAsset> {
   return apiFetch<VideoAsset>(`/api/v1/video-assets/${videoAssetId}`, { accessToken });
+}
+
+/**
+ * Give a video its transcript, replacing any earlier one.
+ *
+ * The text goes through the backend rather than straight to the bucket like
+ * the video does: a transcript is small, and the backend reads it before
+ * keeping it — a file that is not UTF-8 is refused here instead of being
+ * quoted back to students as gibberish.
+ */
+export function putTranscript(
+  accessToken: string,
+  lessonId: string,
+  input: { filename: string; content: string },
+): Promise<TranscriptResult> {
+  return apiFetch<TranscriptResult>(`/api/v1/lessons/${lessonId}/transcript`, {
+    method: "PUT",
+    accessToken,
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteTranscript(accessToken: string, lessonId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/lessons/${lessonId}/transcript`, {
+    method: "DELETE",
+    accessToken,
+  });
 }

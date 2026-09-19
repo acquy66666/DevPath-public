@@ -85,7 +85,7 @@ docker compose -f infra/docker-compose.yml up -d --build backend worker
 
 ## Object storage trên máy dev: MinIO thay cho R2
 
-Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy ngay trên máy, đứng thay Cloudflare R2. Các biến `R2_*` để trống trong `infra/.env` thì tự trỏ vào nó, nên upload video, avatar và (sắp tới) transcript chạy được ngay trên một bản clone mới, không cần tài khoản nào. Code chỉ nói giao thức S3, không biết mình đang nói chuyện với MinIO hay R2. `docker-compose.prod.yml` **không** có MinIO; production vẫn dùng R2.
+Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy ngay trên máy, đứng thay Cloudflare R2. Các biến `R2_*` để trống trong `infra/.env` thì tự trỏ vào nó, nên upload video, avatar và transcript chạy được ngay trên một bản clone mới, không cần tài khoản nào. Code chỉ nói giao thức S3, không biết mình đang nói chuyện với MinIO hay R2. `docker-compose.prod.yml` **không** có MinIO; production vẫn dùng R2.
 
 | Thứ | Giá trị |
 |---|---|

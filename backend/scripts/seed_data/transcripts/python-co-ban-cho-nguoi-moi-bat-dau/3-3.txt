@@ -1,0 +1,15 @@
+Khi chương trình dài ra vài trăm dòng, để tất cả trong một file sẽ rất khó tìm và khó sửa. Python cho phép chia code ra nhiều file, và mỗi file .py là một module.
+
+Giả sử ta có file tien_ich.py chứa hàm tinh_tong. Ở file main.py cùng thư mục, có hai cách dùng nó. Cách một: import tien_ich, rồi gọi tien_ich.tinh_tong(1, 2). Tên module đứng trước, nên đọc là biết hàm đến từ đâu. Cách hai: from tien_ich import tinh_tong, rồi gọi thẳng tinh_tong(1, 2). Tránh from tien_ich import *, vì nó kéo mọi tên vào và bạn không còn biết tên nào từ đâu ra.
+
+Khi import một module, Python CHẠY toàn bộ file đó từ trên xuống một lần. Nếu tien_ich.py có sẵn vài dòng print để thử, những dòng đó sẽ chạy ngay lúc main.py import nó, một bất ngờ khó chịu.
+
+Cách giải quyết là khối if __name__ == "__main__": đặt ở cuối file. Biến đặc biệt __name__ có giá trị "__main__" khi file được chạy trực tiếp bằng python tien_ich.py, và có giá trị là tên module, tức "tien_ich", khi file được import. Vì vậy code đặt trong khối đó chỉ chạy khi ta chạy trực tiếp file, không chạy khi file bị import. Đó là chỗ để code thử nghiệm và lệnh khởi động chương trình.
+
+Một lỗi rất hay gặp: đặt tên file của mình trùng với module có sẵn của Python, ví dụ random.py hay math.py. Khi đó import random sẽ nạp file của bạn thay vì thư viện chuẩn, và bạn nhận được lỗi kiểu AttributeError: module 'random' has no attribute 'randint'. Đổi tên file và xóa thư mục __pycache__ đi kèm là hết.
+
+Nói tới __pycache__: đó là thư mục Python tự tạo để lưu bản đã biên dịch của các module, giúp lần chạy sau nhanh hơn. Không cần sửa hay nộp nó; nên thêm nó vào .gitignore.
+
+Khi có nhiều module liên quan, gom chúng vào một thư mục, gọi là package. Thư mục đó thường có file __init__.py, và ta import bằng dấu chấm, ví dụ from hinh_hoc.tam_giac import dien_tich.
+
+Cuối cùng, tránh import vòng tròn: a.py import b.py trong khi b.py lại import a.py. Python sẽ báo lỗi kiểu ImportError, vì một bên bị dùng khi chưa nạp xong. Thường đó là dấu hiệu nên tách phần dùng chung ra một module thứ ba.

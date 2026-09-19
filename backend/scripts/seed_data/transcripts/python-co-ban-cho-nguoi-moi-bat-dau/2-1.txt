@@ -1,0 +1,15 @@
+Vòng lặp for dùng để đi qua lần lượt từng phần tử của một dãy: một danh sách, một chuỗi, hay một dãy số.
+
+Ví dụ: for ten in ["An", "Bình", "Chi"]: print(ten). Mỗi vòng, biến ten nhận một phần tử, theo đúng thứ tự. Duyệt một chuỗi thì mỗi vòng nhận một ký tự.
+
+Khi cần lặp một số lần nhất định, dùng range. range có ba cách gọi. range(5) sinh ra 0, 1, 2, 3, 4: bắt đầu từ 0 và dừng TRƯỚC 5, nên có đúng 5 số. range(2, 6) sinh ra 2, 3, 4, 5. range(1, 10, 2) có thêm bước nhảy 2, sinh ra 1, 3, 5, 7, 9. Quy tắc cần thuộc lòng: giá trị dừng không bao giờ được lấy. Muốn đếm từ 1 đến 10 thì viết range(1, 11).
+
+Bước nhảy có thể âm để đếm ngược: range(10, 0, -1) cho 10, 9, và cứ thế xuống tới 1, vẫn không lấy số 0.
+
+Một mẫu rất hay gặp là cộng dồn: gán tong = 0 trước vòng lặp, rồi mỗi vòng tong += i. Sau vòng lặp for i in range(1, 101), tong bằng 5050. Nhớ khởi tạo biến cộng dồn BÊN NGOÀI vòng lặp; đặt nó bên trong thì mỗi vòng nó lại bị đặt về 0.
+
+Khi cần cả vị trí lẫn giá trị, đừng viết for i in range(len(ds)) rồi ds[i]. Dùng enumerate: for i, ten in enumerate(ds) cho ra cả chỉ số lẫn phần tử. Muốn đánh số từ 1 thì enumerate(ds, start=1).
+
+Một lời khuyên: đừng thêm hay xóa phần tử của chính danh sách đang được duyệt trong vòng for. Vòng lặp sẽ bỏ sót phần tử theo những cách rất khó đoán. Nếu cần lọc, hãy tạo một danh sách mới và thêm vào đó những phần tử muốn giữ.
+
+Còn khi nào dùng for, khi nào dùng while? Dùng for khi bạn biết trước sẽ đi qua những gì: một danh sách có sẵn, hay một số lần cố định. Bài sau về while sẽ nói về trường hợp còn lại.

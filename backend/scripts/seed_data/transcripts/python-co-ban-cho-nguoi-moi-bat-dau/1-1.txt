@@ -1,0 +1,11 @@
+Bài này giới thiệu ba kiểu dữ liệu cơ bản nhất: số, chuỗi và boolean. Muốn biết một giá trị thuộc kiểu gì, dùng hàm type, ví dụ type(5) cho ra int.
+
+Số có hai loại chính. int là số nguyên như 5, -3, 1000. float là số thực, có dấu chấm thập phân như 3.14 hay 2.0. Lưu ý Python dùng dấu chấm chứ không dùng dấu phẩy để ghi phần thập phân.
+
+Về phép tính, có bốn phép cần nhớ kỹ. Phép chia một gạch, dấu /, luôn cho ra float, kể cả khi chia hết: 7 / 2 bằng 3.5, và 6 / 2 bằng 3.0 chứ không phải 3. Phép chia hai gạch, dấu //, là chia lấy phần nguyên, làm tròn xuống: 7 // 2 bằng 3. Cẩn thận với số âm: -7 // 2 bằng -4, vì làm tròn xuống nghĩa là về phía âm vô cùng. Phép % cho phần dư: 7 % 2 bằng 1, hay dùng để kiểm tra số chẵn, n % 2 == 0. Và hai dấu sao ** là lũy thừa: 2 ** 10 bằng 1024. Đừng nhầm với dấu mũ ^, trong Python đó là một phép toán bit khác hẳn.
+
+Chuỗi, kiểu str, là văn bản nằm trong dấu nháy. Mỗi ký tự có một chỉ số, bắt đầu từ 0: với s = "Python", s[0] là chữ P, và chỉ số âm đếm từ cuối, s[-1] là chữ n. Cắt chuỗi bằng s[1:4] cho ra "yth": lấy từ vị trí 1 đến trước vị trí 4, vị trí cuối không được lấy. Hàm len(s) cho độ dài, ở đây là 6. Chuỗi trong Python không sửa được tại chỗ: gán s[0] = "J" sẽ báo TypeError. Muốn đổi thì tạo chuỗi mới, ví dụ "J" + s[1:].
+
+Boolean, kiểu bool, chỉ có hai giá trị True và False, viết hoa chữ cái đầu. Viết true thường sẽ bị NameError. Kết hợp điều kiện bằng các từ and, or, not, chứ không dùng && hay || như một số ngôn ngữ khác.
+
+Cuối cùng là khái niệm truthy và falsy: khi đặt vào chỗ cần điều kiện, số 0, chuỗi rỗng "", danh sách rỗng và None đều được coi là False; hầu hết mọi thứ khác được coi là True. Một cái bẫy vui: bool("False") cho ra True, vì đó là một chuỗi không rỗng, dù nội dung của nó là chữ False.

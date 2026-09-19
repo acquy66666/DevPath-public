@@ -1,0 +1,38 @@
+﻿1
+00:00:01,000 --> 00:00:05,200
+Chào các bạn, trong bài này chúng ta tìm hiểu về biến và phép gán trong Python.
+
+2
+00:00:05,200 --> 00:00:10,800
+Biến là một cái tên dùng để gắn với một giá trị,
+giống như dán nhãn lên một chiếc hộp.
+
+3
+00:00:10,800 --> 00:00:16,400
+Để tạo biến, ta viết tên biến, dấu bằng, rồi giá trị. Ví dụ: tuoi bằng 20.
+
+4
+00:00:16,400 --> 00:00:22,000
+<i>Lưu ý:</i> dấu bằng trong Python không phải là phép so sánh,
+mà là phép gán — lấy giá trị bên phải gắn vào tên bên trái.
+
+5
+00:00:22,000 --> 00:00:22,900
+mà là phép gán — lấy giá trị bên phải gắn vào tên bên trái.
+
+6
+00:00:23,000 --> 00:00:29,500
+Tên biến chỉ gồm chữ cái, chữ số và dấu gạch dưới, và không được bắt đầu bằng chữ số.
+
+7
+00:00:29,500 --> 00:00:35,000
+Python phân biệt chữ hoa chữ thường, nên Tuoi và tuoi là hai biến khác nhau.
+
+8
+00:00:35,000 --> 00:00:41,000
+Một biến có thể được gán lại nhiều lần; giá trị cũ bị thay bằng giá trị mới.
+
+9
+00:00:41,000 --> 00:00:47,000
+Python cũng cho phép gán nhiều biến cùng lúc, ví dụ a, b bằng 1, 2,
+và đổi chỗ hai biến bằng a, b bằng b, a.

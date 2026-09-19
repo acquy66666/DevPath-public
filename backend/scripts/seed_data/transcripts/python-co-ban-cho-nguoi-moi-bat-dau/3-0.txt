@@ -1,0 +1,16 @@
+Hàm là một đoạn code được đặt tên để dùng lại nhiều lần. Thay vì chép cùng một đoạn tính toán ở năm chỗ, ta viết nó một lần trong hàm và gọi hàm năm lần; khi cần sửa, chỉ sửa một chỗ.
+
+Định nghĩa hàm bằng từ khóa def, tên hàm, cặp ngoặc tròn chứa tham số, và dấu hai chấm. Thân hàm thụt vào 4 dấu cách. Ví dụ:
+
+def binh_phuong(x):
+    return x * x
+
+Gọi hàm bằng tên và ngoặc tròn: binh_phuong(4) cho ra 16. Tên đặt trong ngoặc lúc định nghĩa, ở đây là x, gọi là tham số. Giá trị truyền vào lúc gọi, ở đây là 4, gọi là đối số.
+
+return làm hai việc: trả giá trị về cho nơi gọi, và kết thúc hàm ngay lập tức. Các dòng phía sau return trong cùng nhánh không chạy nữa. Một hàm không có return, hoặc chạy tới cuối mà không gặp return, sẽ trả về None. Đây là nguồn của một lỗi rất hay gặp: hàm dùng print để "trả" kết quả, rồi nơi gọi viết ket_qua = tinh_tong(2, 3) và nhận về None. print chỉ hiển thị lên màn hình cho người xem; return mới đưa giá trị về cho code dùng tiếp. Hàm tính toán thì nên return, và để nơi gọi quyết định có in hay không.
+
+Hàm có thể trả về nhiều giá trị cùng lúc: return nho_nhat, lon_nhat. Thật ra Python gói chúng lại thành một tuple, và nơi gọi có thể tách ra ngay: a, b = tim_min_max(ds).
+
+Dòng chuỗi đặt ngay dưới dòng def, trong ba dấu nháy, gọi là docstring. Nó mô tả hàm làm gì, và hiện ra khi gọi help(ten_ham) hay khi rê chuột trong VS Code.
+
+Cuối cùng, Python đọc file từ trên xuống, nên hàm phải được định nghĩa TRƯỚC dòng gọi nó chạy. Gọi hàm ở dòng 1 mà def ở dòng 10 sẽ gặp NameError, giống như dùng một biến chưa gán.

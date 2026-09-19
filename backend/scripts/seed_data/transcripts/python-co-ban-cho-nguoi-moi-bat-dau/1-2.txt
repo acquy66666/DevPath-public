@@ -1,0 +1,15 @@
+Khi cần in ra một câu có chứa giá trị của biến, cách gọn và dễ đọc nhất trong Python hiện đại là f-string.
+
+Trước khi có f-string, người ta hay ghép chuỗi bằng dấu cộng: "Xin chào " + ten. Cách này nhanh chóng rắc rối khi có số: "Năm nay tôi " + tuoi + " tuổi" sẽ báo TypeError, vì không cộng được chuỗi với số. Bạn phải tự bọc str(tuoi). f-string giải quyết chuyện đó.
+
+Cú pháp: đặt chữ f ngay trước dấu nháy mở, rồi đặt biến trong cặp ngoặc nhọn. Ví dụ f"Xin chào {ten}, năm nay bạn {tuoi} tuổi". Python tự chuyển giá trị thành chữ, không cần str.
+
+Trong ngoặc nhọn không chỉ đặt được tên biến mà đặt được cả biểu thức, như f"{a} + {b} = {a + b}", hay lời gọi hàm, như f"Tên có {len(ten)} ký tự".
+
+Sau dấu hai chấm trong ngoặc nhọn là phần định dạng. Hay dùng nhất là số chữ số thập phân: với pi = 3.14159, f"{pi:.2f}" cho ra 3.14. .2f nghĩa là số thực, hai chữ số sau dấu chấm, có làm tròn. Dấu phẩy ngăn cách hàng nghìn: f"{1234567:,}" cho ra 1,234,567. Căn lề trong một ô rộng 10 ký tự: {x:>10} căn phải, {x:<10} căn trái, {x:^10} căn giữa, tiện khi in bảng. Và phần trăm: f"{0.256:.1%}" cho ra 25.6%.
+
+Từ Python 3.8 có thêm một mẹo gỡ lỗi rất tiện: viết dấu bằng sau biểu thức, f"{tuoi=}", sẽ in ra cả tên lẫn giá trị, tuoi=20. Không cần gõ lại tên biến hai lần mỗi khi muốn xem nó đang chứa gì.
+
+Muốn in ra chính dấu ngoặc nhọn trong f-string thì gấp đôi nó: f"{{tên}}" in ra {tên}.
+
+Hai cách định dạng cũ hơn bạn sẽ gặp khi đọc code của người khác: phương thức .format, như "Xin chào {}".format(ten), và dấu phần trăm kiểu C, như "Xin chào %s" % ten. Cả hai vẫn chạy, nhưng với code mới, hãy dùng f-string.

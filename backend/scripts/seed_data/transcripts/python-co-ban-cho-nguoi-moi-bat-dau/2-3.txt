@@ -1,0 +1,13 @@
+Bài này nói về hai câu lệnh điều khiển vòng lặp là break và continue, và về vòng lặp lồng nhau.
+
+break dừng vòng lặp ngay lập tức; chương trình nhảy tới dòng đầu tiên sau vòng lặp. Ví dụ tìm số chia hết cho 7 đầu tiên trong một danh sách: tìm thấy thì break, không cần duyệt tiếp phần còn lại.
+
+continue thì nhẹ hơn: nó bỏ qua phần còn lại của vòng HIỆN TẠI và chuyển sang vòng kế tiếp, chứ không dừng cả vòng lặp. Ví dụ in các số từ 1 đến 10 trừ số chia hết cho 3: if i % 3 == 0: continue, rồi mới print(i).
+
+Python có một cấu trúc ít ngôn ngữ có: else gắn với vòng lặp. Khối else của for hay while chạy khi vòng lặp kết thúc bình thường, tức là KHÔNG bị dừng bởi break. Nó rất hợp với bài toán tìm kiếm: trong vòng for, gặp phần tử cần tìm thì in "Tìm thấy" và break; còn nhánh else của vòng for in "Không tìm thấy". Không cần thêm biến cờ.
+
+Vòng lặp lồng nhau là vòng lặp nằm trong thân một vòng lặp khác. Ví dụ in bảng cửu chương: for i in range(1, 10), bên trong là for j in range(1, 11), in i nhân j. Với mỗi giá trị của i, vòng trong chạy trọn 10 lần, nên tổng cộng thân vòng trong chạy 9 nhân 10 là 90 lần. Vòng lặp lồng nhau vì thế tốn thời gian rất nhanh khi dữ liệu lớn.
+
+Điểm hay gây nhầm nhất: break chỉ thoát khỏi vòng lặp TRONG CÙNG chứa nó. Trong hai vòng lồng nhau, break ở vòng trong chỉ kết thúc vòng trong; vòng ngoài vẫn tiếp tục với giá trị kế tiếp. continue cũng vậy, chỉ tác động lên vòng chứa nó trực tiếp.
+
+Vậy muốn thoát khỏi cả hai vòng một lúc thì làm sao? Có hai cách. Cách thứ nhất là dùng một biến cờ, ví dụ tim_thay = True, rồi break ở vòng trong và kiểm tra cờ để break tiếp ở vòng ngoài. Cách thứ hai, gọn hơn, là đưa cả hai vòng lặp vào một hàm và dùng return: return thoát khỏi hàm, tức là thoát luôn mọi vòng lặp bên trong nó. Mình khuyên cách thứ hai.

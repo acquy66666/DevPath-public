@@ -11,6 +11,11 @@ Dockerfile text eol=lf
 # old file back for its pins: keep it byte-for-byte what uv writes.
 requirements.lock text eol=lf
 
+# Seed transcripts are uploaded byte for byte, and 1-0.srt keeps the BOM and
+# CRLF of a file saved by a Windows subtitle editor on purpose: it is the file
+# the transcript parser was first tried on (docs/report/assets/phase-4/).
+backend/scripts/seed_data/transcripts/** -text
+
 # Grading fixtures stand in for submitted code. A CRLF checkout would make
 # them differ on Windows from what the same file grades as on the server,
 # and line endings are exactly what this part of the system is sensitive to.

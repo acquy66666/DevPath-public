@@ -1,0 +1,13 @@
+Cho tới giờ chương trình của chúng ta chạy thẳng từ trên xuống. Câu lệnh if cho phép chương trình rẽ nhánh: làm việc này nếu điều kiện đúng, làm việc khác nếu sai.
+
+Cú pháp gồm từ khóa if, điều kiện, rồi dấu hai chấm. Các dòng thuộc nhánh đó phải thụt vào, quy ước là 4 dấu cách. Chính thụt lề cho Python biết dòng nào nằm trong if; Python không dùng ngoặc nhọn như C hay Java. Quên dấu hai chấm sẽ gặp SyntaxError, thụt lề lộn xộn sẽ gặp IndentationError.
+
+Nhánh else chạy khi điều kiện sai. Khi có nhiều hơn hai khả năng, dùng elif, viết tắt của else if. Python kiểm tra lần lượt từ trên xuống, và chỉ chạy nhánh ĐẦU TIÊN có điều kiện đúng; các nhánh sau bị bỏ qua, dù điều kiện của chúng cũng đúng.
+
+Vì vậy thứ tự các nhánh rất quan trọng. Ví dụ xếp loại theo điểm: nếu viết if diem >= 5 thì loại trung bình, rồi elif diem >= 8 thì loại giỏi, một bạn được 9 điểm vẫn bị xếp trung bình, vì 9 >= 5 đã đúng ở nhánh đầu. Điều kiện chặt hơn phải đứng trước: kiểm tra >= 8 trước, rồi mới tới >= 5, cuối cùng là else.
+
+Các phép so sánh: == bằng, != khác, <, >, <=, >=. Nhớ phân biệt: hai dấu bằng == là so sánh, còn một dấu bằng = là phép gán. Viết if x = 5 sẽ bị SyntaxError. Python còn cho viết so sánh nối chuỗi rất tự nhiên: 0 <= x < 10 nghĩa là x nằm trong khoảng từ 0 đến dưới 10, không cần viết x >= 0 and x < 10.
+
+Điều kiện không nhất thiết phải là phép so sánh. if ten: chạy khi chuỗi ten không rỗng, theo quy tắc truthy và falsy ở bài trước.
+
+Khi chỉ cần chọn giữa hai giá trị, có dạng viết gọn trên một dòng gọi là biểu thức điều kiện: ket_qua = "đậu" if diem >= 5 else "rớt". Dùng cho trường hợp đơn giản thôi; lồng nhiều tầng thì quay về if thường cho dễ đọc.

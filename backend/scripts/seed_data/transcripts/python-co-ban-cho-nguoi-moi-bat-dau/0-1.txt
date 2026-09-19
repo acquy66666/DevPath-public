@@ -1,0 +1,11 @@
+Trong bài này ta viết chương trình Python đầu tiên, theo truyền thống là in ra dòng chữ Hello, World.
+
+Chỉ cần một dòng: print("Hello, World!"). print là một hàm có sẵn của Python, dùng để in ra màn hình. Thứ nằm trong ngoặc tròn là thứ được in. Dòng chữ phải nằm trong dấu nháy. Nháy kép hay nháy đơn đều được, "Hello" và 'Hello' là như nhau, miễn là mở bằng loại nào thì đóng bằng loại đó.
+
+Ba lỗi người mới hay gặp ngay ở dòng đầu tiên này. Thứ nhất, quên dấu nháy: print(Hello) sẽ báo NameError, vì không có nháy thì Python hiểu Hello là tên một biến, mà biến đó chưa hề được tạo. Thứ hai, viết hoa chữ P: Print("Hello") cũng báo NameError, vì Python phân biệt chữ hoa chữ thường, và hàm tên là print viết thường. Thứ ba, lỡ gõ một dấu cách ở đầu dòng: Python báo IndentationError: unexpected indent, vì thụt lề trong Python có ý nghĩa, không phải để trang trí.
+
+print nhận được nhiều giá trị cùng lúc, cách nhau bởi dấu phẩy: print("Năm", 2026) in ra Năm 2026, tự chèn một dấu cách ở giữa. Muốn đổi thứ chèn vào giữa thì dùng tham số sep, ví dụ print("a", "b", "c", sep="-") in ra a-b-c. Mặc định print xuống dòng sau khi in. Tham số end đổi điều đó, ví dụ end="" để lần in sau nối tiếp trên cùng một dòng.
+
+Dòng bắt đầu bằng dấu thăng # là chú thích. Python bỏ qua hoàn toàn phần từ dấu # tới cuối dòng, nên chú thích dùng để giải thích cho người đọc code, kể cả chính bạn ba tháng sau.
+
+Python chạy chương trình từ trên xuống dưới, lần lượt từng dòng. Nếu một dòng ở giữa bị lỗi, các dòng phía trên vẫn đã chạy và in ra rồi, còn các dòng phía dưới thì không chạy nữa. Đó là lý do khi có lỗi, bạn vẫn thấy một phần kết quả trên màn hình.

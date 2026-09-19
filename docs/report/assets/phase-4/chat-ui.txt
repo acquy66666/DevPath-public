@@ -1,0 +1,114 @@
+UI CHAT TRONG TRANG HỌC — TRỢ GIẢNG AI CẠNH BÀI HỌC, CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 19/09/2026 · stack dev (infra/docker-compose.yml) · Gemini thật (gemini-3.5-flash-lite)
+Trình duyệt: Chrome, tài khoản seed hocvien07@seed.devpath.example (tự đăng nhập bằng tay)
+Khóa: "Python cơ bản cho người mới bắt đầu" — 4 bài có chunk trong doc_chunks
+Phase 4, tuần 9: "UI chat trong trang học: khung chat, hiển thị nguồn (link nhảy tới lesson),
+lịch sử phiên"
+
+Code: frontend/components/chat/, frontend/lib/chat/, frontend/lib/api/chat.ts. Thiết kế và
+lý do ở mục "Trợ giảng AI (Phase 4)" của frontend/README.md.
+
+==============================================================================
+1. ĐÃ THỬ TRÊN TRÌNH DUYỆT, THEO THỨ TỰ
+==============================================================================
+  a. Mở tab "Trợ giảng AI" cạnh mục lục. Trạng thái trống có hai câu gợi ý ghi tên bài
+     đang xem ("Tóm tắt ý chính của bài “Đọc hiểu thông báo lỗi”."), và danh sách
+     "Tiếp tục trò chuyện" gồm các phiên cũ.
+  b. Bấm câu gợi ý. Trước khi chữ tới, dòng trạng thái hiện "Đang soạn câu trả lời…"
+     kèm "Đang đọc 4 bài: …". Chữ về dần, [1] thành nút nhỏ. Xong thì có khối
+     "Nguồn trong khóa học" với 1 bài, gắn nhãn "đang xem".
+  c. Hỏi tiếp "Vì sao input() + 1 lại báo lỗi, sửa thế nào?". Câu trả lời trích [2], là
+     bài "Ép kiểu và những cái bẫy quen thuộc". Bấm nút [2]: bài bên trái đổi sang bài
+     đó (?bai=e1ed2812…), khung chat giữ nguyên, nhãn "đang xem" chuyển sang nguồn 2.
+  d. Câu ngoài phạm vi ("Công thức nấu phở bò ngon là gì?") bị từ chối lịch sự, không
+     có nguồn nào, nên không hiện khối nguồn.
+  e. Nút Dừng: hỏi một câu dài rồi bấm Dừng ngay. Lượt đó hiện "Đã dừng. Câu hỏi và
+     phần trả lời dở này không được lưu." kèm nút "Hỏi lại". DB xác nhận không có dòng
+     nào của câu đó (mục 2).
+     Lần thử đầu, câu trả lời xong trong khoảng 2,5 giây, trước khi kịp bấm Dừng:
+     flash-lite nhanh tới mức nút Dừng chủ yếu có ích với câu trả lời dài.
+  f. Tải lại trang → Lịch sử → mở lại phiên. Nút [2] của câu trả lời thứ hai vẫn mang
+     nhãn "Nguồn 2: mở bài “Ép kiểu và những cái bẫy quen thuộc”". Đây là ca mà dữ liệu
+     cũ KHÔNG tự trả lời được (mục 3).
+  g. Xóa phiên: bấm thùng rác thì hiện hộp xác nhận ngay tại dòng, bấm Hủy thì trở về.
+     KHÔNG bấm xóa thật trên trình duyệt. Phần xóa đã có test backend
+     test_deleting_a_conversation_takes_its_messages_with_it.
+
+==============================================================================
+2. DB SAU KHI THỬ — PHIÊN "Tóm tắt ý chính của bài “Đọc hiểu thông báo lỗi”."
+==============================================================================
+  role       nội dung (rút gọn)                                   cited_lesson_ids
+  user       Tóm tắt ý chính của bài “Đọc hiểu thông báo lỗi”.    []
+  assistant  … đọc từ dưới lên … traceback … [1] …                 [a9381ddb… Đọc hiểu thông báo lỗi]
+  user       Vì sao input() + 1 lại báo lỗi, sửa thế nào?         []
+  assistant  `input()` luôn trả về chuỗi [2]. … [2] … [2].         [e1ed2812… Ép kiểu và những cái bẫy…]
+  user       Công thức nấu phở bò ngon là gì?                     []
+  assistant  Xin lỗi bạn, nội dung này nằm ngoài phạm vi …         []
+  user       Giải thích chi tiết từng loại lỗi … kèm ví dụ code   []
+  assistant  … SyntaxError … [1] … ```python … ``` …               [a9381ddb…]
+  (8 dòng. Câu bị Dừng ở mục 1e không có mặt.)
+
+==============================================================================
+3. VÌ SAO PHẢI SỬA BACKEND: ĐỌC LẠI PHIÊN CŨ KHÔNG BIẾT [2] LÀ BÀI NÀO
+==============================================================================
+Câu trả lời thứ hai ghi "[2]", nhưng cited_lesson_ids chỉ có MỘT phần tử. Số 2 là số của
+nguồn trong lượt hỏi đó (lượt ấy tìm được 4 bài), và cột này không lưu số. Trước khi sửa,
+trang không có cách nào biết [2] là bài nào khi mở lại phiên.
+
+Sửa không cần migration: ChatMessageOut có thêm citations: [{number, lesson_id}], suy ra
+bằng services.chat.numbered_citations. Số thật đều ≤ số nguồn, số bị loại đều lớn hơn, nên
+số thật chính là len(cited_lesson_ids) số nhỏ nhất xuất hiện trong bài, giữ thứ tự nhắc
+đến. Nếu hai bên không khớp nữa thì trả rỗng, vì thà không có link còn hơn link sai bài.
+
+Test viết trước khi code (TDD):
+  tests/test_chat_prompt.py      4 test: ánh xạ đúng, số ngoài nguồn ([7], a[1], `[3]`)
+                                 không làm lệch, câu từ chối rỗng, dữ liệu lệch → rỗng
+  tests/api/test_chat.py         test_a_conversation_read_back_says_which_lesson_each_mark_is:
+                                 model trả lời "[2] … [1]", đọc lại thì
+                                 citations = [{2, bài 2}, {1, bài 1}], sự kiện done cũng vậy
+  Kết quả: 58 passed in 35.76s   (test_chat.py + test_chat_prompt.py + test_chat_retrieval.py)
+
+==============================================================================
+4. HAI HÀM THUẦN Ở FRONTEND — KIỂM BẰNG NODE (script một lần, không commit)
+==============================================================================
+Frontend chưa có Vitest (đến Phase 6), nên hai phần dễ sai nhất được chạy bằng Node 24
+(type stripping), import thẳng file .ts của repo:
+
+  lib/chat/sse.ts        luồng SSE thật bị cắt thành từng mẩu 7 byte, tức cắt ngang JSON,
+                         ngang "\n\n" và ngang chữ tiếng Việt nhiều byte → vẫn ra đúng 4 sự
+                         kiện, ghép lại đúng "Biến được tạo khi gán giá trị [1]."; luồng dừng
+                         giữa khung chỉ trả các khung đã trọn; dòng chú thích bị bỏ qua
+  lib/chat/citations.ts  "Biến [1][2]. Xem [3, 1], [1, 7] và a[1], trị[1], [2021], `[2]`."
+                         với nguồn {1,2,3} → link 1,2,3,1,1. Giữ nguyên chữ: a[1], trị[1]
+                         (chữ có dấu đứng trước là chỉ số, khớp \w Unicode của Python),
+                         [2021], `[2]`, và `x = [1, 2]` trong khối code. [7] bị bỏ vì không
+                         phải nguồn. Không có nguồn nào → "[1]" giữ nguyên chữ.
+  Kết quả: OK
+
+==============================================================================
+5. LỖI BỐ CỤC TÌM THẤY KHI CHẠY THẬT, ĐÃ SỬA
+==============================================================================
+Chiều cao khung chat lúc đầu là 100dvh − 7rem, tính cho vị trí đã dính mép trên
+(sticky top-8). Nhưng khi chưa cuộn, khung bắt đầu ở 209px (≈13rem). Đo trên màn hình cao
+674px: đáy khung ở 770px, nên Ô NHẬP CÂU HỎI NẰM DƯỚI MÉP MÀN HÌNH, và việc đầu tiên người
+dùng phải làm là cuộn. Sửa thành 100dvh − 14rem: ô nhập hiện ngay. Đổi lại, khi đã cuộn và
+khung dính mép trên, phía dưới khung thừa khoảng 8rem trống.
+
+==============================================================================
+6. GHI NHẬN CHO TASK "ĐÁNH GIÁ CHATBOT" (chưa xử lý ở đây)
+==============================================================================
+Câu trả lời thứ tư (mục 2) có ba ví dụ code do model TỰ VIẾT, không lấy từ tài liệu. Phần
+giải thích có [1], nhưng các ví dụ thì không trích nguồn nào. Prompt cấm "bổ sung dữ kiện
+từ kiến thức bên ngoài". Ví dụ minh họa là vùng xám: nó không phải dữ kiện mới, nhưng cũng
+không nằm trong khóa học. Bộ 20 câu đánh giá nên có một cột riêng cho chuyện này, thay vì
+gộp vào "đúng/sai".
+
+==============================================================================
+7. CHƯA CÓ, NÓI THẲNG
+==============================================================================
+- Ảnh chụp màn hình: đã xem trên trình duyệt nhưng chưa lưu được ra file. Gate cuối phase
+  cần 3–5 hội thoại có trích nguồn, nên chụp lại lúc thu bằng chứng gate.
+- Chưa bấm xóa thật trên UI (mục 1g).
+- Chưa thử qua nginx của compose prod (đã là checkbox "Nợ hoãn lại" của Phase 6).
+- Ở dev, lần bấm tab đầu tiên ngay sau khi tải trang có lúc không ăn, vì trang chưa
+  hydrate xong trên dev server. Chưa thử bản build production.

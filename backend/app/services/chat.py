@@ -22,7 +22,7 @@ One question goes through four steps, and the order matters:
 import logging
 import re
 import uuid
-from collections.abc import AsyncIterator, Callable
+from collections.abc import AsyncIterator, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Literal
@@ -364,6 +364,18 @@ def _in_prose_only(answer: str, rewrite) -> str:
     )
 
 
+def _mentioned_numbers(answer: str) -> list[int]:
+    """Every positive number in a citation mark, in order of first mention."""
+    seen: list[int] = []
+    for prose in _prose_of(answer):
+        for match in _CITATION.finditer(prose):
+            for raw in match.group(1).split(","):
+                number = int(raw)
+                if number >= 1 and number not in seen:
+                    seen.append(number)
+    return seen
+
+
 def cited_numbers(answer: str, *, source_count: int) -> list[int]:
     """The source numbers an answer cites, in order of first mention.
 
@@ -371,14 +383,34 @@ def cited_numbers(answer: str, *, source_count: int) -> list[int]:
     citation of nothing, and turning it into a link would send the student to
     a lesson the answer never saw.
     """
-    seen: list[int] = []
-    for prose in _prose_of(answer):
-        for match in _CITATION.finditer(prose):
-            for raw in match.group(1).split(","):
-                number = int(raw)
-                if 1 <= number <= source_count and number not in seen:
-                    seen.append(number)
-    return seen
+    return [number for number in _mentioned_numbers(answer) if number <= source_count]
+
+
+def numbered_citations(
+    answer: str, cited_lesson_ids: Sequence[uuid.UUID | str]
+) -> list[tuple[int, uuid.UUID]]:
+    """Which lesson each `[n]` of a stored answer points at.
+
+    A stored answer keeps its marks numbered as that turn's sources were, but
+    only the cited lessons are stored -- in order of first mention, not by
+    number. The numbers can be recovered without storing them: the ones that
+    were real sources are all at most the source count, and the ones dropped
+    by `cited_numbers` all above it (0 never counts). So the real ones are the
+    smallest `len(cited_lesson_ids)` numbers mentioned, still in order of first
+    mention -- the same order the lessons were stored in.
+
+    Empty when the two no longer line up (the parser changed since the answer
+    was stored, say): no links is better than links to the wrong lessons.
+    """
+    mentioned = _mentioned_numbers(answer)
+    real = set(sorted(mentioned)[: len(cited_lesson_ids)])
+    numbers = [number for number in mentioned if number in real]
+    if len(numbers) != len(cited_lesson_ids):
+        return []
+    return [
+        (number, uuid.UUID(str(lesson_id)))
+        for number, lesson_id in zip(numbers, cited_lesson_ids, strict=True)
+    ]
 
 
 def _strip_citations(answer: str) -> str:

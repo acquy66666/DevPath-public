@@ -647,6 +647,31 @@ async def test_a_conversation_reads_back_oldest_first(
     assert [m["role"] for m in body["items"]] == ["user", "assistant"] * 2
 
 
+async def test_a_conversation_read_back_says_which_lesson_each_mark_is(
+    api_client: AsyncClient, llm, student, course: Course, chat_model: FakeChatModel
+) -> None:
+    """The page links `[n]` in an old answer to a lesson. The stream told it
+    what n meant at the time; reading back, only this field can."""
+    chat_model.pieces = ["Vòng lặp duyệt từng phần tử [2], ", "biến thì gán [1]."]
+    chat_session = await new_session(api_client, course, student)
+    streamed = parse_sse((await ask(api_client, chat_session["id"], student)).text)
+    lesson_of = {s["number"]: s["lesson_id"] for s in streamed[0][1]["sources"]}
+
+    response = await api_client.get(
+        f"/api/v1/chat-sessions/{chat_session['id']}/messages", headers=student
+    )
+
+    question, answer = response.json()["items"]
+    expected = [
+        {"number": 2, "lesson_id": lesson_of[2]},
+        {"number": 1, "lesson_id": lesson_of[1]},
+    ]
+    assert answer["citations"] == expected
+    assert question["citations"] == []
+    # The stream's last event carries the same mapping as the read-back.
+    assert streamed[-1][1]["message"]["citations"] == expected
+
+
 async def test_conversations_list_only_your_own_most_recent_first(
     api_client: AsyncClient,
     llm,

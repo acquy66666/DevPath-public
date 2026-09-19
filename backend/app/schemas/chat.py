@@ -53,6 +53,13 @@ class ChatSessionOut(BaseModel):
     updated_at: datetime
 
 
+class ChatCitationOut(BaseModel):
+    """`[number]` in this stored answer is this lesson."""
+
+    number: int
+    lesson_id: uuid.UUID
+
+
 class ChatMessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -62,6 +69,11 @@ class ChatMessageOut(BaseModel):
     #: Lessons the answer cited, in order of first mention. Empty for a
     #: question, and for an answer that cited nothing (a refusal).
     cited_lesson_ids: list[uuid.UUID]
+    #: The same lessons keyed by the number the answer's text uses for them --
+    #: what a page needs to turn `[2]` in an old answer into a link, since the
+    #: stream that said what 2 meant is long gone. See
+    #: `services.chat.numbered_citations`.
+    citations: list[ChatCitationOut] = []
     created_at: datetime
 
 

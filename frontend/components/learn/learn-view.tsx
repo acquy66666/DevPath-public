@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Check, Loader2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, Check, ListTree, Loader2, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
+import { ChatPanel } from "@/components/chat/chat-panel";
 import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
 import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
@@ -16,6 +17,7 @@ import {
 import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { getCurriculum, getLesson } from "@/lib/api/curriculum";
@@ -73,6 +75,11 @@ export function LearnView({
   // The player is asked things rather than mirrored into state: its position
   // changes thirty times a second and nothing here needs to re-render for it.
   const player = useRef<PlayerHandle>(null);
+
+  // The assistant is built the first time its tab is opened, then kept: most
+  // visits never open it, and the ones that do must not lose an answer to a
+  // glance at the table of contents.
+  const [chatOpened, setChatOpened] = useState(false);
 
   // `?bai=` wins; without it, carry on where this reader stopped.
   const currentId = lessonId ?? progress.data?.resume_lesson_id ?? null;
@@ -202,7 +209,7 @@ export function LearnView({
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-4">
           {lesson.isError ? (
             <Alert variant="destructive">
@@ -331,13 +338,49 @@ export function LearnView({
         </div>
 
         <aside className="lg:sticky lg:top-8 lg:self-start">
-          <LessonList
-            curriculum={curriculum.data}
-            currentLessonId={currentId}
-            completedLessonIds={completedIds}
-            bookmarkedLessonIds={bookmarkedIds}
-            onSelect={selectLesson}
-          />
+          <Tabs
+            defaultValue="lessons"
+            onValueChange={(value) => value === "assistant" && setChatOpened(true)}
+          >
+            <TabsList className="w-full">
+              <TabsTrigger value="lessons">
+                <ListTree aria-hidden />
+                Nội dung
+              </TabsTrigger>
+              <TabsTrigger value="assistant">
+                <Sparkles aria-hidden />
+                Trợ giảng AI
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="lessons">
+              <LessonList
+                curriculum={curriculum.data}
+                currentLessonId={currentId}
+                completedLessonIds={completedIds}
+                bookmarkedLessonIds={bookmarkedIds}
+                onSelect={selectLesson}
+              />
+            </TabsContent>
+
+            {/* Mounted even while hidden: switching back to the contents
+                must not cut off an answer that is still being written. */}
+            <TabsContent value="assistant" forceMount className="data-[state=inactive]:hidden">
+              {chatOpened ? (
+                <ChatPanel
+                  courseId={course.data.id}
+                  accessToken={accessToken as string}
+                  curriculum={curriculum.data}
+                  currentLesson={
+                    lesson.data ? { id: lesson.data.id, title: lesson.data.title } : null
+                  }
+                  // A source opens its lesson beside the chat, which stays
+                  // put: reading a lesson and asking about it are one activity.
+                  onOpenLesson={selectLesson}
+                />
+              ) : null}
+            </TabsContent>
+          </Tabs>
         </aside>
       </div>
     </div>

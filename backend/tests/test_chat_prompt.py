@@ -17,6 +17,7 @@ from app.services.chat import (
     Source,
     build_turns,
     cited_numbers,
+    numbered_citations,
     retrieval_queries,
     session_title,
     system_prompt,
@@ -143,6 +144,38 @@ def test_lists_inside_code_are_not_citations() -> None:
 
 def test_a_refusal_cites_nothing() -> None:
     assert cited_numbers("Câu hỏi này nằm ngoài phạm vi khóa học.", source_count=3) == []
+
+
+# --- Reading a stored answer back ---------------------------------------------
+#
+# A stored answer keeps its marks as that turn numbered them, and its lessons
+# in order of first mention -- not the numbers themselves. Read back later, the
+# page must still know that `[2]` is the second lesson listed, not "source 2".
+
+
+def test_a_stored_answer_maps_each_mark_back_to_its_lesson() -> None:
+    first, second = uuid.uuid4(), uuid.uuid4()
+    answer = "Vòng lặp duyệt từng phần tử [2]. Biến được gán [1][2]."
+
+    assert numbered_citations(answer, [second, first]) == [(2, second), (1, first)]
+
+
+def test_marks_that_were_never_sources_do_not_shift_the_mapping() -> None:
+    """Three sources were given: `[7]` was left out when the answer was stored,
+    so it must be left out again -- the lessons stored are for 2 and 1."""
+    first, second = uuid.uuid4(), uuid.uuid4()
+    answer = "Theo [7] thì a[1] là phần tử thứ hai [2], còn `[3]` là mã; xem [1]."
+
+    assert numbered_citations(answer, [second, first]) == [(2, second), (1, first)]
+
+
+def test_a_refusal_maps_nothing() -> None:
+    assert numbered_citations("Nằm ngoài phạm vi khóa học.", []) == []
+
+
+def test_an_answer_that_no_longer_matches_its_lessons_maps_nothing() -> None:
+    """Better no links than links to the wrong lessons."""
+    assert numbered_citations("Biến [1].", [uuid.uuid4(), uuid.uuid4()]) == []
 
 
 def test_a_first_question_is_searched_as_it_is() -> None:

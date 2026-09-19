@@ -89,6 +89,15 @@ const MESSAGES: Record<string, string> = {
   SUBMISSION_RATE_LIMITED: "Bạn nộp bài hơi nhanh. Đợi một chút rồi thử lại nhé.",
   GRADING_UNAVAILABLE:
     "Hệ thống chấm bài đang bận hoặc tạm ngừng. Thử lại sau ít phút nhé.",
+
+  // Trợ giảng AI. CHAT_RATE_LIMITED cố ý không có ở đây: câu của backend nói
+  // đúng phải đợi bao lâu ("Đợi 3 giây…", "…sau khoảng 12 phút"), câu chung
+  // thì không.
+  CHAT_SESSION_NOT_FOUND:
+    "Cuộc trò chuyện này không còn nữa — có thể đã bị xóa ở tab khác. Bắt đầu cuộc trò chuyện mới nhé.",
+  LLM_UNAVAILABLE:
+    "Trợ giảng AI đang quá tải hoặc tạm ngừng. Câu hỏi chưa được lưu — thử lại sau ít phút nhé.",
+  LLM_NOT_CONFIGURED: "Máy chủ này chưa bật trợ giảng AI (thiếu khóa Gemini).",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
@@ -114,6 +123,13 @@ export const AVATAR_UPLOAD_MESSAGES: MessageOverrides = {
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa đổi được ảnh đại diện. Ảnh hiện tại vẫn giữ nguyên.",
   STORAGE_ERROR: "Kho lưu trữ đang trục trặc nên chưa lưu được ảnh. Thử lại sau ít phút.",
+};
+
+/** NOT_ENROLLED is worded for reviews, where it first appeared. */
+export const CHAT_MESSAGES: MessageOverrides = {
+  NOT_ENROLLED: "Trợ giảng AI dành cho học viên đã đăng ký khóa học này.",
+  COURSE_NOT_FOUND:
+    "Khóa học này hiện không mở trợ giảng AI — có thể nó vừa ngừng xuất bản.",
 };
 
 export function apiErrorMessage(error: unknown, overrides?: MessageOverrides): string {

@@ -63,3 +63,20 @@ export function formatTimestamp(seconds: number): string {
     ? `${hours}:${pad(minutes)}:${pad(rest)}`
     : `${pad(minutes)}:${pad(rest)}`;
 }
+
+const RELATIVE = new Intl.RelativeTimeFormat("vi-VN", { numeric: "auto" });
+
+/**
+ * How long ago something happened: "vừa xong", "5 phút trước", "hôm qua".
+ * Past a week it is a date again -- "32 ngày trước" makes the reader count.
+ */
+export function formatRelativeTime(iso: string, now: number = Date.now()): string {
+  const seconds = Math.round((new Date(iso).getTime() - now) / 1000);
+  const ago = -seconds;
+
+  if (ago < 60) return "vừa xong";
+  if (ago < 3600) return RELATIVE.format(Math.round(seconds / 60), "minute");
+  if (ago < 86400) return RELATIVE.format(Math.round(seconds / 3600), "hour");
+  if (ago < 7 * 86400) return RELATIVE.format(Math.round(seconds / 86400), "day");
+  return formatDate(iso);
+}

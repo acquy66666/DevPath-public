@@ -27,6 +27,7 @@ from pydantic import BaseModel
 from app.core.deps import CurrentUser, DbSession
 from app.models import ChatMessage
 from app.schemas.chat import (
+    ChatCitationOut,
     ChatMessageOut,
     ChatQuestion,
     ChatSessionOut,
@@ -54,7 +55,14 @@ ChatModelFactory = Annotated[Callable[[], ChatModel], Depends(get_chat_model_fac
 
 
 def message_out(message: ChatMessage) -> ChatMessageOut:
-    return ChatMessageOut.model_validate(message)
+    out = ChatMessageOut.model_validate(message)
+    out.citations = [
+        ChatCitationOut(number=number, lesson_id=lesson_id)
+        for number, lesson_id in chat_service.numbered_citations(
+            message.content, message.cited_lesson_ids
+        )
+    ]
+    return out
 
 
 def sse(event: str, payload: BaseModel) -> str:

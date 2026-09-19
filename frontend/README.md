@@ -121,6 +121,22 @@ Hàm trả về một `stop()` — gọi khi component unmount. Nó gỡ `onclos
 
 **Đồng hồ trên trang chỉ là hiển thị hạn chót, không phải hạn chót.** Nó khởi đầu từ `seconds_remaining` do server tính theo đồng hồ của server. Về 0 thì trang tự nộp bài, nhưng quyền quyết định vẫn ở backend: tab bị treo hay bị bóp CPU thì server vẫn từ chối bài nộp trễ quá 10 giây ân hạn. Hết giờ mà chưa nộp là 0 điểm, vì đáp án dở dang không được lưu (lý do ở `docs/report/assets/decisions.md`).
 
+## Trợ giảng AI (Phase 4)
+
+Tab **Trợ giảng AI** cạnh mục lục trong trang học (`/hoc/[slug]`). Code ở `components/chat/`, client ở `lib/api/chat.ts`, API ở mục "Trợ giảng AI" của [backend/README.md](../backend/README.md).
+
+**Khung chat nằm cạnh bài học, không nằm trên nó.** Bấm vào một nguồn thì bài học bên trái đổi (`?bai=`), còn cuộc trò chuyện vẫn nguyên chỗ, kể cả khi câu trả lời đang chạy. Tab được dựng lần đầu khi mở, sau đó giữ nguyên (`forceMount`) để quay lại mục lục không cắt ngang câu trả lời. Ai không mở tab thì trang không tốn request nào cho chat.
+
+**Luồng trả lời đọc bằng `fetch`, không bằng `EventSource`**, vì hỏi là `POST` có body và header `Authorization`. `lib/chat/sse.ts` tự tách khung: chỉ giao một sự kiện khi đã nhận đủ dòng trống kết thúc nó, và giải mã UTF-8 với `stream: true`, nên một chữ tiếng Việt bị cắt đôi giữa hai gói mạng không vỡ. Luồng dừng mà không có `done`/`error` (mất mạng, proxy bỏ ngang) thì `askAssistant` tự phát một `error`, để trang luôn biết câu trả lời đã kết thúc.
+
+**Câu hỏi chỉ thật sự tồn tại khi đã có câu trả lời.** Backend lưu câu hỏi cùng câu trả lời hoàn chỉnh, không lưu trước. Vì thế lượt đang hỏi là state riêng (`LiveTurn`), và chỉ khi nhận `done` mới được ghi vào cache của TanStack Query thay cho state đó. Hỏng giữa chừng, hoặc học viên bấm **Dừng**, thì lượt ấy hiện rõ là *chưa được lưu*, kèm nút "Hỏi lại". Query tin nhắn đặt `staleTime: Infinity`, vì mọi thay đổi đều đi qua panel này. Nếu để một lần refetch chạy đua với câu trả lời vừa xong, nó có thể về sau và xóa câu trả lời khỏi màn hình. Trong lúc đang trả lời, nút đổi cuộc trò chuyện bị tắt chứ không lặng lẽ dừng câu trả lời.
+
+**`[n]` thành nút mở bài học** nhờ một plugin remark nhỏ (`lib/chat/citations.ts`). Plugin chạy trên cây markdown chứ không trên chuỗi, vì cây đã tách sẵn code: `[1, 3]` trong khối code là list Python, không phải nguồn. Quy tắc bám theo regex `_CITATION` của backend. Chữ cái hoặc chữ số đứng ngay trước dấu ngoặc (`a[1]`, `trị[1]`) là chỉ số, không phải nguồn. Dùng `\p{L}` vì `\w` của Python hiểu Unicode, còn của JS thì không. Chỉ số nào có trong danh sách nguồn mới thành link; `[2021]` vẫn giữ nguyên chữ. Lúc đang stream, số lấy từ sự kiện `sources`. Với tin nhắn cũ, số lấy từ `citations` của backend, còn tên bài lấy từ mục lục đang có trên trang. Bài đã bị gỡ thì hiện nút mờ "không còn trong khóa".
+
+**Gợi ý câu hỏi ghi rõ tên bài đang xem.** Backend không biết học viên đang mở bài nào, nên hỏi "bài này" thì bước tìm kiếm không có gì để bám.
+
+Phím Enter gửi, Shift+Enter xuống dòng. Enter dùng để xác nhận chữ trong bộ gõ (`isComposing`) thì không gửi, nếu không một câu tiếng Việt gõ dở sẽ bị gửi đi. `CHAT_RATE_LIMITED` cố ý không có câu chung trong `error-messages.ts`, vì câu của backend nói rõ phải đợi bao lâu.
+
 ## Cấu trúc
 
 ```
@@ -133,6 +149,8 @@ components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)
 components/exercise/   trình soạn bài tập code + test case (Phase 3)
+components/chat/       trợ giảng AI trong trang học (Phase 4)
+lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)
 lib/grading/         giới hạn tài nguyên, chép tay từ model backend

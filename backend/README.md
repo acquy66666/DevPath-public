@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, bench_grading.py
+scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, bench_grading.py, lock.sh
 ```
 
 ## Nguyên tắc
@@ -32,8 +32,10 @@ python -m venv .venv
 ```
 
 ```bash
-.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.venv\Scripts\python.exe -m pip install -e ".[dev]" -c requirements.lock
 ```
+
+`-c requirements.lock` là bắt buộc: `pyproject.toml` chỉ ghi cận dưới, lock mới là thứ chốt phiên bản — Dockerfile và CI đều cài qua nó, nên máy dev cũng phải vậy thì mới chạy đúng những gì CI đã test.
 
 ```bash
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload
@@ -54,6 +56,20 @@ Test và lint:
 Test auth chạy trên Postgres thật (mỗi test nằm trong một transaction bị rollback, không để lại dữ liệu). Không có Postgres thì nhóm test đó **tự skip** khi chạy ở máy dev, nhưng **fail** khi biến `CI` được đặt — CI không bao giờ xanh nhờ bỏ qua test.
 
 Cấu hình đọc từ biến môi trường hoặc `backend/.env` — copy từ [.env.example](.env.example).
+
+## Dependency và lockfile
+
+`pyproject.toml` khai báo dependency **và cận dưới** — đó là chỗ thêm hoặc bỏ một thư viện. `requirements.lock` chốt **đúng phiên bản** của mọi gói, kể cả gói kéo theo, và được sinh từ `pyproject.toml` chứ không sửa tay. Một lock dùng cho mọi nơi: image Linux, CI và máy Windows (gói nào chỉ có trên một nền tảng thì mang marker, không tách file). Lock liệt kê cả công cụ dev, nhưng dùng làm file ràng buộc (`-c`) thì nó chỉ chốt phiên bản của gói *được cài*, không tự cài thêm gì — nên image production vẫn không có pytest/ruff.
+
+Sau khi sửa `pyproject.toml`, sinh lại lock (PowerShell, đứng ở `backend/`; không cần cài `uv` lên máy):
+
+```bash
+docker run --rm -v "${PWD}:/src" -w /src python:3.12-slim sh -c "pip install -q uv==0.12.17 && sh scripts/lock.sh"
+```
+
+Lệnh giữ nguyên mọi phiên bản đang chốt, trừ khi `pyproject.toml` loại chúng ra. Muốn chủ động nâng thì thêm cờ vào cuối `sh scripts/lock.sh`: `--upgrade-package fastapi` cho một gói, `--upgrade` cho tất cả — rồi chạy lại toàn bộ test trước khi commit.
+
+CI chạy lại đúng lệnh này và **fail nếu lock đổi**: thêm dependency vào `pyproject.toml` mà quên sinh lại lock thì gói đó sẽ được cài ở bản mới nhất của hôm đó mà không ai hay. Phiên bản `uv` được chốt trong `scripts/lock.sh`, vì bản `uv` khác có thể trình bày cùng một kết quả theo cách khác.
 
 ## Auth (Phase 2)
 

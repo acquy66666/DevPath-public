@@ -311,8 +311,11 @@ services:
   # Wakes up twice a day, renews anything inside 30 days of expiry, and does
   # nothing the rest of the time. nginx picks a new certificate up on reload,
   # which the deploy script does after a successful renewal.
+  #
+  # A version, not :latest -- a certbot that changed its CLI would only be
+  # noticed when a renewal failed, weeks after the pull that brought it in.
   certbot:
-    image: certbot/certbot:latest
+    image: certbot/certbot:v5.8.0
     restart: unless-stopped
     volumes:
       - letsencrypt:/etc/letsencrypt

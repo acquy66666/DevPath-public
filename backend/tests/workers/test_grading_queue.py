@@ -5,6 +5,8 @@ route that quietly stops matching does not raise anything. The job simply sits
 in Redis while every container reports itself healthy.
 """
 
+import importlib
+import os
 import sys
 import uuid
 from pathlib import Path
@@ -59,13 +61,20 @@ def test_a_worker_takes_one_job_at_a_time() -> None:
 def runner_module():
     """The grader package, which lives outside this project and is not installed.
 
-    Skips rather than fails where it is missing: this is the one test that
-    reaches across the repo, and a backend checkout without it should still be
-    able to run its own suite.
+    Skips where it is missing: this is the one test that reaches across the
+    repo, and a backend checkout without it should still be able to run its own
+    suite. Except under CI, which checks out the whole repo -- there a missing
+    package means the seam broke, and a skip would report it as green. Same
+    rule tests/conftest.py applies to Postgres.
     """
     if str(GRADER) not in sys.path:
         sys.path.insert(0, str(GRADER))
-    return pytest.importorskip("runner.verdict")
+    try:
+        return importlib.import_module("runner.verdict")
+    except ImportError as exc:
+        if os.getenv("CI"):
+            raise
+        pytest.skip(f"grader/runner không import được ({exc}).")
 
 
 def test_the_adapter_translates_a_judgement_without_starting_a_container(

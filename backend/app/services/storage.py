@@ -17,6 +17,7 @@ bill for no gain -- the signature already says who is allowed to write, and to
 exactly which key.
 """
 
+import logging
 import mimetypes
 import uuid
 from functools import lru_cache
@@ -29,6 +30,8 @@ from fastapi import status
 
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
+
+logger = logging.getLogger(__name__)
 
 # Only formats ffmpeg can be trusted to open, and that a browser can produce
 # from a file picker. The check is a courtesy to the instructor -- the real
@@ -226,10 +229,10 @@ def delete_quietly(storage: ObjectStorage, prefix: str) -> None:
 
     Best effort on purpose: an orphaned object costs a fraction of a cent of
     storage, while a raised exception here would cost the caller the upload
-    they just finished.
+    they just finished. Forgiven, not hidden: the warning is how anybody finds
+    out that every delete has been failing for a month.
     """
     try:
         storage.delete_prefix(prefix)
-    except Exception:
-        # Deliberately swallowed: see the docstring.
-        pass
+    except Exception as exc:
+        logger.warning("could not delete stale objects under %s: %s", prefix, exc)

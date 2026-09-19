@@ -10,10 +10,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Every job names its runner image rather than taking ubuntu-latest. The grader
+# job asserts what the kernel lets a container do, so a new Ubuntu -- new
+# kernel, new cgroup defaults -- can move those results without a line of this
+# repo changing. Moving to the next image is a deliberate change, made under
+# the sandbox-grading checklist, not something that happens on a date GitHub
+# picks.
+
 jobs:
   backend:
     name: Backend — lint & test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -57,16 +64,26 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/pyproject.toml
+          cache-dependency-path: backend/requirements.lock
+
+      # A dependency added to pyproject.toml but not to the lock would install
+      # at whatever version was newest that morning, and nothing would say so:
+      # a constraints file only pins what it lists. Re-resolving keeps every
+      # pin it can, so any diff means the two files disagree.
+      - name: Lock matches pyproject.toml
+        run: |
+          pip install "uv==$(sed -n 's/^UV_VERSION=//p' scripts/lock.sh)"
+          sh scripts/lock.sh
+          git diff --exit-code requirements.lock
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" -c requirements.lock
 
       - name: Ruff
         run: ruff check .
@@ -79,15 +96,15 @@ jobs:
 
   frontend:
     name: Frontend — lint & build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
@@ -108,7 +125,7 @@ jobs:
 
   migrations:
     name: Migrations & seed on an empty database
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: backend
@@ -135,16 +152,16 @@ jobs:
       DATABASE_URL: postgresql+asyncpg://devpath:devpath@localhost:5432/devpath
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: backend/pyproject.toml
+          cache-dependency-path: backend/requirements.lock
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev]" -c requirements.lock
 
       - name: Upgrade to head
         run: alembic upgrade head
@@ -182,7 +199,7 @@ jobs:
 
   grader:
     name: Grader — sandbox image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: grader
@@ -194,14 +211,17 @@ jobs:
     # a missing Docker daemon into a failure rather than a skip when it is --
     # a silently skipped sandbox test is worse than a red one.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
+      # The grader has no dependencies of its own, only tooling -- pinned from
+      # the backend's lock so the two jobs lint with the same ruff and a new
+      # rule never turns one of them red on its own.
       - name: Install the test tooling
-        run: pip install "pytest>=8.3" "ruff>=0.8"
+        run: pip install pytest ruff -c ../backend/requirements.lock
 
       - name: Ruff
         run: ruff check .
@@ -211,7 +231,7 @@ jobs:
 
   deploy-config:
     name: Deploy config — compose, nginx, production images
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     # The VPS is the one thing CI cannot stand in for, so it checks everything
     # that comes before it: that the compose file merges, that nginx accepts
@@ -219,7 +239,7 @@ jobs:
     # actually build. A broken Dockerfile found here costs a minute; found on
     # the server it costs the deploy.
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Fill in the secrets compose refuses to start without
         working-directory: infra
@@ -253,7 +273,7 @@ jobs:
           fi
 
       - name: Shell scripts
-        run: shellcheck infra/scripts/*.sh
+        run: shellcheck infra/scripts/*.sh backend/scripts/*.sh
 
       # Runs the image's own entrypoint, so envsubst fills the template exactly
       # as it will on the server. The self-signed certificate mirrors what

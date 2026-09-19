@@ -16,9 +16,10 @@ the request body, because there is no time in any request body.
 """
 
 import uuid
+from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from app.core.deps import CurrentUser, DbSession, OptionalUser
 from app.models import Quiz, QuizAttempt, QuizQuestion
@@ -33,12 +34,22 @@ from app.schemas.quiz import (
     QuestionReview,
     QuestionUpdate,
     QuizCreate,
+    QuizGenerateOut,
+    QuizGenerateRequest,
     QuizOut,
     QuizUpdate,
 )
 from app.services import quiz as quiz_service
+from app.services import quiz_generation as quiz_generation_service
+from app.services.llm import JsonModel, get_quiz_model_factory
+from app.services.rate_limit import RateLimiter, get_rate_limiter
+from app.services.storage import ObjectStorage, get_storage_factory
 
 router = APIRouter(tags=["quiz"])
+
+RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
+QuizModelFactory = Annotated[Callable[[], JsonModel], Depends(get_quiz_model_factory)]
+StorageFactory = Annotated[Callable[[], ObjectStorage], Depends(get_storage_factory)]
 
 
 def quiz_out(quiz: Quiz, question_count: int) -> QuizOut:
@@ -219,6 +230,59 @@ async def update_question(
         session, question_id, current_user, payload
     )
     return QuestionOut.model_validate(question)
+
+
+@router.post("/quiz-questions/{question_id}/approve", response_model=QuestionOut)
+async def approve_question(
+    question_id: uuid.UUID, current_user: CurrentUser, session: DbSession
+) -> QuestionOut:
+    """Sign off an AI-drafted question as it stands.
+
+    Until every draft in a quiz is approved, edited or deleted, the quiz
+    cannot be published (409 `QUIZ_NEEDS_REVIEW`).
+    """
+    question = await quiz_service.approve_question(session, question_id, current_user)
+    return QuestionOut.model_validate(question)
+
+
+@router.post(
+    "/quizzes/{quiz_id}/generate",
+    response_model=QuizGenerateOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def generate_questions(
+    quiz_id: uuid.UUID,
+    payload: QuizGenerateRequest,
+    current_user: CurrentUser,
+    session: DbSession,
+    limiter: RateLimit,
+    make_model: QuizModelFactory,
+    make_storage: StorageFactory,
+) -> QuizGenerateOut:
+    """Draft questions from one lesson of the same course with Gemini.
+
+    The drafts are appended to this draft quiz and wait for review; see
+    `services/quiz_generation.py`. Takes about ten seconds -- one model call,
+    answered in full rather than streamed, because half a question is no use.
+    """
+    result = await quiz_generation_service.generate_questions(
+        session,
+        quiz_id,
+        current_user,
+        source_lesson_id=payload.source_lesson_id,
+        count=payload.count,
+        limiter=limiter,
+        make_model=make_model,
+        make_storage=make_storage,
+    )
+    return QuizGenerateOut(
+        questions=[QuestionOut.model_validate(question) for question in result.questions],
+        requested=result.requested,
+        created=len(result.questions),
+        dropped=result.dropped,
+        model=result.model,
+        truncated=result.truncated,
+    )
 
 
 @router.delete("/quiz-questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT)

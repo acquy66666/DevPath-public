@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, ListChecks, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ListChecks, Pencil, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 
 import { QuestionForm } from "@/components/quiz/question-form";
+import { QuizGenerator } from "@/components/quiz/quiz-generator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getQuizOfLesson } from "@/lib/api/quiz";
 import {
+  approveQuestion,
   createQuiz,
   deleteQuestion,
   listQuestions,
@@ -39,7 +41,7 @@ function isMissing(error: unknown): boolean {
  * makes editing possible again, instead of letting an instructor discover the
  * rule through a failed request.
  */
-export function QuizEditor({ lessonId }: { lessonId: string }) {
+export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId: string }) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
   const fieldId = useId();
@@ -70,6 +72,13 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
     mutationFn: (changes: Parameters<typeof updateQuiz>[2]) =>
       updateQuiz(accessToken as string, quizId as string, changes),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["quiz", lessonId] }),
+  });
+
+  // One question at a time, on purpose: there is no "approve all". Approving
+  // ten drafts in one click is reviewing none of them.
+  const approve = useMutation({
+    mutationFn: (questionId: string) => approveQuestion(accessToken as string, questionId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["quiz-questions", quizId] }),
   });
 
   const remove = useMutation({
@@ -123,6 +132,7 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
   const data = quiz.data;
   const frozen = data.is_published;
   const rows = questions.data ?? [];
+  const unreviewed = rows.filter((row) => row.ai_generated && row.reviewed_at === null).length;
 
   return (
     <div className="space-y-4">
@@ -184,6 +194,16 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
         </Alert>
       ) : null}
 
+      {frozen ? null : (
+        <QuizGenerator quizId={data.id} courseId={courseId} quizLessonId={lessonId} />
+      )}
+
+      {approve.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{apiErrorMessage(approve.error)}</AlertDescription>
+        </Alert>
+      ) : null}
+
       <ol className="space-y-2">
         {rows.map((row, index) => (
           <li key={row.id} className="rounded-lg border p-3">
@@ -195,7 +215,18 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
               />
             ) : (
               <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
+                <div className="min-w-0 space-y-1">
+                  {row.ai_generated ? (
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        row.reviewed_at === null &&
+                          "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200",
+                      )}
+                    >
+                      {row.reviewed_at === null ? "AI soạn · chờ duyệt" : "AI soạn · đã duyệt"}
+                    </Badge>
+                  ) : null}
                   <p className="font-medium">
                     Câu {index + 1}. {row.question}
                   </p>
@@ -217,8 +248,32 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
                       </li>
                     ))}
                   </ul>
+                  {row.explanation ? (
+                    <p className="text-sm text-muted-foreground">
+                      <span className="font-medium">Giải thích:</span> {row.explanation}
+                    </p>
+                  ) : null}
+                  {row.key_warning ? (
+                    <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                      Lời giải thích có vẻ nói về một phương án khác với đáp án đang chọn.
+                      Kiểm tra lại đáp án trước khi duyệt.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 gap-1">
+                  {row.ai_generated && row.reviewed_at === null ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={frozen || approve.isPending}
+                      onClick={() => approve.mutate(row.id)}
+                      aria-label={`Duyệt câu ${index + 1}`}
+                    >
+                      <Check className="size-4" aria-hidden />
+                      Duyệt
+                    </Button>
+                  ) : null}
                   <Button
                     variant="ghost"
                     size="icon"
@@ -255,13 +310,17 @@ export function QuizEditor({ lessonId }: { lessonId: string }) {
       <div className="flex items-center gap-2 border-t pt-3">
         <Button
           variant={frozen ? "outline" : "default"}
-          disabled={settings.isPending || (!frozen && rows.length === 0)}
+          disabled={settings.isPending || (!frozen && (rows.length === 0 || unreviewed > 0))}
           onClick={() => settings.mutate({ is_published: !frozen })}
         >
           {frozen ? "Gỡ xuất bản" : "Xuất bản cho học viên"}
         </Button>
         {!frozen && rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">Thêm ít nhất một câu hỏi đã.</p>
+        ) : !frozen && unreviewed > 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Còn {unreviewed} câu AI soạn chưa duyệt.
+          </p>
         ) : null}
       </div>
     </div>

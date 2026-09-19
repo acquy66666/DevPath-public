@@ -1,0 +1,169 @@
+SINH QUIZ BẰNG AI — GIẢNG VIÊN CHỌN BÀI, GEMINI SOẠN NHÁP, GIẢNG VIÊN DUYỆT TỪNG CÂU
+Ngày chạy: 19/09/2026 · stack dev (infra/docker-compose.yml) · Gemini thật, free tier
+Phase 4, tuần 9: "Sinh quiz AI: instructor chọn lesson → Gemini sinh N câu (JSON mode) →
+instructor duyệt/sửa từng câu trước khi publish"
+
+Ba script thăm dò bên dưới (probe_quiz, eval_quiz_gen, trap_quiz_gen) chạy MỘT LẦN ngoài
+repo, gọi đúng hàm của app/services/quiz_generation.py và app/services/llm.py. Chúng không
+được commit. Phần tái tạo được bằng một lệnh là bộ test ở mục 7.
+
+==============================================================================
+1. THIẾT KẾ, VÀ VÌ SAO
+==============================================================================
+  POST /api/v1/quizzes/{quiz_id}/generate       {source_lesson_id, count 1..10} → 201
+  POST /api/v1/quiz-questions/{id}/approve      duyệt một câu nháp (idempotent)
+  PATCH /api/v1/quiz-questions/{id}             sửa một câu nháp = duyệt nó
+  PATCH /api/v1/quizzes/{id} {is_published}     409 QUIZ_NEEDS_REVIEW nếu còn câu chưa duyệt
+
+Một lần sinh đi qua ba bước (backend/app/services/quiz_generation.py):
+  1. Kiểm tra TRƯỚC khi tốn quota: quiz là của mình và còn là nháp, bài nguồn cùng khóa và
+     có chữ (bài viết, hoặc transcript nếu là video), rate limit (cooldown 10 s, 20 lần/giờ).
+  2. Không tin model cho tới khi kiểm xong. responseSchema giữ HÌNH DẠNG của câu trả lời,
+     nhưng không giữ được đáp án trỏ ra ngoài danh sách, hai phương án trùng nhau, hay câu
+     lặp lại câu quiz đã có. Mỗi câu nháp đi qua đúng check_question_shape mà câu gõ tay đi
+     qua. Câu hỏng bị loại và đếm vào `dropped`, không lưu. Sau đó xáo thứ tự phương án.
+  3. Lưu thành nháp: quiz_questions.ai_generated = true, reviewed_at = NULL. Quiz còn câu
+     như vậy thì KHÔNG xuất bản được. Duyệt, sửa hoặc xóa đều làm câu đó hết "chờ duyệt".
+
+Gọi đồng bộ, không qua Celery: một lần gọi ~3 s, người chờ là giảng viên vừa bấm nút. Một
+hàng đợi chỉ thêm vòng polling mà không ai được lợi.
+
+Cột mới (migration ca9e1c7ffdbb): quiz_questions.ai_generated, reviewed_at, kèm CHECK
+ck_quiz_questions_review_ai_only (câu tự gõ không mang dấu "đã duyệt"). Theo dõi TỪNG CÂU
+chứ không theo cả quiz, vì một quiz có thể trộn câu tự gõ với câu AI soạn.
+
+==============================================================================
+2. CHỌN MODEL BẰNG SỐ ĐO
+==============================================================================
+Lần thăm dò đầu (prompt còn trơn, chưa có quy tắc "chép đúng đoạn mã"), bài "Ép kiểu và
+những cái bẫy quen thuộc", 4 câu mỗi lần:
+  gemini-3.5-flash-lite  minimal  2,3 s   hỏi `int("12.9")`, đáp án 12  ← SAI
+  gemini-3.5-flash-lite  low      1,9 s   hỏi `int("12.9")`, đáp án 12  ← SAI
+  gemini-3.5-flash       minimal  9,7 s   4/4 đúng
+  gemini-3.5-flash       low      9,4 s   4/4 đúng
+  Tài liệu viết `int(12.9)` (số thực, ra 12). `int("12.9")` là CHUỖI, và Python báo
+  ValueError. Model rẻ đổi số thành chuỗi mà vẫn giữ đáp án, tạo ra một câu sai trông rất
+  đúng. Lúc này em chốt flash.
+
+Thêm vào prompt quy tắc 2: "Khi hỏi về một đoạn mã, chép đúng đoạn mã trong tài liệu: không
+đổi số thành chuỗi hay ngược lại". Rồi đo lại, lần này trên 6 bài viết có đủ chữ của
+CSDL seed, 5 câu mỗi bài, cả hai model, dùng đúng build_prompt/parse_drafts của app:
+
+  model                  câu dùng được  bị loại  thời gian/lần         đáp án SAI
+  gemini-3.5-flash       30/30          0        8,3–13,8 s (tb 11,5)  1
+  gemini-3.5-flash-lite  30/30          0        2,8–3,3 s  (tb 3,0)   0
+
+Bẫy int(12.9) chạy lại 5 lần mỗi model với prompt cuối:
+  flash-lite: 5/5 lần hỏi đúng `int(12.9)` → 12, và `int("12.5")` → lỗi
+  flash:      4/4 lần đúng, lần thứ 5 bị HTTP 429 (hết quota free tier)
+
+→ CHỐT gemini-3.5-flash-lite (GEMINI_QUIZ_MODEL). Nhanh gấp ~4 lần, 0 đáp án sai trên 30
+câu, và không cạn quota trước. Quyết định ban đầu (flash) được đảo lại theo số liệu này.
+KHÔNG model nào được tin mù: cả hai đều đã từng sinh đáp án sai trông như đúng, nên việc
+duyệt từng câu là bắt buộc chứ không phải tùy chọn.
+
+==============================================================================
+3. CÂU SAI DUY NHẤT, VÀ VÌ SAO CÓ key_warning
+==============================================================================
+gemini-3.5-flash, bài "Phạm vi biến: local, global và vì sao nên tránh global", câu 4:
+  Theo tài liệu, cách thiết kế hàm nào giúp hàm dễ kiểm thử và chỉ cần đọc một mình cũng hiểu?
+        Ghi đè biến bên ngoài bằng từ khóa `global` để tiết kiệm bộ nhớ.
+        Không dùng tham số đầu vào mà trực tiếp thay đổi trạng thái của hệ thống.
+        Truyền giá trị vào qua tham số và trả kết quả ra qua `return`.     ← đúng theo bài
+      * Tách hàm thành nhiều phần và sử dụng các biến toàn cục để liên kết. ← model chọn
+      → Tài liệu nêu rõ: truyền giá trị vào qua tham số và trả kết quả ra qua `return` ...
+
+Lời giải thích chép gần nguyên văn phương án ĐÚNG, còn đáp án thì trỏ sang phương án khác.
+Đây là kiểu sai bắt được bằng máy mà không cần gọi thêm model:
+schemas/quiz.py::explanation_points_elsewhere. Một phương án coi là "được trích" khi ≥ 80%
+số từ của nó có trong lời giải thích, và chỉ tính là mâu thuẫn khi đáp án được trích ít
+hơn phương án đó ≥ 30 điểm. "12 chứ không phải 13" nhắc cả hai số, nên không bị gắn cờ.
+Chạy trên đúng 60 câu ở mục 2: gắn cờ 1/60, đúng câu sai ở trên, không báo nhầm câu nào.
+QuestionOut.key_warning = true thì UI hiện cảnh báo vàng. Đây là gợi ý cho người duyệt,
+không phải lời từ chối, và cảnh báo tắt khi câu đã được duyệt hoặc sửa.
+
+==============================================================================
+4. NHẬN XÉT CHẤT LƯỢNG 60 CÂU (em chấm tay từng câu)
+==============================================================================
+Đúng/sai đáp án: flash 29/30, flash-lite 30/30 (mục 3).
+Câu nhập nhằng (hai phương án cùng bảo vệ được), đều ở flash:
+  - "Từ khóa nào cho phép một hàm ghi đè một biến nằm bên ngoài nó?" đáp án `global`, nhưng
+    phương án nhiễu `nonlocal` cũng làm được việc đó với biến của hàm bao ngoài.
+  - `int(12.9)`: "12, vì cắt bỏ phần thập phân" (đáp án) và "12, vì làm tròn xuống": với
+    số dương, hai cách mô tả cho cùng kết quả.
+Câu yếu nhưng không sai, đa số ở flash-lite:
+  - Hỏi đếm máy móc: "một endpoint thực hiện mấy công việc chính?" (Hai/Ba/Bốn/Năm).
+  - Phương án nhiễu vô lý, loại được ngay: "validate, email, length, regex", "check, format,
+    size, match" đặt cạnh "required, type='email', minlength, pattern".
+  flash viết phương án nhiễu hợp lý hơn và câu hỏi dài hơn. flash-lite ngắn và sát chữ
+  trong bài hơn. Cả hai đều bám tài liệu, không hỏi kiến thức ngoài bài.
+Vị trí đáp án đúng TRƯỚC khi xáo (60 câu): 0→20, 1→24, 2→13, 3→3. Theo xác suất ngẫu nhiên
+thì mỗi vị trí được 15, nhưng vị trí cuối chỉ có 3/60. Học viên "không bao giờ chọn D" sẽ
+có lợi, nên app xáo phương án trước khi lưu (test phân phối đều ở mục 7).
+
+==============================================================================
+5. CHẠY THẬT TRÊN TRÌNH DUYỆT (Chrome, giảng viên seed khoa.tran@devpath.example)
+==============================================================================
+  a. Trình soạn khóa "Python cơ bản cho người mới bắt đầu" → thêm bài trắc nghiệm
+     "Kiểm tra: ép kiểu" cuối chương 2 → "Tạo bài trắc nghiệm".
+  b. Panel "Sinh câu hỏi bằng AI" tự chọn sẵn bài "Ép kiểu và những cái bẫy quen thuộc",
+     tức bài đọc gần nhất đứng trước quiz. Để 5 câu, bấm "Sinh câu hỏi". Nút hiện "Đang
+     soạn…", xong sau vài giây. 5 câu vào danh sách, mỗi câu nhãn "AI soạn · chờ duyệt"
+     kèm lời giải thích và nút Duyệt riêng.
+  c. Nút "Xuất bản cho học viên" bị khóa (disabled = true), kèm dòng "Còn 5 câu AI soạn
+     chưa duyệt."
+  d. Duyệt câu 1–4 bằng nút Duyệt. Câu 5 thì SỬA lời câu hỏi rồi "Lưu câu hỏi". Nút xuất
+     bản mở khóa. Bấm xuất bản.
+  e. DB sau đó:
+       quizzes: is_published = t, ai_generated = t
+       0 | Hàm input() trong Python luôn trả về kiểu dữ liệu nào?           | AI | đã duyệt
+       1 | Kết quả của biểu thức int(12.9) là bao nhiêu?                    | AI | đã duyệt
+       2 | Để chuyển chuỗi "12.5" thành số nguyên bằng hàm int(), cần làm gì | AI | đã duyệt
+       3 | Khi làm việc với tiền trong lập trình, nên sử dụng kiểu gì ...     | AI | đã duyệt
+       4 | Biểu thức nào sau đây gây lỗi vì cộng một chuỗi với một số?       | AI | đã duyệt (sửa)
+     Đáp án đúng nằm ở vị trí 1, 1, 3, 3, 0: đã xáo. Cả 5 đáp án đúng theo bài học.
+  f. UI sau khi xuất bản: "Đang xuất bản · 5 câu · Sinh bằng AI", mỗi câu "AI soạn · đã
+     duyệt", panel sinh câu hỏi ẩn đi vì câu hỏi đã bị khóa.
+
+==============================================================================
+6. SỰ CỐ KHI CHẠY THẬT, KHÔNG PHẢI LỖI CỦA TÍNH NĂNG
+==============================================================================
+Lần đầu mở trình soạn, panel không hiện. Container frontend đã thấy file mới, và restart
+không giúp gì. Hóa ra một phiên làm việc song song (worktree sửa hiển thị markdown bài
+viết) đã chạy `next dev` trên máy host và chiếm cổng 3000 từ 19:45. Trình duyệt ở
+localhost:3000 đang nói chuyện với server của nhánh khác. Tắt tiến trình đó, khởi động lại
+container frontend thì panel hiện. Bài học rút ra: trước khi nghi cache, xem ai đang giữ cổng.
+
+==============================================================================
+7. TÁI TẠO ĐƯỢC BẰNG TEST
+==============================================================================
+  backend/tests/test_quiz_generation.py       18 test hàm thuần: schema, prompt, cắt tài
+                                              liệu dài, loại câu hỏng/trùng/lặp, xáo giữ
+                                              đúng đáp án và phân phối đều, key_warning
+                                              trên đúng câu sai thật ở mục 3
+  backend/tests/test_llm_json.py              13 test adapter JSON: 429 thử lại, 400 không,
+                                              MAX_TOKENS không thử lại, không phải JSON thì
+                                              thử lại, prompt bị chặn không thử lại
+  backend/tests/api/test_quiz_generation.py   23 test API: lưu thành nháp, đọc transcript
+                                              video, không lặp câu đã có, lỗi model/không
+                                              key → 503 và không lưu gì, bài không có chữ /
+                                              khác khóa / quiz đã xuất bản / không phải chủ
+                                              → từ chối TRƯỚC khi gọi model, rate limit 429,
+                                              còn câu chưa duyệt → 409 QUIZ_NEEDS_REVIEW,
+                                              duyệt/sửa/xóa đều gỡ được chặn
+  Lệnh:  .venv\Scripts\python.exe -m pytest tests/test_quiz_generation.py
+             tests/test_llm_json.py tests/api/test_quiz_generation.py tests/api/test_quiz.py
+  Kết quả lần chạy cuối (kèm test_models, test_config): 138 passed.
+
+==============================================================================
+8. CHƯA LÀM, NÓI THẲNG
+==============================================================================
+- Học viên làm quiz vừa sinh: chưa chạy trên trình duyệt trong task này. Luồng làm bài
+  không đổi (task "Quiz model + attempt flow" đã kiểm), nhưng gate cuối phase đòi đúng
+  chuỗi "sinh → duyệt → học viên làm". Sẽ chụp lúc thu bằng chứng gate.
+- Chưa có ảnh chụp lưu ra file (đã xem trên Chrome ở mục 5).
+- Chưa sinh từ transcript video trên dữ liệu thật: 41/42 video seed không có lời giảng.
+  Đường đó mới được kiểm bằng test (FakeStorage).
+- 60 câu là một mẫu nhỏ trên 6 bài ngắn (580–730 ký tự). Tỷ lệ "0/30 sai" của flash-lite
+  không có nghĩa là không bao giờ sai: lần thăm dò đầu đã thấy nó sai. Đó là lý do bắt
+  buộc duyệt.

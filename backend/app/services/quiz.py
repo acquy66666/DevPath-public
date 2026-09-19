@@ -100,6 +100,22 @@ class QuizEmptyError(DomainError):
     code = "QUIZ_EMPTY"
 
 
+class QuizNeedsReviewError(DomainError):
+    """AI drafts nobody has read. See `QuizQuestion.reviewed_at` for why this
+    is a refusal and not a warning."""
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "QUIZ_NEEDS_REVIEW"
+
+
+class QuestionNotGeneratedError(DomainError):
+    """Approving is for drafts: a question the instructor typed was reviewed
+    by being typed."""
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "QUESTION_NOT_GENERATED"
+
+
 class QuizNotPublishedError(DomainError):
     status_code = status.HTTP_409_CONFLICT
     code = "QUIZ_NOT_PUBLISHED"
@@ -224,6 +240,20 @@ async def count_questions(session: AsyncSession, quiz_id: uuid.UUID) -> int:
     return total or 0
 
 
+async def count_unreviewed(session: AsyncSession, quiz_id: uuid.UUID) -> int:
+    """AI drafts in this quiz that nobody has approved, edited or deleted."""
+    total = await session.scalar(
+        select(func.count())
+        .select_from(QuizQuestion)
+        .where(
+            QuizQuestion.quiz_id == quiz_id,
+            QuizQuestion.ai_generated.is_(True),
+            QuizQuestion.reviewed_at.is_(None),
+        )
+    )
+    return total or 0
+
+
 async def _has_open_attempt(session: AsyncSession, quiz_id: uuid.UUID) -> bool:
     found = await session.scalar(
         select(QuizAttempt.id)
@@ -287,8 +317,15 @@ async def update_quiz(
     quiz = await quiz_for_management(session, quiz_id, user)
     changes = payload.model_dump(exclude_unset=True)
 
-    if changes.get("is_published") is True and await count_questions(session, quiz.id) == 0:
-        raise QuizEmptyError("Bài trắc nghiệm chưa có câu hỏi nào để xuất bản")
+    if changes.get("is_published") is True:
+        if await count_questions(session, quiz.id) == 0:
+            raise QuizEmptyError("Bài trắc nghiệm chưa có câu hỏi nào để xuất bản")
+        unreviewed = await count_unreviewed(session, quiz.id)
+        if unreviewed:
+            raise QuizNeedsReviewError(
+                f"Còn {unreviewed} câu hỏi do AI soạn chưa được duyệt — duyệt, sửa "
+                "hoặc xóa từng câu trước khi xuất bản"
+            )
 
     if changes.get("is_published") is False and await _has_open_attempt(session, quiz.id):
         # Same argument as freezing the questions: somebody is sitting this
@@ -325,7 +362,7 @@ async def _question_for_management(
     return question, quiz
 
 
-def _refuse_if_published(quiz: Quiz) -> None:
+def refuse_if_published(quiz: Quiz) -> None:
     if quiz.is_published:
         raise QuizPublishedError(
             "Bài trắc nghiệm đang xuất bản — gỡ xuất bản trước khi sửa câu hỏi"
@@ -337,7 +374,7 @@ async def add_question(
 ) -> QuizQuestion:
     """Append a question to a draft quiz."""
     quiz = await quiz_for_management(session, quiz_id, user)
-    _refuse_if_published(quiz)
+    refuse_if_published(quiz)
 
     question = QuizQuestion(
         quiz_id=quiz.id,
@@ -364,7 +401,7 @@ async def update_question(
     with no right answer.
     """
     question, quiz = await _question_for_management(session, question_id, user)
-    _refuse_if_published(quiz)
+    refuse_if_published(quiz)
 
     changes = payload.model_dump(exclude_unset=True)
     merged = {
@@ -379,16 +416,40 @@ async def update_question(
 
     for field, value in changes.items():
         setattr(question, field, value)
+    # Saving a draft is signing it: the edit form shows the question, every
+    # option and the key, so whoever saved it has read all of it.
+    if question.ai_generated and question.reviewed_at is None:
+        question.reviewed_at = datetime.now(UTC)
 
     await session.commit()
     await session.refresh(question)
     return question
 
 
+async def approve_question(
+    session: AsyncSession, question_id: uuid.UUID, user: User
+) -> QuizQuestion:
+    """Sign off an AI draft as it stands.
+
+    Idempotent, and the first sign-off is the one kept: approving twice is a
+    double click, not a second review.
+    """
+    question, quiz = await _question_for_management(session, question_id, user)
+    refuse_if_published(quiz)
+    if not question.ai_generated:
+        raise QuestionNotGeneratedError("Chỉ câu hỏi do AI soạn mới cần duyệt")
+
+    if question.reviewed_at is None:
+        question.reviewed_at = datetime.now(UTC)
+        await session.commit()
+        await session.refresh(question)
+    return question
+
+
 async def delete_question(session: AsyncSession, question_id: uuid.UUID, user: User) -> None:
     """Remove a question from a draft quiz and close the gap it leaves."""
     question, quiz = await _question_for_management(session, question_id, user)
-    _refuse_if_published(quiz)
+    refuse_if_published(quiz)
 
     await session.delete(question)
     await session.flush()

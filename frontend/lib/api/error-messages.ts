@@ -90,6 +90,17 @@ const MESSAGES: Record<string, string> = {
   GRADING_UNAVAILABLE:
     "Hệ thống chấm bài đang bận hoặc tạm ngừng. Thử lại sau ít phút nhé.",
 
+  // Sinh quiz bằng AI. QUIZ_GENERATION_RATE_LIMITED cố ý không có ở đây, cùng
+  // lý do với CHAT_RATE_LIMITED bên dưới: câu của backend nói phải đợi bao lâu.
+  LESSON_HAS_NO_TEXT:
+    "Bài học này chưa có chữ để AI soạn câu hỏi — cần nội dung bài viết, hoặc transcript nếu là video.",
+  SOURCE_NOT_IN_COURSE: "Chỉ sinh câu hỏi được từ bài học trong cùng khóa học.",
+  QUIZ_GENERATION_FAILED:
+    "AI không soạn được câu hỏi nào dùng được từ bài này. Thử lại, hoặc chọn bài khác.",
+  QUIZ_NEEDS_REVIEW:
+    "Còn câu hỏi do AI soạn chưa được duyệt. Duyệt, sửa hoặc xóa từng câu rồi hãy xuất bản.",
+  QUESTION_NOT_GENERATED: "Câu hỏi này do bạn tự viết nên không cần duyệt.",
+
   // Trợ giảng AI. CHAT_RATE_LIMITED cố ý không có ở đây: câu của backend nói
   // đúng phải đợi bao lâu ("Đợi 3 giây…", "…sau khoảng 12 phút"), câu chung
   // thì không.

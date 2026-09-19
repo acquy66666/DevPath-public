@@ -121,6 +121,16 @@ Hàm trả về một `stop()` — gọi khi component unmount. Nó gỡ `onclos
 
 **Đồng hồ trên trang chỉ là hiển thị hạn chót, không phải hạn chót.** Nó khởi đầu từ `seconds_remaining` do server tính theo đồng hồ của server. Về 0 thì trang tự nộp bài, nhưng quyền quyết định vẫn ở backend: tab bị treo hay bị bóp CPU thì server vẫn từ chối bài nộp trễ quá 10 giây ân hạn. Hết giờ mà chưa nộp là 0 điểm, vì đáp án dở dang không được lưu (lý do ở `docs/report/assets/decisions.md`).
 
+### Sinh câu hỏi bằng AI
+
+`components/quiz/quiz-generator.tsx`, hiện trong trình soạn quiz khi quiz còn là bản nháp. Giảng viên chọn một bài viết hoặc video của khóa (mặc định là bài đọc được gần nhất đứng **trước** quiz, tức bài mà quiz đặt ở cuối nó nhiều khả năng kiểm tra), chọn số câu (1–10), và câu nháp được nối vào danh sách với nhãn "AI soạn · chờ duyệt".
+
+**Không có nút "duyệt tất cả", và đó là cố ý.** Duyệt mười câu bằng một cú bấm là chưa duyệt câu nào. Mỗi câu nháp có nút **Duyệt** riêng, và **lời giải thích hiện ngay dưới phương án** để người duyệt so đáp án với lý do của chính model. Sửa rồi lưu cũng tính là duyệt. Khi `key_warning` bật (lời giải thích nói về một phương án khác với đáp án), câu hiện cảnh báo vàng. Nút xuất bản khóa lại, kèm dòng "Còn N câu AI soạn chưa duyệt", và backend cũng từ chối bằng 409 `QUIZ_NEEDS_REVIEW`.
+
+Nút sinh chỉ gọi một request và chờ khoảng 3 giây, không stream, vì nửa câu hỏi không dùng được. Kết quả báo số câu bị loại (`dropped`) và bài có bị cắt vì quá dài hay không (`truncated`), để giảng viên biết mình đang nhìn thấy bao nhiêu phần của những gì AI đã viết.
+
+**Cạm bẫy đã gặp khi thử:** một `next dev` chạy thẳng trên máy host (từ một worktree khác) có thể chiếm cổng 3000 trong khi container frontend vẫn báo healthy. Trình duyệt khi đó nói chuyện với code của nhánh khác, trông y hệt "bundle cũ". Trước khi nghi cache, kiểm tra xem tiến trình nào đang giữ cổng (`netstat -ano | findstr :3000`).
+
 ## Trợ giảng AI (Phase 4)
 
 Tab **Trợ giảng AI** cạnh mục lục trong trang học (`/hoc/[slug]`). Code ở `components/chat/`, client ở `lib/api/chat.ts`, API ở mục "Trợ giảng AI" của [backend/README.md](../backend/README.md).

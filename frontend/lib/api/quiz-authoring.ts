@@ -22,7 +22,34 @@ export interface Question {
   correct_index: number;
   explanation: string | null;
   position: number;
+  /** Drafted by Gemini. Only these can be waiting for review. */
+  ai_generated: boolean;
+  /** When the instructor approved or edited the draft; null while waiting. */
+  reviewed_at: string | null;
+  /**
+   * An unreviewed draft whose explanation quotes another option far more than
+   * the one marked right — the shape of the one wrong key measured in 60
+   * drafts. A hint to look, not a verdict.
+   */
+  key_warning: boolean;
 }
+
+/** Mirrors `QuizGenerateOut`. */
+export interface GenerationResult {
+  questions: Question[];
+  requested: number;
+  created: number;
+  /** Drafts that failed the checks (no right answer, duplicate options, repeats). */
+  dropped: number;
+  model: string;
+  /** The lesson was longer than the model was shown. */
+  truncated: boolean;
+}
+
+/** Mirrors `GENERATE_MIN` / `GENERATE_MAX` / `GENERATE_DEFAULT` in the backend. */
+export const GENERATE_MIN = 1;
+export const GENERATE_MAX = 10;
+export const GENERATE_DEFAULT = 5;
 
 export interface QuestionInput {
   question: string;
@@ -94,6 +121,34 @@ export function updateQuestion(
     method: "PATCH",
     accessToken,
     body: JSON.stringify(input),
+  });
+}
+
+/**
+ * Draft `count` questions from one lesson of the same course, with Gemini.
+ *
+ * Appended to this draft quiz as unreviewed; the quiz cannot be published
+ * until each is approved, edited or deleted. One model call, about ten
+ * seconds at worst — answered whole, not streamed.
+ */
+export function generateQuestions(
+  accessToken: string,
+  quizId: string,
+  sourceLessonId: string,
+  count: number,
+): Promise<GenerationResult> {
+  return apiFetch<GenerationResult>(`/api/v1/quizzes/${quizId}/generate`, {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify({ source_lesson_id: sourceLessonId, count }),
+  });
+}
+
+/** Sign off one AI draft as it stands. Idempotent. */
+export function approveQuestion(accessToken: string, questionId: string): Promise<Question> {
+  return apiFetch<Question>(`/api/v1/quiz-questions/${questionId}/approve`, {
+    method: "POST",
+    accessToken,
   });
 }
 

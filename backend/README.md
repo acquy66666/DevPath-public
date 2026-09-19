@@ -299,7 +299,7 @@ Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất b�
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 13 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 14 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -316,6 +316,7 @@ Migration là một chuỗi thẳng 13 revision, một head (`alembic heads` đ�
 | `a03e9e2f9ce9` | `doc_chunks` + index HNSW |
 | `50ccf4fc23fb` | `quizzes`, `quiz_questions`, `quiz_attempts` |
 | `42fff7804290` | `chat_sessions`, `chat_messages` |
+| `ca9e1c7ffdbb` | `quiz_questions.ai_generated`, `reviewed_at` (duyệt câu hỏi AI sinh) |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 
@@ -415,6 +416,31 @@ Câu trả lời chỉ dựa trên tài liệu, ghi `[n]` sau mỗi ý, trong đ
 | `GEMINI_CHAT_THINKING_LEVEL` | `minimal` | Mức "suy nghĩ" của model họ 3. Model họ 2.5 thì để trống, vì chúng nhận budget chứ không nhận level. Token suy nghĩ bị trừ vào giới hạn đầu ra |
 
 Bằng chứng chạy thật: chọn model (TTFT 1,3 s so với 6 s và 503/429 ở các model khác), luồng SSE qua HTTP, hạ khóa về nháp mà truy vấn trả 0 dòng, và lỗi 503 **giữa chừng** mà Gemini gửi dưới dạng JSON trần sau khi đã stream một phần. Tất cả ở [chat-api.txt](../docs/report/assets/phase-4/chat-api.txt).
+
+### Sinh quiz bằng AI
+
+Từ 19/09/2026. Logic ở `app/services/quiz_generation.py`, route nằm trong `app/api/v1/quiz.py`:
+
+| Endpoint | Việc |
+|---|---|
+| `POST /quizzes/{id}/generate` | `{source_lesson_id, count}` (1–10): Gemini đọc một bài cùng khóa (bài viết, hoặc transcript nếu là video) rồi soạn nháp, nối vào cuối quiz nháp |
+| `POST /quiz-questions/{id}/approve` | Duyệt một câu nháp đúng như đang có. Idempotent, lần duyệt đầu được giữ |
+
+**Câu AI soạn chưa ai đọc thì quiz không xuất bản được** (409 `QUIZ_NEEDS_REVIEW`). Duyệt, sửa (`PATCH`, vì form sửa hiện cả câu hỏi, phương án và đáp án) hoặc xóa đều gỡ chặn cho câu đó. Theo dõi từng câu bằng `quiz_questions.ai_generated` / `reviewed_at`. Lý do bắt buộc: cả hai model đã thử đều từng sinh đáp án sai trông như đúng.
+
+**Không tin model cho tới khi kiểm xong.** `responseSchema` giữ hình dạng câu trả lời, nhưng không giữ được đáp án trỏ ra ngoài danh sách, phương án trùng nhau, hay câu lặp lại câu đã có. Mỗi câu đi qua đúng `check_question_shape` như câu gõ tay. Câu hỏng bị loại và đếm vào `dropped`; nếu không câu nào dùng được thì trả 503 `QUIZ_GENERATION_FAILED` và không lưu gì. Phương án được xáo trước khi lưu, vì model hiếm khi đặt đáp án đúng ở vị trí cuối (3/60).
+
+**`QuestionOut.key_warning`** gắn cờ câu nháp chưa duyệt có lời giải thích trích một phương án khác nhiều hơn hẳn đáp án. Đây là kiểu của câu sai duy nhất trong 60 câu đã đo, và phép so từ bắt đúng 1/60 câu đó. Chỉ là gợi ý cho người duyệt, không từ chối gì.
+
+Mọi lời từ chối xảy ra **trước** khi gọi model: bài không có chữ (409 `LESSON_HAS_NO_TEXT`), bài khác khóa (400 `SOURCE_NOT_IN_COURSE`), quiz đã xuất bản (409 `QUIZ_PUBLISHED`), hỏi quá nhanh (429 `QUIZ_GENERATION_RATE_LIMITED`, cooldown 10 giây và 20 lần/giờ). Gọi đồng bộ, không qua Celery: một lần gọi khoảng 3 giây, và người chờ là giảng viên vừa bấm nút.
+
+| Biến môi trường | Mặc định | Dùng cho |
+|---|---|---|
+| `GEMINI_QUIZ_MODEL` | `gemini-3.5-flash-lite` | Model soạn câu hỏi, chọn theo số đo (thắng `3.5-flash` 30/30 so với 29/30 đáp án đúng, 3,0 s so với 11,5 s) |
+| `GEMINI_QUIZ_THINKING_LEVEL` | `minimal` | Như của chat |
+| `GEMINI_QUIZ_MAX_OUTPUT_TOKENS` | `8192` | 5 câu tốn khoảng 600 token; JSON bị cắt giữa chừng thì vô dụng, nên để dư |
+
+Bằng chứng: [quiz-generation.txt](../docs/report/assets/phase-4/quiz-generation.txt), gồm 60 câu chấm tay, bẫy `int(12.9)`, và một lượt sinh → duyệt → xuất bản trên Chrome.
 
 ### Đo hiệu năng chấm bài
 

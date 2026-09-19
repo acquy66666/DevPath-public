@@ -28,14 +28,21 @@ rather than guessed -- see `docs/report/assets/phase-4/embedding-model.txt`.
 import re
 from dataclasses import dataclass
 
-#: Characters per token, and deliberately below every prose measurement:
-#: Vietnamese with diacritics came out at 3.92, without at 3.66, English at
-#: 4.26. Erring low makes the estimate an over-count of tokens, so chunks come
-#: out slightly under target rather than over the model's input limit.
+#: Characters per token. Chosen below the four prose samples first measured --
+#: Vietnamese with diacritics 3.92, without 3.66, English 4.26 -- so that the
+#: estimate would over-count tokens.
 #:
-#: Source code is far denser -- 2.32 -- so a chunk that is mostly code holds
-#: more real tokens than this says. That is why MAX_CHUNK_TOKENS sits so far
-#: below the model's real 2048-token input limit: the headroom absorbs it.
+#: The real corpus says otherwise. Checked against `countTokens` on all 43
+#: chunks (scripts/eval_token_estimate.py, docs/report/assets/phase-4/
+#: token-estimate.txt): 3.41 overall, 3.34 for lecture transcripts, which read
+#: code aloud, and 2.88 for the densest chunk. So the estimate *under*-counts,
+#: by 2.5% overall and up to 18% on one chunk. Source code alone is 2.32.
+#:
+#: What keeps a chunk inside the model's 2048-token input limit is not this
+#: ratio but MAX_CHUNK_TOKENS: the largest real chunk was 557 tokens, and even
+#: pure code at 700 estimated tokens is about 1060 real ones. Left at 3.5 on
+#: purpose: changing it re-chunks, and so re-embeds, every lesson to move a
+#: target that is only "about 500" anyway.
 CHARS_PER_TOKEN = 3.5
 
 #: What the plan asks for: "chunk ~500 token overlap".

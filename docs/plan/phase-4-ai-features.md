@@ -15,7 +15,7 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 - [x] Ingest xóa chunk của bài học không còn chữ (trước đây chỉ đếm `skipped`, chunk cũ vẫn tìm thấy được); report có thêm `removed` (TDD) — `docs/report/assets/phase-4/rag-ingest.txt` mục 5
 - [x] Đồng bộ tài liệu với thực tế (~12 file) + ghi các món nợ hoãn chưa có chủ vào checkbox Phase 5/6 — 11 checkbox mới ở mục "Nợ hoãn lại" của `phase-6-hardening-deploy.md`, ghi chú ingest ở task duyệt khóa của Phase 5
 - [x] Build tái lập được: lockfile backend, pin `ubuntu-24.04` + action Node 24 trước mốc 19/10, pin tag image, CI guard cho `importorskip` — `backend/requirements.lock` sinh bằng `scripts/lock.sh` (`uv --universal`), CI fail nếu lock lệch `pyproject.toml`; action v7
-- [ ] Lỗi UX làm vấp demo (2 nút `disabled` ở trang chủ, `/khoa-hoc` trắng trang khi backend chết, lỗi avatar nói về video) + `courses.duration_total_s` không bao giờ được cập nhật
+- [x] Lỗi UX làm vấp demo (2 nút `disabled` ở trang chủ, `/khoa-hoc` trắng trang khi backend chết, lỗi avatar nói về video) + `courses.duration_total_s` không bao giờ được cập nhật — `/khoa-hoc` hóa ra đã có `error.tsx` từ 23/08 (thử lại khi dừng backend: không trắng); `services/course_stats.py` + `scripts/rebuild_course_stats.py` (TDD) — `docs/report/assets/phase-4/course-stats-rebuild.txt`
 
 ## Tuần 9 — RAG chatbot + sinh quiz
 

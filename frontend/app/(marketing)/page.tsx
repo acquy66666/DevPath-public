@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { BackendStatus, BackendStatusSkeleton } from "@/components/backend-status";
@@ -14,10 +15,12 @@ export default function HomePage() {
           Bài tập được chấm tự động trong môi trường cô lập, gợi ý khóa học theo tiến độ của bạn, và
           trợ giảng AI trả lời trong phạm vi bài giảng.
         </p>
-        <div className="mt-8 flex gap-3">
-          <Button disabled>Khám phá khóa học</Button>
-          <Button variant="outline" disabled>
-            Tìm hiểu thêm
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Button asChild>
+            <Link href="/khoa-hoc">Khám phá khóa học</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/dang-ky">Tạo tài khoản miễn phí</Link>
           </Button>
         </div>
       </section>

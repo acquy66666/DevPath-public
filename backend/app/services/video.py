@@ -20,6 +20,7 @@ from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.models import Lesson, User, VideoAsset
 from app.schemas.video import VideoAssetOut, VideoUploadRequest, VideoUploadTicket
+from app.services import course_stats
 from app.services import curriculum as curriculum_service
 from app.services.storage import (
     ObjectStorage,
@@ -104,7 +105,9 @@ async def create_upload_ticket(
     objects are scheduled for deletion. Keeping the old asset around would
     leave a lesson pointing at one video while the bucket paid for two.
     """
-    lesson = await _lesson_for_management(session, lesson_id, user)
+    lesson, _, course = await curriculum_service.lesson_for_management(
+        session, lesson_id, user
+    )
 
     if lesson.type != "video":
         raise LessonNotVideoError("Chỉ bài học dạng video mới gắn được video")
@@ -130,6 +133,9 @@ async def create_upload_ticket(
 
     if previous is not None:
         await session.delete(previous)
+        # The old video stops counting now; the new one starts when the
+        # worker has measured it.
+        await course_stats.recount_duration(session, course.id)
 
     await session.commit()
     # Both rows: attaching the asset was an UPDATE on `lessons`, and Postgres

@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DomainError
 from app.models import Course, CourseSection, Lesson, User
 from app.schemas.curriculum import LessonCreate, LessonUpdate
+from app.services import course_stats
 from app.services import courses as courses_service
 from app.services import enrollments as enrollments_service
 
@@ -187,6 +188,8 @@ async def delete_section(
     await session.flush()
 
     _renumber(await _sections_of(session, course.id))
+    # Whatever videos the section held no longer count towards the course.
+    await course_stats.recount_duration(session, course.id)
     await session.commit()
 
 
@@ -266,15 +269,18 @@ async def delete_lesson(session: AsyncSession, lesson_id: uuid.UUID, user: User)
     separately -- deleting a lesson must keep working on a deployment that has
     no bucket configured at all.
     """
-    lesson, section, _ = await lesson_for_management(session, lesson_id, user)
+    lesson, section, course = await lesson_for_management(session, lesson_id, user)
+    had_video = lesson.video_asset is not None
 
-    if lesson.video_asset is not None:
+    if had_video:
         await session.delete(lesson.video_asset)
 
     await session.delete(lesson)
     await session.flush()
 
     _renumber(await _lessons_of(session, section.id))
+    if had_video:
+        await course_stats.recount_duration(session, course.id)
     await session.commit()
 
 

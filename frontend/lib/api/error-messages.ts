@@ -93,9 +93,26 @@ export function errorMessageForCode(code: string): string {
   return MESSAGES[code] ?? UNKNOWN_FAILURE;
 }
 
-export function apiErrorMessage(error: unknown): string {
+/**
+ * Wording one screen needs in place of the default for a code it shares.
+ *
+ * The backend names a failure, not the screen it happened on: the storage codes
+ * come back the same from a video upload and an avatar upload. The defaults
+ * above were written for video, where they first appeared, so a screen that
+ * uploads something else passes its own sentence rather than telling someone
+ * changing their photo that a video could not be uploaded.
+ */
+export type MessageOverrides = Readonly<Partial<Record<string, string>>>;
+
+export const AVATAR_UPLOAD_MESSAGES: MessageOverrides = {
+  STORAGE_NOT_CONFIGURED:
+    "Máy chủ chưa cấu hình kho lưu trữ nên chưa đổi được ảnh đại diện. Ảnh hiện tại vẫn giữ nguyên.",
+  STORAGE_ERROR: "Kho lưu trữ đang trục trặc nên chưa lưu được ảnh. Thử lại sau ít phút.",
+};
+
+export function apiErrorMessage(error: unknown, overrides?: MessageOverrides): string {
   if (error instanceof ApiError) {
-    return MESSAGES[error.code] ?? error.message ?? UNKNOWN_FAILURE;
+    return overrides?.[error.code] ?? MESSAGES[error.code] ?? error.message ?? UNKNOWN_FAILURE;
   }
 
   // fetch() rejects with a TypeError when the backend is unreachable, which is

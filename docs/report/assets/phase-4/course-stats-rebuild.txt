@@ -1,0 +1,90 @@
+SỐ LIỆU LƯU SẴN TRÊN `courses` — TÍNH LẠI ĐƯỢC TỪ DỮ LIỆU GỐC
+Ngày chạy: 19/09/2026 · stack dev (infra/docker-compose.yml) · Windows 11 + Docker Desktop
+Mục "Dọn nợ trước khi đi tiếp" của Phase 4, dòng 8/8 — docs/plan/don-no-2026-09-18.md (Phiên 7)
+
+==============================================================================
+1. TRƯỚC ĐÓ
+==============================================================================
+courses.duration_total_s không có đường nào cập nhật. Catalogue in được thời lượng
+chỉ vì scripts/seed_courses.py tự cộng từ spec rồi ghi thẳng vào cột. Khóa nào
+giảng viên tự dựng rồi upload video thì mãi hiện 0 giây. Script
+rebuild_course_stats.py mà docs/database-design.md mục 10 mô tả cũng chưa tồn tại.
+
+==============================================================================
+2. THAY ĐỔI
+==============================================================================
+backend/app/services/course_stats.py giữ định nghĩa DUY NHẤT cho cả bốn cột:
+
+  students_count     count(enrollments)
+  rating_avg         round(avg(reviews.rating), 2), 0 khi chưa có đánh giá
+  rating_count       count(reviews)
+  duration_total_s   sum(video_assets.duration_s) của video status='ready'
+                     gắn vào bài học thuộc khóa
+
+Mỗi định nghĩa nhận một course_id. Truyền UUID thì thành truy vấn cho một khóa,
+dùng cho các đường ghi. Truyền Course.id thì thành subquery tương quan, dùng cho
+script. Nhờ vậy đường ghi và script không thể hiểu "đúng" theo hai cách khác nhau.
+
+duration_total_s được tính lại (không cộng dồn) ở 4 chỗ, cùng transaction với thay đổi:
+  - worker transcode xong (ready, và cả failed)
+  - thay video (dòng asset cũ bị xóa cùng lúc cấp URL upload mới)
+  - xóa bài học có video
+  - xóa chương
+Mọi chỗ đều khóa dòng courses (SELECT ... FOR UPDATE) trước khi tính, và ghim
+updated_at như rating_avg/students_count đã làm. reviews.py, seed_courses.py và
+seed_interactions.py giờ gọi chung module này thay vì mỗi nơi tự viết.
+
+==============================================================================
+3. TEST — backend/tests/test_course_stats.py (14 test)
+==============================================================================
+Viết trước. Trước khi nối các đường ghi: 4 đỏ vì tổng giữ nguyên 900 s (fixture
+lưu sẵn 900 s = đúng tổng của các dòng, nên đường nào quên tính lại sẽ hiện ra
+thành "số không nhúc nhích" chứ không bị che bởi một số 0 vốn đã là 0).
+Sau khi nối: 14 passed.
+
+==============================================================================
+4. CHẠY THẬT TRÊN CSDL DEV
+==============================================================================
+$ python -m scripts.rebuild_course_stats --dry-run
+Đã kiểm 24 khóa học: mọi số liệu khớp với dữ liệu gốc.
+
+-- Làm lệch có chủ đích một khóa seed: thời lượng về 0 (đúng trạng thái của khóa
+-- do giảng viên tự dựng trước bản sửa), và cộng thêm 5 học viên không có thật.
+UPDATE courses SET duration_total_s = 0, students_count = students_count + 5
+ WHERE slug = 'python-co-ban-cho-nguoi-moi-bat-dau';
+
+$ python -m scripts.rebuild_course_stats --dry-run
+Đã kiểm 24 khóa học, sẽ sửa 2 số liệu ở 1 khóa:
+  python-co-ban-cho-nguoi-moi-bat-dau  students_count: 14 -> 9
+  python-co-ban-cho-nguoi-moi-bat-dau  duration_total_s: 0 -> 6044
+Chạy thử (--dry-run): chưa ghi gì vào CSDL.
+
+$ python -m scripts.rebuild_course_stats
+Đã kiểm 24 khóa học, đã sửa 2 số liệu ở 1 khóa:
+  python-co-ban-cho-nguoi-moi-bat-dau  students_count: 14 -> 9
+  python-co-ban-cho-nguoi-moi-bat-dau  duration_total_s: 0 -> 6044
+
+$ python -m scripts.rebuild_course_stats
+Đã kiểm 24 khóa học: mọi số liệu khớp với dữ liệu gốc.
+
+updated_at của khóa đó trước và sau: 2026-09-18 07:11:18.792328+00, không đổi.
+
+==============================================================================
+5. SEED TRÊN CSDL TRẮNG ĐI QUA ĐÚNG ĐƯỜNG TÍNH LẠI
+==============================================================================
+Database tạm devpath_seedcheck: alembic upgrade head → seed → seed lại →
+rebuild --dry-run → xóa database.
+
+Đã kiểm 4 khóa học: mọi số liệu khớp với dữ liệu gốc.
+  cau-truc-du-lieu-va-giai-thuat-voi-python   6940
+  javascript-hien-dai-es6-va-dom              5811
+  python-co-ban-cho-nguoi-moi-bat-dau         6044
+  xay-dung-rest-api-voi-fastapi               6345
+
+==============================================================================
+6. TÁI TẠO
+==============================================================================
+cd backend
+.venv\Scripts\python.exe -m scripts.rebuild_course_stats --dry-run
+.venv\Scripts\python.exe -m scripts.rebuild_course_stats
+.venv\Scripts\python.exe -m pytest tests/test_course_stats.py

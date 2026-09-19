@@ -37,6 +37,7 @@ from app.models import (
     User,
     VideoAsset,
 )
+from app.services import course_stats
 
 # hls.js's own demo stream: a short Big Buck Bunny render with several
 # renditions, so the quality switch in the player has something to switch.
@@ -114,8 +115,9 @@ class CourseSpec:
 
     @property
     def duration_total_s(self) -> int:
-        """What the catalogue prints. Summed here because nothing else does it
-        yet -- the column is filled by the transcode worker from Phase 3 on."""
+        """What the course should add up to. The column itself is not written
+        from this: the seed recounts it from the video rows it creates, through
+        the same `course_stats` path a finished transcode takes."""
         return sum(
             lesson.duration_s
             for section in self.sections
@@ -500,9 +502,6 @@ async def _build_course(
         language="vi",
         status="published",
         published_at=published_at,
-        # Summed from the lessons rather than left at zero: the catalogue prints
-        # it, and a course showing no length looks broken.
-        duration_total_s=spec.duration_total_s,
     )
     session.add(course)
     await session.flush()
@@ -550,7 +549,8 @@ async def _build_course(
                 await session.flush()
                 await _add_exercise(session, lesson, lesson_spec.exercise)
 
-    await session.flush()
+    # The catalogue prints the length, and a course showing none looks broken.
+    await course_stats.recount_duration(session, course.id)
 
 
 async def _add_exercise(

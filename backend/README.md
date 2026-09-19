@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, bench_grading.py, lock.sh
+scripts/                   seed.py, seed_interactions.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_stats.py, bench_grading.py, lock.sh
 ```
 
 ## Nguyên tắc

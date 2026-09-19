@@ -18,18 +18,20 @@ the same transaction, from this table. Two things make that safe:
   nothing: contention is per-course, and the section it guards is two
   statements long.
 
-`scripts/rebuild_course_stats.py` recomputes both columns from scratch, so a
-drift that does happen is repairable rather than permanent.
+Both halves live in `services/course_stats.py`, next to the definition that
+`scripts/rebuild_course_stats.py` recomputes every column from -- so a drift
+that does happen is repairable rather than permanent.
 """
 
 import uuid
 
 from fastapi import status
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
 from app.models import Course, Review, User
+from app.services import course_stats
 from app.services import courses as courses_service
 from app.services import enrollments as enrollments_service
 
@@ -71,42 +73,6 @@ async def _writable_course(
     return course
 
 
-async def _lock_course(session: AsyncSession, course_id: uuid.UUID) -> None:
-    """Serialise everyone rewriting this course's rating, and only them."""
-    await session.execute(
-        select(Course.id).where(Course.id == course_id).with_for_update()
-    )
-
-
-async def _recount_rating(session: AsyncSession, course_id: uuid.UUID) -> None:
-    """Rewrite the course's rating summary from the reviews it now has.
-
-    Call only while holding the lock above, and before the commit that ends the
-    write -- the summary and the row it summarises have to land together.
-    """
-    rating_avg, rating_count = (
-        await session.execute(
-            select(
-                func.coalesce(func.round(func.avg(Review.rating), 2), 0),
-                func.count(),
-            ).where(Review.course_id == course_id)
-        )
-    ).one()
-
-    # `updated_at` is pinned to itself so SQLAlchemy's `onupdate` leaves it
-    # alone: the instructor's dashboard reads that column as "when this course
-    # last changed", and somebody else's review did not change the course.
-    await session.execute(
-        update(Course)
-        .where(Course.id == course_id)
-        .values(
-            rating_avg=rating_avg,
-            rating_count=rating_count,
-            updated_at=Course.updated_at,
-        )
-    )
-
-
 async def find_mine(
     session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> Review | None:
@@ -145,7 +111,7 @@ async def upsert_mine(
     """
     course = await _writable_course(session, course_id, user)
 
-    await _lock_course(session, course.id)
+    await course_stats.lock_course(session, course.id)
 
     review = await find_mine(session, course.id, user)
     created = review is None
@@ -160,7 +126,7 @@ async def upsert_mine(
     # Before the recount, so the aggregate sees this row.
     await session.flush()
 
-    await _recount_rating(session, course.id)
+    await course_stats.recount_rating(session, course.id)
 
     await session.commit()
     await session.refresh(review)
@@ -178,12 +144,12 @@ async def delete_mine(
     """
     review = await get_mine(session, course_id, user)
 
-    await _lock_course(session, course_id)
+    await course_stats.lock_course(session, course_id)
 
     await session.delete(review)
     await session.flush()
 
-    await _recount_rating(session, course_id)
+    await course_stats.recount_rating(session, course_id)
 
     await session.commit()
 

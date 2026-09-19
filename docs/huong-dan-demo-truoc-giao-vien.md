@@ -120,7 +120,7 @@ Tài khoản có sẵn (mật khẩu hard-code trong seed, chỉ dùng ở máy 
 
 Học viên thì tự đăng ký tại chỗ — chính nó là màn diễn luồng đăng ký.
 
-**Chặng 1 · Trang chủ (30 giây).** Mở `http://localhost:3000`, giới thiệu tên hệ thống. Vào catalog bằng chữ **"Khóa học" trên thanh header** — hai nút to giữa trang đang `disabled`, bấm không có gì xảy ra.
+**Chặng 1 · Trang chủ (30 giây).** Mở `http://localhost:3000`, giới thiệu tên hệ thống. Bấm nút **"Khám phá khóa học"** giữa trang để vào catalog; nút bên cạnh dẫn sang trang đăng ký (hai nút này nối thật từ 19/09/2026, trước đó bị `disabled`).
 
 **Chặng 2 · Tìm kiếm tiếng Việt (2 phút).** Ở `/khoa-hoc`, gõ **`lap trinh`** không dấu vào ô Tìm kiếm rồi bấm "Lọc" — vẫn ra khóa có dấu "Lập trình". Đây là điểm đáng khoe nhất của phần catalog: `to_tsvector('simple', unaccent(...))` với trọng số A/B/C cho tiêu đề / phụ đề / mô tả, xếp hạng bằng `ts_rank`. Chọn thêm Giá = "Miễn phí" thì còn 3/4 khóa. Chỉ vào thanh địa chỉ: mỗi trạng thái lọc là một URL chia sẻ được, và form dùng `method="get"` nên bộ lọc vẫn chạy cả khi tắt JavaScript.
 
@@ -161,13 +161,12 @@ Câu nói kèm: mỗi test chạy trong một container dùng một lần — kh
 
 ---
 
-## Phần 4 — Bốn thứ đừng bấm
+## Phần 4 — Những nút từng là bẫy
 
 | Thứ | Chuyện gì xảy ra | Nói gì nếu bị hỏi |
 |---|---|---|
-| Hai nút to giữa trang chủ | `disabled`, bấm không có gì | Đường vào catalog là link "Khóa học" trên header |
 | Nút "Chọn video để tải lên" | **Chạy được từ 18/09/2026** — file lên MinIO chạy trong stack dev, worker chuyển mã HLS xong trong vài giây. Mở bằng Chrome/Edge qua `localhost:3000` (không phải `127.0.0.1`) | Phần 6, câu 2 |
-| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Chỉ khi MinIO chết mới ra 503, và khi đó câu thông báo lại nói về *video* vì dùng chung mã lỗi | Phần 6, câu 3 |
+| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Trên stack dev không bao giờ ra 503 `STORAGE_NOT_CONFIGURED` (để trống `R2_*` là rơi về MinIO). Nếu gặp ở production thiếu khóa R2 thì từ 19/09/2026 câu báo lỗi nói về ảnh đại diện, không còn nói về video | Phần 6, câu 3 |
 | Nút "Mua khóa học" ở khóa 499.000₫ | Nút mờ kèm dòng "Thanh toán đang được hoàn thiện" | **Đây là điểm cộng chứ không phải lỗi** — Phần 6, câu 4 |
 
 Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component tự trả về `null` khi thiếu `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true`. Đó là thiết kế có chủ đích để không mời người dùng bấm vào thứ chắc chắn lỗi — nên ở đây không có bẫy.
@@ -180,7 +179,7 @@ Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component 
 
 **2. Video không phát, khung báo đỏ.** Mất mạng. Bật 4G điện thoại. Phần còn lại của hệ thống — đăng nhập, tìm kiếm, ghi danh, ghi chú — vẫn chạy bình thường vì toàn bộ dữ liệu nằm trong Docker trên máy.
 
-**3. Trang trắng, console báo `Failed to fetch`.** Backend chưa lên. Kiểm tra `http://localhost:8000/api/v1/health`. Lưu ý `/khoa-hoc` **không** sống sót khi backend chết — chỉ trang chủ mới có try/catch.
+**3. Trang báo "Không tải được danh sách khóa học", hoặc khối "Kết nối backend" ở trang chủ báo lỗi.** Backend chưa lên. Kiểm tra `http://localhost:8000/api/v1/health`. `/khoa-hoc` có trang lỗi riêng (`khoa-hoc/error.tsx`), nên không trắng trang. Đã thử lại ngày 19/09/2026 bằng cách dừng container backend, cả khi tải lại trang lẫn khi bấm link từ trang chủ. Trang lỗi mất khoảng 4–8 giây mới hiện, vì Next phải chờ tên `backend` phân giải thất bại; trong lúc đó là khung xương đang tải.
 
 **4. Đăng nhập xong F5 là mất phiên.** Đang mở bằng `127.0.0.1`. Trình duyệt coi `127.0.0.1` và `localhost` là hai site khác nhau, mà cookie refresh đặt `SameSite=lax` nên bị bỏ im lặng. Mở lại bằng `localhost:3000`.
 
@@ -206,8 +205,8 @@ docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes fr
 **2. "Em thử upload một video xem."**
 > Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên object storage nên file hàng trăm MB không đi qua FastAPI. Trên máy này storage là MinIO chạy trong Docker — cùng giao thức S3 với Cloudflare R2 mà bản production dùng, nên code không biết mình đang nói chuyện với bên nào; đổi sang R2 chỉ là đổi biến môi trường. (Em chưa gắn R2 thật vì Cloudflare bắt khai báo thẻ thanh toán.) Chữ ký còn khóa luôn loại file: PUT một file khác kiểu với cái đã khai thì MinIO trả 403.
 
-**3. "Sao đổi ảnh đại diện lại báo lỗi về video?"**
-> Dạ avatar dùng lại đúng luồng presigned URL của video nên chung mã lỗi; câu thông báo em viết cho ngữ cảnh video, đây là chỗ em sẽ tách riêng. Về bảo mật thì key upload luôn bị kiểm tra phải nằm trong `avatars/<id-của-chính-mình>` trước khi gắn vào tài khoản, nên không gắn được file của người khác.
+**3. "Avatar với video dùng chung luồng upload à?"**
+> Dạ chung luồng presigned URL nên chung mã lỗi từ backend; từ 19/09/2026 mỗi màn hình tự chọn câu thông báo cho mã đó (`AVATAR_UPLOAD_MESSAGES` trong `frontend/lib/api/error-messages.ts`), nên người đổi ảnh không đọc thấy chữ "video" nữa. Về bảo mật thì key upload luôn bị kiểm tra phải nằm trong `avatars/<id-của-chính-mình>` trước khi gắn vào tài khoản, nên không gắn được file của người khác.
 
 **4. "Sao nút mua khóa học bấm không được?"**
 > Dạ khóa có phí em để đúng một cái trong dữ liệu mẫu để chứng minh phần hiển thị giá và bộ lọc theo giá chạy được. Thanh toán VNPay/MoMo nằm ở giai đoạn sau theo đề cương. Ở backend em chặn hẳn: hàm ghi danh miễn phí từ chối khóa có giá bằng lỗi 409 `COURSE_NOT_FREE` chứ không lặng lẽ cho qua, vì dòng ghi danh đó chính là dòng mà thanh toán sẽ phải sinh ra.

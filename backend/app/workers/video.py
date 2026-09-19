@@ -23,6 +23,7 @@ from sqlalchemy.pool import NullPool
 
 from app.core.config import get_settings
 from app.models import VideoAsset
+from app.services import course_stats
 from app.services.storage import ObjectStorage, build_storage, hls_prefix
 from app.workers.celery_app import celery_app
 
@@ -186,6 +187,13 @@ async def transcode(
         asset.error_message = str(exc)[:ERROR_MESSAGE_MAX_LENGTH]
     finally:
         shutil.rmtree(workspace, ignore_errors=True)
+
+    # In the same transaction as the status: a video that is ready but not yet
+    # in the course's total would be a length the catalogue never shows. After
+    # a failure too -- cheap, and it never has to be reasoned about.
+    course_id = await course_stats.course_of_video(session, asset.id)
+    if course_id is not None:
+        await course_stats.recount_duration(session, course_id)
 
     await session.commit()
     return asset.status

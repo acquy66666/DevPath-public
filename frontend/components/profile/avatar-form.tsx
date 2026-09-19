@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import type { User } from "@/lib/api/auth";
-import { apiErrorMessage } from "@/lib/api/error-messages";
+import { apiErrorMessage, AVATAR_UPLOAD_MESSAGES } from "@/lib/api/error-messages";
 import { uploadToStorage } from "@/lib/api/storage";
 import { completeAvatarUpload, createAvatarUpload } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -102,7 +102,9 @@ export function AvatarForm({ user }: { user: User }) {
 
         {upload.isError ? (
           <Alert variant="destructive">
-            <AlertDescription>{apiErrorMessage(upload.error)}</AlertDescription>
+            <AlertDescription>
+              {apiErrorMessage(upload.error, AVATAR_UPLOAD_MESSAGES)}
+            </AlertDescription>
           </Alert>
         ) : null}
 

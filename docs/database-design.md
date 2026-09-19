@@ -285,15 +285,16 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 
 `students_count` **đã có hành vi** từ revision `991bc02a257b` (ghi danh, Phase 2 tuần 5): tăng bằng `UPDATE ... SET students_count = students_count + 1` trong cùng transaction với dòng `enrollments`, chứ không đọc-sửa-ghi trong Python — hai người ghi danh cùng lúc sẽ mất một lượt. Câu lệnh đó ghim luôn `updated_at` về chính nó, vì cột này là "khóa học đổi lần cuối lúc nào" và người khác đăng ký học không phải là một thay đổi của khóa học.
 
-`rating_avg`, `rating_count` **đã có hành vi** từ revision `7b60984bf439` (đánh giá khóa học, Phase 2 tuần 5), xem `app/services/reviews.py`:
+`rating_avg`, `rating_count` **đã có hành vi** từ revision `7b60984bf439` (đánh giá khóa học, Phase 2 tuần 5), xem `app/services/reviews.py`. Phép tính lại nằm ở `app/services/course_stats.py` từ 19/09/2026:
 
 - **Tính lại, không cộng dồn.** `students_count` cộng `+ 1` được vì ghi danh chỉ đi một chiều; điểm trung bình đổi cả hai chiều khi người dùng sửa hoặc xóa đánh giá, nên mỗi lần ghi đều chạy lại `round(avg(rating), 2)` và `count(*)` trên toàn bộ `reviews` của khóa học đó.
 - **Khóa dòng `courses` trước khi tính lại** (`SELECT ... FOR UPDATE`). Hai người đánh giá cùng lúc nếu không khóa sẽ mỗi người tính trung bình trên một ảnh chụp chưa thấy dòng của người kia, và lượt ghi sau xóa lượt ghi trước khỏi tổng. Tranh chấp chỉ trong phạm vi một khóa học và vùng khóa dài đúng hai câu lệnh.
 - Câu `UPDATE` ghim `updated_at` về chính nó, cùng lý do như `students_count`: người khác đánh giá không phải là một thay đổi của khóa học.
 - Quyền ghi: chỉ học viên **đã ghi danh** (403 `NOT_ENROLLED`), và giảng viên không đánh giá được khóa của chính mình (409 `CANNOT_REVIEW_OWN_COURSE`). Khóa học không nhìn thấy được trả 404 trước mọi kiểm tra khác, để endpoint này không thành cách dò khóa học nháp.
 
-Còn lại của `courses` chưa có hành vi:
+`duration_total_s` **đã có hành vi** từ 19/09/2026 (không đổi schema, không có revision mới), xem `app/services/course_stats.py`:
 
-- `duration_total_s` — chờ tổng thời lượng video được cộng khi asset chuyển `ready`.
+- **Nguồn:** `sum(video_assets.duration_s)` của các video `status = 'ready'` gắn vào bài học của khóa. Video đang chuyển mã chưa có độ dài, video `failed` sẽ không bao giờ phát được, nên cả hai không tính.
+- **Tính lại, không cộng dồn**, trong cùng transaction với thay đổi, ở bốn chỗ: worker transcode xong (cả khi `failed`), thay video (asset cũ bị xóa lúc cấp URL upload mới), xóa bài học có video, xóa chương. Cùng quy tắc với `rating_avg`: khóa dòng `courses` trước khi tính, và ghim `updated_at`. Worker chạy nền xong việc cũng không phải là giảng viên sửa khóa học.
 
-Chưa có script `rebuild_course_stats.py` như mục 10 mô tả: nó tính lại cả bốn cột nên chỉ viết được khi `duration_total_s` đã có nguồn.
+`backend/scripts/rebuild_course_stats.py` (`--dry-run` để chỉ báo) tính lại cả bốn cột từ nguồn cho mọi khóa, kể cả khóa đã xóa mềm. Script dùng đúng các định nghĩa mà đường ghi dùng, khóa dòng trước khi đọc, và in ra từng số đã sửa. Chạy trên CSDL lành mạnh thì báo 0 chỗ lệch, và đó là bằng chứng "số liệu tái tạo được": `docs/report/assets/phase-4/course-stats-rebuild.txt`. `scripts/seed_courses.py` và `scripts/seed_interactions.py` cũng tính lại qua module này thay vì tự viết phép tính riêng.

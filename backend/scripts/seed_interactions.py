@@ -49,7 +49,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
@@ -63,6 +63,7 @@ from app.models import (
     Review,
     User,
 )
+from app.services import course_stats
 from app.services.collaborative import Interaction, interaction_weight
 
 # Fixed, and written down rather than passed in: an evaluation is reproducible
@@ -798,41 +799,16 @@ async def seed_interactions(
 
 
 async def _refresh_course_stats(session: AsyncSession, course_ids: set) -> None:
-    """Recompute the denormalised counters for the courses just touched.
+    """Recompute the stored counters for the courses just touched.
 
     `courses.students_count`, `rating_avg` and `rating_count` are maintained by
     the enrolment and review services, and this script writes rows without
     going through either. Recomputing from the rows themselves is also what
-    makes `--purge` able to put the real courses back as they were.
+    makes `--purge` able to put the real courses back as they were -- by the
+    same definition `scripts.rebuild_course_stats` repairs them with.
     """
-    if not course_ids:
-        return
-
-    students = (
-        select(func.count())
-        .select_from(Enrollment)
-        .where(Enrollment.course_id == Course.id)
-        .scalar_subquery()
-    )
-    ratings = (
-        select(func.count())
-        .select_from(Review)
-        .where(Review.course_id == Course.id)
-        .scalar_subquery()
-    )
-    average = (
-        select(func.coalesce(func.round(func.avg(Review.rating), 2), 0))
-        .select_from(Review)
-        .where(Review.course_id == Course.id)
-        .scalar_subquery()
-    )
-
-    await session.execute(
-        update(Course)
-        .where(Course.id.in_(course_ids))
-        .values(students_count=students, rating_count=ratings, rating_avg=average)
-        .execution_options(synchronize_session=False)
-    )
+    if course_ids:
+        await course_stats.rebuild(session, list(course_ids))
 
 
 async def purge(session: AsyncSession) -> tuple[int, int]:

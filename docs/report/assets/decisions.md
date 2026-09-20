@@ -415,3 +415,25 @@ Task "Đánh giá chatbot: bộ 20 câu hỏi" của Phase 4. Bằng chứng: `d
 **Cho phép ví dụ mã ghép từ tài liệu.** Mọi ví dụ model tự viết mà quan sát được đều lắp từ mảnh có trong bài (`pi = 3.14159`, `int(input(...))`). Cấm chúng làm trợ giảng lập trình kém hữu ích hơn hẳn. Quy tắc 2 cho phép, nhưng bắt câu dẫn ghi nguồn. Script vẫn đếm dòng mã không nguyên văn để lần sau phát hiện ví dụ vượt khỏi tài liệu.
 
 **Giữ `CHARS_PER_TOKEN = 3,5` dù số đo nói nó ước thấp.** `countTokens` trên 43 chunk cho 3,41 ký tự/token. Lý do cũ "thấp hơn mọi số đo nên an toàn" sai với lời giảng lẫn mã. Nhưng chunk lớn nhất chỉ 557/2048 token: lớp an toàn thật là `MAX_CHUNK_TOKENS`. Đổi hằng số sẽ phải nhúng lại toàn bộ kho chỉ để nhích một mục tiêu vốn là "khoảng 500".
+
+## Nửa content-based của recommender (20/09/2026)
+
+Task "Content-based: embedding title+description+category cho mọi course → cosine similarity" của Phase 4 tuần 10. Bằng chứng: `docs/report/assets/phase-4/content-based.txt`.
+
+**Bảng riêng `course_embeddings`, không thêm cột vào `courses`.** Bảng `courses` là bảng nóng nhất của hệ thống, còn vector là thứ chỉ recommender đọc. Bảng riêng cũng là chỗ để cột `source_text` và `embedding_model` — hai cột không nói gì về một khóa học mà nói về **lần nhúng** nó.
+
+**Một vector cho cả khóa, không phải một vector mỗi chunk.** Khác `doc_chunks` ở đơn vị so sánh: RAG cắt bài học thành đoạn vì một câu hỏi được trả lời bởi một đoạn, còn ở đây thứ đem so **là cả khóa học**, mà khóa cắt thành nhiều mảnh thì không còn điểm nào để đo. Chuỗi đủ ngắn để nhúng nguyên, nên nhúng lại một khóa cũng chỉ là một lần gọi.
+
+**`taskType = SEMANTIC_SIMILARITY`, không phải `RETRIEVAL_DOCUMENT`.** Hai vế của phép so ở đây cùng loại (mô tả khóa với mô tả khóa), trong khi embedding truy hồi được huấn luyện cho trường hợp bất đối xứng câu hỏi ngắn với đoạn văn dài. Dùng sai không bị API báo lỗi, chỉ ra thứ hạng tệ hơn — đúng kiểu hỏng mà không ai phát hiện.
+
+**Lưu nguyên văn `source_text`, không lưu băm.** Băm cũng trả lời được "chữ có đổi không", nhưng làm câu "vì sao khóa này bị nhúng lại" thành không trả lời được. Chuỗi nhiều nhất vài trăm ký tự.
+
+**Cắt ở 1000 token dù dữ liệu thật dài nhất 162 token.** Quá trần 2048 token thì Gemini cắt im lặng: một khóa nhúng dở trông y hệt khóa nhúng đủ, không có lỗi nào để bắt. Cắt cũng là quyết định chất lượng — phần đầu mô tả nói khóa học dạy gì, phần cuối là chính sách hoàn tiền và tiểu sử giảng viên, những chữ mà mọi khóa đều có.
+
+**Phụ đề được thêm vào chuỗi dù kế hoạch chỉ ghi "title+description+category".** Trên dữ liệu thật, phụ đề là câu nói rõ khóa dành cho ai — đúng thứ phân biệt hai khóa cùng chủ đề khác trình độ.
+
+**Khóa bị gỡ xuống vẫn giữ vector.** Giống `doc_chunks`: xuất bản lại sẽ phải trả tiền nhúng lần nữa. Việc giữ khóa đã gỡ ra khỏi kết quả là việc của câu truy vấn, không phải của thứ đã đổi trạng thái.
+
+**Endpoint công khai, và hai kiểu rỗng không gộp làm một.** Khóa công chúng không xem được trả 404; khóa xem được nhưng chưa có vector trả `items: []`. Trả `[]` cho trường hợp đầu sẽ thành lời khẳng định "không có khóa nào giống khóa này" — điều hệ thống không biết.
+
+**Thêm một lần chạy beat lúc 02:30 bên cạnh việc nhúng lúc publish.** `PATCH /courses/{id}` đổi tiêu đề và mô tả mà không đụng `status`, nên không có cái nút nào để treo job vào. Không có lần chạy đêm, một khóa sửa lời giới thiệu sẽ giữ mãi vector tả chữ cũ, và không có chỗ nào báo. Đêm bình thường tốn vài truy vấn và 0 lời gọi API.

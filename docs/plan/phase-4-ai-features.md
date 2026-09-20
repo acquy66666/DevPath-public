@@ -35,7 +35,9 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 
 ## Tuần 10 — Hybrid recommender
 
-- [ ] Content-based: embedding title+description+category cho mọi course → cosine similarity ("khóa học tương tự" trên trang chi tiết)
+- [x] Content-based: embedding title+description+category cho mọi course → cosine similarity ("khóa học tương tự" trên trang chi tiết) — bảng `course_embeddings` (migration `17e181ed9f26`, một vector/khóa, `source_text` nguyên văn để chạy lại không tốn quota), nhúng bằng `taskType=SEMANTIC_SIMILARITY` (hai vế cùng loại, khác `doc_chunks`), `GET /courses/{id}/similar` công khai xếp theo cosine với lọc `published`/đã gỡ/khác model **trong chính câu truy vấn**; publish → `embed_courses_task(course_id)`, beat 02:30 → cả catalogue (bắt khóa sửa mô tả mà không republish); chạy tay bằng `python -m scripts.rebuild_course_embeddings [slug] [--dry-run]` (TDD, 21+8 test) — `docs/report/assets/phase-4/content-based.txt`
+  - Chưa chạy thật với Gemini: `infra/.env` đã mất `GEMINI_API_KEY` (trùng byte-for-byte với `.env.example`) — mọi thứ khác đo trên Postgres thật với vector dựng tay, chi tiết ở `content-based.txt` mục 0 và 2
+  - Để lại cho task UI: khối "Khóa học tương tự" trên trang chi tiết (checkbox riêng bên dưới) — endpoint đã sẵn sàng
 - [x] Collaborative: implicit matrix (enroll=1, completed=2, rating cao=3) → item-based CF hoặc ALS (thư viện `implicit`)
 - [ ] Hybrid blend + fallback: user mới → content-based theo lịch sử xem + phổ biến theo danh mục
 - [x] Batch Celery beat hằng đêm → cache top-N vào Redis; API `/recommendations`

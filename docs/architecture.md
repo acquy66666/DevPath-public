@@ -83,10 +83,10 @@ Query: câu hỏi học viên → embed → similarity search top-k (lọc theo 
 
 ### 3. Hybrid Recommender (⭐ điểm nhấn 2)
 
-- **Content-based:** embedding (title + description + category) → cosine similarity, giải quyết cold-start item.
+- **Content-based:** embedding (title + subtitle + category + description) → cosine similarity, giải quyết cold-start item — `backend/app/services/content_based.py`, bảng `course_embeddings` (một vector/khóa, không cắt theo chunk như `doc_chunks`: thứ đem so ở đây là cả khóa học). Nhúng bằng `taskType=SEMANTIC_SIMILARITY` vì hai vế cùng loại, trong khi RAG dùng cặp bất đối xứng `RETRIEVAL_DOCUMENT`/`RETRIEVAL_QUERY`. Đọc ra bằng `GET /courses/{id}/similar` (công khai), lọc `published` + chưa gỡ + cùng `embedding_model` **trong chính câu truy vấn**. Nhúng lúc publish và lại lúc 02:30 mỗi đêm — `PATCH` đổi mô tả mà không đụng `status` nên không có nút nào để treo job vào.
 - **Collaborative filtering:** implicit feedback (enroll=1, hoàn thành=2, rating ≥4=3, lấy mức mạnh nhất; rating ≤2 kéo về 1) → **item-based CF** (cosine giữa các khóa học) — `backend/app/services/collaborative.py`. Đã cân nhắc ALS (thư viện `implicit`) và không chọn: với vài chục user, vector ẩn của ALS chủ yếu là nhiễu phụ thuộc seed, không kiểm tay được và không giải thích được vì sao gợi ý; item-based thì tất định và mỗi gợi ý kèm khóa học đã "sinh" ra nó.
 - **Hybrid:** weighted blend, fallback content-based + phổ biến-theo-danh-mục khi user mới.
-- Tính offline theo batch (Celery beat, mỗi đêm), cache kết quả top-N per user vào Redis.
+- Tính offline theo batch (Celery beat, mỗi đêm), cache kết quả top-N per user vào Redis. Hai job khác nhau: `embed_courses` 02:30 (giữ `course_embeddings` khớp với catalogue) và `rebuild_recommendations` 03:00 (khớp ma trận tương tác rồi ghi Redis). "Khóa học tương tự" **không** đi qua cache — nó tính từ bảng vector ngay trong request, vì đầu vào là khóa đang xem chứ không phải người đang xem.
 - Đánh giá: precision@k, recall@k trên tập held-out từ dữ liệu seed — script tại `backend/scripts/eval_recommender.py`.
 
 ## Quyết định kiến trúc đã chốt

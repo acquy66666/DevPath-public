@@ -39,7 +39,9 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
   - Chưa chạy thật với Gemini: `infra/.env` đã mất `GEMINI_API_KEY` (trùng byte-for-byte với `.env.example`) — mọi thứ khác đo trên Postgres thật với vector dựng tay, chi tiết ở `content-based.txt` mục 0 và 2
   - Để lại cho task UI: khối "Khóa học tương tự" trên trang chi tiết (checkbox riêng bên dưới) — endpoint đã sẵn sàng
 - [x] Collaborative: implicit matrix (enroll=1, completed=2, rating cao=3) → item-based CF hoặc ALS (thư viện `implicit`)
-- [ ] Hybrid blend + fallback: user mới → content-based theo lịch sử xem + phổ biến theo danh mục
+- [x] Hybrid blend + fallback: user mới → content-based theo lịch sử xem + phổ biến theo danh mục — `services/hybrid.py` trộn bằng **Reciprocal Rank Fusion** (k = 60) chứ không cộng điểm thô: đo được điểm collaborative chạy 0,02–5,79 (một tổng) còn cosine content-based chạy 0,747–0,892, và content-based cho **mọi** khóa ít nhất 0,747 nên cộng vào sẽ đè tín hiệu thật. Cache lên `rec:v2` vì mỗi mục mang thêm `sources`; dự phòng phổ biến-theo-danh-mục chèn lúc phục vụ (`popular_courses`), lấp cả ba cảnh: user mới, mô hình không có gì, danh sách bị cắt ngắn. Hàng lấp chỗ mang `score` = 0 và `because` = null. (TDD, 12+8+3+14 test mới) — `docs/report/assets/phase-4/hybrid-blend.txt`
+  - **Hybrid kém hơn CF đơn thuần trên chỉ số cụm giả lập: 0,8056 so với 0,8333.** Không chỉnh trọng số để kéo lên, vì thước đo ấy thiên vị CF (dữ liệu được sinh ra từ chính cấu trúc cụm). Đổi lại, mô phỏng từng khóa ở trạng thái vừa xuất bản: CF gợi ý được **0/24**, hybrid **24/24**, mỗi khóa tới 13–35 trong 48 học viên. Con số 0/24 không tinh chỉnh được — thông tin không có trong ma trận
+  - Để lại cho `eval_recommender.py`: trọng số 1,0/1,0 và k = 60 mới chỉ là mặc định; precision@k trên tập held-out là nơi trả lời con số 0,8056
 - [x] Batch Celery beat hằng đêm → cache top-N vào Redis; API `/recommendations`
 - [ ] UI: khối "Gợi ý cho bạn" (trang chủ), "Khóa học tương tự" (trang chi tiết), "Học tiếp theo" (sau khi hoàn thành)
 - [x] Seed thêm dữ liệu tương tác giả lập (script tạo ~50 user với hành vi enroll/rating theo cụm sở thích) để đo lường

@@ -104,6 +104,7 @@ async def test_a_course_that_only_reaches_review_is_not_ingested(
     assert response.status_code == 200, response.text
     assert response.json()["status"] == "pending_review"
     assert queue.ingested == []
+    assert queue.embedded == []
 
 
 async def test_a_refused_publish_schedules_nothing(
@@ -140,3 +141,20 @@ async def test_somebody_else_s_course_is_neither_published_nor_ingested(
 
     assert response.status_code == 403
     assert queue.ingested == []
+
+
+async def test_publishing_a_course_schedules_its_embedding(
+    api_client: AsyncClient, queue: FakeQueue, draft: tuple[User, Course]
+) -> None:
+    """The other job publishing starts, and the other thing that breaks in
+    silence: with no vector the course simply never appears under "Khóa học
+    tương tự", on its own page or on anybody else's."""
+    instructor, course = draft
+
+    response = await api_client.post(
+        f"/api/v1/courses/{course.id}/submit",
+        headers=await sign_in(api_client, instructor),
+    )
+
+    assert response.status_code == 200, response.text
+    assert queue.embedded == [course.id]

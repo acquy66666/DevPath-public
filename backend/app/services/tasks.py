@@ -14,6 +14,8 @@ class TaskQueue(Protocol):
 
     def enqueue_ingest(self, course_id: uuid.UUID) -> None: ...
 
+    def enqueue_course_embedding(self, course_id: uuid.UUID) -> None: ...
+
 
 class CeleryTaskQueue:
     """The real one. Imported lazily so the API process only pulls in the
@@ -28,6 +30,11 @@ class CeleryTaskQueue:
         from app.workers.rag import ingest_course_task
 
         ingest_course_task.delay(str(course_id))
+
+    def enqueue_course_embedding(self, course_id: uuid.UUID) -> None:
+        from app.workers.content_based import embed_courses_task
+
+        embed_courses_task.delay(str(course_id))
 
 
 def get_task_queue() -> TaskQueue:

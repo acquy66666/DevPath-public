@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_stats.py, bench_grading.py, eval_chatbot.py, eval_token_estimate.py, lock.sh
+scripts/                   seed.py, seed_interactions.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_embeddings.py, rebuild_course_stats.py, bench_grading.py, eval_chatbot.py, eval_token_estimate.py, lock.sh
 ```
 
 ## Nguyên tắc
@@ -355,6 +355,20 @@ Chạy sau `scripts.seed` (script này tra cứu khóa neo và giảng viên, kh
 ```bash
 docker compose exec backend python -m scripts.seed_interactions --purge
 ```
+
+### Vector khóa học cho "Khóa học tương tự"
+
+Nửa content-based của recommender đọc bảng `course_embeddings`, và bảng đó trống cho tới khi có ai bấm publish hoặc job beat 02:30 chạy. Để có ngay:
+
+```bash
+docker compose exec backend python -m scripts.rebuild_course_embeddings --dry-run
+```
+
+```bash
+docker compose exec backend python -m scripts.rebuild_course_embeddings
+```
+
+`--dry-run` in ra đúng chuỗi sẽ được nhúng của từng khóa mà không gọi API — dùng để xem description có bị cắt hay không trước khi tiêu quota. Chạy lại lần hai không tốn gì: khóa nào `source_text` và tên model không đổi thì bỏ qua. Thêm một slug (hoặc id) ở cuối để chỉ làm một khóa. Cần `GEMINI_API_KEY`; không có key thì script dừng và nói rõ, còn job Celery chỉ ghi log cảnh báo rồi thôi — phần còn lại của nền tảng không phụ thuộc vào khối gợi ý này.
 
 | Biến môi trường | Mặc định | Dùng cho |
 |---|---|---|

@@ -1,0 +1,255 @@
+NỬA CONTENT-BASED CỦA RECOMMENDER: course_embeddings → "KHÓA HỌC TƯƠNG TỰ"
+Ngày đo: 20/09/2026 · máy dev · CSDL dev (24 khóa seed đã xuất bản)
+Thành phần: publish khóa học (hoặc beat 02:30) → `TaskQueue.enqueue_course_embedding`
+      → Celery task `app.workers.content_based.embed_courses` (queue mặc định
+      `celery`) → `services/content_based.py` → `services/llm.py` (taskType
+      SEMANTIC_SIMILARITY) → bảng `course_embeddings`
+      Đọc ra: `GET /api/v1/courses/{course_id}/similar` → cosine `<=>`
+
+Cách tái tạo:
+  docker compose exec backend python -m scripts.rebuild_course_embeddings --dry-run
+  docker compose exec backend python -m scripts.rebuild_course_embeddings
+  .venv\Scripts\python.exe -m pytest tests/test_content_based.py tests/api/test_similar_courses.py
+
+==============================================================================
+0. ĐIỀU CHƯA ĐO ĐƯỢC — NÓI TRƯỚC
+==============================================================================
+**Chưa có lần chạy thật với key Gemini.** Ngày 20/09 phát hiện `infra/.env`
+trùng byte-for-byte với `infra/.env.example` (cùng 3503 byte, cùng mốc
+19/09/2026 16:07), nghĩa là dòng `GEMINI_API_KEY=` đang rỗng — key ghi trong
+CLAUDE.md từ 18/09 đã mất khi tệp bị chép đè bằng bản mẫu. Không có key thì
+không sinh được vector thật, nên mục 2 dưới đây còn trống.
+
+Những gì *không* bị chặn vì chuyện đó, và đã đo: văn bản đem nhúng (mục 1),
+thứ hạng cosine tính bởi chính Postgres (mục 3), hợp đồng HTTP (mục 4), và
+điều kiện không nhúng lại (mục 5) — tất cả chạy trên Postgres thật với vector
+dựng tay, chỉ thay lời gọi Gemini bằng một embedder giả.
+
+Đường đi tới Gemini không phải phần chưa được thử: `embed_similarity` dùng lại
+đúng `_embed_batched` mà `doc_chunks` đã chạy thật trên 26 chunk
+(`rag-ingest.txt` mục 1), khác duy nhất ở chuỗi `taskType`. Nhưng "suy ra là
+chạy được" không phải bằng chứng, nên mục 2 để trống cho tới khi có key.
+
+==============================================================================
+1. VĂN BẢN ĐEM NHÚNG — 24 KHÓA THẬT
+==============================================================================
+  $ python -m scripts.rebuild_course_embeddings --dry-run
+
+  --- python-co-ban-cho-nguoi-moi-bat-dau (552 ký tự) ---
+  Python cơ bản cho người mới bắt đầu
+  Từ dòng lệnh đầu tiên đến chương trình chạy được, không cần biết gì trước
+  Danh mục: Python
+
+  Khóa học dành cho người chưa từng viết một dòng code nào. Bạn sẽ cài đặt
+  môi trường, viết chương trình đầu tiên, rồi đi qua biến, kiểu dữ liệu, rẽ
+  nhánh, vòng lặp và hàm — mỗi phần đều kèm ví dụ chạy được ngay.
+
+  Điều khóa học này chú trọng khác với phần lớn khóa nhập môn: đọc hiểu thông
+  báo lỗi. Người mới bỏ cuộc phần lớn vì gặp lỗi mà không biết máy đang nói
+  gì, nên đó là bài học thứ ba chứ không phải phụ lục cuối khóa.
+
+Độ dài trên cả 24 khóa: ngắn nhất 272 ký tự (truc-quan-hoa-du-lieu-voi-
+matplotlib), dài nhất 552, phần lớn 280–330.
+
+  MAX_SOURCE_CHARS = 1000 token × 3,5 = 3500 ký tự
+
+**Không khóa nào bị cắt** — khóa dài nhất dùng 552/3500 ký tự, tức khoảng 162
+token thật (ước theo 3,41 ký tự/token đo được ở `token-estimate.txt`) trên
+trần 2048 token của `gemini-embedding-001`. Mức cắt 1000 token vì thế chưa
+động tới dữ liệu hiện có; nó tồn tại cho ngày có giảng viên dán nguyên giáo
+trình vào ô mô tả, và vì quá trần thì API **cắt im lặng**: một khóa nhúng dở
+trông y hệt một khóa nhúng đủ, không có lỗi nào để bắt.
+
+Bốn thành phần trong chuỗi — tiêu đề, phụ đề, danh mục, mô tả. Phụ đề không
+nằm trong câu chữ của kế hoạch ("title+description+category") nhưng được thêm
+vào: trên dữ liệu thật nó là câu nói rõ khóa học dành cho ai ("Từ dòng lệnh
+đầu tiên…", "Cho người đã viết JavaScript"), và đó đúng là thứ phân biệt hai
+khóa cùng chủ đề khác trình độ.
+
+Phần bị cắt khi phải cắt là **mô tả**, không bao giờ là tiêu đề: tiêu đề là
+phần gọi tên chủ đề, và hai khóa cùng chủ đề trùng tiêu đề dễ hơn nhiều so với
+trùng một câu văn xuôi. Cắt ở khoảng trắng gần nhất, vì một từ bị cắt dở là
+một token model chưa từng thấy.
+
+==============================================================================
+2. CHẠY THẬT VỚI KEY GEMINI — CHƯA CÓ
+==============================================================================
+Chờ key. Khi có, hai lệnh và hai con số cần ghi vào đây:
+
+  $ python -m scripts.rebuild_course_embeddings
+  $ python -m scripts.rebuild_course_embeddings      # lần hai, ngay sau đó
+
+Lần hai phải là "0 khóa nhúng, 24 khóa không đổi" — cùng cơ chế đã chứng minh
+với ingest (`rag-ingest.txt` mục 1), xem mục 5 dưới đây.
+
+==============================================================================
+3. THỨ HẠNG COSINE — POSTGRES TỰ TÍNH, KIỂM ĐƯỢC BẰNG TAY
+==============================================================================
+Vector dựng tay để con số kiểm được trên giấy: khóa đang xem nằm trên trục 0,
+khóa "gần" nằm trên trục 0 và 1 (lệch 45°), khóa "xa" nằm trên trục 5.
+
+  cos(e0, e0+e1) = 1/√2 = 0,707107      → score 0,7071
+  cos(e0, e5)    = 0                    → score 0,0000
+
+Truy vấn thật (`CourseEmbedding.embedding.cosine_distance(...)`, toán tử `<=>`,
+`ORDER BY distance, Course.id`) trả về đúng thứ tự đó, và `score = 1 − distance`
+khớp tới 1e-6. Test: `test_similar_ranks_by_cosine_and_leaves_out_the_course_itself`.
+
+Bốn điều kiện nằm **trong chính câu truy vấn**, không lọc sau:
+  - `Course.id != course_id`       khóa đang xem không tự gợi ý chính nó
+  - `Course.status = 'published'`  hạ khóa về nháp là biến mất khỏi mọi khối
+  - `Course.deleted_at IS NULL`    khóa đã gỡ cũng vậy
+  - `embedding_model = <của khóa đang xem>`
+
+Điều kiện thứ tư dễ bị bỏ quên nhất và hỏng im lặng nhất: hai model cùng 768
+chiều vẫn đặt cùng một câu ở hai chỗ khác hẳn nhau, nên khoảng cách giữa vector
+của hai model là một con số **không có nghĩa** chứ không phải một lỗi. Test
+`test_similar_ignores_vectors_from_another_model` dựng đúng cảnh đó: ba khóa
+cùng vector e0, hai khóa chung model, khóa thứ ba model khác — khóa thứ ba
+không xuất hiện.
+
+Lý do lọc nằm trong truy vấn chứ không sau `LIMIT`: lọc sau `LIMIT` trả về ít
+dòng hơn số đã xin và trông y như một catalogue ngắn. Cùng quyết định đã lấy ở
+truy hồi chat (`chat-api.txt`).
+
+**Unpublish không xóa vector.** Giống `doc_chunks`: xuất bản lại sẽ phải trả
+tiền nhúng lần nữa. Test `test_similar_leaves_out_courses_nobody_may_be_shown`
+hạ một khóa đã nhúng về nháp rồi kiểm rằng nó biến mất khỏi kết quả trong khi
+dòng vector vẫn còn.
+
+==============================================================================
+4. HỢP ĐỒNG HTTP
+==============================================================================
+  GET /api/v1/courses/{course_id}/similar?limit=6       (mặc định 6, trần 12)
+
+  200  { "items": [ {<thẻ khóa học>, "score": 0.7071}, ... ] }
+  404  { "detail": { "code": "COURSE_NOT_FOUND", "message": "..." } }
+  422  limit ngoài [1, 12]
+
+**Không cần đăng nhập** — khối này nằm trên trang chi tiết khóa học công khai,
+mà bản thân khóa học đó ai cũng đọc được. Đây là điểm khác hẳn
+`GET /recommendations`: gợi ý cá nhân suy ra từ lịch sử một người nên không có
+bản ẩn danh, còn "khóa tương tự" suy ra từ khóa đang xem nên không có bản cá
+nhân.
+
+**Hai kiểu "không có gì" được tách bạch:**
+  - khóa công chúng không xem được (nháp, đã gỡ, không tồn tại) → **404**
+  - khóa xem được nhưng chưa có vector → **200 với `items: []`**
+
+Không gộp làm một, vì chúng là hai câu khác nhau: câu sau là "chưa tính xong"
+(vừa xuất bản, beat chưa chạy, hoặc hết quota lúc job chạy) và trang chỉ việc
+không vẽ khối; câu trước mà trả `[]` thì thành lời khẳng định "không có khóa
+nào giống khóa này", điều hệ thống không hề biết.
+
+Thẻ trả về đủ để trang vẽ mà không hỏi lại: tiêu đề, slug, giá, xếp hạng, giảng
+viên, danh mục — cùng `CourseCardOut` mà catalogue dùng, cộng `score`. `score`
+gửi ra ngoài vì khóa luận phải đánh giá thứ hạng này, mà một thứ hạng có điểm
+không bao giờ rời khỏi máy chủ thì không đối chiếu được với thứ trang đã hiện.
+
+Endpoint đặt trong `api/v1/recommendations.py` chứ không phải `api/v1/courses.py`:
+nó là nửa content-based của recommender và nên nằm cạnh nửa collaborative;
+`courses.py` là nơi quản lý khóa học.
+
+==============================================================================
+5. KHÔNG NHÚNG LẠI KHI KHÔNG CẦN
+==============================================================================
+Trước khi nhúng, mỗi khóa được so với dòng `course_embeddings` đang có: cùng
+`source_text`, cùng `embedding_model` → bỏ qua, không một lời gọi API nào.
+
+  test_rebuild_does_not_pay_twice_for_an_unchanged_course
+      lần 1: embedded = 25   (24 khóa seed + 1 khóa của test)
+      lần 2: embedded = 0,  unchanged = 25,  embedder.calls == []
+
+Cột `source_text` lưu **nguyên văn** chuỗi đã nhúng chứ không lưu băm. Băm cũng
+trả lời được câu "có đổi không", nhưng làm câu "vì sao khóa này bị nhúng lại"
+thành không trả lời được — và chuỗi đó nhiều nhất vài trăm ký tự, đúng bằng thứ
+cột `description` đã chứa.
+
+Tên model nằm trong phép so vì đổi model là lý do chính đáng để nhúng lại toàn
+bộ dù chữ không đổi (`test_rebuild_re_embeds_when_the_model_changes`).
+
+**Commit theo từng lô 20 khóa**, giống ingest commit theo từng bài học: rủi ro
+"Gemini đổi/giới hạn quota" nằm trong sổ rủi ro của kế hoạch, và một key hết
+quota giữa chừng mà chưa commit gì thì lần chạy sau bắt đầu lại từ số không.
+
+Hai đường gọi, một task:
+  - publish một khóa  → `embed_courses_task(course_id)` → chỉ khóa đó
+  - beat 02:30        → `embed_courses_task()`         → cả catalogue
+
+Đường thứ hai tồn tại vì `PATCH /courses/{id}` đổi tiêu đề và mô tả mà **không**
+đụng tới `status`, nên không có cái nút nào để treo job vào. Không có nó, một
+khóa sửa lời giới thiệu sẽ giữ mãi vector tả những chữ cũ, và không có chỗ nào
+báo chuyện đó. Đêm bình thường tốn vài truy vấn và 0 lời gọi API.
+
+Không có key thì task chỉ ghi log cảnh báo rồi trả về, không fail: phần còn lại
+của nền tảng chạy được mà không cần khối này, và một task đỏ mỗi lần publish sẽ
+dạy mọi người bỏ qua task đỏ. Script thì ngược lại — dừng và báo lỗi, vì người
+gõ lệnh đang đợi kết quả.
+
+==============================================================================
+6. SCHEMA
+==============================================================================
+Migration `17e181ed9f26_add_course_embeddings`, đã chạy `upgrade head` →
+`downgrade -1` → `upgrade head` trên CSDL dev, không lỗi.
+
+  course_embeddings(id, course_id, source_text, embedding vector(768),
+                    embedding_model, created_at, updated_at)
+  uq_course_embeddings_course_id  UNIQUE (course_id)
+  ix_course_embeddings_embedding  HNSW (embedding vector_cosine_ops)
+  CHECK length(source_text) > 0
+
+Autogenerate lặp lại **đúng lỗi** đã gặp ở `a03e9e2f9ce9_add_doc_chunks`: viết
+kiểu cột thành `pgvector.sqlalchemy.vector.VECTOR(dim=768)` mà không import gì
+để cái tên đó tồn tại, nên tệp raise NameError ngay lần chạy đầu. Sửa tay bằng
+`from pgvector.sqlalchemy import Vector`. Ghi lại ở đây vì đây là lần thứ hai:
+autogenerate sẽ còn làm thế với mọi bảng có cột vector.
+
+Không đo `EXPLAIN` cho `ix_course_embeddings_embedding` như đã làm với
+`ix_doc_chunks_embedding` (`hnsw-index.txt`), và cố ý: với 24 dòng Postgres sẽ
+quét tuần tự, **và nên thế**. Index dựng cho cỡ vài nghìn khóa. Đo bây giờ chỉ
+ra được một dòng `Seq Scan` không nói lên điều gì về lúc nó cần thiết.
+
+Một điều cần đo *trước* khi bảng tới cỡ vài nghìn dòng chứ không phải sau:
+pgvector áp `WHERE` **sau** khi HNSW đã chọn xong ứng viên, nên trên catalogue
+lớn một bộ lọc chọn lọc mạnh vẫn có thể trả về ít hơn số dòng đã xin. Chưa chạm
+tới ở quy mô hiện tại vì đang quét tuần tự.
+
+==============================================================================
+7. TEST
+==============================================================================
+  tests/test_content_based.py          21 pass
+      6  xây chuỗi đem nhúng (đủ 4 thành phần, thiếu trường, cắt ở khoảng
+         trắng, tiêu đề khổng lồ, mô tả rỗng)
+      7  rebuild (ghi đủ, không trả tiền hai lần, chữ đổi, model đổi, bỏ
+         nháp/đã gỡ, chỉ một khóa, tên danh mục vào chuỗi)
+      7  similar_to (thứ hạng cosine, lọc trạng thái, chưa có vector, khác
+         model, trần limit, 404 cho nháp, 404 cho id lạ)
+  tests/api/test_similar_courses.py     8 pass
+  tests/test_llm.py                    +2 (taskType SEMANTIC_SIMILARITY,
+                                           vector trả về đã chuẩn hóa)
+  tests/workers/test_celery_app.py     +4 (đăng ký task, tên khớp, không nằm
+                                           trên queue grading, có trong beat)
+  tests/api/test_course_ingest.py      +1 (publish thì xếp hàng cả job nhúng)
+  tests/test_models.py                 +1 dòng trong bộ bảng đã đăng ký —
+                                           test này đỏ trước, đúng việc của nó
+
+Toàn bộ backend: 1038 pass, 2 skip, 0 fail (8 phút 14 trên máy dev).
+
+Viết test trước, chạy thấy đỏ, rồi mới viết code — theo quy ước TDD của dự án
+cho phần recommender.
+
+Một ghi chú về cách viết test ở đây: CSDL dev đã có 24 khóa seed và một lần
+rebuild đọc hết, nên không test nào khẳng định trên tổng số. Test toàn
+catalogue đo **độ chênh** (chạy một lần cho bắt kịp, thêm hai khóa, chạy lại,
+phải đúng 2), các test còn lại giới hạn bằng `course_ids`. Cùng quy ước với
+`tests/test_collaborative_data.py`.
+
+==============================================================================
+8. CÒN NỢ
+==============================================================================
+- Chạy thật với key Gemini (mục 2) — chờ `GEMINI_API_KEY` trong `infra/.env`.
+- Khối "Khóa học tương tự" trên giao diện: checkbox riêng trong kế hoạch tuần
+  10, chưa làm. Endpoint đã sẵn sàng.
+- Hybrid blend (content-based + collaborative + fallback phổ biến): checkbox
+  riêng, chưa làm. Hiện hai nửa chạy độc lập.
+- precision@k / recall@k: `scripts/eval_recommender.py`, checkbox riêng.

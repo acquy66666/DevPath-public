@@ -46,6 +46,7 @@ celery_app = Celery(
         "app.workers.grading",
         "app.workers.recommendations",
         "app.workers.rag",
+        "app.workers.content_based",
     ],
 )
 
@@ -83,6 +84,17 @@ celery_app.conf.update(
         "rebuild-recommendations-nightly": {
             "task": "app.workers.recommendations.rebuild_recommendations",
             "schedule": crontab(hour=3, minute=0),
+        },
+        # 02:30, half an hour before the collaborative batch and for a
+        # different reason: publishing already embeds the course it published,
+        # so this run exists to catch the ones edited without being
+        # republished -- a `PATCH` changes the title without touching the
+        # status, and the vector would otherwise describe the old words with
+        # nothing anywhere to show it. Courses whose text has not moved cost
+        # nothing, so the usual night is a few queries and no API calls.
+        "embed-courses-nightly": {
+            "task": "app.workers.content_based.embed_courses",
+            "schedule": crontab(hour=2, minute=30),
         },
     },
 )

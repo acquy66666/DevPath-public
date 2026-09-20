@@ -77,6 +77,7 @@ async def list_recommendations(
                 because=(
                     ReasonOut.model_validate(item.because) if item.because else None
                 ),
+                sources=list(item.sources),
             )
             for item in served.items
         ],

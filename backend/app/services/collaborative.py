@@ -122,6 +122,16 @@ class ItemModel:
     def users(self) -> list[UserKey]:
         return list(self._history)
 
+    def history(self, user_id: UserKey) -> dict[CourseKey, int]:
+        """What this user has, as the model reduced it.
+
+        Handed out because the hybrid's content-based half needs the *same*
+        history, reduced the same way -- rebuilding it at the call site would
+        put the "strongest signal, not the sum" rule in two places, where one
+        copy can drift.
+        """
+        return dict(self._history.get(user_id, {}))
+
     def similarity(self, a: CourseKey, b: CourseKey) -> float:
         return self._similar.get(a, {}).get(b, 0.0)
 

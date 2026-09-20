@@ -28,8 +28,11 @@ from app.models import (
 )
 from app.services.content_based import (
     MAX_SOURCE_CHARS,
+    CourseVector,
     course_text,
+    load_vectors,
     rebuild_embeddings,
+    recommend_from_history,
     similar_to,
 )
 from app.services.courses import CourseNotFoundError
@@ -453,3 +456,117 @@ async def test_similar_refuses_a_course_that_does_not_exist(
 ) -> None:
     with pytest.raises(CourseNotFoundError):
         await similar_to(db_session, course_id=uuid.uuid4(), limit=10)
+
+
+# --- Recommending from a history -------------------------------------------
+
+
+def vectors_of(*pairs) -> list[CourseVector]:
+    return [CourseVector(course_id=course_id, embedding=vector) for course_id, vector in pairs]
+
+
+def test_history_recommendations_rank_by_closeness_to_what_the_user_has() -> None:
+    """Hand-checkable. The reader has H1 strongly (weight 3) and H2 weakly (1).
+
+        X = e0        → 3·1      + 1·0      = 3,0000
+        Y = e0+e1     → 3·0,7071 + 1·0,7071 = 2,8284
+        Z = e1        → 3·0      + 1·1      = 1,0000
+    """
+    found = recommend_from_history(
+        vectors_of(
+            ("h1", axis(0)),
+            ("h2", axis(1)),
+            ("x", axis(0)),
+            ("y", axis(0, 1)),
+            ("z", axis(1)),
+        ),
+        history={"h1": 3, "h2": 1},
+        k=10,
+    )
+
+    assert [item.course_id for item in found] == ["x", "y", "z"]
+    assert found[0].score == pytest.approx(3.0)
+    assert found[1].score == pytest.approx(4 * 2**-0.5)
+    assert found[2].score == pytest.approx(1.0)
+
+
+def test_a_course_the_reader_already_has_is_not_recommended_back() -> None:
+    found = recommend_from_history(
+        vectors_of(("h1", axis(0)), ("x", axis(0))), history={"h1": 1}, k=10
+    )
+
+    assert [item.course_id for item in found] == ["x"]
+
+
+def test_because_names_the_course_that_contributed_most() -> None:
+    """Not merely the nearest one: how strongly the reader took it counts too."""
+    found = recommend_from_history(
+        vectors_of(("h1", axis(0)), ("h2", axis(0, 1)), ("x", axis(0, 1))),
+        history={"h1": 3, "h2": 1},
+        k=10,
+    )
+
+    # h1 contributes 3 × 0,7071 = 2,12; h2 contributes 1 × 1 = 1.
+    assert found[0].because == "h1"
+
+
+def test_no_history_means_no_content_recommendations() -> None:
+    """Cold start belongs to the popularity fallback, not here -- answering it
+    with "popular courses" would hide a second model inside this one."""
+    assert recommend_from_history(vectors_of(("x", axis(0))), history={}, k=10) == []
+
+
+def test_a_history_course_with_no_vector_is_skipped_not_fatal() -> None:
+    """Published an hour ago, nightly embedding has not run. The reader's other
+    courses still say something."""
+    found = recommend_from_history(
+        vectors_of(("h1", axis(0)), ("x", axis(0))),
+        history={"h1": 1, "khong-co-vector": 2},
+        k=10,
+    )
+
+    assert [item.course_id for item in found] == ["x"]
+
+
+def test_history_recommendations_stop_at_k() -> None:
+    found = recommend_from_history(
+        vectors_of(("h1", axis(0)), ("x", axis(0)), ("y", axis(0, 1)), ("z", axis(1))),
+        history={"h1": 1},
+        k=2,
+    )
+
+    assert len(found) == 2
+
+
+def test_a_candidate_nothing_points_at_is_left_out_rather_than_listed_at_zero() -> None:
+    """Same rule as the collaborative half: a recommendation with no reason
+    behind it is not a recommendation."""
+    found = recommend_from_history(
+        vectors_of(("h1", axis(0)), ("x", axis(5))), history={"h1": 1}, k=10
+    )
+
+    assert found == []
+
+
+async def test_load_vectors_reads_only_what_may_be_recommended(
+    db_session: AsyncSession,
+) -> None:
+    """Published, undeleted, and embedded by the model being asked about --
+    a distance between two models' vectors is a number with no meaning."""
+    published = await add_course(db_session, title="Đã xuất bản")
+    draft = await add_course(db_session, title="Bản nháp", status="draft")
+    other_model = await add_course(db_session, title="Model khác")
+    await rebuild_embeddings(
+        db_session,
+        embedder=FakeEmbedder(model="model-a"),
+        course_ids=[published.id, draft.id],
+    )
+    await rebuild_embeddings(
+        db_session, embedder=FakeEmbedder(model="model-b"), course_ids=[other_model.id]
+    )
+
+    loaded = {vector.course_id for vector in await load_vectors(db_session, model="model-a")}
+
+    assert published.id in loaded
+    assert draft.id not in loaded
+    assert other_model.id not in loaded

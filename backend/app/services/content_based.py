@@ -29,8 +29,10 @@ below, not the job of whatever changed the status.
 """
 
 import logging
+import math
 import uuid
-from collections.abc import Iterable, Sequence
+from collections import defaultdict
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -39,6 +41,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Category, Course, CourseEmbedding, User
 from app.services.chunking import CHARS_PER_TOKEN
+from app.services.collaborative import SCORE_PRECISION, Recommendation
 from app.services.courses import CourseNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -313,4 +316,126 @@ async def similar_to(
             score=1.0 - float(distance_value),
         )
         for course, instructor, category, distance_value in rows
+    ]
+
+
+# --- Recommending from a history --------------------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class CourseVector:
+    """One course's point, without the row around it.
+
+    `similar_to` above answers one course page and returns everything a card
+    needs; this is what the nightly batch reads instead, because it compares
+    every reader's history against the whole catalogue and has no use for
+    titles. A few thousand courses is a few megabytes of floats -- small
+    enough to hold, and far cheaper than a query per reader per course.
+    """
+
+    course_id: uuid.UUID
+    embedding: Sequence[float]
+
+
+async def load_vectors(session: AsyncSession, *, model: str) -> list[CourseVector]:
+    """Every recommendable course's vector, for one embedding model.
+
+    The model is named by the caller rather than inferred from the rows: it is
+    whatever `GEMINI_EMBEDDING_MODEL` currently says, which is also what the
+    nightly embedding job writes. Rows left behind by an older model are stale
+    and stay out of the arithmetic until they are rebuilt -- comparing across
+    models returns nonsense rather than an error.
+    """
+    rows = await session.execute(
+        select(CourseEmbedding.course_id, CourseEmbedding.embedding)
+        .join(Course, Course.id == CourseEmbedding.course_id)
+        .where(
+            Course.status == "published",
+            Course.deleted_at.is_(None),
+            CourseEmbedding.embedding_model == model,
+        )
+        .order_by(CourseEmbedding.course_id)
+    )
+    return [CourseVector(course_id=course_id, embedding=embedding) for course_id, embedding in rows]
+
+
+def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
+    """Proper cosine, not a dot product.
+
+    The vectors were unit length when they were written, but they make a round
+    trip through pgvector's float4 storage, and these numbers end up in
+    evidence files that are checked by hand. Dividing by the norms costs
+    nothing here and removes a whole class of "why is it 0,9999".
+    """
+    dot = norm_left = norm_right = 0.0
+    for a, b in zip(left, right, strict=True):
+        dot += a * b
+        norm_left += a * a
+        norm_right += b * b
+    if norm_left == 0 or norm_right == 0:
+        return 0.0
+    return dot / math.sqrt(norm_left * norm_right)
+
+
+def recommend_from_history(
+    vectors: Sequence[CourseVector],
+    history: Mapping[uuid.UUID, int],
+    *,
+    k: int,
+) -> list[Recommendation]:
+    """Courses closest to what this reader already has, best first.
+
+    Built to the same shape as `collaborative.ItemModel.recommend`, so the two
+    lists can be fused without either being reinterpreted:
+
+    * a candidate's score is the sum, over the reader's courses, of (how
+      strongly they have it) × (how similar the candidate is to it). A plain
+      sum rather than an average: a course that several of the reader's
+      courses point at should beat one that a single course points at slightly
+      harder.
+    * `because` is the single course that contributed most -- always one the
+      reader has, never inferred.
+    * a reader with no history gets an empty list. Cold start is the serving
+      layer's popularity fallback, not a second model hidden in this one.
+    * a candidate nothing points at is left out rather than listed at zero.
+
+    Courses in `history` with no vector are skipped: published since the last
+    embedding run, or embedded by a model this catalogue has moved off.
+    """
+    known = {vector.course_id: vector.embedding for vector in vectors}
+    owned = {
+        course_id: weight
+        for course_id, weight in history.items()
+        if course_id in known
+    }
+    if not owned:
+        return []
+
+    scores: dict[uuid.UUID, float] = defaultdict(float)
+    strongest: dict[uuid.UUID, tuple[uuid.UUID, float]] = {}
+
+    # Sorted, so the sums and the choice of `because` do not depend on the
+    # order the history happened to be loaded in.
+    for seen in sorted(owned, key=str):
+        weight = owned[seen]
+        for candidate in vectors:
+            if candidate.course_id in history:
+                continue
+            similarity = _cosine(known[seen], candidate.embedding)
+            if similarity <= 0:
+                # No reason behind it, so not a recommendation.
+                continue
+            contribution = weight * similarity
+            scores[candidate.course_id] += contribution
+            previous = strongest.get(candidate.course_id)
+            if previous is None or contribution > previous[1]:
+                strongest[candidate.course_id] = (seen, contribution)
+
+    ranked = sorted(
+        scores.items(),
+        key=lambda item: (-round(item[1], SCORE_PRECISION), str(item[0])),
+    )
+    return [
+        Recommendation(course_id=course_id, score=score, because=strongest[course_id][0])
+        for course_id, score in ranked[:k]
     ]

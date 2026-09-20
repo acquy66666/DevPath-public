@@ -30,9 +30,15 @@ class RecommendedCourseOut(CourseCardOut):
     #: ranking whose numbers never leave the server cannot be checked against
     #: what the page actually showed.
     score: float
-    #: None when the course that earned this has since been withdrawn: the
-    #: recommendation still stands, the sentence explaining it does not.
+    #: None when the course that earned this has since been withdrawn -- the
+    #: recommendation still stands, the sentence explaining it does not -- and
+    #: always None for a popular one, earned by nothing the reader did.
     because: ReasonOut | None
+    #: Which halves of the hybrid put this card here: `collaborative`,
+    #: `content`, both, or `popular` for a fallback row. The page uses it to
+    #: label the block honestly, and the thesis uses it to show the mix -- a
+    #: hybrid that cannot say which half spoke is a hybrid nobody can check.
+    sources: list[str]
 
 
 class RecommendationsOut(BaseModel):

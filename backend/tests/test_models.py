@@ -68,6 +68,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         # Phase 4 -- conversations with the RAG assistant.
         "chat_sessions",
         "chat_messages",
+        # Phase 4 -- the content-based half of the recommender.
+        "course_embeddings",
     }
 
 

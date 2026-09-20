@@ -148,9 +148,13 @@ class FakeQueue:
     def __init__(self) -> None:
         self.enqueued: list = []
         self.ingested: list = []
+        self.embedded: list = []
 
     def enqueue_transcode(self, video_asset_id) -> None:
         self.enqueued.append(video_asset_id)
 
     def enqueue_ingest(self, course_id) -> None:
         self.ingested.append(course_id)
+
+    def enqueue_course_embedding(self, course_id) -> None:
+        self.embedded.append(course_id)

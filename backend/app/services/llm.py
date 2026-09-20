@@ -55,6 +55,11 @@ logger = logging.getLogger(__name__)
 #: Gemini's own names for the two sides of a retrieval pair.
 TASK_DOCUMENT = "RETRIEVAL_DOCUMENT"
 TASK_QUERY = "RETRIEVAL_QUERY"
+#: And for the case where both sides are the same kind of thing -- one course
+#: description against another, which is what the content-based recommender
+#: compares. Retrieval embeddings are trained for the asymmetric case; using
+#: them symmetrically is not an error the API reports, only a worse ranking.
+TASK_SIMILARITY = "SEMANTIC_SIMILARITY"
 
 #: Retried: the server is busy, out of quota, or briefly broken.
 RETRYABLE_STATUS = frozenset({408, 429, 500, 502, 503, 504})
@@ -172,6 +177,15 @@ class GeminiEmbedder:
         """Embed several questions in one call -- the chatbot searches a
         follow-up both alone and together with the question before it."""
         return await self._embed_batched(texts, TASK_QUERY)
+
+    async def embed_similarity(self, texts: Sequence[str]) -> list[list[float]]:
+        """Embed texts that will be compared against each other.
+
+        What `services/content_based.py` fills `course_embeddings` with: both
+        sides of every comparison it makes come from here, so both are in the
+        same space.
+        """
+        return await self._embed_batched(texts, TASK_SIMILARITY)
 
     async def _embed_batched(
         self, texts: Sequence[str], task_type: str

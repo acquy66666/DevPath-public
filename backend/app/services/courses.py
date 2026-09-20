@@ -244,6 +244,11 @@ async def submit_for_review(
     # is why the ingest hangs off this moment rather than off every lesson edit.
     if published_now and queue is not None:
         queue.enqueue_ingest(course.id)
+        # And the recommender's other input: until this runs the course has no
+        # vector, so it appears under nobody's "Khóa học tương tự" and has no
+        # block of its own. Separate from the ingest above because they fail
+        # separately -- a course with no lessons still has a title to embed.
+        queue.enqueue_course_embedding(course.id)
     # updated_at is filled by Postgres, so the attribute is expired after the
     # UPDATE. Refresh here rather than let the response model trip over lazy IO.
     await session.refresh(course)

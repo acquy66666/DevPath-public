@@ -281,3 +281,38 @@ def test_the_adapter_reports_which_model_made_the_vector() -> None:
     """`doc_chunks.embedding_model` records it per row: two models can share a
     width and still put the same sentence somewhere else entirely."""
     assert build_embedder(api_key="k", model=MODEL).model == MODEL
+
+
+async def test_courses_are_embedded_for_symmetric_comparison() -> None:
+    """A course against another course is not a question against a passage.
+
+    `RETRIEVAL_DOCUMENT` is trained for the asymmetric case; the content-based
+    recommender compares two things of the same kind, which is what
+    `SEMANTIC_SIMILARITY` is for. Sending the retrieval task type here would
+    cost ranking quality and show up as nothing more specific than "the
+    similar courses are a bit odd".
+    """
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        seen.append(json.loads(request.content))
+        return batch_response(2)
+
+    vectors = await embedder(handler).embed_similarity(["khóa A", "khóa B"])
+
+    assert [item["taskType"] for item in seen[0]["requests"]] == [
+        "SEMANTIC_SIMILARITY",
+        "SEMANTIC_SIMILARITY",
+    ]
+    assert len(vectors) == 2
+    assert all(len(one) == EMBEDDING_DIMENSIONS for one in vectors)
+
+
+async def test_course_vectors_come_back_unit_length() -> None:
+    """Cosine distance in Postgres normalises anyway, but the scores in the
+    evidence files are worked out by hand from these numbers."""
+    vectors = await embedder(lambda _: batch_response(1)).embed_similarity(["khóa A"])
+
+    assert math.isclose(math.sqrt(sum(x * x for x in vectors[0])), 1.0, rel_tol=1e-9)

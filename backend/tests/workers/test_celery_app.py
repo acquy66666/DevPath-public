@@ -89,3 +89,34 @@ def test_the_ingest_stays_off_the_grading_queue() -> None:
 
     assert queue.name != GRADING_QUEUE
     assert queue.name == "celery"
+
+
+EMBED = "app.workers.content_based.embed_courses"
+
+
+def test_the_worker_is_told_to_import_the_course_embedding_module() -> None:
+    """Publishing enqueues this by name too. A name no worker recognises fails
+    on the worker's side, where nobody is looking."""
+    assert "app.workers.content_based" in celery_app.conf.include
+
+
+def test_the_course_embedding_registers_under_the_name_the_api_enqueues() -> None:
+    import app.workers.content_based  # noqa: F401  -- what `include` does
+
+    assert EMBED in celery_app.tasks
+
+
+def test_the_course_embedding_stays_off_the_grading_queue() -> None:
+    queue = celery_app.amqp.router.route({}, EMBED)["queue"]
+
+    assert queue.name != GRADING_QUEUE
+    assert queue.name == "celery"
+
+
+def test_the_catalogue_is_re_embedded_nightly() -> None:
+    """A course edited without being republished would otherwise keep a vector
+    describing the words it used to have, with nothing to show it."""
+    schedule = celery_app.conf.beat_schedule
+    tasks = {entry["task"] for entry in schedule.values()}
+
+    assert EMBED in tasks

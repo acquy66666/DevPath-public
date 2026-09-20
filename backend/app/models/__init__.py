@@ -19,6 +19,7 @@ from app.models.grading import (
 from app.models.progress import LessonProgress
 from app.models.quiz import Quiz, QuizAttempt, QuizQuestion
 from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
+from app.models.recommendation import CourseEmbedding
 from app.models.refresh_token import RefreshToken
 from app.models.review import Review
 from app.models.study import Bookmark, Note
@@ -32,6 +33,7 @@ __all__ = [
     "ChatSession",
     "CodeExercise",
     "Course",
+    "CourseEmbedding",
     "CourseSection",
     "DocChunk",
     "EMBEDDING_DIMENSIONS",

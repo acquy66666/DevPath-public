@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { BackendStatus, BackendStatusSkeleton } from "@/components/backend-status";
+import { RecommendedForYou } from "@/components/recommendations/recommended-for-you";
 import { Button } from "@/components/ui/button";
 
 export default function HomePage() {
@@ -24,6 +25,10 @@ export default function HomePage() {
           </Button>
         </div>
       </section>
+
+      {/* Draws nothing for a signed-out visitor: a recommendation is one
+          person's history, and there is no anonymous version of it. */}
+      <RecommendedForYou />
 
       <section className="max-w-md">
         {/* Suspense giữ phần tĩnh của trang được prerender, còn khối gọi API

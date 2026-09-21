@@ -15,6 +15,7 @@ import {
   type PlayerHandle,
 } from "@/components/learn/video-player";
 import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
+import { NextCourses } from "@/components/recommendations/next-courses";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
@@ -386,6 +387,12 @@ export function LearnView({
           </Tabs>
         </aside>
       </div>
+
+      {/* Appears the moment the last lesson is ticked: finishing it
+          invalidates the progress query, which is what sets this. */}
+      {progress.data.completed_at ? (
+        <NextCourses courseId={course.data.id} accessToken={accessToken as string} />
+      ) : null}
     </div>
   );
 }

@@ -486,7 +486,13 @@ async def test_a_short_block_is_topped_up_with_popular_courses(
     history = await world.course("History")
     modelled = await world.course("Model chon")
     await world.takes(reader, history)
-    await world.course("Đông người", students=9000)
+    # As many popular courses as there are gaps to fill. The block must be
+    # fillable from this test's own rows: on the dev database the seeded
+    # catalogue quietly supplied the missing ones, on CI's empty one it did
+    # not, and the block came back two long.
+    popular = [
+        await world.course(f"Đông người {n}", students=9000 - n) for n in range(3)
+    ]
 
     cache = MemoryRecommendationCache()
     cache.write(reader.id, cached((modelled.id, 3.0, history.id)))
@@ -495,8 +501,8 @@ async def test_a_short_block_is_topped_up_with_popular_courses(
 
     assert served.items[0].course.id == modelled.id
     assert served.items[0].sources == (SOURCE_COLLABORATIVE,)
-    assert len(served.items) == 4
-    assert served.items[1].sources == (SOURCE_POPULAR,)
+    assert [item.course.id for item in served.items[1:]] == [c.id for c in popular]
+    assert all(item.sources == (SOURCE_POPULAR,) for item in served.items[1:])
 
 
 async def test_a_full_block_is_left_alone(db_session: AsyncSession, world: World):

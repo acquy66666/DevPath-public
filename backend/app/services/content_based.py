@@ -36,10 +36,10 @@ from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Category, Course, CourseEmbedding, User
+from app.models import Category, Course, CourseEmbedding, Enrollment, User
 from app.services.chunking import CHARS_PER_TOKEN
 from app.services.collaborative import SCORE_PRECISION, Recommendation
 from app.services.courses import CourseNotFoundError
@@ -241,7 +241,11 @@ class SimilarCourse:
 
 
 async def similar_to(
-    session: AsyncSession, *, course_id: uuid.UUID, limit: int
+    session: AsyncSession,
+    *,
+    course_id: uuid.UUID,
+    limit: int,
+    skip_enrolled_by: uuid.UUID | None = None,
 ) -> list[SimilarCourse]:
     """The published courses nearest this one, nearest first.
 
@@ -264,6 +268,11 @@ async def similar_to(
     Returns an empty list when the course has no vector yet: published a
     minute ago, batch not run. The page shows no block, which is the right
     answer to "we have not worked it out yet".
+
+    `skip_enrolled_by` is "Học tiếp theo": the same neighbours, less the
+    courses that reader already has. Inside the query for the reason above --
+    a reader who took the three nearest courses would otherwise get an empty
+    block from a `LIMIT 3` while the fourth-nearest went unmentioned.
     """
     target = await session.scalar(
         select(CourseEmbedding)
@@ -301,6 +310,13 @@ async def similar_to(
             # A distance between two models' vectors is a number with no
             # meaning -- see `CourseEmbedding.embedding_model`.
             CourseEmbedding.embedding_model == target.embedding_model,
+            Course.id.notin_(
+                select(Enrollment.course_id).where(
+                    Enrollment.user_id == skip_enrolled_by
+                )
+            )
+            if skip_enrolled_by is not None
+            else true(),
         )
         # By id as well, so two courses at the same distance come back in the
         # same order every time rather than in whatever order the scan found.

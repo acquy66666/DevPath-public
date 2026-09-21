@@ -24,6 +24,7 @@ from app.models import (
     Category,
     Course,
     CourseEmbedding,
+    Enrollment,
     User,
 )
 from app.services.content_based import (
@@ -456,6 +457,87 @@ async def test_similar_refuses_a_course_that_does_not_exist(
 ) -> None:
     with pytest.raises(CourseNotFoundError):
         await similar_to(db_session, course_id=uuid.uuid4(), limit=10)
+
+
+# --- "Học tiếp theo": the neighbours a reader does not have yet -------------
+
+
+async def add_reader(session: AsyncSession, *courses: Course) -> User:
+    reader = User(
+        email=f"hv-{uuid.uuid4().hex[:8]}@example.com",
+        full_name="Học viên",
+        password_hash=hash_password(PASSWORD),
+        role="student",
+    )
+    session.add(reader)
+    await session.flush()
+    session.add_all(Enrollment(user_id=reader.id, course_id=c.id) for c in courses)
+    await session.flush()
+    return reader
+
+
+async def three_in_a_row(session: AsyncSession) -> tuple[Course, Course, Course]:
+    """A target on axis 0, one course 45 degrees off it, one at right angles."""
+    target = await add_course(session, title="Python cơ bản")
+    near = await add_course(session, title="Python nâng cao")
+    far = await add_course(session, title="Thiết kế đồ họa")
+    await rebuild_embeddings(
+        session,
+        embedder=FakeEmbedder(
+            {
+                "Python cơ bản": axis(0),
+                "Python nâng cao": axis(0, 1),
+                "Thiết kế đồ họa": axis(5),
+            }
+        ),
+        course_ids=[target.id, near.id, far.id],
+    )
+    return target, near, far
+
+
+async def test_similar_can_leave_out_what_the_reader_already_has(
+    db_session: AsyncSession,
+) -> None:
+    """What "Học tiếp theo" is for: the reader finished the target and already
+    took the nearest course, so offering it again as "next" is no suggestion."""
+    target, near, far = await three_in_a_row(db_session)
+    reader = await add_reader(db_session, target, near)
+
+    found = await similar_to(
+        db_session, course_id=target.id, limit=10, skip_enrolled_by=reader.id
+    )
+
+    assert [item.course.id for item in found] == [far.id]
+
+
+async def test_leaving_out_the_readers_courses_happens_before_the_limit(
+    db_session: AsyncSession,
+) -> None:
+    """Filtered inside the query, not afterwards. Filtering a `LIMIT 1` answer
+    after the fact would drop the one row and hand back an empty block while
+    a perfectly good neighbour sat one place further down."""
+    target, near, far = await three_in_a_row(db_session)
+    reader = await add_reader(db_session, near)
+
+    found = await similar_to(
+        db_session, course_id=target.id, limit=1, skip_enrolled_by=reader.id
+    )
+
+    assert [item.course.id for item in found] == [far.id]
+
+
+async def test_somebody_elses_courses_are_not_left_out(
+    db_session: AsyncSession,
+) -> None:
+    target, near, far = await three_in_a_row(db_session)
+    await add_reader(db_session, near)
+    reader = await add_reader(db_session, target)
+
+    found = await similar_to(
+        db_session, course_id=target.id, limit=10, skip_enrolled_by=reader.id
+    )
+
+    assert [item.course.id for item in found] == [near.id, far.id]
 
 
 # --- Recommending from a history -------------------------------------------

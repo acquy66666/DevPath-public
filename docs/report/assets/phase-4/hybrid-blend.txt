@@ -103,6 +103,18 @@ cho người học. Việc đó thuộc về `eval_recommender.py` với tập h
 ==============================================================================
 4. THỨ CHỈ SỐ Ở MỤC 3 KHÔNG NHÌN THẤY
 ==============================================================================
+**ĐÍNH CHÍNH 21/09/2026 — đọc trước khi dùng mục này.** Các con số dưới đây đo
+khi mỗi nửa đưa **10** ứng viên cho blend; job hằng đêm lúc đó đưa **20**
+(`top_n`). Ở độ sâu 20, cùng mô phỏng cho 15/24 khóa (không phải 24/24) và
+"Python cơ bản" chỉ tới **1/48** người (không phải 35/48): content-based cho mọi
+khóa cosine ≥ 0,747 nên top-20 của nó là cả catalogue, mọi khóa CF gợi ý đều có
+hai phần điểm RRF, và khóa mới — chỉ có một — luôn xếp sau. Tức là lợi thế
+cold-start mô tả ở đây **không có** trong cấu hình đang chạy khi ấy.
+`scripts/eval_recommender.py` tìm ra điều này (cold-start recall@5 = 0,000);
+sửa bằng `hybrid.FUSION_DEPTH = 5` → recall@5 0,626, warm gần như không đổi.
+Chi tiết, bảng tái tạo đúng từng con số dưới đây ở độ sâu 10, và luật chọn số
+5: `recommender-eval.txt` §2–§4. Chỉ số cụm 0,8056 ở mục 3 cũng đo ở độ sâu 20.
+
 Trên catalogue hiện tại, **0/24 khóa có ≤ 1 lượt ghi danh**, nên cả ba cách đều
 phủ 24/24 khóa và lợi thế cold-start vô hình. Vì vậy mô phỏng đúng cái ngày một
 khóa vừa xuất bản: với **từng** khóa một, gỡ mọi tương tác chạm tới nó (đúng

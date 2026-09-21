@@ -4,7 +4,7 @@ Phase đang chạy. Bảng dưới là gate cuối phase (chép từ [kế hoạ
 
 | Gate đòi | Tệp | Trạng thái |
 |---|---|---|
-| Bảng precision@k / recall@k, script tái tạo được | `recommender-eval.md` (script `backend/scripts/eval_recommender.py`) | chưa có |
+| Bảng precision@k / recall@k, script tái tạo được | `recommender-eval.md` (script `backend/scripts/eval_recommender.py`), diễn giải ở `recommender-eval.txt` | **có** — hai giao thức held-out (warm: 5 fold × 5 lần xáo, 190 ca; cold-start: 24 khóa), so với ngẫu nhiên, phổ biến, trần lý thuyết; chạy lại trùng từng byte trừ dòng ngày giờ. Hybrid đang chạy: warm R@5 0,884 (CF 0,888), cold R@5 0,626 (CF 0). Phép đo **tìm ra lỗi production**: ở độ sâu 20 như job cũ, cold R@5 = 0 — sửa bằng `FUSION_DEPTH = 5` |
 | 3–5 hội thoại chatbot có trích nguồn, kèm 1 ca từ chối ngoài phạm vi | `chat-api.txt` §2–§3, `chat-ui.txt` §1–§2 | một phần — đã có qua API (một phiên 3 lượt có trích nguồn, câu nối tiếp và 1 ca từ chối, cùng 6 câu so model), và qua UI chat (một phiên 4 lượt: 2 bài khác nhau được trích, 1 ca từ chối, nguồn mở đúng bài). Còn thiếu ảnh chụp lưu ra file |
 | Bộ 20 câu hỏi đánh giá chatbot + bảng kết quả | `chatbot-eval.md` (script `backend/scripts/eval_chatbot.py`, bộ câu `backend/scripts/eval_data/chatbot_questions.json`), diễn giải ở `chatbot-eval.txt`, mốc so sánh `chatbot-eval-truoc-sua.md` | **có** — 3 lần × 20 câu: 58/60 máy chấm, bài đúng hạng 1 ở 42/42, từ chối sạch 18/18; kèm đọc tay và 11 câu thăm dò ngưỡng |
 | Ví dụ quiz sinh tự động kèm nhận xét chất lượng | `quiz-generation.txt` §2–§5 | một phần — 60 câu trên 6 bài, hai model, chấm tay từng câu, kèm một quiz sinh → duyệt → xuất bản trên Chrome. Còn thiếu học viên làm quiz đó và ảnh chụp |

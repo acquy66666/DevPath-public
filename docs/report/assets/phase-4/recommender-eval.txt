@@ -1,0 +1,212 @@
+ĐÁNH GIÁ RECOMMENDER TRÊN TẬP HELD-OUT — DIỄN GIẢI
+Ngày đo: 21/09/2026 · máy dev · chỉ đọc CSDL, không gọi Gemini (vector đã có sẵn
+      trong `course_embeddings`) · 4 giây
+Số liệu gốc: `recommender-eval.md` (output nguyên văn của script)
+Script: `backend/scripts/eval_recommender.py` · test: `backend/tests/test_eval_recommender.py`
+
+Cách tái tạo (từ thư mục gốc repo):
+  docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
+  docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed_interactions
+  docker compose -f infra/docker-compose.yml exec backend python -m scripts.rebuild_course_embeddings
+  docker compose -f infra/docker-compose.yml exec -T backend \
+      python -m scripts.eval_recommender > docs/report/assets/phase-4/recommender-eval.md
+
+Chạy hai lần liên tiếp: output trùng từng byte trừ dòng ngày giờ (md5 phần còn
+lại 18b5c756… cả hai lần). Dấu vân tay dữ liệu `af1231c3dd44` in ở đầu tệp .md:
+khác dấu này là đang đo trên dữ liệu khác.
+
+==============================================================================
+0. KẾT LUẬN TRƯỚC
+==============================================================================
+* Phép đo tìm ra một **lỗi thật của cấu hình production**, không phải chỉ chấm
+  điểm: job hằng đêm đưa cho blend toàn bộ top-20 của mỗi nửa, và ở độ sâu đó
+  khóa vừa xuất bản **không bao giờ lọt top-5 của ai** (cold-start R@5 = 0,000)
+  — tức hybrid không làm được đúng việc nó được dựng ra để làm. `hybrid-blend.txt`
+  §4 nói ngược lại vì đo ở độ sâu 10 (mục 3 dưới đây).
+* Sửa bằng một hằng số, `hybrid.FUSION_DEPTH = 5` (TDD): cold-start R@5
+  0,000 → **0,626**, R@8 0,026 → **0,758**; warm gần như không đổi (R@4 0,836 →
+  0,835; R@5 0,866 → 0,884; R@10 0,924 → 0,921 — đều nằm trong độ dao động
+  giữa các lần xáo).
+* Warm (giấu tương tác của người đã có lịch sử): CF R@5 0,888, hybrid 0,884,
+  content 0,758, **phổ biến 0,178 — thua cả ngẫu nhiên (0,239)**. CF đơn thuần
+  vẫn nhỉnh hơn hybrid ở R@3 (0,772 so với 0,743) — đúng hướng với con số
+  0,8333/0,8056 của chỉ số cụm, và vì cùng một lý do (mục 4).
+* Cold-start (ngày một khóa vừa xuất bản): CF = 0 và phổ biến = 0 theo cấu tạo;
+  content R@5 0,758; hybrid 0,626. **Không mô hình nào đứng đầu cả hai giao
+  thức**: CF đứng đầu warm nhưng bằng 0 ở cold; content đứng đầu cold nhưng kém
+  nhất warm trong ba mô hình thật (R@5 0,758 so với 0,888); hybrid giữ warm gần
+  bằng CF (0,884) mà vẫn có cold R@5 0,626. Đó là đánh đổi hybrid mua, và cũng
+  là giới hạn của nó — ở cold, content đơn thuần vẫn hơn.
+
+==============================================================================
+1. GIAO THỨC — VÀ VÌ SAO HAI CÁI
+==============================================================================
+Warm — cross-validation 5 fold cắt theo từng học viên, lặp 5 lần xáo:
+  * mỗi học viên: xáo các khóa của họ rồi chia vòng tròn vào 5 fold, bắt đầu từ
+    một fold ngẫu nhiên → **mỗi tương tác bị giấu đúng một lần**, các fold đều
+    cỡ nhau;
+  * không ai bị giấu hết lịch sử: với n ≥ 2 khóa, một fold giữ nhiều nhất
+    ⌈n/5⌉ ≤ ⌈n/2⌉ < n khóa của họ. Người chỉ có 1 khóa không bao giờ được kiểm
+    (giấu đi thì không còn gì để gợi ý — đó là cold-start người dùng, được trả
+    lời bằng phổ biến, câu hỏi khác);
+  * 190 ca kiểm mỗi lần xáo (48 học viên × 3–5 khóa). Lặp 5 lần với hạt giống
+    20261101…20261105 và báo cáo trung bình (thấp nhất–cao nhất): với 190 tương
+    tác, một lần cắt dữ liệu chỉ là giai thoại.
+
+Cold-start — 24 lần, mỗi lần một khóa: gỡ mọi tương tác chạm tới nó (đúng trạng
+thái ngày nó lên kệ), khớp lại, hỏi những người từng học nó. Đây là phép đo
+`hybrid-blend.txt` §4 đã làm, nhưng tính bằng recall thay vì "bao nhiêu người
+thấy nó".
+
+Mốc so sánh — thiếu chúng thì con số không nói gì:
+  * ngẫu nhiên: kỳ vọng tính đúng công thức (min(k, ứng viên) × liên quan /
+    ứng viên), không phải một lần bốc thăm;
+  * phổ biến: đếm số người học trên **tập train** — `courses.students_count`
+    đếm cả tương tác đang bị giấu nên sẽ lộ đáp án;
+  * trần lý thuyết: xếp hạng hoàn hảo. Mỗi ca giấu đúng 1 khóa nên precision@k
+    tối đa là 1/k — P@10 = 0,092 nghe thấp nhưng trần là 0,100.
+
+Khóa dữ liệu là email + slug, không phải UUID: UUID sinh mới ở mỗi CSDL, nên
+fold cắt theo thứ tự UUID sẽ khác trên mỗi máy chạy lại seed.
+
+Mô hình gọi đúng như job hằng đêm gọi (`fit`/`recommend`, `recommend_from_history`,
+`blend`) — thứ được đo là thứ khối "Gợi ý cho bạn" được dựng từ.
+
+==============================================================================
+2. PHÁT HIỆN: HYBRID ĐANG CHẠY CHÔN KHÓA MỚI
+==============================================================================
+Lần chạy đầu (cấu hình như 20/09, mỗi nửa đưa 20 ứng viên):
+
+  cold-start     R@3    R@5    R@10
+  content       0,589  0,758  0,884
+  hybrid        0,000  0,000  0,105      ← gần bằng collaborative (0)
+
+Đào xuống một khóa — "Python cơ bản", 9 người từng học, khóa bị gỡ hết tương tác:
+
+  người từng học (9)   hạng trong content:  1 1 2 2 2 2 2 3 3
+                       hạng trong hybrid:   12 12 14 14 14 14 16 16 16
+                       độ dài danh sách CF: 10–15
+
+Hạng trong hybrid ≈ độ dài danh sách CF + 1. Cơ chế:
+
+  * content-based cho **mọi** khóa cosine ≥ 0,747 (`content-based.txt`), nên
+    top-20 của nó là gần như cả catalogue 24 khóa;
+  * vậy mọi khóa CF gợi ý cũng có trong danh sách content → được **hai** phần
+    điểm RRF, 1/(60+a) + 1/(60+b);
+  * khóa mới chỉ có trong danh sách content → **một** phần, tối đa 1/61 — thua
+    mọi khóa có hai phần, bất kể hạng.
+
+RRF thưởng cho sự đồng thuận, và đó là điều đúng — nhưng khi một danh sách
+"đồng thuận" với mọi thứ thì đồng thuận không còn mang thông tin, và thứ duy
+nhất RRF còn làm là xếp mọi khóa CF biết lên trước mọi khóa CF không biết.
+
+==============================================================================
+3. VÌ SAO hybrid-blend.txt §4 NÓI NGƯỢC LẠI
+==============================================================================
+§4 ghi: hybrid đưa 24/24 khóa mới vào top-10 của ít nhất một người, "Python cơ
+bản" tới 35/48 người. Code mô phỏng của §4 không được commit, nên dựng lại và
+thử giả thuyết "§4 lấy top-10 mỗi nửa":
+
+                        số khóa mới vào top-10    Python cơ bản   React   JavaScript
+  mỗi nửa đưa 10          24/24                       35/48         21/48    13/48
+  mỗi nửa đưa 20          15/24                        1/48          3/48     3/48
+
+Độ sâu 10 tái tạo **đúng từng con số** của §4 (content cũng khớp: 44/48). Job
+thật (`recommendations.rebuild`) đưa `top_n` = 20. Kết luận §4 đúng với cấu hình
+nó đo, sai với cấu hình đang chạy — và nó là lý do được nêu để chấp nhận mất
+2,8 điểm ở §3. Đã thêm đính chính vào `hybrid-blend.txt`.
+
+==============================================================================
+4. SỬA: FUSION_DEPTH = 5, CHỌN THEO LUẬT NÓI TRƯỚC
+==============================================================================
+Quét độ sâu (1 : 1, k = 60), recall:
+
+  độ sâu   warm R@4  R@5   R@8   R@10  │ cold R@4  R@5   R@8   R@10
+     3      0,821   0,842 0,844 0,844 │   0,553  0,589 0,589 0,589
+     4      0,823   0,886 0,903 0,903 │   0,537  0,626 0,695 0,695
+     5      0,835   0,884 0,921 0,921 │   0,463  0,626 0,758 0,758   ← chọn
+     6      0,836   0,880 0,926 0,927 │   0,368  0,595 0,774 0,816
+    10      0,828   0,844 0,916 0,934 │   0,016  0,111 0,705 0,816
+    20      0,836   0,866 0,914 0,924 │   0,000  0,000 0,026 0,105   ← trước 21/09
+
+Luật: **độ sâu nhỏ nhất mà warm recall ở mọi k ≥ 4 không kém độ sâu 20 quá độ
+dao động giữa các lần xáo** (dải thấp–cao của hybrid ở R@4 là 0,811–0,858, tức
+±0,02). k ≥ 4 vì khối nhỏ nhất người học thấy trên trang chủ là 4 thẻ.
+  * 5 đạt: R@4 −0,001, R@5 +0,018, R@8 +0,007, R@10 −0,003.
+  * 4 trượt: R@10 −0,021 — danh sách trộn chỉ còn tối đa 8 khóa.
+  * 3 trượt nặng hơn (R@10 −0,080).
+
+Bất biến mà con số 5 mua được, có test (`test_a_just_published_course_the_
+content_half_puts_first_makes_the_top`): khóa content xếp hạng 1 chỉ có thể bị
+vượt bởi khóa nằm trong **cả hai** top-5, tức nhiều nhất 4 khóa → nó luôn nằm
+trong top-5. Ở độ sâu 20 bất biến ấy là "trong top-20", tức không nói gì.
+
+Ghi nhận thẳng: luật này vẫn được áp trên dữ liệu giả lập — nó chọn giữa các
+độ sâu, không tinh chỉnh trọng số theo cụm. Hướng của hiệu ứng (độ sâu ≈ cỡ
+catalogue thì khóa chỉ một nửa biết bị chôn) là cấu trúc, không phụ thuộc bộ
+sinh: nó đến từ việc cosine content-based không bao giờ dưới 0,747.
+
+Trọng số và k ở độ sâu 5 (mục 3 của .md):
+  * CF 2 : content 1 — warm R@4 0,867 (+3,2 điểm) nhưng cold R@4/R@5 về **0**:
+    cùng cơ chế, lần này qua trọng số thay vì qua độ sâu.
+  * CF 1 : content 2 — cold R@5 0,758 nhưng warm R@4 0,743 (−9,2 điểm).
+  * k = 10 — y hệt k = 60 ở độ sâu 5 (danh sách ngắn nên thứ tự không đổi).
+  → Giữ 1 : 1 và k = 60. Không cấu hình nào thắng ở cả hai cột; 1 : 1 là điểm
+    duy nhất không bỏ hẳn một giao thức.
+
+==============================================================================
+5. CÁC CON SỐ KHÁC ĐÁNG NÓI
+==============================================================================
+* **Phổ biến thua ngẫu nhiên** ở warm (R@5 0,178 so với 0,239). Giả thuyết,
+  **chưa kiểm riêng**: dữ liệu có 4 cụm cỡ đều nhau, nên với phần lớn học viên
+  khóa đông người nhất là khóa đông người nhất *của cụm khác*, còn người trong
+  cụm của nó thì đã học nó rồi (bị loại khỏi ứng viên). Mốc được đo là phổ biến
+  **toàn sàn**, không phải "phổ biến theo danh mục" mà phương án dự phòng thật
+  dùng — cái sau chưa được đo ở đây.
+* **CF vẫn nhỉnh hơn hybrid ở R@3 warm** (0,772 so với 0,743). Cùng lý do với
+  0,8333/0,8056 ở `hybrid-blend.txt` §3: dữ liệu sinh ra từ cấu trúc cụm, và CF
+  đọc thẳng cấu trúc ấy từ ma trận đồng xuất hiện. Khác biệt là lần này đo trên
+  tương tác bị giấu chứ không phải "khôi phục nhãn cụm", nên đây mới là câu trả
+  lời cho câu hỏi §8 của `hybrid-blend.txt` để lại: có, hybrid trả giá ở warm —
+  ~3 điểm R@3, ~0 điểm từ R@4 trở đi — và đổi lấy 0 → 0,626 ở cold R@5.
+* Content-based đơn thuần có cold-start tốt nhất (R@5 0,758) nhưng warm kém
+  nhất trong ba mô hình thật (R@5 0,758 so với 0,888).
+* Precision thấp là do giao thức, không do mô hình: gần như mọi ca giấu đúng 1
+  khóa nên precision@k ≈ recall@k / k, trần là 1/k (hàng "trần lý thuyết").
+
+==============================================================================
+6. GIỚI HẠN — NÓI THẲNG
+==============================================================================
+* Dữ liệu giả lập (`seed_interactions.py`, 4 cụm). Con số là khả năng khôi phục
+  một cấu trúc đã biết là có, không phải bằng chứng người học thật thấy hữu ích.
+  Trên nền tảng hiện chưa có tương tác thật nào.
+* 190 tương tác, 48 người: dải thấp–cao giữa các lần xáo rộng tới ±0,03 ở R@3.
+  Khác biệt nhỏ hơn cỡ đó không nên đọc thành "tốt hơn".
+* Lịch sử mỗi người chỉ 3–5 khóa, nên mỗi ca giấu đúng một khóa; precision và
+  recall vì thế gần như là một con số nhìn hai cách.
+* Chỉ số cụm 0,8056 ở `hybrid-blend.txt` §3 và danh sách hai học viên ở
+  `recommendation-ui.txt` §2 đo ở độ sâu 20. Danh sách sau khi đổi (lấy lại qua
+  HTTP 21/09 sau `rebuild_recommendations`): hocvien01 giữ nguyên 4 thẻ;
+  hocvien25 có thẻ thứ 4 mới là "Cấu trúc dữ liệu & giải thuật với Python" với
+  `sources: ["content"]` — một khóa chỉ nửa content-based ủng hộ, điều gần như
+  không thể xảy ra ở độ sâu 20.
+
+==============================================================================
+7. TEST
+==============================================================================
+  tests/test_eval_recommender.py   21 pass — cắt fold (mỗi tương tác giấu đúng
+      một lần, không ai hết lịch sử, người 1 khóa không bị kiểm, không phụ thuộc
+      thứ tự hàng trả về, hạt giống khác cho fold khác), precision/recall làm tay
+      (kể cả danh sách ngắn bị tính chỗ trống là trượt), ngẫu nhiên là kỳ vọng,
+      phổ biến chỉ học từ tập train, trần lý thuyết, hai cụm tách rời cho mỗi mô
+      hình đúng điểm tính tay được, cold-start làm CF về 0, và **cơ chế ở mục 2
+      thu nhỏ còn 6 khóa**: độ sâu 20 cho recall@1 = 0, độ sâu 1 cho 1
+  tests/test_recommendations.py    +1 — khóa vừa xuất bản mà content xếp đầu
+      phải nằm trong top-`FUSION_DEPTH` của batch. Đỏ trước khi đổi (khóa nằm
+      thứ 7/7), xanh sau
+
+Đột biến để chứng minh test bắt được lỗi (mỗi lần một chỗ, rồi khôi phục):
+  precision chia cho độ dài danh sách thay vì k   → bắt (1 test đỏ)
+  người 1 khóa cũng bị đem ra kiểm                → bắt
+  cold-start kiểm cả người không còn lịch sử      → bắt
+  fold phụ thuộc thứ tự hàng trả về               → bắt

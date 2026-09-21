@@ -425,7 +425,12 @@ async def rebuild(
     """
     from app.services.collaborative import fit, load_interactions
     from app.services.content_based import load_vectors, recommend_from_history
-    from app.services.hybrid import SOURCE_COLLABORATIVE, SOURCE_CONTENT, blend
+    from app.services.hybrid import (
+        FUSION_DEPTH,
+        SOURCE_COLLABORATIVE,
+        SOURCE_CONTENT,
+        blend,
+    )
 
     model = fit(await load_interactions(session))
     vectors = await load_vectors(
@@ -446,11 +451,15 @@ async def rebuild(
 
     written = 0
     for user_id in model.users:
+        # Each half hands over its top FUSION_DEPTH, not its top `top_n`: the
+        # content half's whole list is the whole catalogue, and fed whole it
+        # buries every course the collaborative half cannot see -- which is
+        # every course published since the last enrolment. See FUSION_DEPTH.
         blended = blend(
             {
-                SOURCE_COLLABORATIVE: model.recommend(user_id, k=top_n),
+                SOURCE_COLLABORATIVE: model.recommend(user_id, k=FUSION_DEPTH),
                 SOURCE_CONTENT: recommend_from_history(
-                    vectors, model.history(user_id), k=top_n
+                    vectors, model.history(user_id), k=FUSION_DEPTH
                 ),
             },
             limit=top_n,

@@ -23,6 +23,7 @@ from app.core.security import hash_password
 from app.models import Category, Course, Enrollment, User
 from app.services.content_based import rebuild_embeddings
 from app.services.hybrid import (
+    FUSION_DEPTH,
     SOURCE_COLLABORATIVE,
     SOURCE_CONTENT,
     SOURCE_POPULAR,
@@ -603,6 +604,54 @@ async def test_the_batch_blends_both_halves(db_session: AsyncSession, world: Wor
     mine = {item.course_id: item for item in writer.written[reader.id].items}
     assert SOURCE_COLLABORATIVE in mine[theirs.id].sources
     assert SOURCE_CONTENT in mine[lookalike.id].sources
+
+
+async def test_a_just_published_course_the_content_half_puts_first_makes_the_top(
+    db_session: AsyncSession, world: World
+):
+    """The cold-start path the hybrid exists for, measured in
+    `docs/report/assets/phase-4/recommender-eval.md`.
+
+    The reader has H. Six classmates each took H and one more course, so the
+    collaborative half offers six courses. A course published today has no
+    takers, and its vector is H's own: the content half ranks it first. Every
+    course is somewhat alike (45° here; ≥ 0,747 in the real catalogue), so the
+    content half lists the six as well.
+
+    Fed whole, every one of the six is in *both* lists and outscores a course
+    in one -- the new course comes last. Cut to `FUSION_DEPTH`, a course the
+    content half puts first can only be beaten by courses in both top lists,
+    of which there are at most `FUSION_DEPTH - 1`.
+    """
+    reader = await world.student("hoc-vien")
+    history = await world.course("H")
+    await world.takes(reader, history)
+    classmates_took = []
+    for n in range(FUSION_DEPTH + 1):
+        classmate = await world.student(f"ban-{n}")
+        course = await world.course(f"C{n}")
+        await world.takes(classmate, history)
+        await world.takes(classmate, course)
+        classmates_took.append(course)
+    published_today = await world.course("Moi xuat ban")
+
+    await rebuild_embeddings(
+        db_session,
+        embedder=FakeEmbedder(
+            {
+                "Moi xuat ban": axis(0),
+                "H": axis(0),
+                **{f"C{n}": axis(0, n + 1) for n in range(FUSION_DEPTH + 1)},
+            }
+        ),
+        course_ids=[history.id, published_today.id, *(c.id for c in classmates_took)],
+    )
+
+    writer = RecordingWriter()
+    await rebuild(db_session, writer, embedding_model="fake-embed-1")
+
+    ranked = [item.course_id for item in writer.written[reader.id].items]
+    assert published_today.id in ranked[:FUSION_DEPTH]
 
 
 async def test_a_course_both_halves_chose_says_so(

@@ -31,10 +31,14 @@ standard answer to exactly that situation:
 own, which is the behaviour a hybrid exists for: a course *both* halves like
 should beat a course one half loves and the other has never heard of.
 
-**Weights are equal until something measures them.** There is no held-out
-evaluation yet -- that is `scripts/eval_recommender.py`, a later task -- and a
-number picked to look tuned would be worse than a number that is obviously a
-default.
+**Weights are equal, and stayed equal once measured.** `scripts/eval_recommender.py`
+(`docs/report/assets/phase-4/recommender-eval.txt`) scores every setting on
+held-out enrolments and on just-published courses: leaning 2 : 1 towards the
+collaborative half keeps new courses out of every top five again (recall@5
+0), leaning 1 : 2 towards the content half costs nine points of recall@4 on
+the first, and 1 : 1 is the only setting tried that gives up neither.
+What the evaluation did change is how much of each list the blend is handed --
+see `FUSION_DEPTH`.
 """
 
 import logging
@@ -62,8 +66,27 @@ SOURCE_POPULAR = "popular"
 #: single-model behaviour the hybrid is meant to replace.
 RRF_K = 60
 
+#: How many of each half's list the nightly batch hands to `blend`.
+#:
+#: Small on purpose, and the one setting here that was measured rather than
+#: taken from the paper (`docs/report/assets/phase-4/recommender-eval.md`).
+#: The content half gives every course in the catalogue a cosine of at least
+#: 0,747, so its list, taken whole, *is* the catalogue -- and then every course
+#: the collaborative half names is in both lists and outscores any course in
+#: one. A course published today is in one: the content half's. Fed whole
+#: (20 each, as before 21/09/2026), it never reached a reader's top 5: recall@5
+#: 0,000 on the held-out cold-start test. Cut to 5, a course the content half
+#: ranks first can only be beaten by courses in both top-5 lists -- at most
+#: four -- and recall@5 is 0,626, while recall on ordinary held-out enrolments
+#: moves by no more than the spread between reshuffles.
+#:
+#: 5 is the smallest depth whose warm recall at every k ≥ 4 stays within that
+#: spread of depth 20's; 4 buys a little more cold-start recall and loses two
+#: points of recall@10, because the fused list can then hold only eight.
+FUSION_DEPTH = 5
+
 #: How much each half counts. Equal, and deliberately so -- see the module
-#: docstring. `eval_recommender.py` is where these stop being a guess.
+#: docstring for what `eval_recommender.py` measured.
 DEFAULT_WEIGHTS: Mapping[str, float] = {
     SOURCE_COLLABORATIVE: 1.0,
     SOURCE_CONTENT: 1.0,
@@ -107,8 +130,10 @@ def blend(
     A list with no weight given falls back to 1.0 rather than to 0.0: a source
     added later must not vanish because the weights map predates it.
 
-    `limit` is applied **after** fusing. Cutting each list first would throw
-    away exactly the low-ranked agreements that fusion exists to find.
+    `limit` is applied **after** fusing: it is the length of the answer, not
+    of the inputs. How long each input list is, is the caller's decision --
+    the nightly batch hands over `FUSION_DEPTH` from each half, and why that
+    is short rather than long is written beside it.
     """
     weights = DEFAULT_WEIGHTS if weights is None else weights
 

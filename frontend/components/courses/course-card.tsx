@@ -1,13 +1,19 @@
 import { GraduationCap, Star, Users } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import type { CourseCard as Course } from "@/lib/api/courses";
 import { LEVEL_LABELS } from "@/lib/courses/labels";
 import { formatDuration, formatPrice } from "@/lib/format";
 
-/** One course in the catalogue grid. The whole card is the link. */
-export function CourseCard({ course }: { course: Course }) {
+/**
+ * One course in the catalogue grid. The whole card is the link.
+ *
+ * `note` is the line a recommender block adds on top -- why this card is
+ * here. Text only: it sits inside the link, and a link cannot hold another.
+ */
+export function CourseCard({ course, note }: { course: Course; note?: ReactNode }) {
   const duration = formatDuration(course.duration_total_s);
   const rated = course.rating_count > 0;
 
@@ -30,6 +36,10 @@ export function CourseCard({ course }: { course: Course }) {
       )}
 
       <div className="flex flex-1 flex-col gap-2 p-4">
+        {note ? (
+          <p className="flex items-center gap-1.5 text-xs font-medium text-primary">{note}</p>
+        ) : null}
+
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="secondary">{course.category.name}</Badge>
           <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>

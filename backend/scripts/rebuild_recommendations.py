@@ -14,6 +14,12 @@ Two reasons this exists rather than telling people to trigger the Celery task:
 It runs the same `rebuild` the Celery task runs, in this process, against the
 same Redis -- so what it writes is what the nightly job would have written,
 not an approximation of it.
+
+**Run `scripts.rebuild_course_embeddings` first.** Since the blend, this job
+reads `course_embeddings` for its content-based half; with that table empty it
+still succeeds and writes collaborative-only lists, which look perfectly
+normal and are not what the nightly pair produces. It logs a warning when it
+finds no vectors, and this paragraph is the other half of that warning.
 """
 
 import asyncio
@@ -26,7 +32,10 @@ async def main() -> None:
     async with SessionLocal() as session:
         written = await rebuild(session, build_writer())
 
-    print(f"Đã ghi gợi ý cho {written} người dùng (top {DEFAULT_TOP_N} mỗi người).")
+    print(
+        f"Đã ghi gợi ý cho {written} người dùng (top {DEFAULT_TOP_N} mỗi người), "
+        "trộn collaborative + content-based."
+    )
     if written == 0:
         print(
             "Không có ai để tính: chưa có lượt đăng ký khóa học nào trong CSDL. "

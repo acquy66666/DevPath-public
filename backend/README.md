@@ -345,8 +345,11 @@ Bốn khóa học seed đủ để demo nhưng không đủ để **đo** một 
 
 ```bash
 docker compose exec backend python -m scripts.seed_interactions
+docker compose exec backend python -m scripts.rebuild_course_embeddings
 docker compose exec backend python -m scripts.rebuild_recommendations
 ```
+
+Thứ tự ba lệnh này có ý nghĩa: từ khi có hệ lai, `rebuild_recommendations` đọc `course_embeddings` cho nửa content-based. Bảng trống thì nó vẫn chạy xong và ghi ra danh sách **chỉ có collaborative** — trông hoàn toàn bình thường mà không phải thứ cặp job hằng đêm sinh ra (có một dòng cảnh báo trong log, không có gì khác để nhìn).
 
 Chạy sau `scripts.seed` (script này tra cứu khóa neo và giảng viên, không tự tạo). Idempotent như phần seed còn lại; hạt giống cố định nên mọi máy sinh ra đúng cùng một tập dữ liệu, và đó là điều kiện để số đo trong báo cáo tái tạo được. Số liệu và cách kiểm: [docs/report/assets/phase-4/interaction-seed.txt](../docs/report/assets/phase-4/interaction-seed.txt).
 

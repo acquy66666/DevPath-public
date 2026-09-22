@@ -1,0 +1,120 @@
+UI RECOMMENDER: "GỢI Ý CHO BẠN", "KHÓA HỌC TƯƠNG TỰ", "HỌC TIẾP THEO"
+Ngày đo: 21/09/2026 · máy dev · CSDL dev sau seed đầy đủ · cache `rec:v2` của
+      lần chạy batch 20/09 14:22 (48 khóa trong Redis)
+Thành phần:
+  - `frontend/lib/api/recommendations.ts` — client cho ba endpoint
+  - `components/recommendations/course-block.tsx` — khung chung + skeleton
+  - `recommended-for-you.tsx` (trang chủ, Client Component, chỉ khi đăng nhập)
+  - `similar-courses.tsx` (trang chi tiết, Server Component — render trong SSR)
+  - `next-courses.tsx` (trang học, Client Component, chỉ khi khóa đã hoàn thành)
+  - backend: `GET /api/v1/courses/{id}/next` (mới) + `similar_to(skip_enrolled_by=)`
+
+Cách tái tạo:
+  docker compose exec backend python -m scripts.seed
+  docker compose exec backend python -m scripts.seed_interactions
+  docker compose exec backend python -m scripts.rebuild_course_embeddings
+  docker compose exec backend python -m scripts.rebuild_recommendations
+  → mở http://localhost:3000/khoa-hoc/react-tu-so-0-component-state-va-router
+
+==============================================================================
+1. VÌ SAO "HỌC TIẾP THEO" CẦN MỘT ENDPOINT RIÊNG
+==============================================================================
+Cách rẻ nhất là gọi `/similar` rồi lọc ở trình duyệt những khóa người học đã có.
+Không làm vậy vì chính lý do `similar_to` đã ghi trong docstring: **lọc sau
+`LIMIT` trả thiếu hàng**. Người đã học ba khóa gần nhất sẽ nhận một khối rỗng
+từ `LIMIT 3`, trong khi khóa gần thứ tư không bao giờ được nhắc tới.
+
+Nên điều kiện nằm trong chính câu truy vấn — cùng quyết định với truy hồi chat
+và với `/similar`:
+
+  Course.id NOT IN (SELECT course_id FROM enrollments WHERE user_id = :reader)
+
+`GET /courses/{id}/next` = `/similar` trừ các khóa người đang đăng nhập đã ghi
+danh. Bắt đăng nhập (401) vì câu trả lời phụ thuộc lịch sử của ai; không đòi
+phải ghi danh khóa `{id}` vì câu trả lời chỉ ghép từ catalogue công khai và
+ghi danh của chính người hỏi, không lộ gì. 404 giống hệt `/similar`.
+
+Test (TDD, viết trước, đỏ đúng lý do `unexpected keyword 'skip_enrolled_by'`
+và 404 do chưa có route):
+  tests/test_content_based.py      +3  — bỏ khóa đã có; lọc TRƯỚC limit
+                                          (limit=1 vẫn ra khóa xa); ghi danh
+                                          của người khác không bị bỏ
+  tests/api/test_next_courses.py   +7  — bỏ khóa đã có qua HTTP, cùng thứ tự
+                                          với /similar khi chưa có gì, 401,
+                                          404 nháp, 404 không tồn tại, 422 ×2
+  → 47 passed (cùng `test_similar_courses.py`)
+
+==============================================================================
+2. BA ENDPOINT TRÊN DỮ LIỆU THẬT (gọi đúng URL mà UI gọi)
+==============================================================================
+Access token tạo trong container bằng `create_access_token` của app — không
+nhập mật khẩu ở đâu.
+
+== GET /recommendations?limit=4 as hocvien01 (cụm frontend) -> 200
+   generated_at=2026-09-20T14:22:10.807580Z
+   HTML/CSS hiện đại: Flexbox, Grid và responsi sources=['collaborative', 'content'] because='Next.js: render phía máy chủ và tối ưu tốc độ'
+   TypeScript cho người đã viết JavaScript      sources=['collaborative', 'content'] because='JavaScript hiện đại: ES6+ và DOM'
+   Python cơ bản cho người mới bắt đầu          sources=['collaborative', 'content'] because='JavaScript hiện đại: ES6+ và DOM'
+   PostgreSQL cho lập trình viên ứng dụng       sources=['collaborative', 'content'] because='React từ số 0: component, state và router'
+
+== GET /recommendations?limit=4 as hocvien25 (cụm dữ liệu/ML) -> 200
+   generated_at=2026-09-20T14:22:10.807580Z
+   Python nâng cao: decorator, generator và con sources=['collaborative', 'content'] because='Pandas và NumPy cho xử lý dữ liệu'
+   Trực quan hóa dữ liệu với Matplotlib         sources=['collaborative', 'content'] because='Pandas và NumPy cho xử lý dữ liệu'
+   TypeScript cho người đã viết JavaScript      sources=['collaborative', 'content'] because='Nhập môn học máy với scikit-learn'
+   Xây dựng REST API với FastAPI                sources=['collaborative', 'content'] because='Nhập môn học máy với scikit-learn'
+
+== GET /courses/{React}/similar?limit=3 (không đăng nhập) -> 200
+   Next.js: render phía máy chủ và tối ưu tốc đ score=0.8638
+   HTML/CSS hiện đại: Flexbox, Grid và responsi score=0.8508
+   Tailwind CSS trong dự án thật                score=0.8490
+
+== GET /courses/{React}/next?limit=3 as hocvien01 -> 200
+   HTML/CSS hiện đại: Flexbox, Grid và responsi score=0.8508
+   Xây dựng REST API với FastAPI                score=0.8435
+   TypeScript cho người đã viết JavaScript      score=0.8272
+
+Đọc:
+* Hai học viên khác cụm nhận hai danh sách khác nhau, đầu danh sách đúng cụm
+  (HTML/CSS cho người học frontend, Python nâng cao/Matplotlib cho người học
+  dữ liệu). Mỗi thẻ có câu "Vì bạn đã học …" — UI in đúng câu đó lên thẻ.
+* `/next` so với `/similar` của cùng khóa: Next.js (0,8638) và Tailwind (0,8490)
+  biến mất vì hocvien01 đã học cả hai — và khối **vẫn đủ 3 thẻ**, chỗ trống
+  được lấp bằng khóa kế tiếp theo cosine (FastAPI 0,8435, TypeScript 0,8272).
+  Đây chính là ca mà lọc ở trình duyệt sẽ trả về 1 thẻ.
+* Mọi thẻ của hai người đều có `sources` gồm cả hai nửa — batch 20/09 cho ra
+  danh sách mà cả collaborative lẫn content-based cùng ủng hộ ở top-4.
+
+==============================================================================
+3. "KHÓA HỌC TƯƠNG TỰ" TRÊN TRÌNH DUYỆT
+==============================================================================
+Ảnh: `similar-courses-block.png` (Playwright, 1280×900, trang khóa React, không
+đăng nhập). Ba thẻ Next.js / HTML-CSS / Tailwind — trùng thứ tự `/similar` ở
+mục 2. Khối nằm **trong HTML của lần phản hồi đầu** (curl trang, grep thấy
+tiêu đề khối), tức crawler đọc được như phần còn lại của trang.
+
+Quyết định đi kèm:
+* Lỗi khi gọi `/similar` bị nuốt ở trang (log server, trả mảng rỗng): đây là gợi
+  ý bên dưới trang, để nó ném lỗi thì cả trang khóa học rơi vào `error.tsx`.
+* Mảng rỗng (khóa chưa có vector) → không vẽ khối, không vẽ khoảng trống.
+
+Gặp khi chạy thật: sửa file trên Windows **không** làm dev server trong
+container nạp lại (bind mount không đẩy sự kiện đổi file) — trang vẫn chạy bản
+cũ, backend không nhận request `/similar` nào. `docker compose restart
+frontend` là đủ.
+
+==============================================================================
+4. CHƯA ĐO, NÓI THẲNG
+==============================================================================
+* **Chưa nhìn hai khối cần đăng nhập trên trình duyệt** ("Gợi ý cho bạn" ở trang
+  chủ, "Học tiếp theo" ở trang học). Đã kiểm: dữ liệu qua đúng endpoint (mục 2),
+  `tsc --noEmit` và `eslint` sạch. Chưa kiểm: hình dạng thật trên màn hình. Lý do:
+  đăng nhập trên trình duyệt cần gõ mật khẩu tài khoản seed, và việc đưa phiên
+  tạo sẵn vào trình duyệt tự động bị chặn vì là rò rỉ thông tin xác thực — hai
+  phiên đã tạo cho lần thử ấy đã bị thu hồi (`revoked_at`). Việc này trùng với
+  mục gate "screenshot khối gợi ý của 2 user khác nhau", nên dồn về gate:
+    đăng nhập hocvien01@seed.devpath.example rồi hocvien25@… (mật khẩu mặc
+    định của `seed_interactions.py`) → chụp trang chủ; hocvien01 mở
+    /hoc/react-tu-so-0-component-state-va-router → chụp "Học tiếp theo".
+* Chưa có trường hợp "khối toàn phổ biến" trên trình duyệt: câu mô tả khác
+  ("Bạn chưa có lịch sử học để gợi ý riêng…") chỉ hiện với tài khoản mới tinh.

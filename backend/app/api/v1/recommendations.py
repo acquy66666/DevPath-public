@@ -14,6 +14,10 @@ viewing it, so it needs no sign-in, and computed from `course_embeddings` on
 each request rather than read from a cache. It lives here rather than in
 `api/v1/courses.py` because it is the content-based half of the recommender and
 belongs beside the collaborative half; `courses.py` is about managing courses.
+
+`GET /courses/{course_id}/next` -- "Học tiếp theo" -- is `/similar` for one
+reader: the same neighbours less the courses they already have, so it needs a
+sign-in again.
 """
 
 import uuid
@@ -77,6 +81,7 @@ async def list_recommendations(
                 because=(
                     ReasonOut.model_validate(item.because) if item.because else None
                 ),
+                sources=list(item.sources),
             )
             for item in served.items
         ],
@@ -110,6 +115,34 @@ async def list_similar_courses(
         session, course_id=course_id, limit=limit
     )
 
+    return _neighbours_out(found)
+
+
+@router.get("/courses/{course_id}/next", response_model=SimilarCoursesOut)
+async def list_next_courses(
+    course_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: DbSession,
+    limit: Annotated[int, Query(ge=1, le=MAX_SIMILAR)] = DEFAULT_SIMILAR,
+) -> SimilarCoursesOut:
+    """"Học tiếp theo": this course's neighbours that you do not have yet.
+
+    The block shown after finishing a course. Same ranking and same 404 as
+    `/similar`, less every course the signed-in reader is enrolled in -- which
+    is also why it needs a sign-in where `/similar` does not. Being enrolled in
+    the course itself is not required: the answer is built from the public
+    catalogue and the reader's own enrolments, so it reveals nothing.
+    """
+    found = await content_based_service.similar_to(
+        session, course_id=course_id, limit=limit, skip_enrolled_by=current_user.id
+    )
+
+    return _neighbours_out(found)
+
+
+def _neighbours_out(
+    found: list[content_based_service.SimilarCourse],
+) -> SimilarCoursesOut:
     return SimilarCoursesOut(
         items=[
             SimilarCourseOut(

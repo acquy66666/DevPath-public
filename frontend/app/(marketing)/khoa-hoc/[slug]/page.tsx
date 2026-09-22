@@ -8,10 +8,12 @@ import { UserAvatar } from "@/components/auth/user-avatar";
 import { CourseCurriculum } from "@/components/courses/course-curriculum";
 import { CourseReviews } from "@/components/courses/course-reviews";
 import { EnrollButton } from "@/components/courses/enroll-button";
+import { SimilarCourses } from "@/components/recommendations/similar-courses";
 import { Badge } from "@/components/ui/badge";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
 import { getCurriculum } from "@/lib/api/curriculum";
+import { getSimilarCourses, type SimilarCourse } from "@/lib/api/recommendations";
 import { listCourseReviews } from "@/lib/api/reviews";
 import { LEVEL_LABELS, languageLabel } from "@/lib/courses/labels";
 import { formatDate, formatDuration, formatPrice } from "@/lib/format";
@@ -50,6 +52,23 @@ const loadCourse = cache(async (slug: string): Promise<CourseDetail | null> => {
     throw error;
   }
 });
+
+/** One row of three beside a `max-w-5xl` page. */
+const SIMILAR_LIMIT = 3;
+
+/**
+ * The "Khóa học tương tự" row, or none. A failure here is swallowed on
+ * purpose: it is a suggestion under the page, and letting it throw would put
+ * the whole course page behind `error.tsx` for the sake of a sidebar.
+ */
+async function loadSimilar(courseId: string): Promise<SimilarCourse[]> {
+  try {
+    return (await getSimilarCourses(courseId, SIMILAR_LIMIT)).items;
+  } catch (error) {
+    console.error("similar courses unavailable", error);
+    return [];
+  }
+}
 
 function metaDescription(course: CourseDetail): string {
   const source = course.subtitle ?? course.description ?? "";
@@ -107,11 +126,12 @@ export default async function CourseDetailPage({
   const course = await loadCourse(slug);
   if (course === null) notFound();
 
-  // Both in one round trip rather than one after the other: neither needs the
-  // other's answer, and the page cannot paint until it has both.
-  const [curriculum, reviews] = await Promise.all([
+  // All in one round trip rather than one after the other: none needs
+  // another's answer, and the page cannot paint until it has them all.
+  const [curriculum, reviews, similar] = await Promise.all([
     getCurriculum(course.id),
     listCourseReviews(course.id),
+    loadSimilar(course.id),
   ]);
   const duration = formatDuration(course.duration_total_s);
   const rated = course.rating_count > 0;
@@ -250,6 +270,12 @@ export default async function CourseDetailPage({
           </div>
         </aside>
       </div>
+
+      {similar.length > 0 ? (
+        <div className="mt-14">
+          <SimilarCourses items={similar} />
+        </div>
+      ) : null}
     </div>
   );
 }

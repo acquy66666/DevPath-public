@@ -1,0 +1,249 @@
+HYBRID RECOMMENDER: TRỘN HAI NỬA + PHƯƠNG ÁN DỰ PHÒNG
+Ngày đo: 20/09/2026 · máy dev · key Gemini thật · CSDL dev sau seed đầy đủ
+Thành phần: `services/collaborative.py` (item-based CF) + `services/content_based.py`
+      (cosine trên `course_embeddings`) → `services/hybrid.py` (Reciprocal Rank
+      Fusion) → cache Redis `rec:v2:user:*` → `GET /api/v1/recommendations`
+      Dự phòng: `recommendations.popular_courses` chèn lúc phục vụ, không qua cache
+
+Cách tái tạo:
+  docker compose exec backend python -m scripts.seed
+  docker compose exec backend python -m scripts.seed_interactions
+  docker compose exec backend python -m scripts.rebuild_course_embeddings
+  docker compose exec backend python -m scripts.rebuild_recommendations
+
+==============================================================================
+1. VÌ SAO TRỘN THEO HẠNG CHỨ KHÔNG THEO ĐIỂM
+==============================================================================
+Đo trên chính dữ liệu của dự án, trước khi viết dòng code trộn nào:
+
+                       min       max      trung bình   độ lệch chuẩn
+  collaborative     0,0206    5,7892       0,8192        1,1950     (694 cặp)
+  content-based     0,7472    0,8923       0,7989        0,0271     (552 cặp)
+
+Hai điều làm phép cộng có trọng số của hai cột này không bảo vệ được:
+
+* **Không cùng thang.** Điểm collaborative là một **tổng** các đóng góp nên lớn
+  dần theo lượng lịch sử của người học (hàng 1 trung bình 3,85), còn cosine
+  không bao giờ vượt 1.
+* **Content-based cho mọi khóa ít nhất 0,747.** Hai bản mô tả khóa học tiếng
+  Việt không bao giờ nằm xa nhau trong không gian embedding. Trong khi đó
+  collaborative cho **0** với khóa không ai học cùng thứ gì. Cộng lại, một khóa
+  chẳng liên quan mang sẵn 0,75 sẽ vượt một khóa có tín hiệu collaborative thật
+  nhưng khiêm tốn.
+
+Thứ các con số content-based *có* mang là một **thứ tự dùng được** — láng giềng
+nó tìm ra đúng (mục 2). Nên module lấy thứ tự và vứt con số:
+
+  score(khóa) = Σ  trọng số(danh sách) / (k + hạng trong danh sách ấy)
+
+Reciprocal Rank Fusion, Cormack–Clarke–Buettcher, SIGIR 2009, k = 60 đúng như
+bài báo. `k` làm phẳng phần đầu mỗi danh sách để khóa được **cả hai** nửa ưa
+thắng khóa được một nửa rất ưa còn nửa kia chưa từng nghe tới — đó là hành vi
+mà một hệ lai tồn tại để có.
+
+Trọng số hai nửa **bằng nhau**, và cố ý: chưa có tập held-out nào để đo
+(`scripts/eval_recommender.py` là task sau), mà một con số chọn cho ra vẻ đã
+tinh chỉnh còn tệ hơn một con số hiển nhiên là mặc định.
+
+Kiểm được bằng tay: khóa đứng hạng 1 ở cả hai danh sách được
+1/61 + 1/62 = 0,032522 — đúng con số nằm trong Redis ở mục 5.
+
+==============================================================================
+2. LÁNG GIỀNG CONTENT-BASED TRÊN DỮ LIỆU THẬT
+==============================================================================
+Nhúng thật bằng `gemini-embedding-001`, 24 khóa, chạy lần hai tốn 0 quota
+(24 khóa không đổi). Năm khóa lấy ngẫu nhiên, top-5 láng giềng:
+
+  [Python cơ bản cho người mới bắt đầu]
+    0,8675  Cấu trúc dữ liệu & giải thuật với Python
+    0,8647  Python nâng cao: decorator, generator và context manager
+    0,8590  Nhập môn học máy với scikit-learn
+  [React từ số 0: component, state và router]
+    0,8638  Next.js: render phía máy chủ và tối ưu tốc độ
+    0,8508  HTML/CSS hiện đại: Flexbox, Grid và responsive
+    0,8490  Tailwind CSS trong dự án thật
+  [Đồ thị và các thuật toán duyệt]
+    0,8706  Cấu trúc dữ liệu & giải thuật với Python
+    0,8443  Quy hoạch động qua 20 bài toán
+    0,8384  Luyện phỏng vấn thuật toán trong 30 ngày
+  [Pandas và NumPy cho xử lý dữ liệu]
+    0,8415  Tự động hóa công việc hằng ngày bằng Python
+    0,8191  Cấu trúc dữ liệu & giải thuật với Python
+  [Docker và Docker Compose cho môi trường phát triển]
+    0,8555  Xây dựng REST API với FastAPI
+    0,8271  Hệ điều hành: tiến trình, luồng và bộ nhớ
+
+Ba cụm (Python/dữ liệu, frontend, thuật toán, backend/hạ tầng) tự hiện ra từ
+chữ, không ai gán nhãn. Đây là cơ sở để tin vào **thứ tự** ở mục 1.
+
+==============================================================================
+3. HYBRID KÉM HƠN CF TRÊN CHỈ SỐ CỤM — NÓI THẲNG
+==============================================================================
+Cùng thước đo `interaction-seed.txt` đã dùng cho nửa collaborative: trong top-3
+của mỗi học viên, bao nhiêu khóa nằm đúng cụm sở thích họ được sinh ra trong
+đó. Ngẫu nhiên là 0,2500 (bốn cụm). 48 học viên, 144 thẻ.
+
+   collaborative: 120/144 = 0,8333 đúng cụm
+         content:  95/144 = 0,6597
+          hybrid: 116/144 = 0,8056      ← thấp hơn CF đơn thuần 2,8 điểm
+
+  top-3 đổi so với chỉ dùng collaborative: 40/48 người
+  nguồn các thẻ trong top-3 của hybrid: 144/144 là "collaborative+content"
+
+**Không tinh chỉnh trọng số để kéo con số này lên**, vì thước đo thiên vị CF
+một cách có hệ thống: dữ liệu giả lập được **sinh ra** từ chính cấu trúc cụm,
+nên "đúng cụm" thực chất là "khôi phục được bộ sinh", và CF đọc thẳng từ ma
+trận đồng xuất hiện — thứ chứa nguyên cấu trúc ấy. Content-based đo tương đồng
+chủ đề từ bản mô tả, vốn không trùng khít với nhãn cụm (khóa "Nhập môn học máy"
+xếp theo danh mục vào cụm khoa học máy tính nhưng về chữ thì gần Pandas).
+
+Chỉnh trọng số theo con số này sẽ là tối ưu cho bộ sinh dữ liệu giả, không phải
+cho người học. Việc đó thuộc về `eval_recommender.py` với tập held-out.
+
+==============================================================================
+4. THỨ CHỈ SỐ Ở MỤC 3 KHÔNG NHÌN THẤY
+==============================================================================
+**ĐÍNH CHÍNH 21/09/2026 — đọc trước khi dùng mục này.** Các con số dưới đây đo
+khi mỗi nửa đưa **10** ứng viên cho blend; job hằng đêm lúc đó đưa **20**
+(`top_n`). Ở độ sâu 20, cùng mô phỏng cho 15/24 khóa (không phải 24/24) và
+"Python cơ bản" chỉ tới **1/48** người (không phải 35/48): content-based cho mọi
+khóa cosine ≥ 0,747 nên top-20 của nó là cả catalogue, mọi khóa CF gợi ý đều có
+hai phần điểm RRF, và khóa mới — chỉ có một — luôn xếp sau. Tức là lợi thế
+cold-start mô tả ở đây **không có** trong cấu hình đang chạy khi ấy.
+`scripts/eval_recommender.py` tìm ra điều này (cold-start recall@5 = 0,000);
+sửa bằng `hybrid.FUSION_DEPTH = 5` → recall@5 0,626, warm gần như không đổi.
+Chi tiết, bảng tái tạo đúng từng con số dưới đây ở độ sâu 10, và luật chọn số
+5: `recommender-eval.txt` §2–§4. Chỉ số cụm 0,8056 ở mục 3 cũng đo ở độ sâu 20.
+
+Trên catalogue hiện tại, **0/24 khóa có ≤ 1 lượt ghi danh**, nên cả ba cách đều
+phủ 24/24 khóa và lợi thế cold-start vô hình. Vì vậy mô phỏng đúng cái ngày một
+khóa vừa xuất bản: với **từng** khóa một, gỡ mọi tương tác chạm tới nó (đúng
+trạng thái nó có lúc lên kệ), khớp lại mô hình CF, rồi hỏi cả hai nửa. Không ghi
+gì xuống CSDL.
+
+  mô phỏng 24 lần, mỗi lần một khóa vừa xuất bản (0 ghi danh)
+
+  số khóa mới lọt được top-10 của ít nhất một học viên:
+     collaborative:  0/24        ← không bao giờ, với bất kỳ ai
+           content: 24/24
+            hybrid: 24/24
+
+  số học viên (trên 48) thấy khóa mới trong top-10:
+    Python cơ bản cho người mới bắt đầu       cf=0  content=44  hybrid=35
+    React từ số 0: component, state và router cf=0  content=33  hybrid=21
+    Tailwind CSS trong dự án thật             cf=0  content=37  hybrid=26
+    TypeScript cho người đã viết JavaScript   cf=0  content=31  hybrid=23
+    JavaScript hiện đại: ES6+ và DOM          cf=0  content=14  hybrid=13
+
+**0/24 không phải là con số tinh chỉnh được.** Thông tin đơn giản không có
+trong ma trận: một khóa chưa ai học thì không đồng xuất hiện với bất cứ thứ gì,
+nên mọi trọng số, mọi hằng số k, mọi biến thể CF đều trả về nó ở đâu cũng không.
+
+Đây là cái giá đã trả và thứ mua được, nói gọn:
+  mất  2,8 điểm trên chỉ số cụm giả lập (0,8333 → 0,8056)
+  được khóa mới xuất bản đi từ "0 người thấy" lên "13–35 trong 48 người thấy",
+       với **mọi** khóa trong catalogue
+
+==============================================================================
+5. CHẠY THẬT ĐẦU-CUỐI
+==============================================================================
+  $ python -m scripts.rebuild_recommendations
+  Đã ghi gợi ý cho 48 người dùng (top 20 mỗi người).
+
+  redis> KEYS rec:v2:user:*      → 48 khóa, TTL 172787 s (~48 giờ)
+  redis> KEYS rec:v1:user:*      → 0   (khóa cache đã lên v2 vì hình dạng đổi)
+
+  {"generated_at": "2026-09-20T14:22:10.807580+00:00",
+   "items": [{"course_id": "5a45b325…", "score": 0.03252247488101534,
+              "because": "2077cc2d…", "sources": ["collaborative", "content"]},
+             …]}
+
+`0.032522…` = 1/61 + 1/62, đúng công thức ở mục 1 cho một khóa đứng hạng 1 ở cả
+hai danh sách.
+
+Hai học viên khác cụm, lấy qua HTTP thật (`GET /api/v1/recommendations?limit=4`):
+
+  [hocvien32 — cụm Python/dữ liệu]
+    0,032522  collaborative+content  Nhập môn học máy với scikit-learn
+                                     vì đã học: Tự động hóa công việc… Python
+    0,031250  collaborative+content  TypeScript cho người đã viết JavaScript
+    0,030886  collaborative+content  Cấu trúc dữ liệu & giải thuật với Python
+    0,030835  collaborative+content  Trực quan hóa dữ liệu với Matplotlib
+
+  [hocvien22 — cụm backend]
+    0,032522  collaborative+content  Redis: cache, hàng đợi và giới hạn truy cập
+                                     vì đã học: Docker và Docker Compose…
+    0,032522  collaborative+content  Kiểm thử backend với pytest
+    0,031025  collaborative+content  Cấu trúc dữ liệu & giải thuật với Python
+    0,030366  collaborative+content  React từ số 0: component, state và router
+
+==============================================================================
+6. PHƯƠNG ÁN DỰ PHÒNG: PHỔ BIẾN THEO DANH MỤC
+==============================================================================
+Tài khoản vừa đăng ký, chưa ghi danh khóa nào, lấy qua HTTP thật:
+
+  generated_at: null
+    0,0000  popular  Đồ thị và các thuật toán duyệt            12 học viên
+    0,0000  popular  JavaScript hiện đại: ES6+ và DOM          11 học viên
+    0,0000  popular  Thiết kế REST API và tài liệu OpenAPI     10 học viên
+    0,0000  popular  PostgreSQL cho lập trình viên ứng dụng    10 học viên
+
+Ba điều cố ý trong bốn dòng đó:
+
+* **`generated_at` vẫn là null.** Nó chỉ có một nghĩa — lần cuối một batch chạy
+  cho người này — và không có batch nào chạy cho một tài khoản mới tinh. Khối
+  có khóa học không làm thay đổi sự thật ấy.
+* **`score` = 0,0000 và `because` = null.** Phổ biến không phải điểm của mô
+  hình, và không được hóa trang thành điểm của mô hình. Không có khóa nào trong
+  lịch sử người đọc để trỏ tới, vì họ chưa có lịch sử.
+* **`sources` = `["popular"]`.** Trang biết đây là hàng lấp chỗ chứ không phải
+  thứ mô hình chọn, nên có thể gắn nhãn trung thực.
+
+Không phải một chế độ riêng mà là **hàng lấp chỗ**, chạy lúc phục vụ chứ không
+qua cache: một luật phủ cả ba cảnh — người mới batch chưa từng thấy, người mà
+mô hình không có gì để nói, và người có danh sách bị cắt ngắn bởi vòng kiểm tra
+lại (khóa đã bị gỡ, hoặc đã ghi danh sáng nay). Khối đầy tới `limit` ở cả ba.
+
+"Theo danh mục": thứ tự là **lĩnh vực trước, độ phổ biến sau**. Người chỉ học
+Python được phục vụ tốt hơn bởi khóa Python phổ biến thứ ba so với khóa phổ
+biến nhất nền tảng. Danh mục đọc từ `enrollments` chứ không từ cache, để người
+vừa ghi danh sáng nay đã có gu mà batch đêm qua chưa thấy.
+
+`courses.students_count` là cột denormalize (`scripts/rebuild_course_stats.py`
+dựng lại), nên đây là một lần đọc có index chứ không phải đếm trên `enrollments`.
+
+==============================================================================
+7. TEST
+==============================================================================
+  tests/test_hybrid.py                 12 pass — toàn bộ số học của RRF làm
+      tay: công thức, bất biến với độ lớn đầu vào, `sources`, `because` lấy từ
+      danh sách đóng góp nhiều nhất, trọng số 0 làm câm một nửa, hòa thì xếp
+      theo id, `limit` áp **sau** khi trộn
+  tests/test_content_based.py          29 pass (+8 cho `recommend_from_history`
+      và `load_vectors`)
+  tests/test_collaborative.py          22 pass (+3 cho `ItemModel.history`)
+  tests/test_recommendations.py        25 pass (+14: phổ biến, lấp chỗ, batch
+      trộn, vòng đời `sources` qua Redis)
+  tests/api/test_recommendations.py     7 pass
+
+Viết test trước, chạy thấy đỏ, rồi mới viết code.
+
+Toàn bộ backend: 1075 pass, 2 skip, 0 fail (10 phút 16 trên máy dev), so với
+1038 trước task này — 37 test mới.
+
+Sáu test cũ phải sửa vì **hành vi đổi có chủ đích**, không phải vì test sai:
+khối nay luôn được lấp đầy, nên test khẳng định `items == []` hoặc khẳng định
+trên toàn bộ `items` giờ chỉ khẳng định trên các thẻ của mô hình. Ghi lại ở đây
+vì đó đúng là chỗ một thay đổi lặng lẽ dễ lọt qua nhất.
+
+==============================================================================
+8. CÒN NỢ
+==============================================================================
+- `scripts/eval_recommender.py` (checkbox riêng): precision@k / recall@k trên
+  tập held-out. Đó mới là nơi trọng số 1,0/1,0 và k = 60 thôi là mặc định — và
+  nơi con số 0,8056 ở mục 3 được trả lời bằng một thước đo không thiên vị.
+- Khối "Gợi ý cho bạn" trên giao diện (checkbox riêng): API đã trả `sources`
+  sẵn để trang gắn nhãn hàng phổ biến cho trung thực.
+- Chưa đo thời gian chạy batch trên catalogue lớn. Hiện 48 người × 24 khóa là
+  tức thì; `load_vectors` đọc cả bảng vào bộ nhớ, và đó là thứ cần đo lại
+  trước khi catalogue tới cỡ vài nghìn khóa, chứ không phải sau.

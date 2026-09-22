@@ -250,3 +250,22 @@ def test_two_people_with_different_tastes_are_recommended_different_things():
 
     assert set(python_side) == {"p2", "p3"}
     assert set(design_side) == {"d2", "d3"}
+
+
+def test_the_model_can_hand_back_the_history_it_was_fitted_on(interactions):
+    """The hybrid's content-based half needs the same history this model used,
+    reduced the same way. Rebuilding it at the call site would be the
+    "strongest signal, not the sum" rule written down in two places."""
+    model = fit(interactions)
+
+    assert model.history("A") == {"x": 3, "y": 3}
+
+
+def test_the_history_handed_back_is_deduplicated_like_the_model_s_own(interactions):
+    doubled = [*interactions, Interaction(user_id="A", course_id="x", weight=1)]
+
+    assert fit(doubled).history("A") == {"x": 3, "y": 3}
+
+
+def test_a_stranger_has_an_empty_history():
+    assert fit([]).history("khong-ai") == {}

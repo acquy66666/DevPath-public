@@ -94,16 +94,27 @@ async def test_signing_in_is_required(api_client: AsyncClient, cache):
     assert response.status_code == 401
 
 
-async def test_a_new_account_is_told_nothing_has_been_computed_yet(
-    api_client: AsyncClient, cache, reader: User
+async def test_a_new_account_gets_popular_courses_and_is_told_so(
+    api_client: AsyncClient, cache, reader: User, catalogue: dict
 ):
-    """`generated_at: null` is the signal the hybrid of a later task answers
-    with popular courses. An empty list on its own would not say whether the
-    model had run."""
+    """The cold-start answer the plan asks for.
+
+    `generated_at: null` still means "no batch has run for you", and now the
+    block is filled anyway -- with courses every card marks `["popular"]`, so
+    the page never presents the fallback as if the model had chosen it.
+    """
     response = await api_client.get(URL, headers=await sign_in(api_client, reader))
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"items": [], "generated_at": None}
+    body = response.json()
+    assert body["generated_at"] is None
+    assert body["items"] != []
+    for card in body["items"]:
+        assert card["sources"] == ["popular"]
+        # Popularity is not a model score and there is no course in the
+        # reader's history to point at.
+        assert card["score"] == 0.0
+        assert card["because"] is None
 
 
 async def test_a_cached_list_comes_back_as_cards_with_a_reason(
@@ -119,6 +130,7 @@ async def test_a_cached_list_comes_back_as_cards_with_a_reason(
                     course_id=catalogue["suggested"].id,
                     score=1.75,
                     because=catalogue["history"].id,
+                    sources=("collaborative",),
                 )
             ],
         ),
@@ -130,9 +142,11 @@ async def test_a_cached_list_comes_back_as_cards_with_a_reason(
     body = response.json()
     assert datetime.fromisoformat(body["generated_at"]) == ran_at
 
-    [card] = body["items"]
+    card, *filler = body["items"]
+    assert all(one["sources"] == ["popular"] for one in filler)
     assert card["id"] == str(catalogue["suggested"].id)
     assert card["score"] == 1.75
+    assert card["sources"] == ["collaborative"]
     assert card["because"] == {
         "id": str(catalogue["history"].id),
         "title": catalogue["history"].title,
@@ -168,7 +182,7 @@ async def test_a_card_carries_no_answer_to_a_question_it_was_not_asked(
 
     response = await api_client.get(URL, headers=await sign_in(api_client, reader))
 
-    [card] = response.json()["items"]
+    card, *_ = response.json()["items"]
     assert "description" not in card
     assert "status" not in card
 
@@ -218,4 +232,35 @@ async def test_one_reader_s_cache_is_not_another_s(
 
     response = await api_client.get(URL, headers=await sign_in(api_client, stranger))
 
-    assert response.json() == {"items": [], "generated_at": None}
+    body = response.json()
+    assert body["generated_at"] is None
+    # Whatever the stranger sees is the public fallback, never the reader's
+    # own list -- which is the point of the test. Asserting on which courses
+    # are absent would instead assert on the seeded catalogue's popularity.
+    assert all(card["sources"] == ["popular"] for card in body["items"])
+
+
+async def test_a_card_says_which_halves_of_the_hybrid_chose_it(
+    api_client: AsyncClient, cache, reader: User, catalogue: dict
+):
+    """"Cả hai nửa đều gợi ý khóa này" is the claim the hybrid exists to be
+    able to make, so it has to survive as far as the page."""
+    cache.write(
+        reader.id,
+        CachedList(
+            generated_at=datetime.now(UTC),
+            items=[
+                CachedRecommendation(
+                    course_id=catalogue["suggested"].id,
+                    score=0.032,
+                    because=catalogue["history"].id,
+                    sources=("collaborative", "content"),
+                )
+            ],
+        ),
+    )
+
+    response = await api_client.get(URL, headers=await sign_in(api_client, reader))
+
+    card, *_ = response.json()["items"]
+    assert card["sources"] == ["collaborative", "content"]

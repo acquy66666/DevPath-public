@@ -437,3 +437,21 @@ Task "Content-based: embedding title+description+category cho mọi course → c
 **Endpoint công khai, và hai kiểu rỗng không gộp làm một.** Khóa công chúng không xem được trả 404; khóa xem được nhưng chưa có vector trả `items: []`. Trả `[]` cho trường hợp đầu sẽ thành lời khẳng định "không có khóa nào giống khóa này" — điều hệ thống không biết.
 
 **Thêm một lần chạy beat lúc 02:30 bên cạnh việc nhúng lúc publish.** `PATCH /courses/{id}` đổi tiêu đề và mô tả mà không đụng `status`, nên không có cái nút nào để treo job vào. Không có lần chạy đêm, một khóa sửa lời giới thiệu sẽ giữ mãi vector tả chữ cũ, và không có chỗ nào báo. Đêm bình thường tốn vài truy vấn và 0 lời gọi API.
+
+## Hệ lai: trộn hai nửa và phương án dự phòng (20/09/2026)
+
+Task "Hybrid blend + fallback" của Phase 4 tuần 10. Bằng chứng: `docs/report/assets/phase-4/hybrid-blend.txt`.
+
+**Trộn theo hạng, không theo điểm.** Đo trước khi viết code trộn: điểm collaborative chạy 0,0206–5,7892 (một **tổng**, lớn dần theo lượng lịch sử), cosine content-based chạy 0,7472–0,8923 với độ lệch chuẩn 0,0271. Không cùng thang, và nửa content-based cho **mọi** khóa ít nhất 0,747 trong khi nửa collaborative cho 0 với khóa không ai học cùng — cộng lại thì một khóa chẳng liên quan vượt một khóa có tín hiệu thật. Reciprocal Rank Fusion (Cormack–Clarke–Buettcher 2009, k = 60) chỉ dùng thứ tự, mà thứ tự thì đúng.
+
+**Trọng số hai nửa bằng nhau, và không chỉnh theo chỉ số hiện có.** Trên chỉ số "top-3 đúng cụm" của dữ liệu giả lập, hybrid được 0,8056 — **thấp hơn** collaborative đơn thuần (0,8333). Không tinh chỉnh để kéo lên, vì thước đo ấy thiên vị CF một cách có hệ thống: dữ liệu được *sinh ra* từ cấu trúc cụm, nên "đúng cụm" là "khôi phục được bộ sinh", mà CF đọc thẳng từ ma trận đồng xuất hiện chứa nguyên cấu trúc đó. Chỉnh theo nó là tối ưu cho bộ sinh dữ liệu giả. Việc đó thuộc `eval_recommender.py` với tập held-out.
+
+**Cái giá và thứ mua được, đo bằng số.** Mô phỏng từng khóa một ở trạng thái vừa xuất bản (gỡ mọi tương tác chạm tới nó, khớp lại CF): **0/24** khóa mới lọt được top-10 của bất kỳ ai với CF, **24/24** với hybrid, mỗi khóa tới được 13–35 trong 48 học viên. 0/24 không phải con số tinh chỉnh được — thông tin không có trong ma trận. Mất 2,8 điểm trên một chỉ số giả lập, được toàn bộ khả năng gợi ý khóa mới.
+
+**Dự phòng là hàng lấp chỗ, không phải chế độ riêng.** Một luật phủ cả ba cảnh: người mới batch chưa từng thấy, người mà mô hình không có gì để nói, và người có danh sách bị cắt ngắn bởi vòng kiểm tra lại. Chạy lúc phục vụ chứ không qua cache, vì một tài khoản đăng ký sau batch đêm qua không tồn tại lúc batch chạy.
+
+**Hàng phổ biến không hóa trang thành điểm của mô hình.** `score` = 0, `because` = null, `sources` = `["popular"]`. `generated_at` vẫn chỉ có một nghĩa — lần cuối batch chạy cho người này — nên vẫn null với tài khoản mới, dù khối đã có khóa học trong đó.
+
+**Danh mục đọc từ `enrollments`, không từ cache.** Người vừa ghi danh sáng nay đã có gu mà batch đêm qua chưa thấy.
+
+**`sources` đi tới tận API.** "Cả hai nửa đều gợi ý khóa này" là điều hệ lai tồn tại để nói được; một hệ lai không nói được nửa nào đã lên tiếng thì không ai kiểm được.

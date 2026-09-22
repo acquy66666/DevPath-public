@@ -4,6 +4,10 @@ Thành phần: celery beat (container `beat`) → task
       `app.workers.recommendations.rebuild_recommendations` trên queue mặc
       định `celery` → worker `media,celery` → Redis → `GET /api/v1/recommendations`
 
+[GHI CHÚ 20/09/2026] Tiền tố cache đã lên `rec:v2:user:*` khi mỗi mục mang
+thêm trường `sources` của hệ lai. Mọi số đo dưới đây giữ nguyên như lúc đo,
+với tiền tố v1 của ngày hôm đó. Số đo của hệ lai: `hybrid-blend.txt`.
+
 Vì sao tính offline: dựng ma trận tương đồng item-item phải đọc **toàn bộ**
 lượt đăng ký của nền tảng. Một đêm một lần thì hợp lý; mỗi lần tải trang một
 lần thì vô lý. Trang chỉ đọc cache.

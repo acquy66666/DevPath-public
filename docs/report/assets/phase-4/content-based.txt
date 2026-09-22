@@ -12,8 +12,11 @@ Cách tái tạo:
   .venv\Scripts\python.exe -m pytest tests/test_content_based.py tests/api/test_similar_courses.py
 
 ==============================================================================
-0. ĐIỀU CHƯA ĐO ĐƯỢC — NÓI TRƯỚC
+0. ĐIỀU CHƯA ĐO ĐƯỢC — NÓI TRƯỚC  [ĐÃ XONG 20/09/2026, xem mục 2]
 ==============================================================================
+Mục này viết lúc chưa có key. Key được dán lại cùng ngày và lần chạy thật đã
+diễn ra — số liệu ở mục 2. Giữ nguyên đoạn dưới để ghi lại chuyện đã xảy ra.
+
 **Chưa có lần chạy thật với key Gemini.** Ngày 20/09 phát hiện `infra/.env`
 trùng byte-for-byte với `infra/.env.example` (cùng 3503 byte, cùng mốc
 19/09/2026 16:07), nghĩa là dòng `GEMINI_API_KEY=` đang rỗng — key ghi trong
@@ -72,15 +75,44 @@ trùng một câu văn xuôi. Cắt ở khoảng trắng gần nhất, vì một
 một token model chưa từng thấy.
 
 ==============================================================================
-2. CHẠY THẬT VỚI KEY GEMINI — CHƯA CÓ
+2. CHẠY THẬT VỚI KEY GEMINI (20/09/2026)
 ==============================================================================
-Chờ key. Khi có, hai lệnh và hai con số cần ghi vào đây:
-
   $ python -m scripts.rebuild_course_embeddings
-  $ python -m scripts.rebuild_course_embeddings      # lần hai, ngay sau đó
+  Đã nhúng 24 khóa học (0 khóa không đổi, không tốn quota)
+  bằng model gemini-embedding-001.
 
-Lần hai phải là "0 khóa nhúng, 24 khóa không đổi" — cùng cơ chế đã chứng minh
-với ingest (`rag-ingest.txt` mục 1), xem mục 5 dưới đây.
+  $ python -m scripts.rebuild_course_embeddings      # lần hai, ngay sau đó
+  Đã nhúng 0 khóa học (24 khóa không đổi, không tốn quota)
+  bằng model gemini-embedding-001.
+
+**Lần hai không tốn một lần gọi API nào**, đúng như dự đoán ở mục 5 — cùng cơ
+chế đã chứng minh với ingest (`rag-ingest.txt` mục 1).
+
+Láng giềng trên dữ liệu thật (cosine, top-3 của năm khóa lấy ngẫu nhiên):
+
+  [Python cơ bản cho người mới bắt đầu]
+    0,8675  Cấu trúc dữ liệu & giải thuật với Python
+    0,8647  Python nâng cao: decorator, generator và context manager
+    0,8590  Nhập môn học máy với scikit-learn
+  [React từ số 0: component, state và router]
+    0,8638  Next.js: render phía máy chủ và tối ưu tốc độ
+    0,8508  HTML/CSS hiện đại: Flexbox, Grid và responsive
+    0,8490  Tailwind CSS trong dự án thật
+  [Đồ thị và các thuật toán duyệt]
+    0,8706  Cấu trúc dữ liệu & giải thuật với Python
+    0,8443  Quy hoạch động qua 20 bài toán
+    0,8384  Luyện phỏng vấn thuật toán trong 30 ngày
+
+Các cụm chủ đề tự hiện ra từ chữ, không ai gán nhãn.
+
+**Nhưng giá trị tuyệt đối thì không mang nghĩa.** Trên toàn bộ 552 cặp khóa:
+
+  min 0,7472   max 0,8923   trung bình 0,7989   độ lệch chuẩn 0,0271
+
+Mọi cặp khóa học trên nền tảng đều "giống nhau ít nhất 0,747" — hai bản mô tả
+khóa học tiếng Việt không bao giờ nằm xa nhau trong không gian embedding. Thứ
+dùng được là **thứ hạng**, không phải con số; đó là lý do hệ lai trộn theo hạng
+chứ không theo điểm (`hybrid-blend.txt` mục 1).
 
 ==============================================================================
 3. THỨ HẠNG COSINE — POSTGRES TỰ TÍNH, KIỂM ĐƯỢC BẰNG TAY
@@ -247,7 +279,7 @@ phải đúng 2), các test còn lại giới hạn bằng `course_ids`. Cùng q
 ==============================================================================
 8. CÒN NỢ
 ==============================================================================
-- Chạy thật với key Gemini (mục 2) — chờ `GEMINI_API_KEY` trong `infra/.env`.
+- ~~Chạy thật với key Gemini~~ — xong 20/09/2026, mục 2.
 - Khối "Khóa học tương tự" trên giao diện: checkbox riêng trong kế hoạch tuần
   10, chưa làm. Endpoint đã sẵn sàng.
 - Hybrid blend (content-based + collaborative + fallback phổ biến): checkbox

@@ -106,7 +106,7 @@ frontend` là đủ.
 ==============================================================================
 4. CHƯA ĐO, NÓI THẲNG
 ==============================================================================
-* **Chưa nhìn hai khối cần đăng nhập trên trình duyệt** ("Gợi ý cho bạn" ở trang
+* **[XONG 22/09 — `recommendations-demo.txt`, 3 ảnh .jpg]** ~~Chưa nhìn hai khối cần đăng nhập trên trình duyệt~~ ("Gợi ý cho bạn" ở trang
   chủ, "Học tiếp theo" ở trang học). Đã kiểm: dữ liệu qua đúng endpoint (mục 2),
   `tsc --noEmit` và `eslint` sạch. Chưa kiểm: hình dạng thật trên màn hình. Lý do:
   đăng nhập trên trình duyệt cần gõ mật khẩu tài khoản seed, và việc đưa phiên

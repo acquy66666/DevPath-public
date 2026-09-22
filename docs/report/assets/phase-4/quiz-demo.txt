@@ -1,0 +1,158 @@
+DEMO GATE PHASE 4: SINH QUIZ TỪ MỘT BÀI GIẢNG THẬT → GIẢNG VIÊN DUYỆT → HỌC VIÊN LÀM
+Ngày: 22/09/2026 · máy dev · Chrome của người dùng (Claude in Chrome), cửa sổ 1536 px
+      Sinh lúc 11:57, duyệt + xuất bản 16:18–16:19, học viên làm 16:25–16:26 (giờ
+      Việt Nam; khoảng trống giữa là lúc chờ người dùng quay lại, không phải lúc app chạy)
+Giảng viên: khoa.tran@devpath.example (Trần Minh Khoa), chủ khóa
+      "Python cơ bản cho người mới bắt đầu"
+Học viên:  hocvien07@seed.devpath.example (Phan Chi), đã ghi danh khóa đó
+      Người dùng đăng nhập bằng tay từng tài khoản; đổi tài khoản bằng "Đăng xuất"
+      trong menu người dùng
+Model: gemini-3.5-flash-lite (GEMINI_QUIZ_MODEL), Gemini thật, free tier
+
+Bài nguồn: VIDEO "Vòng lặp for và range" (chương 3, bài 2). Chữ của nó là transcript
+      `videos/520ea003-…/transcript.txt` trên MinIO, do `scripts.seed_transcripts` đưa
+      lên qua đúng `put_transcript` (hàm của `PUT /lessons/{id}/transcript`).
+      Chọn video chứ không chọn bài viết vì `quiz-generation.txt` §8 ghi "chưa sinh từ
+      transcript video trên dữ liệu thật", tức đường đó mới chỉ được test bằng
+      FakeStorage. Lần này nó chạy thật.
+
+Ảnh (chụp trong Chrome, lưu nguyên độ phân giải 1536–1568 × 674–688):
+  quiz-ai-drafts.jpg            panel "Sinh câu hỏi bằng AI" sau khi sinh, câu 1–2 "AI soạn · chờ duyệt"
+  quiz-ai-publish-blocked.jpg   câu 5 nguyên bản của AI, nút xuất bản bị khóa, "Còn 5 câu AI soạn chưa duyệt."
+  quiz-ai-edit-q5.jpg           form sửa câu 5 (mục 3)
+  quiz-ai-published.jpg         "Đang xuất bản · 5 câu · Sinh bằng AI", câu hỏi đã bị khóa
+  quiz-student-attempt.jpg      học viên đang làm, "Đã trả lời 5/5 câu"
+  quiz-student-result.jpg       kết quả 80 %, "Đạt — cần 70% và bạn làm được 80%."
+  quiz-student-wrong-answer.jpg câu 3 trả lời sai: "bạn chọn" / "đáp án đúng" kèm lời giải thích
+
+==============================================================================
+1. CHUỖI THAO TÁC
+==============================================================================
+Giảng viên (trình soạn /giang-day/{courseId}):
+  a. Chương 3 → "Thêm bài học" → "Kiểm tra: vòng lặp for", loại Trắc nghiệm → mở bài
+     → "Tạo bài trắc nghiệm". Quiz mới: nháp, không tính giờ, điểm đạt 70 %.
+  b. Panel sinh câu hỏi tự chọn sẵn bài đọc được gần nhất đứng trước quiz, lần này là
+     VIDEO "break, continue và vòng lặp lồng nhau (video — đọc transcript)". Danh sách
+     chọn có đủ 12 video có transcript, mỗi video ghi rõ "(video — đọc transcript)".
+     Đổi sang "Vòng lặp for và range", để 5 câu, bấm "Sinh câu hỏi".
+  c. `POST /quizzes/{id}/generate` trả sau 3 045 ms (Resource Timing của trình duyệt).
+     5 câu vào danh sách, mỗi câu nhãn "AI soạn · chờ duyệt". Không câu nào bị loại.
+     Nút "Xuất bản cho học viên" disabled, kèm "Còn 5 câu AI soạn chưa duyệt."
+  d. Đọc từng câu, đối chiếu với transcript (mục 2). Bấm Duyệt câu 1–4: dòng chữ đổi
+     thành "Còn 1 câu AI soạn chưa duyệt.", nút vẫn khóa. SỬA câu 5 rồi "Lưu câu hỏi"
+     (mục 3): nút mở khóa. Bấm xuất bản: panel sinh câu hỏi biến mất, và trình soạn báo
+     "Câu hỏi bị khóa khi bài đang xuất bản".
+
+Học viên (trang học /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai={lessonId}):
+  e. Thấy "Bài trắc nghiệm · 5 câu · Không giới hạn thời gian · Đạt từ 70%". Học viên
+     không thấy nhãn "AI soạn", vì nhãn đó chỉ dành cho người duyệt.
+  f. "Bắt đầu làm bài" → trả lời 5 câu, CỐ Ý chọn sai câu 3 (mục 4) → "Nộp bài".
+  g. Kết quả: 80 %, Đạt. Mỗi câu có dấu đúng/sai, "đáp án đúng" và "bạn chọn", cùng lời
+     giải thích. Thanh tiến độ khóa 1/18 → 2/18 bài: đạt quiz thì bài quiz tự hoàn thành.
+
+==============================================================================
+2. NĂM CÂU AI SOẠN, ĐỐI CHIẾU VỚI TRANSCRIPT (em chấm tay từng câu)
+==============================================================================
+Tài liệu gửi cho model: 1 581 ký tự, không bị cắt (MATERIAL_MAX_CHARS = 24 000). Đọc
+lại bằng chính `_material_of` của app trong container backend trước khi sinh, và
+không tốn quota.
+Dấu * là đáp án của model. Thứ tự phương án là thứ tự đã xáo, đúng như lưu trong CSDL.
+
+Câu 1. Khi sử dụng hàm range với một đối số duy nhất là `range(5)`, các số được sinh ra là gì?
+        1, 2, 3, 4 / 0, 1, 2, 3, 4, 5 / 1, 2, 3, 4, 5 / * 0, 1, 2, 3, 4
+  ĐÚNG. Bài nói: "range(5) sinh ra 0, 1, 2, 3, 4: bắt đầu từ 0 và dừng TRƯỚC 5".
+  Ba phương án nhiễu lệch một ở đầu, ở cuối, hoặc ở cả hai. Nhiễu tốt.
+
+Câu 2. Để đếm từ 1 đến 10 khi sử dụng hàm range, bạn cần viết như thế nào?
+        * range(1, 11) / range(10) / range(0, 10) / range(1, 10)
+  ĐÚNG. Bài nói: "Muốn đếm từ 1 đến 10 thì viết range(1, 11)". `range(1, 10)` chính là
+  lỗi mà bài dặn tránh ("giá trị dừng không bao giờ được lấy"). Câu tốt nhất trong 5.
+
+Câu 3. Khi cần lấy cả vị trí lẫn giá trị trong một danh sách khi duyệt vòng lặp, bạn nên dùng cấu trúc nào?
+        range(start) / * enumerate / append / range(len(ds))
+  ĐÚNG theo chữ "nên". Bài nói: "đừng viết for i in range(len(ds)) rồi ds[i]. Dùng
+  enumerate". `range(len(ds))` vẫn CHẠY ĐƯỢC, nhưng bài khuyên tránh, và câu hỏi hỏi
+  "nên dùng" nên đáp án vẫn bảo vệ được. Có hai phương án yếu: `range(start)` không có
+  trong bài, còn `append` không liên quan gì tới việc lấy vị trí.
+
+Câu 4. Biến dùng để cộng dồn trong vòng lặp nên được khởi tạo ở đâu?
+        Bên trong vòng lặp / * Bên ngoài vòng lặp / Trong hàm range / Ngay trước lệnh print
+  ĐÚNG. Bài nói: "khởi tạo biến cộng dồn BÊN NGOÀI vòng lặp". "Bên trong vòng lặp" là
+  cái bẫy bài nêu tên, nhưng "Trong hàm range" thì vô nghĩa và loại được ngay.
+
+Câu 5 (bản AI). Khi nào thì bạn nên ưu tiên sử dụng vòng lặp for?
+        * Khi biết trước sẽ đi qua những gì, như một danh sách có sẵn hoặc số lần cố định
+          Khi cần sử dụng bước nhảy bằng không
+          Khi lặp với điều kiện không biết trước
+          Khi muốn xóa phần tử của danh sách đang duyệt
+  ĐÚNG, nhưng có hai lỗi làm câu hỏi dễ hơn mức cần:
+   - Đáp án dài 79 ký tự, ba phương án còn lại 36–45 ký tự. Người làm chỉ cần chọn
+     "câu dài nhất" là trúng, không cần hiểu bài.
+   - "Bước nhảy bằng không" không có trong bài. `range` với bước 0 là ValueError, nên
+     đây là phương án ngoài tài liệu.
+  → Sửa (mục 3).
+
+Tổng kết: 5/5 đáp án đúng, 0 câu bị loại khi kiểm hình dạng, `key_warning` = false cả
+5 câu (tính lại bằng `explanation_points_elsewhere` trên dữ liệu đã lưu, khớp với việc
+UI không hiện cảnh báo vàng nào). Mọi câu đều hỏi đúng thứ có trong bài, không câu nào
+hỏi kiến thức ngoài bài. Độ phủ: range một đối số, range hai đối số, enumerate, cộng
+dồn, for hay while. Bỏ sót: bước nhảy âm `range(10, 0, -1)`, và lời khuyên không sửa
+danh sách đang duyệt (chỉ xuất hiện làm phương án nhiễu ở câu 5).
+Vị trí đáp án đúng sau khi xáo: 3, 0, 1, 1, 0.
+
+So với lần đo 19/09 (`quiz-generation.txt` §4): cùng các kiểu yếu đã ghi cho flash-lite,
+là phương án nhiễu vô lý (câu 3, 4) và câu hỏi sát chữ trong bài. Có thêm một kiểu mới
+mà 60 câu lần trước chưa ghi: gợi ý bằng độ dài đáp án (câu 5). Máy không bắt được kiểu
+này, người duyệt thì thấy ngay. Việc duyệt được làm cho đúng lý do đó.
+
+==============================================================================
+3. SỬA CÂU 5 KHI DUYỆT
+==============================================================================
+  Phương án 1 (đáp án): "Khi biết trước sẽ đi qua những gì, như một danh sách có sẵn
+                         hoặc số lần cố định"  →  "Khi biết trước sẽ đi qua những gì"
+  Phương án 2:          "Khi cần sử dụng bước nhảy bằng không"
+                         →  "Chỉ khi duyệt một chuỗi ký tự"   (sai: for duyệt cả danh sách, range)
+  Giữ nguyên câu hỏi, phương án 3–4, đáp án và lời giải thích.
+Sau khi sửa, bốn phương án dài 29–45 ký tự (đáp án 33), và cả bốn đều bám nội dung bài. Lưu câu hỏi
+= duyệt câu đó: `reviewed_at` được đặt lúc lưu, nhãn đổi thành "AI soạn · đã duyệt".
+
+==============================================================================
+4. CSDL SAU DEMO
+==============================================================================
+quizzes 3c05bbbb-…: is_published = t, ai_generated = t, pass_score = 70, time_limit_s = NULL
+
+ pos | đáp án lưu                         | ai | reviewed_at (UTC) | sửa?
+   0 | 0, 1, 2, 3, 4                      | t  | 09:18:00          | duyệt
+   1 | range(1, 11)                       | t  | 09:18:01          | duyệt
+   2 | enumerate                          | t  | 09:18:02          | duyệt
+   3 | Bên ngoài vòng lặp                 | t  | 09:18:03          | duyệt
+   4 | Khi biết trước sẽ đi qua những gì  | t  | 09:18:59          | sửa (options đúng như mục 3)
+Câu hỏi được tạo lúc 04:57:16 UTC, ngay sau khi bấm Sinh (04:57:12 theo đồng hồ trình duyệt).
+
+quiz_attempts (hocvien07): answers = [3, 0, 3, 1, 0], score = 80, expired = f,
+  started 09:25:25 → submitted 09:26:10 (45 s)
+  Chỗ sai duy nhất là câu 3: chọn 3 (`range(len(ds))`), đáp án là 1 (`enumerate`).
+  Em chọn sai cố ý, và chọn đúng phương án nhiễu hợp lý nhất, để ảnh kết quả có cả
+  câu đúng lẫn câu sai kèm lời giải thích.
+lesson_progress của bài quiz: completed_at = 09:26:10.459, trùng đến micro giây với
+  lúc nộp, nên việc hoàn thành bài được ghi trong cùng transaction với việc chấm điểm.
+
+==============================================================================
+5. GHI NHẬN KHI CHẠY
+==============================================================================
+* Dấu backtick hiện nguyên văn: câu 1 hiển thị "`range(5)`" với hai dấu ` ở cả trang
+  giảng viên lẫn trang học viên. Nguyên nhân là prompt và UI không khớp nhau: quy tắc 6
+  của prompt (`services/quiz_generation.py`) bảo model "mã đặt trong dấu backtick",
+  còn `quiz-workspace.tsx` in câu hỏi dưới dạng chữ trơn. Model cũng không làm đều tay:
+  câu 2 viết range(1, 11) không có backtick. Trong CSDL có 1/10 câu mang backtick (5 câu
+  của quiz 19/09 thì không câu nào). Chuyện này không làm sai đáp án, và người duyệt có
+  thể xóa hai dấu ấy khi sửa. Ghi cho mục "Sửa bug UX tồn đọng" của Phase 6: hoặc render
+  inline code ở câu hỏi/phương án/lời giải thích, hoặc bỏ quy tắc 6.
+* Chưa đo cảnh transcript dài hơn MATERIAL_MAX_CHARS (tài liệu bị cắt ở một đoạn và
+  giảng viên được báo). Mọi transcript seed đều dưới 2 600 ký tự, nên đường đó vẫn mới
+  chỉ được kiểm bằng test.
+* Tệp .srt mang thẻ <i> và cue lặp (1-0.srt, "Biến và phép gán") không được chọn làm bài
+  nguồn. Đường bóc chữ SRT đã chạy thật lúc ingest (`transcript-ingest.txt`), và quiz đi
+  qua đúng `transcript_of` ấy.
+* Tab Chrome bị ẩn (người dùng đang ở tab khác) thì `Page.captureScreenshot` hết giờ
+  sau 30 s, còn đọc DOM vẫn được. Chỉ chụp được khi tab được đưa lên trước.

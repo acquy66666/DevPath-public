@@ -1,0 +1,95 @@
+DEMO GATE PHASE 4: TRỢ GIẢNG AI TRẢ LỜI ĐÚNG KÈM NGUỒN, TỪ CHỐI NGOÀI PHẠM VI
+Ngày: 22/09/2026, 09:57–09:59 giờ Việt Nam · máy dev · Gemini thật
+      (`gemini-3.5-flash-lite`, nhúng `gemini-embedding-001`)
+Người hỏi: hocvien07@seed.devpath.example — học viên đã ghi danh, đăng nhập bằng tay
+      trên trình duyệt (khung trình duyệt của app Claude), không qua script
+Nơi hỏi: trang học /hoc/python-co-ban-cho-nguoi-moi-bat-dau → tab "Trợ giảng AI"
+      → "Cuộc trò chuyện mới"; câu hỏi gõ vào ô chat và bấm nút gửi
+Khóa: "Python cơ bản cho người mới bắt đầu" — 20 chunk trong `doc_chunks`
+Phiên: chat_sessions.id = e01ecc3d-526d-4e99-a807-118d6b9670e3
+
+Khác với `chatbot-eval.md` (script gọi thẳng `prepare_answer`/`answer_events`):
+đây là đường đầy đủ của một học viên — trình duyệt → `POST /chat-sessions/{id}/
+messages` → SSE → giao diện hiển thị, rồi lưu vào CSDL.
+
+Bốn câu lấy từ bộ đánh giá, đều đạt 3/3 lượt ở `chatbot-eval.md`:
+q03 và q13 trong phạm vi, q16 lạc đề hẳn, q19 "gần mà ngoài" (một ngôn ngữ lập
+trình khác — loại dễ trả lời nhầm nhất).
+
+==============================================================================
+1. NGUYÊN VĂN — LẤY TỪ chat_messages (đúng thứ học viên thấy)
+==============================================================================
+--- học viên @ 09:57:32
+range(1, 10, 2) sinh ra những số nào?
+--- trợ giảng @ 09:57:35 | nguồn: Vòng lặp for và range
+Hàm `range(1, 10, 2)` sinh ra các số `1, 3, 5, 7, 9` với bước nhảy là 2 [1].
+
+--- học viên @ 09:58:27
+Vì sao input() + 1 bị lỗi, sửa thế nào?
+--- trợ giảng @ 09:58:29 | nguồn: Ép kiểu và những cái bẫy quen thuộc
+`input()` luôn trả về chuỗi [2]. Khi bạn thực hiện phép tính `input() + 1`,
+Python sẽ báo lỗi vì không thể cộng một chuỗi với một số [2].
+
+Cách sửa lỗi là ép kiểu dữ liệu trả về từ `input()` sang số nguyên bằng `int()`
+hoặc số thực bằng `float()` trước khi thực hiện phép cộng, ví dụ:
+`int(input()) + 1` [2].
+
+--- học viên @ 09:58:43
+Thủ đô của nước Úc là thành phố nào?
+--- trợ giảng @ 09:58:45 | nguồn: —
+Nội dung này nằm ngoài phạm vi tài liệu của khóa học.
+
+Bạn hãy đặt câu hỏi về các chủ đề có trong khóa học Python cơ bản như: biến,
+kiểu dữ liệu, toán tử, câu lệnh điều kiện, vòng lặp, hàm hoặc các thông báo lỗi
+nhé!
+
+--- học viên @ 09:58:57
+Chương trình Hello World trong Java viết thế nào?
+--- trợ giảng @ 09:59:00 | nguồn: —
+Nội dung này nằm ngoài phạm vi tài liệu của khóa học.
+
+Bạn hãy đặt câu hỏi về các chủ đề có trong khóa học Python cơ bản như: viết
+chương trình đầu tiên với `print`, biến, f-string, hàm hoặc cách cài đặt Python
+nhé!
+
+==============================================================================
+2. ĐỐI CHIẾU
+==============================================================================
+Trả lời đúng, và đúng vì tài liệu nói vậy — so với chính chunk được trích:
+  * "Vòng lặp for và range", chunk 0: chứa nguyên văn cả `range(1, 10, 2)` lẫn
+    `1, 3, 5, 7, 9`.
+  * "Ép kiểu và những cái bẫy quen thuộc", chunk 0: "`input()` luôn trả về
+    chuỗi … `input("Tuổi: ") + 1` không cộng được, vì bạn đang cộng một chuỗi
+    với một số", kèm `int("12")` và "phải qua `float`". Riêng `int(input()) + 1`
+    **không có nguyên văn** — model ghép từ hai ý của tài liệu. Đó đúng loại ví
+    dụ `chatbot-eval.txt` đã chốt là cho phép ("ví dụ mã ghép từ tài liệu, câu
+    dẫn phải ghi nguồn"), và câu dẫn có [2].
+
+Từ chối lịch sự, không bịa nguồn:
+  * cả hai câu từ chối mở đầu bằng đúng câu `REFUSAL_OPENING`, rồi gợi ý chủ đề
+    **có** trong khóa — lời gợi ý khác nhau theo câu hỏi (câu Java được gợi ý
+    `print`/cài đặt Python, gần với ý người hỏi hơn);
+  * `cited_lesson_ids` của hai câu từ chối là mảng rỗng; trên giao diện không
+    có khối "Nguồn trong khóa học" dưới chúng.
+
+Nguồn mở được bài: bấm số [1] trong câu trả lời đầu → trang học chuyển sang bài
+"Vòng lặp for và range" (`?bai=4ea7d048-…`), khung chat vẫn mở nguyên với cả
+bốn lượt hỏi. Nhãn nút đọc được bằng trình đọc màn hình: "Nguồn 1: mở bài
+“Vòng lặp for và range”".
+
+Thời gian: câu hỏi được lưu → câu trả lời được lưu 2–3 giây (09:57:32 → :35,
+09:58:27 → :29, 09:58:43 → :45, 09:58:57 → 09:59:00), khớp trung vị 2,1 s của
+`chatbot-eval.md`.
+
+==============================================================================
+3. GHI NHẬN KHI CHẠY
+==============================================================================
+* Phím Enter không gửi câu hỏi trong ô chat (là `textarea`); phải bấm nút gửi.
+  Câu đầu gửi bằng nút; lần thử Enter ở câu hai không gửi gì, không mất chữ.
+  Không phải lỗi chặn demo, nhưng người dùng chat quen Enter-để-gửi — ghi lại
+  để cân nhắc ở Phase 6 (UX), không sửa trong gate.
+* Ảnh chụp: khung trình duyệt của app chụp được để xem nhưng không lưu được ra
+  tệp, và trình duyệt tự động (Playwright) không có phiên đăng nhập (đăng nhập
+  bằng mật khẩu phải do người dùng làm). Nên bằng chứng chính là nguyên văn ở
+  mục 1, lấy từ CSDL. Ảnh `chatbot-demo-ui.png` — **chưa có**, cần chụp tay
+  (Win+Shift+S) từ chính phiên này nếu báo cáo cần hình.

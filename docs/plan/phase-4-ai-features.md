@@ -50,7 +50,8 @@ Từ đợt rà tồn đọng ngày 18/09. Vì sao từng dòng tồn tại và 
 
 ## Gate cuối phase
 
-- [ ] Demo: hỏi chatbot nội dung có trong khóa học → trả lời đúng kèm nguồn; hỏi ngoài phạm vi → từ chối lịch sự
+- [x] Demo: hỏi chatbot nội dung có trong khóa học → trả lời đúng kèm nguồn; hỏi ngoài phạm vi → từ chối lịch sự — 22/09 trên trình duyệt, `hocvien07` đăng nhập tay: `range(1, 10, 2)` và `input() + 1` trả lời đúng, mỗi câu trích đúng một bài (đối chiếu với chính chunk được trích); thủ đô Úc và Hello World Java bị từ chối bằng đúng `REFUSAL_OPENING`, không gắn nguồn; bấm [1] mở đúng bài, khung chat giữ nguyên; 2–3 s mỗi câu — `docs/report/assets/phase-4/chatbot-demo.txt`
+  - Để lại: ảnh `chatbot-demo-ui.png` phải chụp tay (khung trình duyệt của app không lưu ảnh ra tệp); phím Enter không gửi câu hỏi — ghi cho Phase 6
 - [ ] Demo: 2 user sở thích khác nhau thấy gợi ý khác nhau
 - [x] Precision@k / recall@k đo được, script tái tạo được — `recommender-eval.md` + `.txt`, lệnh tái tạo ở đầu tệp, chạy lại trùng từng byte trừ dòng ngày giờ
 - [ ] Sinh quiz từ 1 bài giảng thật, instructor duyệt và học viên làm được

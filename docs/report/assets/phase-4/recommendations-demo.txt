@@ -1,0 +1,101 @@
+DEMO GATE PHASE 4: HAI HỌC VIÊN SỞ THÍCH KHÁC NHAU THẤY GỢI Ý KHÁC NHAU
+Ngày: 22/09/2026, 10:10–10:16 giờ Việt Nam · máy dev · Chrome của người dùng
+      (Claude in Chrome), cửa sổ 1536 px — bố cục desktop
+Người học: hocvien01@seed.devpath.example (Nguyễn An) và
+      hocvien25@seed.devpath.example (Nguyễn Khánh) — người dùng đăng nhập bằng
+      tay từng tài khoản; đổi tài khoản bằng "Đăng xuất" trong menu người dùng
+Nơi xem: trang chủ /, khối "Gợi ý cho bạn" (4 thẻ); và trang học của một khóa
+      đã hoàn thành, khối "Học tiếp theo" (3 thẻ)
+Cache: `rec:v2`, sinh lúc 22/09 02:54 UTC bởi job hằng đêm — sau khi
+      `FUSION_DEPTH = 5` có hiệu lực (`recommender-eval.txt`)
+
+Ảnh (chụp trong Chrome, lưu nguyên độ phân giải 1568×688):
+  recommendations-hocvien01.jpg   khối "Gợi ý cho bạn" của hocvien01
+  recommendations-hocvien25.jpg   khối "Gợi ý cho bạn" của hocvien25
+  next-courses-hocvien01.jpg      khối "Học tiếp theo" dưới khóa React đã xong
+
+==============================================================================
+1. HAI LỊCH SỬ HỌC — HAI CỤM KHÁC NHAU
+==============================================================================
+hocvien01 (cụm frontend):
+  JavaScript hiện đại: ES6+ và DOM
+  Next.js: render phía máy chủ và tối ưu tốc độ        [hoàn thành]
+  React từ số 0: component, state và router            [hoàn thành]
+  Tailwind CSS trong dự án thật
+
+hocvien25 (cụm Python / dữ liệu):
+  Nhập môn học máy với scikit-learn                    [hoàn thành]
+  Pandas và NumPy cho xử lý dữ liệu
+  Python cơ bản cho người mới bắt đầu                  [hoàn thành]
+  Tự động hóa công việc hằng ngày bằng Python
+
+Không có khóa chung.
+
+==============================================================================
+2. "GỢI Ý CHO BẠN" — ĐÚNG THỨ TRANG HIỂN THỊ
+==============================================================================
+Dòng lý do in trên mỗi thẻ lấy từ `because`; cột `sources` lấy từ cùng
+`GET /api/v1/recommendations?limit=4` mà trang gọi (trang không in nó ra).
+
+hocvien01                                              lý do trên thẻ ("Vì bạn đã học …")      sources
+  1. HTML/CSS hiện đại: Flexbox, Grid và responsive    Next.js: render phía máy chủ…           collaborative + content
+  2. TypeScript cho người đã viết JavaScript           JavaScript hiện đại: ES6+ và DOM        collaborative + content
+  3. Python cơ bản cho người mới bắt đầu               JavaScript hiện đại: ES6+ và DOM        collaborative + content
+  4. PostgreSQL cho lập trình viên ứng dụng            React từ số 0…                          collaborative + content
+
+hocvien25
+  1. Python nâng cao: decorator, generator và …        Pandas và NumPy cho xử lý dữ liệu       collaborative + content
+  2. Trực quan hóa dữ liệu với Matplotlib              Pandas và NumPy cho xử lý dữ liệu       collaborative + content
+  3. TypeScript cho người đã viết JavaScript           Nhập môn học máy với scikit-learn       collaborative + content
+  4. Cấu trúc dữ liệu & giải thuật với Python          Nhập môn học máy với scikit-learn       content
+
+Câu mô tả khối (cả hai): "Dựa trên các khóa bạn đã học và lựa chọn của những
+học viên giống bạn." — đúng nhánh "có gợi ý riêng", vì không thẻ nào là hàng
+phổ biến lấp chỗ.
+
+Đọc:
+* **Khác nhau ở 3/4 thẻ**, và khác theo đúng hướng: người học frontend được đưa
+  sang HTML/CSS và TypeScript; người học dữ liệu được đưa sang Python nâng cao
+  và Matplotlib. Mọi lý do trên thẻ là một khóa có trong chính lịch sử ở mục 1.
+* **Thẻ trùng duy nhất: TypeScript**, ở hạng 2 của hocvien01 (hợp lý) và hạng
+  3 của hocvien25 (lạc cụm). Với hocvien25 nó được cả hai nửa ủng hộ, với lý do
+  "Nhập môn học máy" — dấu vết của phần nhiễu cố ý trong dữ liệu giả lập
+  (`NOISE_PROBABILITY = 0,40` ở `seed_interactions.py`: một số học viên học cả
+  khóa ngoài cụm). Không chỉnh gì để giấu nó.
+* **Thẻ 4 của hocvien25 chỉ từ nửa content-based** — "Cấu trúc dữ liệu & giải
+  thuật với Python" gần về chữ với "Nhập môn học máy". Đây là loại thẻ mà ở độ
+  sâu 20 (trước 21/09) gần như không thể xuất hiện: danh sách content khi ấy là
+  cả catalogue nên mọi thẻ đều mang cả hai nguồn (`recommendation-ui.txt` §2,
+  8/8 thẻ "collaborative + content").
+
+==============================================================================
+3. "HỌC TIẾP THEO" — DƯỚI MỘT KHÓA ĐÃ HOÀN THÀNH
+==============================================================================
+hocvien01 mở /hoc/react-tu-so-0-component-state-va-router (đã hoàn thành):
+  "Bạn đã hoàn thành khóa học này. Đây là những khóa gần với nó nhất mà bạn
+   chưa học."
+  1. HTML/CSS hiện đại: Flexbox, Grid và responsive
+  2. Xây dựng REST API với FastAPI
+  3. TypeScript cho người đã viết JavaScript
+
+Trùng từng thẻ với `GET /courses/{React}/next` đo ngày 21/09
+(`recommendation-ui.txt` §2): Next.js và Tailwind — hai khóa gần React nhất —
+vắng mặt vì hocvien01 đã học cả hai, và khối vẫn đủ 3 thẻ. Đây là ảnh chụp
+`recommendation-ui.txt` §4 còn nợ.
+
+==============================================================================
+4. GHI NHẬN KHI CHẠY
+==============================================================================
+* Đầu trang học khóa React ghi "0/1 bài · 0% · đã hoàn thành khóa học 🎉" —
+  hai con số trái nhau trên cùng một dòng. Nguyên nhân ở dữ liệu, không ở giao
+  diện: `seed_interactions.py` đặt `enrollments.completed_at` cho các lượt "hoàn
+  thành" giả lập mà không ghi tiến độ từng bài. Trên dữ liệu thật, `completed_at`
+  chỉ được đặt khi mọi bài xong nên không lệch được. Không sửa trong gate; nếu
+  cần ảnh sạch cho báo cáo thì cắt phần đầu trang (ảnh `next-courses-hocvien01.jpg`
+  không chụp dòng ấy).
+* Ảnh được đưa từ Chrome về đĩa qua một trang nhận tệp chỉ nghe ở
+  127.0.0.1:8765, chạy trong lúc chụp rồi tắt; đuôi tệp đặt theo byte đầu
+  (JPEG). Tùy chọn `save_to_disk` của công cụ chụp không tạo tệp nào ở phiên
+  bản tiện ích đang dùng.
+* Lần đầu dùng Claude in Chrome phải mở side panel và đăng nhập tiện ích bằng
+  cùng tài khoản với app thì trình duyệt mới hiện trong danh sách kết nối.

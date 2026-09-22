@@ -161,9 +161,13 @@ container frontend thì panel hiện. Bài học rút ra: trước khi nghi cach
 - Học viên làm quiz vừa sinh: chưa chạy trên trình duyệt trong task này. Luồng làm bài
   không đổi (task "Quiz model + attempt flow" đã kiểm), nhưng gate cuối phase đòi đúng
   chuỗi "sinh → duyệt → học viên làm". Sẽ chụp lúc thu bằng chứng gate.
+  → XONG 22/09 ở gate: `quiz-demo.txt` (sinh → duyệt/sửa → xuất bản → học viên làm, 80 %).
 - Chưa có ảnh chụp lưu ra file (đã xem trên Chrome ở mục 5).
+  → XONG 22/09: 7 ảnh `quiz-ai-*.jpg`, `quiz-student-*.jpg` (liệt kê ở `quiz-demo.txt`).
 - Chưa sinh từ transcript video trên dữ liệu thật: 41/42 video seed không có lời giảng.
   Đường đó mới được kiểm bằng test (FakeStorage).
+  → XONG 22/09: `scripts.seed_transcripts` đã cho 12 video lời giảng, và gate sinh quiz
+  từ video "Vòng lặp for và range" (transcript 1 581 ký tự trên MinIO), 5/5 đáp án đúng.
 - 60 câu là một mẫu nhỏ trên 6 bài ngắn (580–730 ký tự). Tỷ lệ "0/30 sai" của flash-lite
   không có nghĩa là không bao giờ sai: lần thăm dò đầu đã thấy nó sai. Đó là lý do bắt
   buộc duyệt.

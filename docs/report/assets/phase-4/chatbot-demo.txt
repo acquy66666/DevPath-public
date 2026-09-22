@@ -90,6 +90,42 @@ Thời gian: câu hỏi được lưu → câu trả lời được lưu 2–3 g
   để cân nhắc ở Phase 6 (UX), không sửa trong gate.
 * Ảnh chụp: khung trình duyệt của app chụp được để xem nhưng không lưu được ra
   tệp, và trình duyệt tự động (Playwright) không có phiên đăng nhập (đăng nhập
-  bằng mật khẩu phải do người dùng làm). Nên bằng chứng chính là nguyên văn ở
-  mục 1, lấy từ CSDL. Ảnh `chatbot-demo-ui.png` — **chưa có**, cần chụp tay
-  (Win+Shift+S) từ chính phiên này nếu báo cáo cần hình.
+  bằng mật khẩu phải do người dùng làm). Nên lúc demo bằng chứng chính là
+  nguyên văn ở mục 1, lấy từ CSDL; ảnh chụp bổ sung cùng ngày ở mục 4.
+
+==============================================================================
+4. ẢNH CHỤP — CHÍNH PHIÊN Ở MỤC 1, MỞ LẠI TỪ LỊCH SỬ
+==============================================================================
+Chụp 22/09/2026, 20:37–20:40, trên Chrome (Claude in Chrome), vẫn phiên đăng nhập tay
+của hocvien07 ("Phan Chi") từ buổi demo quiz cùng ngày. Không hỏi lại câu
+nào: tab "Trợ giảng AI" → Lịch sử → chọn phiên
+e01ecc3d-526d-4e99-a807-118d6b9670e3 ("range(1, 10, 2) sinh ra những số
+nào?", 8 tin nhắn). Nên chữ trong ảnh là đúng chữ ở mục 1 — không tốn thêm
+lượt Gemini nào, và không có câu trả lời "đẹp hơn" được chọn lại.
+
+Màn hình 1536×864 (Chrome đã phóng to hết cỡ) cho khung chat cao 298 px, mà
+cả phiên cao 903 px, nên chia làm bốn ảnh, mỗi ảnh trọn một ý. Chụp ở 100 %,
+không thu nhỏ trang, không sửa DOM; chỉ cuộn khung chat.
+
+  chatbot-demo-1-answer.jpg        câu 1 + trả lời có [1] + khối "Nguồn trong
+                                   khóa học": Vòng lặp for và range
+  chatbot-demo-2-answer.jpg        câu 2 + trả lời có [2] ở cả ba câu, kể cả
+                                   ví dụ `int(input()) + 1` + nguồn: Ép kiểu
+                                   và những cái bẫy quen thuộc
+  chatbot-demo-3-refusal.jpg       câu Java ("gần mà ngoài") bị từ chối bằng
+                                   đúng `REFUSAL_OPENING`, không có khối nguồn;
+                                   phía trên là đuôi câu từ chối "thủ đô Úc",
+                                   cũng không có khối nguồn
+  chatbot-demo-4-source-opened.jpg bấm số [1] → cột trái chuyển sang bài
+                                   "Vòng lặp for và range"
+                                   (`?bai=4ea7d048-…`), khung chat giữ nguyên
+                                   phiên, dòng nguồn [1] hiện "đang xem"
+
+Ảnh 4: khung video còn biểu tượng tải vì bài dùng luồng HLS mẫu ngoài mạng
+(`test-streams.mux.dev`, 41/42 video seed là loại này) — video chưa nạp khung
+đầu sau ~10 s. Không liên quan tới điều ảnh chứng minh.
+
+Cách lưu ảnh ra tệp: chụp → `upload_image` vào `<input type=file>` của một
+trang tạm chỉ nghe 127.0.0.1, trang ghi thẳng vào thư mục này (đuôi tệp theo
+magic bytes), tắt ngay sau đó. Kiểm lại: 4 tệp 1568×688, không hai tệp nào
+trùng nội dung.

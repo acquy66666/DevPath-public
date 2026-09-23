@@ -24,6 +24,9 @@ from app.models import (
     Lesson,
     LessonProgress,
     Note,
+    Order,
+    OrderItem,
+    PaymentEvent,
     Quiz,
     QuizAttempt,
     QuizQuestion,
@@ -83,6 +86,10 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         # Phase 5 -- discount codes.
         "coupons",
         "coupon_courses",
+        # Phase 5 -- paying for a cart.
+        "orders",
+        "order_items",
+        "payment_events",
     }
 
 
@@ -552,3 +559,70 @@ def test_a_coupon_that_is_deleted_takes_its_course_list_with_it() -> None:
     for column in ("coupon_id", "course_id"):
         fk = next(iter(CouponCourse.__table__.c[column].foreign_keys))
         assert fk.ondelete == "CASCADE"
+
+
+def test_one_bank_transaction_can_belong_to_only_one_order() -> None:
+    """The real idempotency guard under VNPay's retried callback: whatever the
+    handler does, the same transaction cannot be recorded on two orders."""
+    index = next(
+        i for i in Order.__table__.indexes if i.name == "uq_orders_provider_txn"
+    )
+    assert index.unique is True
+    assert [c.name for c in index.columns] == ["payment_provider", "provider_txn_id"]
+    # Partial, because the column is NULL until an order is paid and those
+    # NULLs would carry an index entry each while constraining nothing.
+    assert "provider_txn_id IS NOT NULL" in str(
+        index.dialect_options["postgresql"]["where"]
+    )
+
+
+def test_an_order_cannot_say_it_was_paid_without_the_evidence() -> None:
+    assert {
+        "ck_orders_status",
+        "ck_orders_total",
+        "ck_orders_paid_evidence",
+        "ck_orders_amounts_non_negative",
+        "uq_orders_code",
+    } <= constraint_names(Order)
+
+
+def test_an_order_freezes_every_number_it_shows() -> None:
+    """A receipt that recomputed itself from `courses.price` and `coupons`
+    would change meaning every time either of them was edited."""
+    columns = Order.__table__.c
+    for name in ("subtotal", "discount", "total"):
+        assert columns[name].nullable is False
+        assert columns[name].type.scale == 2
+    assert OrderItem.__table__.c.unit_price.nullable is False
+    # The code as typed, kept even after the campaign row is gone.
+    assert columns["coupon_code"].nullable is True
+
+
+def test_what_was_sold_cannot_be_deleted_out_from_under_the_sale() -> None:
+    """Both RESTRICT, matching `enrollments.course_id`: deleting a buyer or a
+    sold course would leave money in the books pointing at nothing."""
+    for model, column in ((Order, "user_id"), (OrderItem, "course_id")):
+        fk = next(iter(model.__table__.c[column].foreign_keys))
+        assert fk.ondelete == "RESTRICT"
+
+
+def test_an_order_outlives_the_campaign_that_discounted_it() -> None:
+    fk = next(iter(Order.__table__.c.coupon_id.foreign_keys))
+    assert fk.ondelete == "SET NULL"
+    assert Order.__table__.c.coupon_id.nullable is True
+
+
+def test_the_payment_log_can_hold_a_callback_that_names_no_order() -> None:
+    """A callback whose reference matches nothing is either our bug or somebody
+    probing the endpoint -- the row most worth keeping, and NOT NULL would mean
+    the only way to store it is not to."""
+    assert PaymentEvent.__table__.c.order_id.nullable is True
+    assert "ix_payment_events_order_id" in index_names(PaymentEvent)
+
+
+def test_the_payment_log_is_written_once_and_never_updated() -> None:
+    """Append-only, like `refresh_tokens` is write-once: an `updated_at` would
+    describe something that cannot happen."""
+    assert "created_at" in PaymentEvent.__table__.c
+    assert "updated_at" not in PaymentEvent.__table__.c
+    assert PaymentEvent.__table__.c.signature_valid.nullable is False

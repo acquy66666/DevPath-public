@@ -129,6 +129,22 @@ class Settings(BaseSettings):
     quiz_generation_cooldown_seconds: int = 10
     quiz_generation_hourly_limit: int = 20
 
+    # VNPay. Empty until somebody registers a merchant account at
+    # sandbox.vnpayment.vn; `vnpay_enabled` is what the payment route checks,
+    # and it answers a stated "chưa cấu hình" rather than building a URL that
+    # the gateway would refuse for a reason nobody can see.
+    vnpay_tmn_code: str = ""
+    vnpay_hash_secret: str = ""
+    vnpay_payment_url: str = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+    # Where VNPay sends the *browser* back: a page, not an API route. What the
+    # browser carries is for the person to read; the money is decided by the
+    # IPN, which VNPay sends to the backend directly and which is configured in
+    # the merchant portal rather than here.
+    vnpay_return_url: str = "http://localhost:3000/thanh-toan/ket-qua"
+    # How long a payment URL stays payable. Long enough to find a card, short
+    # enough that an old link cannot be paid next month at last month's price.
+    vnpay_expire_minutes: int = 15
+
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"
 
@@ -185,6 +201,11 @@ class Settings(BaseSettings):
             self.r2_endpoint_url
             or f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
         )
+
+    @property
+    def vnpay_enabled(self) -> bool:
+        """A merchant code and its secret. One without the other signs nothing."""
+        return bool(self.vnpay_tmn_code and self.vnpay_hash_secret)
 
     @property
     def cookie_secure(self) -> bool:

@@ -53,6 +53,20 @@ x-backend-env: &backend-env
   GEMINI_EMBEDDING_MODEL: ${GEMINI_EMBEDDING_MODEL:-gemini-embedding-001}
   GEMINI_CHAT_MODEL: ${GEMINI_CHAT_MODEL:-gemini-3.5-flash-lite}
   GEMINI_CHAT_THINKING_LEVEL: ${GEMINI_CHAT_THINKING_LEVEL:-minimal}
+  # VNPay. Empty by default: `POST /orders/{code}/payment-url` answers 503
+  # "chưa cấu hình" until somebody registers a merchant at sandbox.vnpayment.vn
+  # and puts the two values in infra/.env. The IPN endpoint refuses every
+  # callback while they are empty, because with no secret there is nothing to
+  # check a signature against.
+  #
+  # Any pair of values switches the flow on locally -- `scripts.simulate_vnpay_ipn`
+  # signs with the same secret the backend verifies with, so the whole
+  # order -> callback -> enrolment path is demonstrable without an account.
+  # Only the bank's own page needs the real ones.
+  VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+  VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+  VNPAY_PAYMENT_URL: ${VNPAY_PAYMENT_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  VNPAY_RETURN_URL: ${VNPAY_RETURN_URL:-http://localhost:${FRONTEND_PORT:-3000}/thanh-toan/ket-qua}
   CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
   # The Windows host's filesystem events do not cross into the Linux VM, so
   # the reloader has to poll for changes instead of waiting to be told.

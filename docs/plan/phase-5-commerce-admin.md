@@ -7,9 +7,13 @@
 - [x] Giỏ hàng + wishlist (API + UI)
 - [x] Coupon: validate (hạn, lượt dùng, phạm vi), áp vào order
   - Phần **"áp vào order" nằm ở task VNPay ngay bên dưới**: `orders` chưa tồn tại khi làm task này, và một cột trỏ vào bảng chưa có là thứ không ai kiểm được. Đã xong: bảng `coupons`/`coupon_courses` (migration `d23158098a8c`), toàn bộ luật validate, `POST /cart/coupon` (thử mã lên giỏ hiện tại, trả số tiền giảm), ô nhập mã ở `/gio-hang`, và `coupons_service.consume` — chỗ trừ lượt bằng `UPDATE … WHERE used_count < max_uses`, để task thanh toán chỉ còn gọi (23/09/2026)
-- [ ] VNPay sandbox: tạo payment URL → redirect → IPN handler (verify chữ ký HMAC, idempotent theo `provider_txn_id`) → order `paid` → tự động enroll các khóa trong order
-- [ ] `payment_events` append-only log mọi IPN; trang kết quả thanh toán (thành công/thất bại/đang xử lý)
-- [ ] Test: giả lập IPN hợp lệ/sai chữ ký/trùng lặp — cả 3 case phải đúng
+- [x] VNPay sandbox: tạo payment URL → redirect → IPN handler (verify chữ ký HMAC, idempotent theo `provider_txn_id`) → order `paid` → tự động enroll các khóa trong order
+  - Migration `99c7ba304d8d` (`orders`, `order_items`, `payment_events`), `services/vnpay.py` + `services/orders.py`, `POST /orders` · `POST /orders/{code}/payment-url` · `GET /payments/vnpay/ipn` (24/09/2026)
+  - **Còn thiếu đúng một thứ từ bên ngoài: tài khoản merchant sandbox** (`VNPAY_TMN_CODE`, `VNPAY_HASH_SECRET` ở `infra/.env`, đăng ký ở <https://sandbox.vnpayment.vn/devreg/>) và một địa chỉ công khai để khai IPN URL — VNPay gọi thẳng vào backend nên `localhost` không dùng được, lấy URL từ Cloudflare Quick Tunnel. Trống thì `/payment-url` trả 503 `PAYMENT_NOT_CONFIGURED`
+- [x] `payment_events` append-only log mọi IPN; trang kết quả thanh toán (thành công/thất bại/đang xử lý)
+  - Ghi **trước khi phán xét**, kể cả callback sai chữ ký; `order_id` nullable để giữ được callback không khớp đơn nào. Trang `/thanh-toan/ket-qua` chỉ lấy mã đơn từ URL rồi hỏi `GET /orders/{code}` — đơn còn `pending` thì hỏi lại mỗi 3 giây trong 90 giây
+- [x] Test: giả lập IPN hợp lệ/sai chữ ký/trùng lặp — cả 3 case phải đúng
+  - 26 test ở `tests/api/test_orders.py` + 20 test ký/kiểm chữ ký ở `tests/test_vnpay.py` (chuỗi canonical ghim **viết tay từ đặc tả**). Chạy tay được bằng `python -m scripts.simulate_vnpay_ipn <mã đơn> [--fail]`, ký bằng đúng secret backend dùng để kiểm
 - [ ] MoMo sandbox (nếu còn thời gian — mục cắt giảm số 1)
 - [ ] Dashboard doanh thu instructor: doanh thu theo thời gian, học viên mới, tỉ lệ hoàn thành per khóa học
 

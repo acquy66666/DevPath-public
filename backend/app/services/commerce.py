@@ -68,6 +68,18 @@ class OwnCourseInCartError(DomainError):
     code = "CANNOT_BUY_OWN_COURSE"
 
 
+class EmptyCartError(DomainError):
+    """Nothing in the cart that anybody would be charged for.
+
+    Lives here rather than with the coupon or the order that raise it: both are
+    saying the same thing about the same cart, and two codes for it would mean
+    two sentences on screen for one situation.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "CART_EMPTY"
+
+
 @dataclass(frozen=True, slots=True)
 class CartLine:
     """One course in the cart, with the two facts the page draws around it."""

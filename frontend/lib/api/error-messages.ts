@@ -68,6 +68,14 @@ const MESSAGES: Record<string, string> = {
     "Mã này không áp dụng cho khóa học nào đang có trong giỏ hàng.",
   CART_EMPTY: "Giỏ hàng chưa có khóa học nào cần thanh toán.",
 
+  // Đơn hàng & thanh toán.
+  ORDER_NOT_FOUND: "Không tìm thấy đơn hàng này trong tài khoản của bạn.",
+  ORDER_NOT_PAYABLE:
+    "Đơn hàng này không còn chờ thanh toán. Tải lại trang để xem trạng thái mới nhất.",
+  PAYMENT_NOT_CONFIGURED:
+    "Máy chủ chưa cấu hình cổng thanh toán VNPay nên chưa thanh toán được.",
+  ORDER_CODE_UNAVAILABLE: "Chưa tạo được mã đơn hàng. Bấm thanh toán lại giúp mình nhé.",
+
   // Video.
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",

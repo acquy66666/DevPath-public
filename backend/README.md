@@ -386,11 +386,63 @@ docker compose exec backend python -m scripts.seed_coupons --purge
 
 **Ngày tính tương đối với lúc chạy script**, không bao giờ là ngày tuyệt đối: seed viết ngày cứng là cái demo chạy được cho tới một buổi sáng nào đó thì lặng lẽ thôi chạy, trước mặt người đang xem. Chạy sau `scripts.seed` và `scripts.seed_interactions` (`PYTHON30` gọi tên hai khóa Python thật, mỗi script tạo một khóa). Script này **ghi thẳng bảng**, khác `seed_cart.py` đi qua service: coupon chưa có service tạo (màn hình quản trị thuộc task admin), và luật ở đây nằm trong chính bảng — mỗi dòng sai dừng script bằng một vi phạm CHECK gọi đúng tên nó.
 
+## Thanh toán VNPay (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `POST /orders` | Biến giỏ hàng thành đơn hàng theo giá hôm nay. Body nhiều nhất là `{coupon_code}` |
+| `GET /orders/{code}` | Một đơn của chính mình — **đây là câu trả lời có thẩm quyền** cho "đã thanh toán chưa" |
+| `POST /orders/{code}/payment-url` | URL VNPay đã ký, sống 15 phút |
+| `GET /payments/vnpay/ipn` | Callback của VNPay. Không xác thực bằng token, trả `{"RspCode","Message"}` |
+
+**Chỉ IPN được quyền nói là đã trả tiền.** VNPay gọi thẳng từ máy chủ của họ vào backend; trình duyệt quay về từ ngân hàng mang đúng những tham số ấy nhưng là thứ chủ nó sửa được, nên trang kết quả chỉ lấy mã đơn từ URL rồi hỏi lại `GET /orders/{code}`. Tin vào query string nghĩa là ai gõ được `vnp_ResponseCode=00` cũng tự ghi danh được.
+
+**Thứ tự kiểm trong IPN, và lý do của thứ tự đó:**
+
+| Bước | Kiểm | Trả về |
+|---|---|---|
+| 1 | Chữ ký HMAC-SHA512, trước khi tin bất kỳ tham số nào | `97` Invalid signature |
+| 2 | Có đơn mang mã này không | `01` Order not found |
+| 3 | Số tiền có khớp đơn không | `04` Invalid amount |
+| 4 | Đơn còn `pending` không | `02` Order already confirmed |
+| 5 | `vnp_ResponseCode` **và** `vnp_TransactionStatus` đều `00` | `00` Confirm Success |
+
+Bước 4 là chỗ chống trùng — VNPay gửi lại IPN cho tới khi nhận được `00`, nên callback lặp là chuyện thường ngày chứ không phải ca hiếm; câu `SELECT ... FOR UPDATE` xếp hai callback song song thành hàng, còn `uq_orders_provider_txn` (partial unique) là chốt chặn ở tầng bảng: một giao dịch ngân hàng chỉ gắn được vào đúng một đơn, bất kể code làm gì. Bước 5 kiểm **cả hai** mã: `vnp_ResponseCode` nói "yêu cầu có ổn không", `vnp_TransactionStatus` nói "giao dịch có đi qua không", và chúng có thể khác nhau.
+
+**Mọi callback được ghi vào `payment_events` trước khi bị phán xét** — kể cả cái sai chữ ký, nhất là cái sai chữ ký. Đó là bản ghi duy nhất về việc cổng thanh toán thật sự nói gì, thứ cần đọc khi trạng thái đơn và sao kê ngân hàng không khớp nhau, tức đúng lúc không thể tin vào lời kể của chính đoạn code.
+
+**Một transaction cho tất cả**: ghi log, chuyển đơn sang `paid`, ghi danh từng khóa (`enrollments.source='purchase'`), trừ lượt coupon, bỏ các dòng đã mua khỏi giỏ. Hỏng giữa chừng sẽ để lại đơn đã trả tiền mà người mua không mở được khóa học.
+
+**Callback trả lời bằng tiếng của VNPay** (`{"RspCode","Message"}`, luôn HTTP 200 kể cả khi từ chối) vì VNPay gửi lại bất cứ thứ gì nó không đọc được — trả 404 cho "không tìm thấy đơn" là mua thêm một vòng lặp gửi lại chứ không phải một câu trả lời.
+
+**Chữ ký là toàn bộ giao thức** (`app/services/vnpay.py`): mọi tham số `vnp_` có giá trị, sắp theo tên, nối `key=value&…` với cả hai vế url-encode kiểu `quote_plus`, HMAC-SHA512 bằng secret. Sai một dấu cách là chữ ký không khớp và VNPay từ chối không kèm lý do, nên chuỗi đó dựng ở đúng **một** chỗ (`canonical()`) và cả URL đi lẫn callback về đều đi qua nó. Ba chi tiết dễ sai: số tiền tính bằng 1/100 đồng (399.000 ₫ → `39900000`), thời gian là giờ Việt Nam `yyyyMMddHHmmss` không kèm múi (cố định +07:00, Việt Nam không đổi giờ mùa), và **tham số rỗng bị loại khỏi chữ ký** như bản của VNPay làm.
+
+`tests/test_vnpay.py` ghim chuỗi canonical **viết tay từ đặc tả** chứ không đọc ngược từ code — đó là thứ duy nhất không thể kiểm bằng cách chạy thử khi chưa có tài khoản merchant.
+
+### Cấu hình
+
+```bash
+# infra/.env
+VNPAY_TMN_CODE=...
+VNPAY_HASH_SECRET=...
+```
+
+Trống thì `POST /orders/{code}/payment-url` trả 503 `PAYMENT_NOT_CONFIGURED` và IPN từ chối mọi callback (không có secret thì không kiểm được chữ ký nào). Đăng ký merchant sandbox ở <https://sandbox.vnpayment.vn/devreg/>, rồi trong phần cấu hình của merchant khai **IPN URL** là `<địa chỉ công khai>/api/v1/payments/vnpay/ipn` — VNPay gọi thẳng vào backend nên `localhost` không dùng được, lấy URL từ Cloudflare Quick Tunnel (xem [docs/huong-dan-deploy-vps.md](../docs/huong-dan-deploy-vps.md)).
+
+### Chạy thử khi chưa có tài khoản merchant
+
+```bash
+docker compose exec backend python -m scripts.simulate_vnpay_ipn DP260924ABC123
+docker compose exec backend python -m scripts.simulate_vnpay_ipn DP260924ABC123 --fail
+```
+
+Script ký callback bằng **đúng secret backend dùng để kiểm** rồi gọi vào chính endpoint IPN — cùng route, cùng bước kiểm chữ ký, cùng handler. Nó chứng minh được mọi thứ xảy ra sau khi tiền chuyển (chữ ký, chống trùng, ghi danh, giỏ hàng rỗng đi), tức đúng phần mà sai sót làm người ta mất khóa học; thứ nó không chứng minh được là trang của VNPay có nhận URL của mình không — cái đó cần `VNPAY_TMN_CODE` thật. Đặt hai biến bằng giá trị bất kỳ ở máy dev là chạy được.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 17 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 18 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -411,6 +463,7 @@ Migration là một chuỗi thẳng 17 revision, một head (`alembic heads` đ�
 | `17e181ed9f26` | `course_embeddings` (vector khóa học cho "Khóa học tương tự") |
 | `45c681ca42af` | `carts`, `cart_items`, `wishlists` |
 | `d23158098a8c` | `coupons`, `coupon_courses` |
+| `99c7ba304d8d` | `orders`, `order_items`, `payment_events` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

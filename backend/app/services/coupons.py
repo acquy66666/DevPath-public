@@ -56,7 +56,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.exceptions import DomainError
 from app.models import Coupon, CouponCourse, User
 from app.services import commerce as commerce_service
-from app.services.commerce import CartView
+from app.services.commerce import CartView, EmptyCartError
 
 ZERO = Decimal("0.00")
 HUNDRED = Decimal("100")
@@ -91,11 +91,6 @@ class CouponNotApplicableError(DomainError):
 
     status_code = status.HTTP_409_CONFLICT
     code = "COUPON_NOT_APPLICABLE"
-
-
-class EmptyCartError(DomainError):
-    status_code = status.HTTP_409_CONFLICT
-    code = "CART_EMPTY"
 
 
 @dataclass(frozen=True, slots=True)

@@ -20,7 +20,9 @@ from app.services import courses as courses_service
 
 
 class CourseNotFreeError(DomainError):
-    """Paid enrolment needs a payment, which is Phase 5."""
+    """A paid course is bought, not enrolled in: the row this module writes is
+    the one a payment produces, and writing it without the payment is how a
+    course ends up owned by somebody who never bought it."""
 
     status_code = status.HTTP_409_CONFLICT
     code = "COURSE_NOT_FREE"
@@ -52,6 +54,50 @@ async def find_for_course(
     )
 
 
+async def grant(
+    session: AsyncSession, course_id: uuid.UUID, user_id: uuid.UUID, *, source: str
+) -> bool:
+    """Write the enrolment and move the course's counter. Returns "it is new".
+
+    No rules and no commit: the rules differ by how the enrolment was earned --
+    free enrolment refuses a paid course, a purchase has already been paid for
+    -- but the two rows are identical, and so is the counter that has to move
+    with them. Keeping that in one place is what stops `students_count` from
+    being maintained two slightly different ways.
+
+    Takes a user id rather than a `User` because the paid path runs inside a
+    callback from the payment gateway, where nobody is signed in.
+    """
+    created = await session.scalar(
+        # ON CONFLICT rather than "look, then insert": two clicks that arrive
+        # together would both pass the lookup and one would die on the unique
+        # constraint. Here the loser simply writes nothing, and `returning` is
+        # what tells the two apart -- which also keeps the counter honest.
+        insert(Enrollment)
+        .values(user_id=user_id, course_id=course_id, source=source)
+        .on_conflict_do_nothing(constraint="uq_enrollments_user_course")
+        .returning(Enrollment.id)
+    )
+
+    if created is not None:
+        # Read-modify-write in Python would lose an increment whenever two
+        # people enrol at once; the database can add one to whatever it finds.
+        #
+        # `updated_at` is pinned to itself so SQLAlchemy's `onupdate` leaves it
+        # alone: the instructor's dashboard reads that column as "when this
+        # course last changed", and somebody else signing up did not change it.
+        await session.execute(
+            update(Course)
+            .where(Course.id == course_id)
+            .values(
+                students_count=Course.students_count + 1,
+                updated_at=Course.updated_at,
+            )
+        )
+
+    return created is not None
+
+
 async def enrol_free(
     session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> tuple[Enrollment, bool]:
@@ -75,35 +121,10 @@ async def enrol_free(
 
     if course.price > Decimal("0"):
         raise CourseNotFreeError(
-            "Khóa học này có phí. Chức năng thanh toán sẽ mở ở giai đoạn sau."
+            "Khóa học này có phí. Thêm vào giỏ hàng rồi thanh toán để vào học."
         )
 
-    # ON CONFLICT rather than "look, then insert": two clicks that arrive
-    # together would both pass the lookup and one would die on the unique
-    # constraint. Here the loser simply writes nothing, and `returning` is what
-    # tells the two apart -- which also keeps the counter below honest.
-    created = await session.scalar(
-        insert(Enrollment)
-        .values(user_id=user.id, course_id=course.id, source="free")
-        .on_conflict_do_nothing(constraint="uq_enrollments_user_course")
-        .returning(Enrollment.id)
-    )
-
-    if created is not None:
-        # Read-modify-write in Python would lose an increment whenever two
-        # people enrol at once; the database can add one to whatever it finds.
-        #
-        # `updated_at` is pinned to itself so SQLAlchemy's `onupdate` leaves it
-        # alone: the instructor's dashboard reads that column as "when this
-        # course last changed", and somebody else signing up did not change it.
-        await session.execute(
-            update(Course)
-            .where(Course.id == course.id)
-            .values(
-                students_count=Course.students_count + 1,
-                updated_at=Course.updated_at,
-            )
-        )
+    created = await grant(session, course.id, user.id, source="free")
 
     await session.commit()
 
@@ -113,7 +134,7 @@ async def enrol_free(
         # which nothing in the system does.
         raise EnrollmentNotFoundError("Không tìm thấy đăng ký")
 
-    return enrollment, created is not None
+    return enrollment, created
 
 
 async def get_for_course(

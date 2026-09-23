@@ -177,14 +177,18 @@ Ràng buộc:
 
 | Bảng | Cột | Khóa & ràng buộc bổ sung | ON DELETE | Ghi chú |
 |---|---|---|---|---|
-| `carts` | `user_id` | **`uq_carts_user_id`** — một giỏ/user | user → CASCADE | |
-| `cart_items` | `cart_id`, `course_id` | **`uq_cart_items_cart_course`** — thiếu trong bản cũ | cart → CASCADE, course → CASCADE | |
-| `wishlists` | `user_id`, `course_id` | **`uq_wishlists_user_course`** — thiếu trong bản cũ | user → CASCADE, course → CASCADE | |
+| `carts` | `user_id` | **`uq_carts_user_id`** — một giỏ/user | user → CASCADE | Dòng giỏ tạo **lười**, lần đầu người dùng bỏ khóa học vào; tài khoản chỉ học khóa miễn phí thì không có dòng nào. `GET /cart` của tài khoản chưa có giỏ trả giỏ rỗng chứ không 404 |
+| `cart_items` | `cart_id`, `course_id` | **`uq_cart_items_cart_course`** — thiếu trong bản cũ; `ix_cart_items_cart_created` (`cart_id`, `created_at DESC`) | cart → CASCADE, course → CASCADE | **Không có cột giá và không có cột số lượng.** Giá đóng băng ở `order_items.unit_price` lúc trả tiền; giỏ hiện giá hôm nay vì đó là giá bấm thanh toán bây giờ sẽ phải trả. Không mua một khóa hai lần nên không có `quantity`. Trần `MAX_CART_ITEMS = 50` (`app/models/commerce.py`) — không phải giới hạn lưu trữ mà là thứ cho phép `GET /cart` trả nguyên giỏ không phân trang, vì tổng tiền phải phủ hết mọi dòng |
+| `wishlists` | `user_id`, `course_id` | **`uq_wishlists_user_course`** — thiếu trong bản cũ; `ix_wishlists_user_created` (`user_id`, `created_at DESC`) | user → CASCADE, course → CASCADE | Bảng phẳng, **không có bảng cha** như `carts`: đây là tập sự kiện "người này muốn khóa này", không phải một vật chứa. Nhận cả khóa người dùng đã ghi danh (khác giỏ hàng, vì không có gì được trả tiền từ đây) |
 | `coupons` | `code`, `discount_type`, `value`, `scope`, `max_uses`, `used_count`, `valid_from`, `valid_to` | `uq_coupons_code`; CHECK `value > 0`, `valid_to > valid_from`, `used_count <= max_uses` | — | **`used_count`** là cột mới; tăng bằng `UPDATE … WHERE used_count < max_uses` để tránh vượt lượt khi đồng thời |
 | `coupon_courses` | `coupon_id`, `course_id` | PK (`coupon_id`,`course_id`) | CASCADE cả hai | **Bảng mới** — coupon phạm vi khóa học cụ thể. `scope='site'` thì không có dòng nào |
 | `orders` | `user_id`, `total`, `coupon_id`, `status`, `payment_provider`, `provider_txn_id`, `paid_at` | **`uq_orders_provider_txn`** (`payment_provider`,`provider_txn_id`) partial `WHERE provider_txn_id IS NOT NULL` | user → RESTRICT, coupon → SET NULL | Đây là chốt chặn idempotent thật cho IPN — không thể chỉ dựa vào code. **`paid_at`** là cột mới |
 | `order_items` | `order_id`, `course_id`, `unit_price` | **`uq_order_items_order_course`** — thiếu trong bản cũ | order → CASCADE, course → RESTRICT | `unit_price` là giá tại thời điểm mua, không đọc lại `courses.price` |
 | `payment_events` | `order_id`, `provider`, `payload` (JSONB), `signature_valid` | `ix_payment_events_order_id` | order → CASCADE | **Append-only**: không UPDATE, không DELETE |
+
+**Khóa học rời sàn thì rời giỏ** (từ 23/09/2026, `app/services/commerce.py`): mọi truy vấn liệt kê giỏ hàng và danh sách yêu thích đều mang sẵn `courses.deleted_at IS NULL AND courses.status = 'published'`, nên khóa học bị gỡ hoặc hạ về nháp biến khỏi hai danh sách cùng lúc nó biến khỏi catalogue — và không được tính vào tổng tiền. Dòng trong bảng **vẫn còn**, không xóa sau lưng người dùng; số đếm của danh sách yêu thích cũng đi qua đúng bộ lọc ấy để "trang 2 / 7" không hứa một trang mà bộ lọc làm rỗng.
+
+Dòng giỏ hàng của khóa học người dùng **đã ghi danh trong lúc nó nằm trong giỏ** (ghi danh miễn phí ở tab khác) vẫn hiện, kèm cờ `already_enrolled`, nhưng bị trừ khỏi tổng tiền. Thêm mới thì bị chặn thẳng (409 `ALREADY_ENROLLED`) — để lời từ chối rơi vào lúc bấm nút chứ không rơi vào giữa màn thanh toán.
 
 ---
 
@@ -278,7 +282,8 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 | `chat_sessions`, `chat_messages` | ✅ đã có trong DB | `42fff7804290` |
 | `course_embeddings` | ✅ đã có trong DB | `17e181ed9f26` |
 | `recommendations` | ⛔ **không dựng bảng** — kết quả gợi ý nằm ở cache Redis (`rec:v2:user:*` từ 20/09/2026 — tiền tố lên v2 khi mỗi mục mang thêm `sources`, mục cũ v1 bị bỏ lại và tự hết hạn; TTL 48 giờ), job Celery beat dựng lại mỗi đêm; bảng chỉ cần nếu sau này phải truy vết gợi ý cũ. Lý do: `docs/report/assets/decisions.md`, mục "Gợi ý tính offline, endpoint chỉ đọc cache"; số đo ở `phase-4/recommendation-batch.txt` | |
-| Thương mại (`orders`, `order_items`, `coupons`, `payment_events`, `wishlists`, `cart_items`), cộng đồng và gamification | ⏳ Phase 5 | |
+| `carts`, `cart_items`, `wishlists` | ✅ đã có trong DB | `45c681ca42af` |
+| Thương mại còn lại (`orders`, `order_items`, `coupons`, `coupon_courses`, `payment_events`), cộng đồng và gamification | ⏳ Phase 5 | |
 
 `search_vector` **đã có hành vi** từ revision `0c55c726cc39` (tính năng danh sách khóa học, Phase 2 tuần 5):
 

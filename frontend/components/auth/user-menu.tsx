@@ -1,6 +1,13 @@
 "use client";
 
-import { BookOpen, GraduationCap, LayoutDashboard, LogOut, UserRound } from "lucide-react";
+import {
+  BookOpen,
+  GraduationCap,
+  Heart,
+  LayoutDashboard,
+  LogOut,
+  UserRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -57,6 +64,12 @@ export function UserMenu({ user }: { user: User }) {
           <Link href="/khoa-hoc-cua-toi">
             <BookOpen aria-hidden />
             Khóa học của tôi
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/yeu-thich">
+            <Heart aria-hidden />
+            Yêu thích
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

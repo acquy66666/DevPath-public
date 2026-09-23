@@ -5,6 +5,8 @@ import { Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import { AddToCartButton } from "@/components/commerce/add-to-cart-button";
+import { WishlistButton } from "@/components/commerce/wishlist-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { apiErrorMessage } from "@/lib/api/error-messages";
@@ -89,15 +91,14 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
     );
   }
 
+  // A paid course is bought through the cart: the checkout behind it is the
+  // next task, but the cart is where the intention is collected either way,
+  // and a disabled "Mua khóa học" was a dead end for the reader.
   if (!free) {
     return (
       <div className="space-y-2">
-        <Button className="w-full" disabled>
-          Mua khóa học
-        </Button>
-        <p className="text-center text-xs text-muted-foreground">
-          Thanh toán đang được hoàn thiện. Khóa học miễn phí đăng ký được ngay.
-        </p>
+        <AddToCartButton courseId={course.id} />
+        <WishlistButton courseId={course.id} />
       </div>
     );
   }
@@ -124,6 +125,8 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
           "Đăng ký học miễn phí"
         )}
       </Button>
+
+      <WishlistButton courseId={course.id} />
     </div>
   );
 }

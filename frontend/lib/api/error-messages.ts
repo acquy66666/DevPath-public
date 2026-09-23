@@ -54,6 +54,11 @@ const MESSAGES: Record<string, string> = {
   CANNOT_REVIEW_OWN_COURSE: "Bạn là giảng viên của khóa học này nên không đánh giá được.",
   REVIEW_NOT_FOUND: "Đánh giá này không còn tồn tại. Tải lại trang giúp mình nhé.",
 
+  // Giỏ hàng & danh sách yêu thích. CART_FULL cố ý không có ở đây: câu của
+  // backend nói đúng sức chứa ("tối đa 50 khóa học"), câu chung thì không.
+  ALREADY_ENROLLED: "Bạn đã có khóa học này rồi, vào học được ngay.",
+  CANNOT_BUY_OWN_COURSE: "Bạn là giảng viên của khóa học này nên không mua được.",
+
   // Video.
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",

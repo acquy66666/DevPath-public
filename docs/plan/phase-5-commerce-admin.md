@@ -4,7 +4,7 @@
 
 ## Tuần 11 — Thanh toán & thương mại
 
-- [ ] Giỏ hàng + wishlist (API + UI)
+- [x] Giỏ hàng + wishlist (API + UI)
 - [ ] Coupon: validate (hạn, lượt dùng, phạm vi), áp vào order
 - [ ] VNPay sandbox: tạo payment URL → redirect → IPN handler (verify chữ ký HMAC, idempotent theo `provider_txn_id`) → order `paid` → tự động enroll các khóa trong order
 - [ ] `payment_events` append-only log mọi IPN; trang kết quả thanh toán (thành công/thất bại/đang xử lý)

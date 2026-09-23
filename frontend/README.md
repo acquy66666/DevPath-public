@@ -149,6 +149,16 @@ Tab **Trợ giảng AI** cạnh mục lục trong trang học (`/hoc/[slug]`). C
 
 Phím Enter gửi, Shift+Enter xuống dòng. Enter dùng để xác nhận chữ trong bộ gõ (`isComposing`) thì không gửi, nếu không một câu tiếng Việt gõ dở sẽ bị gửi đi. `CHAT_RATE_LIMITED` cố ý không có câu chung trong `error-messages.ts`, vì câu của backend nói rõ phải đợi bao lâu.
 
+## Giỏ hàng & danh sách yêu thích (Phase 5)
+
+`/gio-hang` và `/yeu-thich`, cộng cái chuông giỏ hàng trên header và hai nút trên trang khóa học (`components/commerce/`). Khóa học có phí giờ vào giỏ thay vì đứng sau một nút "Mua khóa học" bị khóa — thanh toán là task kế tiếp, nhưng ý định mua thì thu ở giỏ từ bây giờ.
+
+**Một query `["cart"]` cho cả trang.** Chuông trên header, nút "Thêm vào giỏ hàng" ở trang khóa học và trang giỏ hàng đều đọc chung một entry cache, nên thành phần thứ hai và thứ ba không tốn thêm request nào. Mọi thao tác giỏ hàng trả về cả cái giỏ, và `setQueryData(["cart"], …)` ghi thẳng câu trả lời ấy vào cache — con số trên chuông nhảy trong cùng cú bấm, không cần refetch. Danh sách yêu thích trả 204 nên hai mutation của nó `invalidateQueries` thay vì ghi đè.
+
+**Trái tim đọc `["wishlist-ids"]`**, một mảng id, chứ không hỏi "khóa này đã lưu chưa?" cho từng khóa: một response nhỏ, dùng chung được cho mọi thẻ trên trang, và không đẻ ra một endpoint chỉ để trả lời một chữ có/không.
+
+Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đều cần tài khoản, mà header đã có sẵn nút "Đăng nhập" cách đó hai ô. Hai trang thì chặn ở client như mọi trang cần đăng nhập khác (`?next=` quay lại đúng chỗ), chốt chặn thật vẫn là 401 của backend.
+
 ## Cấu trúc
 
 ```
@@ -162,6 +172,7 @@ components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)
 components/exercise/   trình soạn bài tập code + test case (Phase 3)
 components/chat/       trợ giảng AI trong trang học (Phase 4)
+components/commerce/   giỏ hàng, danh sách yêu thích (Phase 5)
 lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)

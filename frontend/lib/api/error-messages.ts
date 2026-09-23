@@ -59,6 +59,15 @@ const MESSAGES: Record<string, string> = {
   ALREADY_ENROLLED: "Bạn đã có khóa học này rồi, vào học được ngay.",
   CANNOT_BUY_OWN_COURSE: "Bạn là giảng viên của khóa học này nên không mua được.",
 
+  // Mã giảm giá. COUPON_EXPIRED và COUPON_NOT_STARTED cố ý không có ở đây,
+  // cùng lý do với CART_FULL: câu của backend kèm ngày ("hết hạn ngày
+  // 23/08/2026"), và cái ngày đó là thứ người cầm tờ rơi cần đọc.
+  COUPON_NOT_FOUND: "Mã giảm giá không đúng. Kiểm tra lại giúp mình nhé.",
+  COUPON_EXHAUSTED: "Mã này đã hết lượt sử dụng.",
+  COUPON_NOT_APPLICABLE:
+    "Mã này không áp dụng cho khóa học nào đang có trong giỏ hàng.",
+  CART_EMPTY: "Giỏ hàng chưa có khóa học nào cần thanh toán.",
+
   // Video.
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",

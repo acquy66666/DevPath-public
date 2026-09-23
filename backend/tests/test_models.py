@@ -15,6 +15,8 @@ from app.models import (
     Cart,
     CartItem,
     Category,
+    Coupon,
+    CouponCourse,
     Course,
     CourseSection,
     DocChunk,
@@ -78,6 +80,9 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "carts",
         "cart_items",
         "wishlists",
+        # Phase 5 -- discount codes.
+        "coupons",
+        "coupon_courses",
     }
 
 
@@ -482,3 +487,68 @@ def test_the_cart_has_a_ceiling_and_it_is_a_sane_one() -> None:
     """It bounds a response rather than storage: the total must cover every
     line, so `GET /cart` answers whole and unpaged."""
     assert 1 < MAX_CART_ITEMS <= 100
+
+
+def test_a_coupon_cannot_be_stored_in_a_shape_that_hands_money_back() -> None:
+    """Every rule the service checks is also a CHECK, because the service is
+    not the only thing that writes this table -- a seed script and a psql
+    session both bypass it."""
+    assert {
+        "uq_coupons_code",
+        "ck_coupons_code_upper",
+        "ck_coupons_code_length",
+        "ck_coupons_discount_type",
+        "ck_coupons_scope",
+        "ck_coupons_value_positive",
+        "ck_coupons_percent_range",
+        "ck_coupons_period",
+        "ck_coupons_max_uses",
+        "ck_coupons_used_count",
+        "ck_coupons_uses_left",
+    } <= constraint_names(Coupon)
+
+
+def test_the_use_counter_is_a_column_and_not_a_derived_number() -> None:
+    """Counting `orders` would be the more normalised answer and the wrong one:
+    "the hundredth checkout wins" needs one row to lock, not an aggregate two
+    concurrent checkouts can both read as ninety-nine."""
+    assert Coupon.__table__.c.used_count.nullable is False
+    #: NULL on either of these means "no limit", which is not the same as 0.
+    assert Coupon.__table__.c.max_uses.nullable is True
+    assert Coupon.__table__.c.valid_to.nullable is True
+    assert Coupon.__table__.c.valid_from.nullable is False
+
+
+def test_a_discount_is_numeric_like_every_other_money_column() -> None:
+    """A percentage of a price must not pick up a float's rounding error on
+    its way into a total."""
+    assert Coupon.__table__.c.value.type.python_type is __import__("decimal").Decimal
+    assert Coupon.__table__.c.value.type.scale == 2
+
+
+def test_a_coupon_has_no_active_flag() -> None:
+    """Withdrawing a code early is setting `valid_to`. Two ways to disable the
+    same thing is one way too many -- and the one nobody remembers is the one
+    that leaves a dead code working."""
+    assert "is_active" not in Coupon.__table__.c
+
+
+def test_the_coupon_join_table_is_keyed_by_the_pair_it_records() -> None:
+    """The deviation from the project's UUID-primary-key rule that
+    docs/database-design.md specifies for this table: the pair *is* the fact,
+    and an id would need a unique constraint doing the primary key's job.
+
+    `created_at` only, like `refresh_tokens`: both columns of the row are its
+    key, so there is nothing an `updated_at` could describe.
+    """
+    table = CouponCourse.__table__
+    assert [c.name for c in table.primary_key.columns] == ["coupon_id", "course_id"]
+    assert "id" not in table.c
+    assert "updated_at" not in table.c
+    assert table.c.created_at.nullable is False
+
+
+def test_a_coupon_that_is_deleted_takes_its_course_list_with_it() -> None:
+    for column in ("coupon_id", "course_id"):
+        fk = next(iter(CouponCourse.__table__.c[column].foreign_keys))
+        assert fk.ondelete == "CASCADE"

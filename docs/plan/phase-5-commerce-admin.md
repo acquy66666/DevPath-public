@@ -5,7 +5,8 @@
 ## Tuần 11 — Thanh toán & thương mại
 
 - [x] Giỏ hàng + wishlist (API + UI)
-- [ ] Coupon: validate (hạn, lượt dùng, phạm vi), áp vào order
+- [x] Coupon: validate (hạn, lượt dùng, phạm vi), áp vào order
+  - Phần **"áp vào order" nằm ở task VNPay ngay bên dưới**: `orders` chưa tồn tại khi làm task này, và một cột trỏ vào bảng chưa có là thứ không ai kiểm được. Đã xong: bảng `coupons`/`coupon_courses` (migration `d23158098a8c`), toàn bộ luật validate, `POST /cart/coupon` (thử mã lên giỏ hiện tại, trả số tiền giảm), ô nhập mã ở `/gio-hang`, và `coupons_service.consume` — chỗ trừ lượt bằng `UPDATE … WHERE used_count < max_uses`, để task thanh toán chỉ còn gọi (23/09/2026)
 - [ ] VNPay sandbox: tạo payment URL → redirect → IPN handler (verify chữ ký HMAC, idempotent theo `provider_txn_id`) → order `paid` → tự động enroll các khóa trong order
 - [ ] `payment_events` append-only log mọi IPN; trang kết quả thanh toán (thành công/thất bại/đang xử lý)
 - [ ] Test: giả lập IPN hợp lệ/sai chữ ký/trùng lặp — cả 3 case phải đúng

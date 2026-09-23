@@ -159,6 +159,8 @@ Phím Enter gửi, Shift+Enter xuống dòng. Enter dùng để xác nhận ch�
 
 Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đều cần tài khoản, mà header đã có sẵn nút "Đăng nhập" cách đó hai ô. Hai trang thì chặn ở client như mọi trang cần đăng nhập khác (`?next=` quay lại đúng chỗ), chốt chặn thật vẫn là 401 của backend.
 
+**Ô "Mã giảm giá" (`coupon-box.tsx`) hỏi lại mỗi khi giỏ đổi.** Query key là `["cart-coupon", mã, hình-dạng-giỏ]`, trong đó hình dạng giỏ là danh sách id cộng tổng tiền: bỏ một khóa ra là một câu hỏi khác, nên câu trả lời cũ không được phép nằm lại trên màn hình, và mã không còn áp được sẽ tự nói ra điều đó ngay trong ô. `retry: false` — mã bị từ chối là một câu trả lời chứ không phải trục trặc mạng, thử lại ba lần chỉ làm câu ấy tới muộn hơn. Mã **không** được nhớ giữa các lần vào trang: dù sao thanh toán cũng kiểm lại từ đầu, nên một mã khôi phục từ storage chỉ là lời hứa trang này không giữ được. Coupon phạm vi từng khóa mới gắn nhãn "Đang được giảm giá" lên dòng — coupon toàn sàn phủ hết mọi dòng, dán nhãn khắp nơi thì không nói thêm gì mà lại chiếm chỗ của dòng "bạn đã có khóa này".
+
 ## Cấu trúc
 
 ```
@@ -172,7 +174,7 @@ components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)
 components/exercise/   trình soạn bài tập code + test case (Phase 3)
 components/chat/       trợ giảng AI trong trang học (Phase 4)
-components/commerce/   giỏ hàng, danh sách yêu thích (Phase 5)
+components/commerce/   giỏ hàng, danh sách yêu thích, ô mã giảm giá (Phase 5)
 lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)

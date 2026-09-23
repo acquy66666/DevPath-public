@@ -339,11 +339,58 @@ Mật khẩu là `SEED_LEARNER_PASSWORD` (mặc định `devpath-learner`), tài
 
 Ba giỏ cố ý khác nhau (mở hai tài khoản cạnh nhau không ra cùng một màn hình), và một giỏ có khóa miễn phí vì giỏ nhận khóa 0đ có chủ ý — tổng 0đ là trường hợp thanh toán phải xử lý khi có coupon 100%. `--purge` chỉ gỡ đúng những dòng trong kế hoạch: khóa ai đó tự thêm vào lúc demo thì giữ nguyên.
 
+## Mã giảm giá (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `POST /cart/coupon` | Thử một mã lên giỏ hiện tại, trả về `{coupon, course_ids, subtotal, discount, total}` |
+
+**`POST` nhưng không ghi gì.** Lượt dùng chỉ tăng lúc đơn hàng được trả tiền (`coupons_service.consume`), không phải lúc gõ mã — nếu không, một chiến dịch giới hạn 100 lượt có thể bị người ta mở trang giỏ hàng cho cạn. Dùng `POST` thay vì `GET` để mã không nằm trong URL, tức không nằm trong log của nginx, lịch sử trình duyệt và header `Referer`.
+
+**Bốn câu hỏi, hỏi theo đúng thứ tự này** — thứ tự là thứ làm cho lời từ chối đọc được:
+
+| Thứ tự | Câu hỏi | Lời từ chối |
+|---|---|---|
+| 1 | Giỏ có gì để trả tiền không? | 409 `CART_EMPTY` |
+| 2 | Có mã này không? | 404 `COUPON_NOT_FOUND` |
+| 3 | Mã còn sống không? | 409 `COUPON_NOT_STARTED` / `COUPON_EXPIRED` / `COUPON_EXHAUSTED` |
+| 4 | Có áp được vào giỏ này không? | 409 `COUPON_NOT_APPLICABLE` |
+
+Giỏ rỗng được trả lời **trước** cả việc tra mã: "mã không tồn tại" trên một cái giỏ rỗng là câu đúng nhưng đẩy người đọc đi sửa nhầm chỗ. Ba câu ở bước 3 tách riêng vì mỗi câu dẫn tới một hành động khác nhau — quay lại ngày mai, đổi mã khác, hay thôi — và câu của backend kèm ngày (`"đã hết hạn ngày 24/08/2026"`) nên frontend cố ý không đè hai mã đó bằng câu chung.
+
+**Chỉ giảm trên phần đang thật sự phải trả.** Dòng người dùng đã ghi danh giữa chừng đã bị trừ khỏi `CartView.total` thì cũng bị trừ khỏi đây: giảm 50% trên một giỏ mà nửa số dòng đã sở hữu sẽ ra số tiền giảm lớn hơn cả hóa đơn. Khóa rời sàn cũng vậy — bộ lọc `published` nằm trong câu truy vấn giỏ hàng nên coupon không bao giờ nhìn thấy nó.
+
+**Phần trăm làm tròn tới đồng, làm tròn trên số tiền giảm chứ không trên tổng.** VND không có đơn vị nhỏ hơn đồng và cổng thanh toán nhận số nguyên, nên 14.999,85 ₫ là con số không ai trả được; làm tròn trên số tiền giảm thì `tổng = tạm tính − giảm` vẫn đúng từng đồng và trang hiện được cả ba con số cộng khớp nhau. **Số tiền cố định không bao giờ vượt quá thứ nó được trừ**: voucher 500.000 ₫ trên giỏ 399.000 ₫ giảm đúng 399.000 ₫, tổng sàn ở 0 chứ không thành tín dụng mà hệ thống không có chỗ giữ.
+
+**`used_count` là một cột chứ không phải số đếm từ `orders`.** Đếm là câu trả lời chuẩn hóa hơn và sai: luật phải giữ là "lượt thứ 100 được, lượt 101 không", thứ cần một dòng để khóa chứ không phải một aggregate mà hai lần thanh toán đồng thời cùng đọc ra 99. `consume` là `UPDATE … WHERE used_count < max_uses`, ai không khớp dòng nào thì bị từ chối; CHECK `ck_coupons_uses_left` là lớp sàn bên dưới, khiến một lần ghi đè mất dấu không lưu được. Mã lưu chữ hoa (CHECK `code = upper(code)`) nên tra mã là một phép so bằng trên `uq_coupons_code`, và `TET2026` với `tet2026` không thể cùng tồn tại.
+
+**Chưa có ở đây**: gắn coupon vào đơn hàng (`orders.coupon_id` tới cùng task thanh toán) và giới hạn theo người ("mỗi tài khoản một lần") — không có bảng redemption, `orders.coupon_id` mới là chỗ trả lời câu đó. `max_uses` giới hạn chiến dịch, không giới hạn người.
+
+### Dữ liệu demo
+
+Một mã còn hạn chứng minh được đúng một thứ. Cái cần cho buổi demo là **các luật** — và mỗi luật cần một mã ở đúng trạng thái đó, thứ không bấm ra được:
+
+```bash
+docker compose exec backend python -m scripts.seed_coupons
+docker compose exec backend python -m scripts.seed_coupons --purge
+```
+
+| Mã | Giảm | Dùng để xem |
+|---|---|---|
+| `CHAOMUNG50` | 50% toàn sàn | đường thành công — giỏ `hocvien01` 798.000 → **399.000 ₫** |
+| `GIAM100K` | 100.000 ₫ | giảm số tiền cố định, không giới hạn lượt, không hạn kết thúc |
+| `PYTHON30` | 30%, 2 khóa Python | phạm vi từng khóa — giỏ `hocvien25` 898.000 → **748.300 ₫** (chỉ khóa Python được giảm) |
+| `HETHAN` | 40% | 409 `COUPON_EXPIRED` kèm ngày hết hạn |
+| `SAPCHAY` | 25% | 409 `COUPON_NOT_STARTED` kèm ngày mở |
+| `HETLUOT` | 50.000 ₫ | 409 `COUPON_EXHAUSTED` (10/10 lượt) |
+
+**Ngày tính tương đối với lúc chạy script**, không bao giờ là ngày tuyệt đối: seed viết ngày cứng là cái demo chạy được cho tới một buổi sáng nào đó thì lặng lẽ thôi chạy, trước mặt người đang xem. Chạy sau `scripts.seed` và `scripts.seed_interactions` (`PYTHON30` gọi tên hai khóa Python thật, mỗi script tạo một khóa). Script này **ghi thẳng bảng**, khác `seed_cart.py` đi qua service: coupon chưa có service tạo (màn hình quản trị thuộc task admin), và luật ở đây nằm trong chính bảng — mỗi dòng sai dừng script bằng một vi phạm CHECK gọi đúng tên nó.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 16 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 17 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -363,6 +410,7 @@ Migration là một chuỗi thẳng 16 revision, một head (`alembic heads` đ�
 | `ca9e1c7ffdbb` | `quiz_questions.ai_generated`, `reviewed_at` (duyệt câu hỏi AI sinh) |
 | `17e181ed9f26` | `course_embeddings` (vector khóa học cho "Khóa học tương tự") |
 | `45c681ca42af` | `carts`, `cart_items`, `wishlists` |
+| `d23158098a8c` | `coupons`, `coupon_courses` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

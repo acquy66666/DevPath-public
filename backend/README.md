@@ -318,6 +318,27 @@ Mọi endpoint ở đây **chỉ trả lời về chính người gọi** — kh
 
 **Không có cột giá trong `cart_items`.** Giá đóng băng lúc trả tiền, ở `order_items.unit_price`; giỏ hiện giá hôm nay vì đó là giá bấm thanh toán bây giờ sẽ phải trả. Đợt giảm giá bắt đầu trong lúc khóa nằm trong giỏ phải làm tổng giảm xuống, chứ không bị bỏ qua vì một con số đã được chép vào tuần trước.
 
+### Dữ liệu demo
+
+Một giỏ hàng *đầy* là thứ duy nhất ở đây không bấm ra được trong lúc demo — phải có người bỏ vào từ trước. `scripts/seed_cart.py` làm việc đó cho ba học viên seed:
+
+```bash
+docker compose exec backend python -m scripts.seed_cart
+docker compose exec backend python -m scripts.seed_cart --purge
+```
+
+| Tài khoản | Giỏ hàng | Yêu thích |
+|---|---|---|
+| `hocvien01@seed.devpath.example` | 3 khóa, **798.000 ₫** (có 1 khóa miễn phí) | 2 khóa |
+| `hocvien13@seed.devpath.example` | 2 khóa, **998.000 ₫** | 2 khóa |
+| `hocvien25@seed.devpath.example` | 2 khóa, **898.000 ₫** | 2 khóa |
+
+Mật khẩu là `SEED_LEARNER_PASSWORD` (mặc định `devpath-learner`), tài khoản do `scripts.seed_interactions` tạo — **chạy script đó trước**, vì seed gốc không có tài khoản học viên nào và chỉ có đúng một khóa có phí.
+
+**Script ghi qua `app/services/commerce.py` chứ không ghi thẳng vào bảng.** Luật nằm ở service (khóa phải đang bán, không phải khóa học viên đã có, không phải khóa họ dạy), nên seed ghi thẳng bảng có thể dựng ra một trạng thái mà chính API từ chối tạo — rồi demo trình bày một cái giỏ không người dùng nào có được. Đi qua cùng một cánh cửa với UI thì điều đó không xảy ra được: dòng nào sai, script dừng ngay kèm đúng câu lỗi cái nút sẽ hiện.
+
+Ba giỏ cố ý khác nhau (mở hai tài khoản cạnh nhau không ra cùng một màn hình), và một giỏ có khóa miễn phí vì giỏ nhận khóa 0đ có chủ ý — tổng 0đ là trường hợp thanh toán phải xử lý khi có coupon 100%. `--purge` chỉ gỡ đúng những dòng trong kế hoạch: khóa ai đó tự thêm vào lúc demo thì giữ nguyên.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).

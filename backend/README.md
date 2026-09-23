@@ -295,11 +295,34 @@ Vì vậy **Redis chết không làm mất tính năng**: `subscribe` thất b�
 
 **Đường lùi phía client** nằm ở `frontend/lib/api/submissions.ts`: `watchSubmission()` thử WebSocket, và chuyển sang polling `GET /submissions/{id}` mỗi 2 giây nếu không mở được, hoặc nếu socket đóng trước khi chấm xong. Ngoại lệ duy nhất là 4404 — hỏi lại không làm một bài nộp không tồn tại hiện ra. Hai đường phát ra cùng một kiểu `GradingEvent`, và `SubmissionDetail` mang sẵn `total_cases` để đường polling cũng vẽ được "3/8" y hệt.
 
+## Giỏ hàng & danh sách yêu thích (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /cart` | Cả giỏ hàng: các dòng + tổng tiền. Không phân trang |
+| `PUT /cart/courses/{id}` · `DELETE /cart/courses/{id}` | Thêm / bỏ một khóa học, **trả về cả giỏ sau thao tác** |
+| `DELETE /cart` | Dọn sạch giỏ (204) |
+| `GET /wishlist` | Khóa học đã lưu, mới nhất trước, có phân trang |
+| `GET /wishlist/course-ids` | Chỉ id — để tô trái tim trên thẻ khóa học có sẵn trên trang |
+| `PUT /wishlist/courses/{id}` · `DELETE /wishlist/courses/{id}` | Lưu / bỏ lưu (204) |
+
+Mọi endpoint ở đây **chỉ trả lời về chính người gọi** — không cái nào nhận `user_id`, nên không cái nào chĩa được vào giỏ người khác. Thêm và bỏ là `PUT`/`DELETE` chứ không `POST`: bỏ một khóa vào giỏ hai lần vẫn ra đúng cái giỏ ấy, nên phép toán là idempotent và nên được viết đúng như thế.
+
+**Giỏ hàng và danh sách yêu thích bị soi hai chuẩn khác nhau, có chủ ý.** Giỏ dẫn tới một lần trả tiền nên chỉ nhận thứ thật sự mua được: khóa đã ghi danh (409 `ALREADY_ENROLLED`), khóa mình dạy (409 `CANNOT_BUY_OWN_COURSE`) và khóa không ở trên sàn (404 `COURSE_NOT_FOUND`) đều bị chặn ngay lúc bấm — thay vì để lời từ chối nổi lên giữa màn thanh toán, sau khi người ta đã chọn xong cách trả tiền. Danh sách yêu thích không dẫn tới đâu cả nên nhận tất, kể cả khóa đã ghi danh; thứ duy nhất nó từ chối là khóa không còn bán.
+
+**Trả về cả giỏ sau mỗi thao tác** thay vì 204: một cú bấm làm đổi cùng lúc con số trên chuông giỏ hàng, tổng tiền và cái nút vừa bấm, mà cả ba đều đọc từ một object. Trả 204 thì trang phải hỏi lại — một request nữa, chạy đua với chính nó.
+
+**Khóa rời sàn thì rời giỏ**: bộ lọc `published` + `deleted_at IS NULL` nằm trong chính câu truy vấn liệt kê, và số đếm của wishlist đi qua đúng bộ lọc đó. Dòng trong bảng vẫn còn — không xóa sau lưng người dùng — nhưng không hiện và không bị tính tiền. Khóa học mua mất rồi (ghi danh ở tab khác) thì dòng vẫn hiện kèm cờ `already_enrolled`, bị trừ khỏi tổng.
+
+**Giỏ không phân trang, đổi lại có trần `MAX_CART_ITEMS = 50`.** Tổng tiền phải phủ hết mọi dòng nên một trang các dòng không bao giờ mang nổi một tổng đáng tin; chặn kích thước giỏ là cách trung thực để giữ nguyên một response. Hai cú bấm chạy đua nhau có thể vượt trần đúng một đơn vị — nó chặn cỡ response, không phải một bất biến mà thứ gì đó dựa vào.
+
+**Không có cột giá trong `cart_items`.** Giá đóng băng lúc trả tiền, ở `order_items.unit_price`; giỏ hiện giá hôm nay vì đó là giá bấm thanh toán bây giờ sẽ phải trả. Đợt giảm giá bắt đầu trong lúc khóa nằm trong giỏ phải làm tổng giảm xuống, chứ không bị bỏ qua vì một con số đã được chép vào tuần trước.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 14 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 16 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -317,6 +340,8 @@ Migration là một chuỗi thẳng 14 revision, một head (`alembic heads` đ�
 | `50ccf4fc23fb` | `quizzes`, `quiz_questions`, `quiz_attempts` |
 | `42fff7804290` | `chat_sessions`, `chat_messages` |
 | `ca9e1c7ffdbb` | `quiz_questions.ai_generated`, `reviewed_at` (duyệt câu hỏi AI sinh) |
+| `17e181ed9f26` | `course_embeddings` (vector khóa học cho "Khóa học tương tự") |
+| `45c681ca42af` | `carts`, `cart_items`, `wishlists` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

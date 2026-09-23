@@ -7,6 +7,7 @@ tables that have been registered on Base.metadata by import time.
 from app.models.base import Base
 from app.models.category import Category
 from app.models.chat import ChatMessage, ChatSession
+from app.models.commerce import MAX_CART_ITEMS, Cart, CartItem, Wishlist
 from app.models.course import Course
 from app.models.curriculum import CourseSection, Lesson, VideoAsset
 from app.models.enrollment import Enrollment
@@ -28,6 +29,8 @@ from app.models.user import User
 __all__ = [
     "Base",
     "Bookmark",
+    "Cart",
+    "CartItem",
     "Category",
     "ChatMessage",
     "ChatSession",
@@ -40,6 +43,7 @@ __all__ = [
     "Enrollment",
     "Lesson",
     "LessonProgress",
+    "MAX_CART_ITEMS",
     "Note",
     "Quiz",
     "QuizAttempt",
@@ -51,4 +55,5 @@ __all__ = [
     "TestCase",
     "User",
     "VideoAsset",
+    "Wishlist",
 ]

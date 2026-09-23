@@ -9,8 +9,11 @@ import pytest
 
 from app.models import (
     EMBEDDING_DIMENSIONS,
+    MAX_CART_ITEMS,
     Base,
     Bookmark,
+    Cart,
+    CartItem,
     Category,
     Course,
     CourseSection,
@@ -26,6 +29,7 @@ from app.models import (
     Review,
     User,
     VideoAsset,
+    Wishlist,
 )
 
 
@@ -70,6 +74,10 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "chat_messages",
         # Phase 4 -- the content-based half of the recommender.
         "course_embeddings",
+        # Phase 5 -- what somebody means to buy, and what they saved.
+        "carts",
+        "cart_items",
+        "wishlists",
     }
 
 
@@ -426,3 +434,51 @@ def test_the_attempt_keeps_the_clock_it_started_under() -> None:
     assert QuizAttempt.__table__.c.time_limit_s is not None
     assert QuizAttempt.__table__.c.started_at.nullable is False
     assert QuizAttempt.__table__.c.submitted_at.nullable is True
+
+
+def test_the_cart_is_one_per_person_and_its_lines_are_one_per_course() -> None:
+    assert "uq_carts_user_id" in constraint_names(Cart)
+    assert "uq_cart_items_cart_course" in constraint_names(CartItem)
+    assert {"ix_cart_items_cart_created"} == index_names(CartItem)
+
+
+def test_a_cart_line_carries_neither_a_price_nor_a_quantity() -> None:
+    """The price freezes at `order_items.unit_price`, when money changes hands.
+
+    A cart shows today's price because that is what checking out now would
+    cost; a copy taken last week would quietly ignore a sale that started
+    since. And nobody owns a course twice, so there is nothing to count.
+    """
+    columns = set(CartItem.__table__.c.keys())
+    assert "unit_price" not in columns
+    assert "price" not in columns
+    assert "quantity" not in columns
+
+
+def test_the_wishlist_is_flat_while_the_cart_has_an_owning_row() -> None:
+    """A cart is a container checkout can name and lock; a wishlist is a set of
+    facts of the form "this person wants this course"."""
+    assert "cart_id" in CartItem.__table__.c
+    assert "user_id" in Wishlist.__table__.c
+    assert "uq_wishlists_user_course" in constraint_names(Wishlist)
+    assert {"ix_wishlists_user_created"} == index_names(Wishlist)
+
+
+def test_wanting_a_course_does_not_outlive_the_course_or_the_person() -> None:
+    """Unlike an enrolment, which is RESTRICT on the course: an enrolment is
+    something a student keeps and the course must survive for; an intention to
+    buy is not."""
+    for model, columns in (
+        (Cart, ("user_id",)),
+        (CartItem, ("cart_id", "course_id")),
+        (Wishlist, ("user_id", "course_id")),
+    ):
+        for column in columns:
+            fk = next(iter(model.__table__.c[column].foreign_keys))
+            assert fk.ondelete == "CASCADE"
+
+
+def test_the_cart_has_a_ceiling_and_it_is_a_sane_one() -> None:
+    """It bounds a response rather than storage: the total must cover every
+    line, so `GET /cart` answers whole and unpaged."""
+    assert 1 < MAX_CART_ITEMS <= 100

@@ -23,9 +23,11 @@ from app.schemas.commerce import (
     WishlistCourseIdsOut,
     WishlistItemOut,
 )
+from app.schemas.coupons import CartDiscountOut, CouponApplyIn, CouponOut
 from app.schemas.courses import CourseCardBase, CourseCardOut, CourseInstructorOut
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.services import commerce as commerce_service
+from app.services import coupons as coupons_service
 from app.services.commerce import CartView
 
 router = APIRouter(tags=["commerce"])
@@ -104,6 +106,40 @@ async def remove_from_cart(
 async def clear_cart(current_user: CurrentUser, session: DbSession) -> None:
     """Empty my cart. 204 because there is nothing left to describe."""
     await commerce_service.clear_cart(session, current_user)
+
+
+@router.post("/cart/coupon", response_model=CartDiscountOut)
+async def apply_coupon(
+    payload: CouponApplyIn, current_user: CurrentUser, session: DbSession
+) -> CartDiscountOut:
+    """Try a discount code against my cart and say what it would take off.
+
+    POST, but it writes nothing: the count of uses moves when an order is paid
+    for, not when a code is typed, or a limited campaign could be burnt through
+    by people opening the cart page. It is a POST rather than a GET so the code
+    stays out of the URL -- and therefore out of access logs, browser history
+    and `Referer` headers.
+
+    The answer is only true for the cart as it stands. Removing a course
+    changes it, and the checkout re-runs the same checks before charging
+    anything, so nothing here is a promise about a later payment.
+
+    Refusals, each with its own code so the box under the input can say what to
+    do: 404 `COUPON_NOT_FOUND`, 409 `COUPON_NOT_STARTED`, 409 `COUPON_EXPIRED`,
+    409 `COUPON_EXHAUSTED`, 409 `COUPON_NOT_APPLICABLE` (live code, none of
+    these courses), 409 `CART_EMPTY`.
+    """
+    discount = await coupons_service.apply_to_cart(
+        session, payload.code, current_user
+    )
+
+    return CartDiscountOut(
+        coupon=CouponOut.model_validate(discount.coupon),
+        course_ids=discount.course_ids,
+        subtotal=discount.subtotal,
+        discount=discount.discount,
+        total=discount.total,
+    )
 
 
 # --- Wishlist --------------------------------------------------------------

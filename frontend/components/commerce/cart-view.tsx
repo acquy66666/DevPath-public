@@ -3,8 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GraduationCap, Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
+import { CouponBox } from "@/components/commerce/coupon-box";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +17,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  applyCoupon,
   clearCart,
   getCart,
   removeFromCart,
@@ -22,7 +26,7 @@ import {
 } from "@/lib/api/commerce";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { formatPrice } from "@/lib/format";
+import { formatAmount, formatPrice } from "@/lib/format";
 
 /**
  * "Giỏ hàng".
@@ -35,11 +39,29 @@ import { formatPrice } from "@/lib/format";
 export function CartView() {
   const { accessToken, status } = useAuth();
   const queryClient = useQueryClient();
+  const [couponCode, setCouponCode] = useState<string | null>(null);
 
   const cart = useQuery({
     queryKey: ["cart"],
     queryFn: () => getCart(accessToken as string),
     enabled: status === "authenticated" && accessToken !== null,
+  });
+
+  // What a coupon is answered against: which courses are in the cart and what
+  // they come to. Both are part of the key, so taking a course out asks the
+  // question again instead of leaving a discount on screen that the backend
+  // would now refuse -- and a code that no longer applies says so in the box.
+  const cartShape = cart.data
+    ? `${cart.data.items.map((item) => item.course.id).join(",")}|${cart.data.total}`
+    : "";
+
+  const coupon = useQuery({
+    queryKey: ["cart-coupon", couponCode, cartShape],
+    queryFn: () => applyCoupon(accessToken as string, couponCode as string),
+    enabled: couponCode !== null && accessToken !== null && cart.data !== undefined,
+    // A refused code is an answer, not a hiccup: retrying it three times only
+    // makes the same sentence arrive later.
+    retry: false,
   });
 
   const remove = useMutation({
@@ -103,6 +125,7 @@ export function CartView() {
   }
 
   const owned = cart.data.items.filter((item) => item.already_enrolled);
+  const discount = coupon.data ?? null;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
@@ -120,6 +143,14 @@ export function CartView() {
             <li key={item.course.id}>
               <CartRow
                 item={item}
+                // Only worth marking for a coupon that covers *some* lines. A
+                // site-wide one covers them all, and a badge on every row says
+                // nothing while taking up the space that tells the reader
+                // which lines are already theirs.
+                discounted={
+                  discount?.coupon.scope === "courses" &&
+                  discount.course_ids.includes(item.course.id)
+                }
                 onRemove={() => remove.mutate(item.course.id)}
                 removing={remove.isPending && remove.variables === item.course.id}
               />
@@ -141,9 +172,32 @@ export function CartView() {
         <Card>
           <CardHeader>
             <CardDescription>Tổng cộng</CardDescription>
-            <CardTitle className="text-3xl">{formatPrice(cart.data.total)}</CardTitle>
+            <CardTitle className="text-3xl">
+              {formatPrice(discount ? discount.total : cart.data.total)}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {discount ? (
+              <dl className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <dt className="text-muted-foreground">Tạm tính</dt>
+                  <dd>{formatAmount(discount.subtotal)}</dd>
+                </div>
+                <div className="flex justify-between font-medium text-emerald-700">
+                  <dt>Giảm giá</dt>
+                  <dd>−{formatAmount(discount.discount)}</dd>
+                </div>
+              </dl>
+            ) : null}
+
+            <CouponBox
+              discount={discount}
+              pending={coupon.isFetching}
+              error={coupon.error}
+              onApply={setCouponCode}
+              onClear={() => setCouponCode(null)}
+            />
+
             {owned.length > 0 ? (
               <p className="text-xs text-muted-foreground">
                 {owned.length} khóa học bạn đã có không được tính vào số tiền này.
@@ -166,10 +220,13 @@ export function CartView() {
 /** One line of the cart: the course, its price, and a way to take it out. */
 function CartRow({
   item,
+  discounted,
   onRemove,
   removing,
 }: {
   item: CartItem;
+  /** Covered by the applied coupon, which only covers part of this cart. */
+  discounted: boolean;
   onRemove: () => void;
   removing: boolean;
 }) {
@@ -204,6 +261,12 @@ function CartRow({
           {course.title}
         </Link>
         <p className="text-sm text-muted-foreground">{course.instructor.full_name}</p>
+
+        {discounted ? (
+          <Badge variant="secondary" className="mt-1">
+            Đang được giảm giá
+          </Badge>
+        ) : null}
 
         {item.already_enrolled ? (
           <p className="mt-1 text-xs text-muted-foreground">

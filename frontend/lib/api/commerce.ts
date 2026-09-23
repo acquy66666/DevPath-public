@@ -28,6 +28,26 @@ export interface WishlistItem {
   added_at: string;
 }
 
+export interface Coupon {
+  code: string;
+  discount_type: "percent" | "fixed";
+  /** A percentage for `percent`, VND for `fixed`. A string either way. */
+  value: string;
+  scope: "site" | "courses";
+  /** `null` when the code has no end date. */
+  valid_to: string | null;
+}
+
+/** What a code takes off the cart as it stands right now. Nothing is stored. */
+export interface CartDiscount {
+  coupon: Coupon;
+  /** The cart lines the coupon covers, for marking them on the page. */
+  course_ids: string[];
+  subtotal: string;
+  discount: string;
+  total: string;
+}
+
 export function getCart(accessToken: string): Promise<Cart> {
   return apiFetch<Cart>("/api/v1/cart", { accessToken });
 }
@@ -55,6 +75,28 @@ export function removeFromCart(accessToken: string, courseId: string): Promise<C
 
 export function clearCart(accessToken: string): Promise<void> {
   return apiFetch<void>("/api/v1/cart", { method: "DELETE", accessToken });
+}
+
+/**
+ * Try a discount code against the cart and get back what it would take off.
+ *
+ * Reads, despite the POST: the count of uses moves when an order is paid for,
+ * not when a code is typed. The answer is only true for the cart as it stands,
+ * so the page asks again whenever the cart changes.
+ *
+ * Refusals arrive as `ApiError`: `COUPON_NOT_FOUND`, `COUPON_EXPIRED`,
+ * `COUPON_NOT_STARTED`, `COUPON_EXHAUSTED`, `COUPON_NOT_APPLICABLE`,
+ * `CART_EMPTY`.
+ */
+export function applyCoupon(
+  accessToken: string,
+  code: string,
+): Promise<CartDiscount> {
+  return apiFetch<CartDiscount>("/api/v1/cart/coupon", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify({ code }),
+  });
 }
 
 export function listWishlist(

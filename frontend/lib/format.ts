@@ -23,6 +23,20 @@ export function formatPrice(price: string): string {
   return amount === 0 ? "Miễn phí" : PRICE.format(amount);
 }
 
+/**
+ * The same money, as an amount rather than as a price: zero stays "0 ₫".
+ *
+ * A price of zero is a fact about the course, so "Miễn phí" reads correctly
+ * there. A *discount* of zero is not free anything -- it is what a percentage
+ * off a free course comes to -- and a line saying "Giảm giá: Miễn phí" is
+ * nonsense the reader has to decode.
+ */
+export function formatAmount(value: string): string {
+  const amount = Number(value);
+  if (Number.isNaN(amount)) return value;
+  return PRICE.format(amount);
+}
+
 export function formatDate(iso: string): string {
   return DATE.format(new Date(iso));
 }

@@ -8,6 +8,13 @@ from app.models.base import Base
 from app.models.category import Category
 from app.models.chat import ChatMessage, ChatSession
 from app.models.commerce import MAX_CART_ITEMS, Cart, CartItem, Wishlist
+from app.models.coupon import (
+    COUPON_SCOPES,
+    DISCOUNT_TYPES,
+    MAX_CODE_LENGTH,
+    Coupon,
+    CouponCourse,
+)
 from app.models.course import Course
 from app.models.curriculum import CourseSection, Lesson, VideoAsset
 from app.models.enrollment import Enrollment
@@ -35,15 +42,20 @@ __all__ = [
     "ChatMessage",
     "ChatSession",
     "CodeExercise",
+    "Coupon",
+    "COUPON_SCOPES",
+    "CouponCourse",
     "Course",
     "CourseEmbedding",
     "CourseSection",
+    "DISCOUNT_TYPES",
     "DocChunk",
     "EMBEDDING_DIMENSIONS",
     "Enrollment",
     "Lesson",
     "LessonProgress",
     "MAX_CART_ITEMS",
+    "MAX_CODE_LENGTH",
     "Note",
     "Quiz",
     "QuizAttempt",

@@ -15,7 +15,8 @@
 - [x] Test: giả lập IPN hợp lệ/sai chữ ký/trùng lặp — cả 3 case phải đúng
   - 26 test ở `tests/api/test_orders.py` + 20 test ký/kiểm chữ ký ở `tests/test_vnpay.py` (chuỗi canonical ghim **viết tay từ đặc tả**). Chạy tay được bằng `python -m scripts.simulate_vnpay_ipn <mã đơn> [--fail]`, ký bằng đúng secret backend dùng để kiểm
 - [ ] MoMo sandbox (nếu còn thời gian — mục cắt giảm số 1)
-- [ ] Dashboard doanh thu instructor: doanh thu theo thời gian, học viên mới, tỉ lệ hoàn thành per khóa học
+- [x] Dashboard doanh thu instructor: doanh thu theo thời gian, học viên mới, tỉ lệ hoàn thành per khóa học
+  - `GET /instructor/stats/overview?period=7d|30d|90d|12m` + `GET /instructor/stats/courses`, trang `/giang-day/thong-ke` (24/09/2026). Migration `3f7c33c23e64`: `order_items.discount` — phần giảm của từng dòng, chia lúc tạo đơn, để coupon giới hạn một khóa không bị trừ vào doanh thu khóa khác cùng đơn. Ngày gom theo giờ Việt Nam. Dữ liệu demo: `python -m scripts.seed_sales` (77 đơn trải 12 tháng, qua đúng giỏ → đơn → IPN). Đã xem trên Chrome thật: cả 4 kỳ, tooltip bằng chuột và bàn phím, bề ngang 374px không cuộn ngang trang. Ảnh cho gate chưa chụp — thuộc mục thu bằng chứng cuối phase
 
 ## Tuần 12 — Gamification, Q&A, Admin
 

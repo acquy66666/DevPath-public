@@ -170,12 +170,10 @@ export function ColumnChart({
                 role="status"
                 className={cn(
                   "pointer-events-none absolute top-0 z-10 min-w-32 rounded-md border bg-popover px-3 py-2 text-popover-foreground shadow-md",
-                  // Keep the box inside the plot at both ends.
-                  active < count * 0.2
-                    ? "translate-x-0"
-                    : active > count * 0.8
-                      ? "-translate-x-full"
-                      : "-translate-x-1/2",
+                  // Beside the column, never over it -- the tallest column
+                  // is the one most likely to be pointed at -- and on the
+                  // side with room, so it stays inside the plot.
+                  active < count / 2 ? "ml-4" : "-ml-4 -translate-x-full",
                 )}
                 style={{ left: `${((active + 0.5) / count) * 100}%` }}
               >

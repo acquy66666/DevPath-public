@@ -1,0 +1,124 @@
+THANH TOÁN VNPAY — LUỒNG ĐƠN HÀNG VÀ CALLBACK IPN, CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 24/09/2026 · stack dev (infra/docker-compose.yml) · Postgres + backend thật
+Phase 5, tuần 11: "VNPay sandbox: tạo payment URL → redirect → IPN handler (verify
+chữ ký HMAC, idempotent theo provider_txn_id) → order paid → tự động enroll"
+
+==============================================================================
+0. CÁI ĐÃ CHỨNG MINH ĐƯỢC VÀ CÁI CHƯA
+==============================================================================
+CHƯA có tài khoản merchant sandbox (VNPAY_TMN_CODE thật), nên KHÔNG chứng minh
+được: trang thanh toán của VNPay có nhận URL mình ký hay không. Đó là thứ duy
+nhất nằm ngoài, và nó cần một lần đăng ký ở https://sandbox.vnpayment.vn/devreg/
+cộng một địa chỉ công khai để khai IPN URL (VNPay gọi thẳng vào backend nên
+localhost không dùng được — lấy URL từ Cloudflare Quick Tunnel như Phase 2).
+
+ĐÃ chứng minh được: toàn bộ phần sau khi tiền chuyển — chữ ký, chống trùng,
+đơn sang paid, ghi danh, giỏ hàng rỗng đi, coupon trừ lượt — tức đúng phần mà
+sai sót làm người ta mất khóa học đã trả tiền. Callback dùng để thử được KÝ
+BẰNG ĐÚNG SECRET backend dùng để kiểm và đi qua đúng route, đúng handler:
+scripts/simulate_vnpay_ipn.py không đi cửa sau nào cả.
+
+==============================================================================
+1. AI ĐƯỢC QUYỀN NÓI LÀ ĐÃ TRẢ TIỀN
+==============================================================================
+  trình duyệt --> POST /orders                 (đóng băng giá, chưa trả gì)
+              --> POST /orders/{code}/payment-url
+              --> vnpay.vn ... ngân hàng ...
+  VNPay  --> GET /api/v1/payments/vnpay/ipn    <-- CHỈ CÁI NÀY quyết định
+  trình duyệt <-- redirect về /thanh-toan/ket-qua  --> hỏi lại GET /orders/{code}
+
+Redirect về trình duyệt mang đúng những tham số ấy, nhưng trình duyệt là thứ
+chủ nó sửa được: tin vào query string nghĩa là ai gõ được vnp_ResponseCode=00
+cũng tự ghi danh được. Trang kết quả vì thế chỉ lấy mã đơn từ URL.
+
+==============================================================================
+2. TẠO ĐƠN (giỏ seed của hocvien13, có áp mã giảm giá)
+==============================================================================
+gio: 998000.00 2 khoa
+don: 201 DP26092447ZCXJ 998000.00 - 499000.00 = 499000.00
+url: 200 https://sandbox.vnpayment.vn/paymentv2/vpcpay.html?vnp_Amount=49900000
+         &vnp_Command=pay&vnp_CreateDate=20260924003430&vnp_... (đã cắt)
+
+- Số tiền đi trong URL là 49900000 = 499.000 ₫ × 100. VNPay đếm bằng 1/100 đồng
+  và từ chối thẳng dấu thập phân.
+- Giỏ hàng KHÔNG bị dọn ở bước này: chưa trả gì cả, và một lần checkout bỏ dở
+  mà ăn mất giỏ là lỗi người dùng cảm nhận được bằng công sức đã mất.
+- Coupon CHAOMUNG50 đóng băng vào đơn (subtotal/discount/total + coupon_code)
+  nhưng CHƯA bị trừ lượt.
+
+==============================================================================
+3. IPN HỢP LỆ
+==============================================================================
+$ python -m scripts.simulate_vnpay_ipn DP26092447ZCXJ
+
+đơn hàng : DP26092447ZCXJ — 499.000 ₫ (pending)
+giả lập  : thành công, mã 00
+IPN trả  : 200 {"RspCode":"00","Message":"Confirm Success"}
+đơn hàng : paid lúc 23/09/2026 17:34, mã giao dịch 90184870
+
+Trạng thái sau đó, đọc thẳng từ CSDL:
+  ghi danh: Python nâng cao: decorator, generator và cont | purchase
+  ghi danh: Redis: cache, hàng đợi và giới hạn truy cập   | purchase
+  coupon CHAOMUNG50 da dung: 1
+  don: paid 998000.00 - 499000.00 = 499000.00, coupon CHAOMUNG50, txn 90184870
+  gio: 0.00 0 khoa con lai
+
+Cả năm việc — log, đơn sang paid, hai dòng ghi danh source='purchase', trừ lượt
+coupon, bỏ hai dòng đã mua khỏi giỏ — nằm trong MỘT transaction. Hỏng giữa
+chừng sẽ để lại đơn đã trả tiền mà người mua không mở được khóa học.
+
+==============================================================================
+4. IPN TRÙNG (VNPay gửi lại tới khi nhận được "00")
+==============================================================================
+$ python -m scripts.simulate_vnpay_ipn DP26092447ZCXJ   # lần hai, cùng tham số
+
+đơn hàng : DP26092447ZCXJ — 499.000 ₫ (paid)
+IPN trả  : 200 {"RspCode":"02","Message":"Order already confirmed"}
+đơn hàng : paid lúc 23/09/2026 17:34, mã giao dịch 90184870
+
+Không có dòng ghi danh thứ ba, students_count không nhích, coupon vẫn 1 lượt.
+Hai lớp giữ điều đó: SELECT ... FOR UPDATE xếp hai callback song song thành
+hàng (cái sau đọc được trạng thái cái trước để lại), và partial unique
+uq_orders_provider_txn (payment_provider, provider_txn_id) WHERE provider_txn_id
+IS NOT NULL — một giao dịch ngân hàng chỉ gắn được vào đúng một đơn, bất kể
+đoạn code làm gì.
+
+==============================================================================
+5. LOG APPEND-ONLY: CẢ HAI CALLBACK ĐỀU ĐƯỢC GHI
+==============================================================================
+event: 17:34:45 valid=True rsp=00 txn=90184870     <-- cái được chấp nhận
+event: 17:35:04 valid=True rsp=00 txn=90184870     <-- cái trả lời "02"
+
+payload (đã bỏ vnp_SecureHash):
+{"vnp_Amount": "49900000", "vnp_TxnRef": "DP26092447ZCXJ", "vnp_PayDate":
+ "20260924003444", "vnp_TmnCode": "LOCALDEMO", "vnp_BankCode": "NCB",
+ "vnp_CardType": "ATM", "vnp_OrderInfo": "Thanh toan don hang DP26092447ZCXJ",
+ "vnp_BankTranNo": "VNP2447ZCXJ", "vnp_ResponseCode": "00",
+ "vnp_TransactionNo": "90184870", "vnp_TransactionStatus": "00"}
+
+Callback được ghi TRƯỚC KHI bị phán xét, kể cả cái sai chữ ký — nhất là cái sai
+chữ ký. Đây là bản ghi duy nhất về việc cổng thanh toán thật sự nói gì, thứ cần
+đọc khi trạng thái đơn và sao kê ngân hàng không khớp nhau, tức đúng lúc không
+thể tin vào lời kể của chính đoạn code. signature_valid được LƯU chứ không tính
+lại: đổi secret thì dòng tháng trước không được biến thành hàng giả.
+
+(TmnCode "LOCALDEMO" là giá trị giả của máy dev. Trên bản thật, cả TmnCode lẫn
+vnp_SecureHash đều là dữ liệu nhạy cảm và phải che trước khi đưa vào báo cáo.)
+
+==============================================================================
+6. BA CA BẮT BUỘC CỦA KẾ HOẠCH, CHẠY BẰNG TEST
+==============================================================================
+tests/api/test_orders.py — 26 test, trong đó:
+  hợp lệ   : test_a_valid_ipn_pays_the_order_and_enrols_the_buyer
+  sai chữ ký: test_an_ipn_with_a_forged_signature_changes_nothing  -> RspCode 97,
+              đơn vẫn pending, không có dòng ghi danh nào
+  trùng     : test_the_same_ipn_twice_pays_once                    -> 00 rồi 02,
+              đúng một dòng ghi danh, students_count = 1
+  + sai số tiền (04), không có đơn (01), thanh toán bị từ chối (đơn failed kèm
+    vnp_ResponseCode), máy chủ không có secret thì từ chối mọi callback (97).
+
+tests/test_vnpay.py — 20 test cho phần ký/kiểm chữ ký, không cần CSDL. Chuỗi
+canonical được GHIM VIẾT TAY TỪ ĐẶC TẢ (sắp theo tên tham số, quote_plus cả hai
+vế, bỏ tham số rỗng, bỏ hai trường chữ ký) chứ không đọc ngược từ code — đó là
+thứ duy nhất không kiểm được bằng cách chạy thử khi chưa có tài khoản merchant,
+và sai một dấu cách là VNPay từ chối không kèm lý do.

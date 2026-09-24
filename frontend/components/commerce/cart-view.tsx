@@ -25,6 +25,7 @@ import {
   type CartItem,
 } from "@/lib/api/commerce";
 import { apiErrorMessage } from "@/lib/api/error-messages";
+import { createOrder, createPaymentUrl } from "@/lib/api/orders";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { formatAmount, formatPrice } from "@/lib/format";
 
@@ -74,6 +75,25 @@ export function CartView() {
     mutationFn: () => clearCart(accessToken as string),
     // 204 carries nothing to write into the cache, so this one refetches.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["cart"] }),
+  });
+
+  // Two requests, on purpose. The order is a record of what is being bought
+  // and survives whatever happens next; the payment URL is a signed string
+  // with a few minutes' life. Keeping the code of the order that was created
+  // means a server with no VNPay credentials can still say "đơn đã tạo, đây"
+  // instead of losing it behind an error.
+  const [orderCode, setOrderCode] = useState<string | null>(null);
+  const checkout = useMutation({
+    mutationFn: async () => {
+      const order = await createOrder(accessToken as string, couponCode);
+      setOrderCode(order.code);
+      return createPaymentUrl(accessToken as string, order.code);
+    },
+    onSuccess: (url: string) => {
+      // A full navigation rather than the router: the destination is VNPay,
+      // which is not this app.
+      window.location.href = url;
+    },
   });
 
   if (status === "loading") {
@@ -204,11 +224,41 @@ export function CartView() {
               </p>
             ) : null}
 
-            <Button className="w-full" disabled>
-              Thanh toán
+            <Button
+              className="w-full"
+              onClick={() => checkout.mutate()}
+              disabled={checkout.isPending}
+            >
+              {checkout.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
+              Thanh toán qua VNPay
             </Button>
+
+            {checkout.isError ? (
+              <Alert variant="destructive">
+                <AlertDescription>
+                  {apiErrorMessage(checkout.error)}
+                  {orderCode ? (
+                    <>
+                      {" "}
+                      Đơn hàng <span className="font-medium">{orderCode}</span>{" "}
+                      đã được tạo —{" "}
+                      <Link
+                        href={`/thanh-toan/ket-qua?ma=${orderCode}`}
+                        className="underline underline-offset-4"
+                      >
+                        xem đơn
+                      </Link>
+                      .
+                    </>
+                  ) : null}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+
             <p className="text-center text-xs text-muted-foreground">
-              Thanh toán VNPay đang được hoàn thiện.
+              Bạn sẽ được chuyển sang trang thanh toán của VNPay.
             </p>
           </CardContent>
         </Card>

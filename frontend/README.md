@@ -149,7 +149,7 @@ Tab **Trợ giảng AI** cạnh mục lục trong trang học (`/hoc/[slug]`). C
 
 Phím Enter gửi, Shift+Enter xuống dòng. Enter dùng để xác nhận chữ trong bộ gõ (`isComposing`) thì không gửi, nếu không một câu tiếng Việt gõ dở sẽ bị gửi đi. `CHAT_RATE_LIMITED` cố ý không có câu chung trong `error-messages.ts`, vì câu của backend nói rõ phải đợi bao lâu.
 
-## Giỏ hàng & danh sách yêu thích (Phase 5)
+## Giỏ hàng, mã giảm giá & thanh toán (Phase 5)
 
 `/gio-hang` và `/yeu-thich`, cộng cái chuông giỏ hàng trên header và hai nút trên trang khóa học (`components/commerce/`). Khóa học có phí giờ vào giỏ thay vì đứng sau một nút "Mua khóa học" bị khóa — thanh toán là task kế tiếp, nhưng ý định mua thì thu ở giỏ từ bây giờ.
 
@@ -158,6 +158,10 @@ Phím Enter gửi, Shift+Enter xuống dòng. Enter dùng để xác nhận ch�
 **Trái tim đọc `["wishlist-ids"]`**, một mảng id, chứ không hỏi "khóa này đã lưu chưa?" cho từng khóa: một response nhỏ, dùng chung được cho mọi thẻ trên trang, và không đẻ ra một endpoint chỉ để trả lời một chữ có/không.
 
 Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đều cần tài khoản, mà header đã có sẵn nút "Đăng nhập" cách đó hai ô. Hai trang thì chặn ở client như mọi trang cần đăng nhập khác (`?next=` quay lại đúng chỗ), chốt chặn thật vẫn là 401 của backend.
+
+**Nút "Thanh toán qua VNPay" gọi hai request, có chủ ý**: tạo đơn (`POST /orders`) rồi xin URL đã ký (`POST /orders/{code}/payment-url`), sau đó `window.location.href` sang VNPay — chuyển trang thật vì đích đến không thuộc app này. Đơn hàng là bản ghi sống lâu, URL thanh toán là chuỗi ký sống 15 phút; tách ra thì một máy chủ chưa cấu hình VNPay vẫn trả lời được "đơn đã tạo, xem ở đây" thay vì làm mất nó sau một câu lỗi.
+
+**Trang `/thanh-toan/ket-qua` không đọc kết quả từ URL.** VNPay chuyển trình duyệt về kèm nguyên câu trả lời trong query string, nhưng trang chỉ lấy `vnp_TxnRef` (mã đơn) rồi hỏi `GET /orders/{code}` — query string đi qua trình duyệt, mà trình duyệt là thứ chủ nó sửa được, tin vào nó nghĩa là ai gõ được `vnp_ResponseCode=00` cũng tự ghi danh được. Callback của VNPay có thể tới **sau** cú chuyển trang vài giây, nên đơn còn `pending` thì trang tự hỏi lại mỗi 3 giây trong 90 giây rồi dừng và chỉ cho người dùng mã đơn để hỏi lại — chứ không tuyên bố là thất bại.
 
 **Ô "Mã giảm giá" (`coupon-box.tsx`) hỏi lại mỗi khi giỏ đổi.** Query key là `["cart-coupon", mã, hình-dạng-giỏ]`, trong đó hình dạng giỏ là danh sách id cộng tổng tiền: bỏ một khóa ra là một câu hỏi khác, nên câu trả lời cũ không được phép nằm lại trên màn hình, và mã không còn áp được sẽ tự nói ra điều đó ngay trong ô. `retry: false` — mã bị từ chối là một câu trả lời chứ không phải trục trặc mạng, thử lại ba lần chỉ làm câu ấy tới muộn hơn. Mã **không** được nhớ giữa các lần vào trang: dù sao thanh toán cũng kiểm lại từ đầu, nên một mã khôi phục từ storage chỉ là lời hứa trang này không giữ được. Coupon phạm vi từng khóa mới gắn nhãn "Đang được giảm giá" lên dòng — coupon toàn sàn phủ hết mọi dòng, dán nhãn khắp nơi thì không nói thêm gì mà lại chiếm chỗ của dòng "bạn đã có khóa này".
 
@@ -174,7 +178,7 @@ components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)
 components/exercise/   trình soạn bài tập code + test case (Phase 3)
 components/chat/       trợ giảng AI trong trang học (Phase 4)
-components/commerce/   giỏ hàng, danh sách yêu thích, ô mã giảm giá (Phase 5)
+components/commerce/   giỏ hàng, yêu thích, mã giảm giá, kết quả thanh toán (Phase 5)
 lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)

@@ -24,6 +24,14 @@ from app.models.grading import (
     SubmissionResult,
     TestCase,
 )
+from app.models.order import (
+    ORDER_CODE_LENGTH,
+    ORDER_STATUSES,
+    PAYMENT_PROVIDERS,
+    Order,
+    OrderItem,
+    PaymentEvent,
+)
 from app.models.progress import LessonProgress
 from app.models.quiz import Quiz, QuizAttempt, QuizQuestion
 from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
@@ -57,6 +65,12 @@ __all__ = [
     "MAX_CART_ITEMS",
     "MAX_CODE_LENGTH",
     "Note",
+    "Order",
+    "ORDER_CODE_LENGTH",
+    "ORDER_STATUSES",
+    "OrderItem",
+    "PAYMENT_PROVIDERS",
+    "PaymentEvent",
     "Quiz",
     "QuizAttempt",
     "QuizQuestion",

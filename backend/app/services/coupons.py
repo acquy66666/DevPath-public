@@ -47,7 +47,7 @@ the campaign, not on the person.
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_FLOOR, ROUND_HALF_UP, Decimal
 
 from fastapi import status
 from sqlalchemy import select, update
@@ -107,6 +107,9 @@ class Discount:
     discount: Decimal
     #: `subtotal - discount`, never below zero.
     total: Decimal
+    #: `discount` shared out over `course_ids` by `split_discount`. The order
+    #: freezes these onto its lines; courses not in here take nothing off.
+    line_discounts: dict[uuid.UUID, Decimal]
 
 
 def normalize(code: str) -> str:
@@ -178,6 +181,38 @@ def _amount_off(coupon: Coupon, eligible_subtotal: Decimal) -> Decimal:
     return min(coupon.value, eligible_subtotal).quantize(ZERO)
 
 
+def split_discount(discount: Decimal, prices: list[Decimal]) -> list[Decimal]:
+    """Share one discount out over the lines it was taken off, in whole đồng.
+
+    Each line takes the part of the discount its price is of the total, rounded
+    down; the đồng that rounding leaves over go one each to the lines rounded
+    down the most (the first of them, on a tie). So the shares add up to the
+    discount exactly, and none exceeds its line's price -- a share only reaches
+    the price when the discount is the whole subtotal, and then every share is
+    exact and nothing is left over.
+
+    This is what lets an order carry one discount and each instructor still be
+    told what *their* course actually sold for.
+    """
+    subtotal = sum(prices, ZERO)
+    discount = min(discount, subtotal)
+    if discount <= ZERO:
+        return [ZERO for _ in prices]
+
+    exact = [discount * price / subtotal for price in prices]
+    shares = [value.to_integral_value(rounding=ROUND_FLOOR) for value in exact]
+
+    leftover = int(discount - sum(shares, ZERO))
+    # `sorted` is stable under `reverse=True` too, so a tie keeps list order.
+    by_remainder = sorted(
+        range(len(prices)), key=lambda index: exact[index] - shares[index], reverse=True
+    )
+    for index in by_remainder[:leftover]:
+        shares[index] += DONG
+
+    return [share.quantize(ZERO) for share in shares]
+
+
 async def apply_to_cart(
     session: AsyncSession,
     code: str,
@@ -216,6 +251,7 @@ async def apply_to_cart(
 
     eligible_subtotal = sum((line.course.price for line in eligible), ZERO)
     discount = _amount_off(coupon, eligible_subtotal)
+    shares = split_discount(discount, [line.course.price for line in eligible])
 
     return Discount(
         coupon=coupon,
@@ -223,6 +259,9 @@ async def apply_to_cart(
         subtotal=cart.total,
         discount=discount,
         total=max(cart.total - discount, ZERO).quantize(ZERO),
+        line_discounts={
+            line.course.id: share for line, share in zip(eligible, shares, strict=True)
+        },
     )
 
 

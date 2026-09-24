@@ -173,11 +173,28 @@ class OrderItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     #: This is the column the whole "no price in the cart" decision points at.
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
 
+    #: This line's share of `orders.discount`, split at the moment of sale by
+    #: `coupons.split_discount`. The order's discount is one number, but each
+    #: course has its own instructor, and a coupon limited to one course must
+    #: not come out of the revenue of the course next to it. Recomputing the
+    #: split later would read the coupon's scope as it is *then*. The lines of
+    #: an order add up to its discount; that is the service's to keep, since a
+    #: CHECK cannot see across rows.
+    discount: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False, server_default=text("0")
+    )
+
     __table_args__ = (
         # No quantity, for the same reason the cart has none: a course cannot
         # be owned twice, so a second line would be the same sale twice.
         UniqueConstraint("order_id", "course_id", name="uq_order_items_order_course"),
         CheckConstraint("unit_price >= 0", name="ck_order_items_unit_price"),
+        CheckConstraint(
+            "discount >= 0 AND discount <= unit_price", name="ck_order_items_discount"
+        ),
+        # The instructor's revenue reads sales course by course; the unique
+        # constraint above leads with `order_id` and cannot serve that.
+        Index("ix_order_items_course_id", "course_id"),
     )
 
     def __repr__(self) -> str:

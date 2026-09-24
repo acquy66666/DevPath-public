@@ -208,6 +208,7 @@ async def create_from_cart(
         raise EmptyCartError("Giỏ hàng chưa có khóa học nào cần thanh toán")
 
     discount = ZERO
+    line_discounts: dict[uuid.UUID, Decimal] = {}
     coupon_id: uuid.UUID | None = None
     stored_code: str | None = None
     if coupon_code:
@@ -215,6 +216,7 @@ async def create_from_cart(
             session, coupon_code, user, cart=cart, now=now
         )
         discount = applied.discount
+        line_discounts = applied.line_discounts
         coupon_id = applied.coupon.id
         stored_code = applied.coupon.code
 
@@ -259,6 +261,9 @@ async def create_from_cart(
                 # Read from the course, not from the cart's total: this is the
                 # number that must still be true on a receipt printed next year.
                 unit_price=line.course.price,
+                # Frozen for the same reason: which lines a coupon covered is
+                # read from its scope, and the scope can be edited later.
+                discount=line_discounts.get(line.course.id, ZERO),
             )
         )
 

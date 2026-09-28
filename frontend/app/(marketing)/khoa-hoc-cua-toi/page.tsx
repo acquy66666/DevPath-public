@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { MyCourses } from "@/components/enrollments/my-courses";
+import { StudyStats } from "@/components/gamification/study-stats";
 
 export const metadata: Metadata = {
   title: "Khóa học của tôi — DevPath",
@@ -14,6 +15,7 @@ export default function MyCoursesPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="mb-6 text-3xl font-semibold tracking-tight">Khóa học của tôi</h1>
+      <StudyStats />
       <MyCourses />
     </div>
   );

@@ -18,6 +18,7 @@ from app.models.coupon import (
 from app.models.course import Course
 from app.models.curriculum import CourseSection, Lesson, VideoAsset
 from app.models.enrollment import Enrollment
+from app.models.gamification import XP_REASON_REF_TYPES, Streak, XpEvent
 from app.models.grading import (
     CodeExercise,
     Submission,
@@ -76,10 +77,13 @@ __all__ = [
     "QuizQuestion",
     "RefreshToken",
     "Review",
+    "Streak",
     "Submission",
     "SubmissionResult",
     "TestCase",
     "User",
     "VideoAsset",
     "Wishlist",
+    "XP_REASON_REF_TYPES",
+    "XpEvent",
 ]

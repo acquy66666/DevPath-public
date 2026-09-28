@@ -20,8 +20,10 @@
 
 ## Tuần 12 — Gamification, Q&A, Admin
 
-- [ ] XP events (hoàn thành lesson/quiz/bài code AC lần đầu) + streak theo ngày hoạt động
+- [x] XP events (hoàn thành lesson/quiz/bài code AC lần đầu) + streak theo ngày hoạt động
+  - Migration `e9d78af241e6` (`xp_events` append-only + `streaks`), `services/gamification.py`, `GET /users/me/gamification` · `GET /users/me/xp-events`, khối "Chuỗi ngày học / Tổng XP / XP gần đây" đầu trang `/khoa-hoc-cua-toi` (28/09/2026). XP: bài học +10 (mọi loại), quiz đạt +20 và bài code AC +30 cộng thêm vào XP bài học. Luật "lần đầu" nằm ở unique `uq_xp_events_ref` + `ON CONFLICT DO NOTHING`, ghi trong cùng transaction với completion/verdict, chỉ cho người có ghi danh. Một ngày vào chuỗi khi học viên **nộp** một thứ gì đó (hoàn thành bài, nộp quiz kể cả trượt, nộp code không tính chạy thử), theo giờ Việt Nam; chuỗi bị cắt lúc đọc chứ không có job nửa đêm. Đã chạy thật trên stack bằng một tài khoản dùng một lần (sau đó đã xóa): 2 video + quiz 100% + bài code được **sandbox thật** chấm AC → 90 XP, chuỗi 1 ngày; chạy lại cả luồng lần hai thì vẫn 90
 - [ ] Leaderboard Redis sorted set (tuần/tháng/toàn thời gian) + trang leaderboard
+  - **Dữ liệu seed chưa có XP nào**: `xp_events` chỉ ghi từ 28/09/2026, còn `seed_interactions` ghi `completed_at` mà không ghi `lesson_progress`, nên leaderboard sẽ trống. Cần một script dựng XP (từ `lesson_progress`, lượt quiz đạt, bài nộp AC) hoặc seed đi qua đúng service, cùng lúc với script rebuild sorted set từ `xp_events`
 - [ ] Chứng chỉ PDF khi hoàn thành 100%: job Celery sinh PDF (weasyprint) + mã QR → trang verify công khai `/cert/{code}`
 - [ ] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
 - [ ] Thông báo in-app (chuông + danh sách)

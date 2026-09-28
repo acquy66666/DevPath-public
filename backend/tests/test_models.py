@@ -32,9 +32,11 @@ from app.models import (
     QuizQuestion,
     RefreshToken,
     Review,
+    Streak,
     User,
     VideoAsset,
     Wishlist,
+    XpEvent,
 )
 
 
@@ -90,6 +92,9 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "orders",
         "order_items",
         "payment_events",
+        # Phase 5 -- XP and the daily streak.
+        "xp_events",
+        "streaks",
     }
 
 
@@ -629,3 +634,30 @@ def test_the_payment_log_is_written_once_and_never_updated() -> None:
     assert "created_at" in PaymentEvent.__table__.c
     assert "updated_at" not in PaymentEvent.__table__.c
     assert PaymentEvent.__table__.c.signature_valid.nullable is False
+
+
+def test_xp_is_paid_once_per_person_reason_and_thing() -> None:
+    """The "first time only" rule lives in the key, not in the service."""
+    unique = next(
+        c for c in XpEvent.__table__.constraints if c.name == "uq_xp_events_ref"
+    )
+    assert [c.name for c in unique.columns] == ["user_id", "reason", "ref_type", "ref_id"]
+    assert {"ck_xp_events_amount_positive", "ck_xp_events_reason_ref"} <= constraint_names(
+        XpEvent
+    )
+    assert index_names(XpEvent) == {"ix_xp_events_user_created"}
+
+
+def test_the_xp_ledger_is_append_only_and_outlives_what_it_paid_for() -> None:
+    """No `updated_at`, and no foreign key on `ref_id`: deleting a lesson does
+    not take back the XP somebody earned finishing it."""
+    columns = XpEvent.__table__.c
+    assert "updated_at" not in columns
+    assert not columns.ref_id.foreign_keys
+    assert next(iter(columns.user_id.foreign_keys)).ondelete == "CASCADE"
+
+
+def test_one_streak_per_person() -> None:
+    assert {"uq_streaks_user_id", "ck_streaks_counts"} <= constraint_names(Streak)
+    assert Streak.__table__.c.last_active_date.nullable is False
+    assert next(iter(Streak.__table__.c.user_id.foreign_keys)).ondelete == "CASCADE"

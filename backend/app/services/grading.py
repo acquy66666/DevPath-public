@@ -33,6 +33,7 @@ from app.schemas.grading import (
     TestCaseUpdate,
 )
 from app.services import curriculum as curriculum_service
+from app.services import gamification
 from app.services.rate_limit import RateLimiter
 
 # The message left on the row when the queue would not take the job. It is
@@ -538,6 +539,12 @@ async def create_submission(
         is_trial=is_trial,
     )
     session.add(submission)
+    if not is_trial:
+        # The day counts when the work is handed in, not when the queue gets
+        # round to grading it. A trial run is a draft and counts for nothing.
+        await gamification.record_study(
+            session, user_id=user.id, lesson_id=exercise.lesson_id
+        )
     await session.commit()
     await session.refresh(submission)
 

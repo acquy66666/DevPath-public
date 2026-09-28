@@ -23,6 +23,7 @@ from app.core.exceptions import DomainError
 from app.models import CourseSection, Enrollment, Lesson, LessonProgress, User
 from app.services import courses as courses_service
 from app.services import enrollments as enrollments_service
+from app.services import gamification
 
 
 class NotEnrolledError(DomainError):
@@ -149,6 +150,16 @@ async def save_position(
     if completed is not None:
         await _refresh_course_completion(session, enrollment, course_id)
 
+    if completed is True:
+        # Only the tick: a heartbeat is watching, not finishing, and a video
+        # playing in a background tab must not keep a streak alive.
+        await gamification.award(
+            session, user_id=user.id, reason="lesson_completed", ref_id=lesson.id
+        )
+        await gamification.record_active_day(
+            session, user_id=user.id, day=gamification.today_in_vietnam()
+        )
+
     await session.commit()
 
     progress = await session.get(LessonProgress, progress_id)
@@ -214,6 +225,9 @@ async def mark_lesson_solved(
     enrolment, which is how an instructor trying their own exercise stays out
     of their course's completion figures.
 
+    Pays the lesson's XP too, the first time. What finished it (a quiz, an
+    exercise) is the caller's to pay for, and only when this returns True.
+
     Does not commit: the caller is mid-transaction and owns that decision.
     Returns whether an enrolment was found to record against.
     """
@@ -249,4 +263,7 @@ async def mark_lesson_solved(
         )
     )
     await _refresh_course_completion(session, enrollment, course_id)
+    await gamification.award(
+        session, user_id=user_id, reason="lesson_completed", ref_id=lesson.id
+    )
     return True

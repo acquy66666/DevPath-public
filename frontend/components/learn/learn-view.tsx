@@ -124,6 +124,7 @@ export function LearnView({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
       queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+      queryClient.invalidateQueries({ queryKey: ["gamification"] });
     },
   });
 

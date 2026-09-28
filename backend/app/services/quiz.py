@@ -41,6 +41,7 @@ from app.schemas.quiz import (
     check_question_shape,
 )
 from app.services import curriculum as curriculum_service
+from app.services import gamification
 from app.services import progress as progress_service
 
 #: How long after the deadline an answer is still marked normally.
@@ -594,13 +595,22 @@ async def submit_attempt(
     attempt.score = score_answers(questions, answers)
     attempt.submitted_at = now
 
+    # Handing in a paper is a day of study whatever it scored. A late one is
+    # not: it was marked zero above without being read.
+    await gamification.record_study(session, user_id=user.id, lesson_id=quiz.lesson_id)
+
     if attempt.score >= quiz.pass_score:
         # Passing finishes the lesson, exactly as an accepted submission
         # finishes a code exercise -- and in the same transaction, so a
         # completion can never be recorded for an attempt that did not save.
-        await progress_service.mark_lesson_solved(
+        # The quiz pays on top of its lesson, and only to an enrolled student:
+        # the instructor rehearsing their own quiz has nothing to record.
+        if await progress_service.mark_lesson_solved(
             session, lesson_id=quiz.lesson_id, user_id=user.id
-        )
+        ):
+            await gamification.award(
+                session, user_id=user.id, reason="quiz_passed", ref_id=quiz.id
+            )
 
     await session.commit()
     return attempt, quiz, questions

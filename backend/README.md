@@ -467,11 +467,41 @@ Mỗi lần mua **đi qua đúng đường thật** — `add_to_cart` → `creat
 
 Đăng nhập `mai.anh@devpath.example` hoặc `khoa.tran@devpath.example` (mật khẩu giảng viên seed) rồi mở `/giang-day/thong-ke`.
 
+## XP và chuỗi ngày học (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /users/me/gamification` | Tổng XP, chuỗi hiện tại, chuỗi dài nhất, ngày hoạt động gần nhất, hôm nay đã tính chưa |
+| `GET /users/me/xp-events?page=…&page_size=…` | Từng lần được cộng XP, mới nhất trước, kèm bài học (và khóa) mà nó thưởng cho |
+
+Cả hai chỉ trả dữ liệu của chính người gọi. Không route nào nhận id người dùng, vì XP của người khác là việc của leaderboard.
+
+**XP** (`services/gamification.py`, mức thưởng ở `XP_AMOUNTS`) chỉ tính **lần đầu** cho mỗi (người, lý do, đối tượng):
+
+| Lý do | Khi nào | XP |
+|---|---|---|
+| `lesson_completed` | Hoàn thành một bài học bất kỳ: tick "đã xong", quiz đạt, hoặc bài code AC | 10 |
+| `quiz_passed` | Lần đầu đạt điểm qua một quiz. Cộng thêm vào XP của bài học chứa nó | 20 |
+| `exercise_solved` | Lần đầu nộp bài code (không phải chạy thử) được AC. Cộng thêm vào XP của bài học | 30 |
+
+"Lần đầu" được đảm bảo bằng `uq_xp_events_ref` chứ không bằng một phép kiểm trong code. Cộng XP là `INSERT … ON CONFLICT DO NOTHING`, nên các trường hợp sau đều không làm XP tăng thêm: bỏ tick rồi tick lại, qua quiz hai lần, hay job chấm bài bị giao hai lần. XP được ghi **trong cùng transaction** với việc hoàn thành bài (với bài code là transaction của verdict). Nhờ vậy completion bị rollback thì XP cũng không còn.
+
+Chỉ người **có ghi danh** mới được cộng XP. Giảng viên tự làm thử quiz hay bài code của khóa mình vẫn được chấm bình thường, nhưng không nhận XP và không tính chuỗi.
+
+**Chuỗi ngày học:** một ngày (theo giờ Việt Nam) được tính khi học viên *nộp* một thứ gì đó:
+- hoàn thành bài học;
+- nộp lượt quiz, kể cả khi trượt;
+- nộp bài code, tính lúc nộp chứ không phải lúc được chấm.
+
+Những việc sau **không** tính: xem video mà chưa xong (heartbeat của player), chạy thử code, và nộp quiz quá giờ. Không có job chạy lúc nửa đêm để cắt chuỗi. Chuỗi có ngày cuối trước hôm qua thì API trả `current_streak: 0`; ngày cuối là hôm qua thì chuỗi vẫn còn.
+
+Hiển thị ở đầu trang `/khoa-hoc-cua-toi`: ba thẻ số và 5 lần cộng XP gần nhất.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 19 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 20 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -494,6 +524,7 @@ Migration là một chuỗi thẳng 19 revision, một head (`alembic heads` đ�
 | `d23158098a8c` | `coupons`, `coupon_courses` |
 | `99c7ba304d8d` | `orders`, `order_items`, `payment_events` |
 | `3f7c33c23e64` | `order_items.discount` (phần giảm theo dòng, chia lại cho đơn cũ) + index cho dashboard giảng viên |
+| `e9d78af241e6` | `xp_events` (sổ cái XP, append-only), `streaks` (chuỗi ngày học) |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

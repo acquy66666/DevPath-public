@@ -8,6 +8,7 @@ from app.api.v1 import (
     courses,
     curriculum,
     enrollments,
+    gamification,
     grading,
     health,
     instructor,
@@ -32,6 +33,7 @@ api_router.include_router(commerce.router)
 api_router.include_router(courses.router)
 api_router.include_router(curriculum.router)
 api_router.include_router(enrollments.router)
+api_router.include_router(gamification.router)
 api_router.include_router(grading.router)
 api_router.include_router(instructor.router)
 api_router.include_router(orders.router)

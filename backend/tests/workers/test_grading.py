@@ -31,6 +31,7 @@ from app.models import (
     SubmissionResult,
     TestCase,
     User,
+    XpEvent,
 )
 from app.schemas.grading import GradingCaseEvent, GradingEvent
 from app.services import grading_events
@@ -850,6 +851,78 @@ async def test_grading_still_works_for_somebody_with_no_enrolment(
     await db_session.refresh(submission)
     assert submission.status == "done"
     assert await completion_of(db_session, submission, exercise) is None
+
+
+async def xp_of(session: AsyncSession, submission: Submission) -> list[tuple[str, int]]:
+    rows = await session.execute(
+        select(XpEvent.reason, XpEvent.amount)
+        .where(XpEvent.user_id == submission.user_id)
+        .order_by(XpEvent.reason)
+    )
+    return [tuple(row) for row in rows]
+
+
+async def test_solving_an_exercise_pays_for_it_and_for_its_lesson(
+    db_session: AsyncSession,
+) -> None:
+    """Written in the verdict's transaction, like the completion: XP for a
+    submission whose AC was rolled back would be XP for nothing."""
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    assert await xp_of(db_session, submission) == [
+        ("exercise_solved", 30),
+        ("lesson_completed", 10),
+    ]
+
+
+async def test_a_wrong_answer_pays_nothing(db_session: AsyncSession) -> None:
+    exercise = await make_exercise(db_session, weights=(1, 1))
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC", "WA"))
+
+    assert await xp_of(db_session, submission) == []
+
+
+async def test_a_trial_run_that_passes_pays_nothing(db_session: AsyncSession) -> None:
+    exercise = await make_exercise(db_session, weights=(1, 1), hidden=(False, True))
+    submission = await make_submission(db_session, exercise, is_trial=True)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    assert await xp_of(db_session, submission) == []
+
+
+async def test_solving_it_again_pays_nothing_more(db_session: AsyncSession) -> None:
+    exercise = await make_exercise(db_session)
+    first = await make_submission(db_session, exercise)
+    await run_grading(db_session, first.id, judge=judging("AC"))
+
+    again = Submission(
+        user_id=first.user_id,
+        exercise_id=exercise.id,
+        code="print(3)",
+        language="python",
+        status="pending",
+    )
+    db_session.add(again)
+    await db_session.flush()
+    await run_grading(db_session, again.id, judge=judging("AC"))
+
+    assert len(await xp_of(db_session, first)) == 2
+
+
+async def test_solving_your_own_exercise_pays_nothing(db_session: AsyncSession) -> None:
+    """No enrolment, no XP: the instructor is graded, not rewarded."""
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise, enrolled=False)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    assert await xp_of(db_session, submission) == []
 
 
 # --- The same job, delivered twice ------------------------------------------

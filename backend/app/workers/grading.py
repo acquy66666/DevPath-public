@@ -45,6 +45,7 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase
 from app.schemas.grading import TERMINAL_STATUSES, GradingCaseEvent, GradingEvent
+from app.services import gamification
 from app.services import progress as progress_service
 from app.services.grading_events import publish_event
 from app.workers.celery_app import celery_app
@@ -348,13 +349,23 @@ async def _finish_lesson_if_solved(
     A trial run is excluded by `is_trial` rather than by its verdict. Passing
     the samples is not solving the exercise -- hidden cases are the exam -- and
     the two are different questions that happen to share a letter.
+
+    The exercise's XP goes in the same transaction for the same reason, and
+    only when a completion was recorded: no enrolment, no XP. The first time
+    only is the ledger's unique key, so a job delivered twice pays once.
     """
     if submission.is_trial or submission.verdict != ACCEPTED:
         return
 
-    await progress_service.mark_lesson_solved(
+    if await progress_service.mark_lesson_solved(
         session, lesson_id=exercise.lesson_id, user_id=submission.user_id
-    )
+    ):
+        await gamification.award(
+            session,
+            user_id=submission.user_id,
+            reason="exercise_solved",
+            ref_id=exercise.id,
+        )
 
 
 def _record(

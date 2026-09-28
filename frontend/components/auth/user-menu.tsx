@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BarChart3,
   BookOpen,
   GraduationCap,
   Heart,
@@ -83,6 +84,14 @@ export function UserMenu({ user }: { user: User }) {
             <Link href="/giang-day">
               <LayoutDashboard aria-hidden />
               Khóa học tôi dạy
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.role === "instructor" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/giang-day/thong-ke">
+              <BarChart3 aria-hidden />
+              Thống kê giảng dạy
             </Link>
           </DropdownMenuItem>
         ) : null}

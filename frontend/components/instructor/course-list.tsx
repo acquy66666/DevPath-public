@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Plus } from "lucide-react";
+import { BarChart3, BookOpen, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -37,12 +37,20 @@ export function CourseList() {
             Nơi bạn soạn nội dung và quyết định khi nào khóa học lên sóng.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/giang-day/moi">
-            <Plus aria-hidden />
-            Tạo khóa học
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/giang-day/thong-ke">
+              <BarChart3 aria-hidden />
+              Thống kê
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/giang-day/moi">
+              <Plus aria-hidden />
+              Tạo khóa học
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {query.isPending ? (

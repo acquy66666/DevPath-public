@@ -427,7 +427,7 @@ VNPAY_TMN_CODE=...
 VNPAY_HASH_SECRET=...
 ```
 
-Trống thì `POST /orders/{code}/payment-url` trả 503 `PAYMENT_NOT_CONFIGURED` và IPN từ chối mọi callback (không có secret thì không kiểm được chữ ký nào). Đăng ký merchant sandbox ở <https://sandbox.vnpayment.vn/devreg/>, rồi trong phần cấu hình của merchant khai **IPN URL** là `<địa chỉ công khai>/api/v1/payments/vnpay/ipn` — VNPay gọi thẳng vào backend nên `localhost` không dùng được, lấy URL từ Cloudflare Quick Tunnel (xem [docs/huong-dan-deploy-vps.md](../docs/huong-dan-deploy-vps.md)).
+Trống thì `POST /orders/{code}/payment-url` trả 503 `PAYMENT_NOT_CONFIGURED` và IPN từ chối mọi callback (không có secret thì không kiểm được chữ ký nào). Đăng ký merchant sandbox ở <https://sandbox.vnpayment.vn/devreg/>, rồi trong phần cấu hình của merchant khai **IPN URL** là `<địa chỉ công khai>/api/v1/payments/vnpay/ipn` — VNPay gọi thẳng vào backend nên `localhost` không dùng được. **Cloudflare Quick Tunnel không dùng được cho việc này** — mỗi lần chạy là một URL mới, mà IPN URL khai một lần với VNPay; máy dev dùng một domain ngrok cố định trỏ vào `backend:8000`. Cổng merchant sandbox không có ô tự khai IPN URL: phải gửi URL cho kỹ thuật VNPay qua email.
 
 ### Chạy thử khi chưa có tài khoản merchant
 
@@ -438,11 +438,40 @@ docker compose exec backend python -m scripts.simulate_vnpay_ipn DP260924ABC123 
 
 Script ký callback bằng **đúng secret backend dùng để kiểm** rồi gọi vào chính endpoint IPN — cùng route, cùng bước kiểm chữ ký, cùng handler. Nó chứng minh được mọi thứ xảy ra sau khi tiền chuyển (chữ ký, chống trùng, ghi danh, giỏ hàng rỗng đi), tức đúng phần mà sai sót làm người ta mất khóa học; thứ nó không chứng minh được là trang của VNPay có nhận URL của mình không — cái đó cần `VNPAY_TMN_CODE` thật. Đặt hai biến bằng giá trị bất kỳ ở máy dev là chạy được.
 
+## Dashboard giảng viên (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /instructor/stats/overview?period=7d\|30d\|90d\|12m` | Tổng của kỳ và của kỳ trước, chuỗi theo ngày (theo tháng với `12m`) có đủ cả ô trống, cùng số liệu từ trước tới nay |
+| `GET /instructor/stats/courses?period=…&page=…` | Từng khóa: học viên, hoàn thành, tiến độ TB, ghi danh mới và doanh thu trong kỳ. Khóa bán chạy nhất kỳ đứng đầu |
+
+Chỉ `instructor` (khớp đúng vai trò, admin cũng 403), và không path nào mang id giảng viên — mọi con số đã được lọc theo `instructor.id` ngay trong câu truy vấn, nên không có dashboard của người khác để hỏi. Không bảng riêng, không cache: toàn bộ là phép gộp trên `orders`/`order_items`/`enrollments`/`lesson_progress`, với hai index dựng cho đúng hai kiểu đọc này (`ix_order_items_course_id`, `ix_enrollments_course_created`).
+
+**Mỗi con số chỉ mang một nghĩa**, và test ghim đúng nghĩa đó (`tests/api/test_instructor_stats.py`):
+
+- **Doanh thu** là tiền người mua thực trả cho khóa của mình: `unit_price − discount` của **từng dòng**, chỉ đơn `paid`, theo `paid_at`. Không phải `orders.total` (một đơn có thể chứa khóa của nhiều giảng viên), và không phải `unit_price` (phần coupon là tiền không ai nhận). Chưa trừ phí sàn — chia sẻ doanh thu là hướng phát triển.
+- **Phần giảm theo dòng** (`order_items.discount`) chia **lúc tạo đơn** trên đúng các dòng coupon áp vào, rồi đóng băng. Coupon `PYTHON30` trong một đơn có cả khóa React không được trừ vào doanh thu khóa React. Xem `coupons.split_discount` và `tests/test_discount_split.py`.
+- **Ngày là ngày Việt Nam**: đơn trả lúc 00:10 thuộc ngày mới. Gom nhóm bằng tên múi `Asia/Ho_Chi_Minh` — chuỗi `'+07:00'` trong `AT TIME ZONE` bị Postgres đọc thành *UTC−7*.
+- **Học viên mới** là người lần đầu ghi danh một khóa của mình trong kỳ; **tỉ lệ hoàn thành** và **tiến độ TB** tính từ trước tới nay, lượt đã hoàn thành tính là xong mọi bài, và trả `null` chứ không phải 0 khi chưa có ai.
+
+### Dữ liệu demo
+
+Mọi lượt ghi danh seed rơi vào đúng ngày chạy seed, và thanh toán là việc người ta làm tay từng lần — biểu đồ sẽ là một cột và một đường phẳng. `scripts/seed_sales.py` nạp **77 đơn (139 lượt bán) của 40 người mua riêng** trải trong 12 tháng, tăng dần về hiện tại:
+
+```bash
+docker compose exec backend python -m scripts.seed_sales
+docker compose exec backend python -m scripts.seed_sales --purge
+```
+
+Mỗi lần mua **đi qua đúng đường thật** — `add_to_cart` → `create_from_cart` (một phần tư có mã `BANHANG20`) → callback VNPay có chữ ký vào `handle_vnpay_ipn`, handler ghi danh, trừ lượt coupon và ghi `payment_events`. Thứ duy nhất ghi thẳng bảng là **đồng hồ**: sau đó đơn, lượt ghi danh và sự kiện thanh toán được lùi về thời điểm trong kế hoạch. Callback ký bằng một secret cục bộ đưa vào bản sao của settings, nên chạy được ở máy chưa có tài khoản merchant và không chạm vào secret thật. Người mua là `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`), **không phải** học viên seed — `seed_interactions` và test của nó ghim chính xác ai học khóa nào. Các lượt ghi danh này có đi vào recommender như mọi lượt khác, nên **`--purge` trước khi chạy `scripts.eval_recommender`**. Chạy sau `scripts.seed` và `scripts.seed_interactions`; ngày tính tương đối với lúc chạy.
+
+Đăng nhập `mai.anh@devpath.example` hoặc `khoa.tran@devpath.example` (mật khẩu giảng viên seed) rồi mở `/giang-day/thong-ke`.
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 18 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 19 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -464,6 +493,7 @@ Migration là một chuỗi thẳng 18 revision, một head (`alembic heads` đ�
 | `45c681ca42af` | `carts`, `cart_items`, `wishlists` |
 | `d23158098a8c` | `coupons`, `coupon_courses` |
 | `99c7ba304d8d` | `orders`, `order_items`, `payment_events` |
+| `3f7c33c23e64` | `order_items.discount` (phần giảm theo dòng, chia lại cho đơn cũ) + index cho dashboard giảng viên |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

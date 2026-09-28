@@ -21,6 +21,7 @@ from app.models import (
     CourseSection,
     Enrollment,
     Lesson,
+    OrderItem,
     Review,
     TestCase,
     VideoAsset,
@@ -187,12 +188,17 @@ async def test_the_seed_really_writes_the_code_exercise_and_its_cases(
         # enrolled has to go first. On a developer's machine that is whoever
         # clicked through the demo, plus the synthetic learners
         # `scripts.seed_interactions` writes, which enrol in this very course.
-        # Inside the test transaction, and rolled back with everything else.
+        # `order_items.course_id` is RESTRICT for the same reason, and
+        # `scripts.seed_sales` sells this course too. Inside the test
+        # transaction, and rolled back with everything else.
         await db_session.execute(
             delete(Review).where(Review.course_id == existing.id)
         )
         await db_session.execute(
             delete(Enrollment).where(Enrollment.course_id == existing.id)
+        )
+        await db_session.execute(
+            delete(OrderItem).where(OrderItem.course_id == existing.id)
         )
         await db_session.flush()
 

@@ -23,7 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.models import Coupon, Course, Enrollment, Order, PaymentEvent, User
+from app.models import Coupon, Course, Enrollment, Order, OrderItem, PaymentEvent, User
 from app.services import vnpay
 from tests.api.test_commerce import make_course, make_user, sign_in
 from tests.api.test_coupons import make_coupon
@@ -217,6 +217,71 @@ async def test_a_coupon_is_frozen_onto_the_order_but_not_used_up(
         select(Coupon.used_count).where(Coupon.id == coupon.id)
     )
     assert used == 0
+
+
+async def line_discounts(session: AsyncSession, code: str) -> dict[uuid.UUID, Decimal]:
+    rows = await session.execute(
+        select(OrderItem.course_id, OrderItem.discount)
+        .join(Order, Order.id == OrderItem.order_id)
+        .where(Order.code == code)
+    )
+    return dict(rows.tuples().all())
+
+
+async def test_the_discount_is_frozen_onto_the_lines_it_was_taken_off(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    """A coupon for one course, in a cart with two courses by two people.
+
+    Whoever teaches the other course must not see their revenue shrink
+    because of it -- and reading the coupon's scope again later cannot tell
+    them, because the scope can be edited after the sale.
+    """
+    other = await make_user(db_session, "instructor")
+    covered = await make_course(db_session, owner, price="400000")
+    uncovered = await make_course(db_session, other, price="300000")
+    coupon = await make_coupon(
+        db_session, discount_type="percent", value="30", scope="courses", courses=(covered,)
+    )
+    headers = await sign_in(api_client, student)
+    await add(api_client, covered, headers)
+    await add(api_client, uncovered, headers)
+
+    order = await checkout(api_client, headers, coupon.code)
+
+    assert order["discount"] == "120000.00"
+    assert await line_discounts(db_session, order["code"]) == {
+        covered.id: Decimal("120000.00"),
+        uncovered.id: Decimal("0.00"),
+    }
+
+
+async def test_the_line_discounts_add_up_to_the_order_discount(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    courses = [await make_course(db_session, owner, price="199000") for _ in range(3)]
+    coupon = await make_coupon(db_session, discount_type="fixed", value="100000")
+    headers = await sign_in(api_client, student)
+    for course in courses:
+        await add(api_client, course, headers)
+
+    order = await checkout(api_client, headers, coupon.code)
+
+    shares = await line_discounts(db_session, order["code"])
+    assert sum(shares.values()) == Decimal(order["discount"]) == Decimal("100000")
+    assert sorted(shares.values()) == [Decimal("33333"), Decimal("33333"), Decimal("33334")]
+
+
+async def test_an_order_without_a_coupon_discounts_no_line(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    course = await make_course(db_session, owner)
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+
+    order = await checkout(api_client, headers)
+
+    assert await line_discounts(db_session, order["code"]) == {course.id: Decimal("0.00")}
 
 
 async def test_a_coupon_that_expired_since_the_cart_page_is_refused_at_checkout(

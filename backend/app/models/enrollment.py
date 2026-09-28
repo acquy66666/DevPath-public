@@ -63,6 +63,9 @@ class Enrollment(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         UniqueConstraint("user_id", "course_id", name="uq_enrollments_user_course"),
         # "Khóa học của tôi" reads by user and orders by when they signed up.
         Index("ix_enrollments_user_id", "user_id"),
+        # The instructor's dashboard reads by course, and by when people joined
+        # it. `uq_enrollments_user_course` leads with `user_id`, so it is no help.
+        Index("ix_enrollments_course_created", "course_id", "created_at"),
     )
 
     def __repr__(self) -> str:

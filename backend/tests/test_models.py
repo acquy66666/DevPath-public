@@ -272,7 +272,10 @@ def test_video_assets_are_keyed_by_their_storage_object() -> None:
 def test_enrollments_constraints_match_the_spec() -> None:
     assert "ck_enrollments_source" in constraint_names(Enrollment)
     assert "uq_enrollments_user_course" in constraint_names(Enrollment)
-    assert {"ix_enrollments_user_id"} == index_names(Enrollment)
+    assert {
+        "ix_enrollments_user_id",
+        "ix_enrollments_course_created",
+    } == index_names(Enrollment)
 
 
 def test_an_enrolment_outlives_its_course_but_not_its_owner() -> None:

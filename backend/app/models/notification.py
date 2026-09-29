@@ -11,9 +11,10 @@ platform knows how to announce. What a payload holds depends on its type, so a
 type nobody renders is a row nobody can read; adding one is a migration on
 purpose.
 
-`read_at` NULL means unread. The only index is the one the bell reads --
-"my unread ones, newest first" -- and it is partial, because read notifications
-are the bulk of the table and the bell never looks at them.
+`read_at` NULL means unread. Two indexes, for the two questions asked of the
+table: the bell's "how many unread, and which" reads a partial index -- read
+notifications are the bulk of the table and the bell never looks at them --
+and the notifications page's "all of mine, newest first" reads the full one.
 """
 
 import uuid
@@ -27,7 +28,9 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 
 #: Somebody else answered a question you asked.
 NOTIFICATION_QA_REPLY = "qa_reply"
-NOTIFICATION_TYPES = (NOTIFICATION_QA_REPLY,)
+#: A learner asked a question in a course you teach.
+NOTIFICATION_QA_QUESTION = "qa_question"
+NOTIFICATION_TYPES = (NOTIFICATION_QA_REPLY, NOTIFICATION_QA_QUESTION)
 
 
 class Notification(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -54,6 +57,7 @@ class Notification(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             text("created_at DESC"),
             postgresql_where=text("read_at IS NULL"),
         ),
+        Index("ix_notifications_user_created", "user_id", text("created_at DESC")),
     )
 
     def __repr__(self) -> str:

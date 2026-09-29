@@ -597,15 +597,28 @@ Chạy thật ngày 29/09/2026: cấp 233 chứng chỉ (87 của học viên se
 
 **Huy hiệu giảng viên:** `is_instructor_reply` quyết định lúc viết (người trả lời là giảng viên của khóa lúc đó). Admin là staff nhưng không mang huy hiệu.
 
-**Thông báo:** trả lời câu hỏi của người khác ghi một dòng `notifications` (`type='qa_reply'`) cho người hỏi, **cùng transaction** với câu trả lời. Chuông đọc bảng này là task kế tiếp.
+**Thông báo:** trả lời câu hỏi của người khác ghi `notifications` (`type='qa_reply'`) cho người hỏi; học viên đặt câu hỏi ghi `qa_question` cho giảng viên của khóa. Cả hai **cùng transaction** với việc được báo, và không ai được báo về lời của chính mình.
 
 Frontend: tab "Hỏi đáp" cạnh "Ghi chú" dưới bài học (`?hoi-dap=<id>` mở thẳng một câu hỏi), và trang `/giang-day/hoi-dap` cho giảng viên (giảng viên không ghi danh được khóa của mình nên không vào trang học được; lối vào ở nút "Hỏi đáp" của `/giang-day` và menu người dùng).
+
+## Thông báo in-app (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /notifications?unread=true&page=` | Thông báo của chính người gọi, mới nhất trước; `payload` trả nguyên như lúc ghi (mỗi `type` một dạng) |
+| `GET /notifications/unread-count` | Số trên chuông — request riêng và rẻ (đọc index partial), frontend hỏi mỗi 60 giây và mỗi lần cửa sổ được focus lại |
+| `POST /notifications/{id}/read` | Idempotent, giữ `read_at` đầu tiên. Không phải của mình hoặc không tồn tại → 404 `NOTIFICATION_NOT_FOUND` |
+| `POST /notifications/read-all` | Mọi dòng chưa đọc của mình → đã đọc; trả `{"marked": n}` |
+
+Hai loại hiện có: `qa_reply` (người khác trả lời câu bạn hỏi → link `/hoc/{course_slug}?bai={lesson_id}&hoi-dap={thread_id}`) và `qa_question` (học viên hỏi trong khóa bạn dạy → link `/giang-day/hoi-dap?cau-hoi={thread_id}`). Câu chữ và link do frontend dựng từ `type` + `payload` (`components/notifications/notification-items.tsx`), vì server không biết route của frontend; loại mới mà trang chưa biết vẫn hiện một dòng chung, trỏ về `/thong-bao`. Không có WebSocket: một câu trả lời đợi được một phút.
+
+Frontend: chuông trên header (badge đỏ, `9+` khi quá 9; dropdown 8 thông báo gần nhất, chỉ tải khi mở; bấm một dòng = đánh dấu đã đọc + đi tới link) và trang `/thong-bao` (tab Tất cả / Chưa đọc, "Đánh dấu đã đọc hết", phân trang).
 
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 22 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 23 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -631,6 +644,7 @@ Migration là một chuỗi thẳng 22 revision, một head (`alembic heads` đ�
 | `e9d78af241e6` | `xp_events` (sổ cái XP, append-only), `streaks` (chuỗi ngày học) |
 | `b6fc99d6b6af` | `certificates` (chứng chỉ hoàn thành, tên/khóa/giảng viên đóng băng lúc cấp) |
 | `8f1cea268f50` | `qa_threads`, `qa_replies`, `qa_votes` (hỏi đáp theo bài học, chỉ upvote), `notifications` |
+| `c7c21bbd1a9b` | `ix_notifications_user_created` (trang thông báo) + loại thông báo `qa_question` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

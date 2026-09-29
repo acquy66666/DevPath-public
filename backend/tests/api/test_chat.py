@@ -457,8 +457,10 @@ async def test_a_model_that_fails_halfway_ends_with_an_error_and_stores_nothing(
     events = parse_sse(response.text)
     assert [name for name, _ in events] == ["sources", "delta", "error"]
     assert events[-1][1] == {"code": "LLM_UNAVAILABLE", "message": UNAVAILABLE_MESSAGE}
-    # The upstream detail is for the log, not for the student.
-    assert "503" not in response.text
+    # The upstream detail is for the log, not for the student. "HTTP 503"
+    # rather than "503": the `sources` event carries random UUIDs, and one of
+    # them containing those three digits failed this test by chance.
+    assert "HTTP 503" not in response.text
 
     count = await db_session.scalar(
         select(func.count()).select_from(ChatMessage).where(

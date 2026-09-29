@@ -491,7 +491,11 @@ async def test_answering_your_own_question_tells_nobody(
 
     await answer(api_client, thread["id"], headers, "À em hiểu rồi")
 
-    count = await db_session.scalar(select(func.count()).select_from(Notification))
+    # Asking told the instructor (`qa_question`); answering it yourself tells
+    # nobody anything more.
+    count = await db_session.scalar(
+        select(func.count()).select_from(Notification).where(Notification.type == "qa_reply")
+    )
     assert count == 0
 
 

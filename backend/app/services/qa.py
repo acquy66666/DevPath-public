@@ -18,8 +18,9 @@ course's learners, not part of the free sample.
 decided as the reply is written. An admin answering is staff, but not the
 person who teaches the course, so their reply does not.
 
-**Answering somebody's question notifies them**, in the same transaction as the
-reply (`services/notifications.py`). Answering your own question does not.
+**Answering somebody's question notifies them**, and asking one notifies the
+course's instructor, each in the same transaction as the write
+(`services/notifications.py`). Nobody is notified about their own words.
 
 Every count on a thread -- votes, replies, "the instructor has answered" -- is
 worked out when the list is read, with no counter columns to keep in step. A
@@ -38,6 +39,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
 from app.models import (
+    NOTIFICATION_QA_QUESTION,
     NOTIFICATION_QA_REPLY,
     Course,
     CourseSection,
@@ -319,6 +321,26 @@ async def create_thread(
 
     thread = QaThread(lesson_id=place.lesson.id, user_id=user.id, title=title, body=body)
     session.add(thread)
+    await session.flush()
+
+    # The instructor hears about a question the way the asker hears about its
+    # answer. Not when they asked it themselves.
+    if user.id != place.course.instructor_id:
+        notifications_service.add(
+            session,
+            user_id=place.course.instructor_id,
+            type=NOTIFICATION_QA_QUESTION,
+            payload={
+                "thread_id": str(thread.id),
+                "lesson_id": str(place.lesson.id),
+                "course_id": str(place.course.id),
+                "course_title": place.course.title,
+                "lesson_title": place.lesson.title,
+                "thread_title": thread.title,
+                "asker_name": user.full_name,
+            },
+        )
+
     await session.commit()
     return await _one(session, thread.id, user)
 

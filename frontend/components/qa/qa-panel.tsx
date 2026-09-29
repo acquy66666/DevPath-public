@@ -18,7 +18,9 @@ import {
   type QaSort,
 } from "@/lib/api/qa";
 
-import { QA_KEY, QaPager, QaThreadRow } from "./qa-shared";
+import { Pager } from "@/components/ui/pager";
+
+import { QA_KEY, QaThreadRow } from "./qa-shared";
 import { QA_MESSAGES, QaThreadView } from "./qa-thread-view";
 
 /**
@@ -200,7 +202,7 @@ export function QaPanel({
       ) : null}
 
       {threads.data ? (
-        <QaPager
+        <Pager
           page={threads.data.page}
           pageSize={threads.data.page_size}
           total={threads.data.total}

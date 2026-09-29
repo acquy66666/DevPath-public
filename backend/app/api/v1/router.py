@@ -14,6 +14,7 @@ from app.api.v1 import (
     health,
     instructor,
     leaderboard,
+    notifications,
     orders,
     payments,
     progress,
@@ -41,6 +42,7 @@ api_router.include_router(gamification.router)
 api_router.include_router(grading.router)
 api_router.include_router(instructor.router)
 api_router.include_router(leaderboard.router)
+api_router.include_router(notifications.router)
 api_router.include_router(orders.router)
 api_router.include_router(payments.router)
 api_router.include_router(progress.router)

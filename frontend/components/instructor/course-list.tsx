@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BarChart3, BookOpen, Plus } from "lucide-react";
+import { BarChart3, BookOpen, MessageCircleQuestion, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -38,6 +38,12 @@ export function CourseList() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link href="/giang-day/hoi-dap">
+              <MessageCircleQuestion aria-hidden />
+              Hỏi đáp
+            </Link>
+          </Button>
           <Button asChild variant="outline">
             <Link href="/giang-day/thong-ke">
               <BarChart3 aria-hidden />

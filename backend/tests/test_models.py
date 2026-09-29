@@ -25,9 +25,13 @@ from app.models import (
     Lesson,
     LessonProgress,
     Note,
+    Notification,
     Order,
     OrderItem,
     PaymentEvent,
+    QaReply,
+    QaThread,
+    QaVote,
     Quiz,
     QuizAttempt,
     QuizQuestion,
@@ -98,6 +102,11 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "streaks",
         # Phase 5 -- certificates of completion.
         "certificates",
+        # Phase 5 -- Q&A under a lesson, and the notification an answer sends.
+        "qa_threads",
+        "qa_replies",
+        "qa_votes",
+        "notifications",
     }
 
 
@@ -685,3 +694,35 @@ def test_a_certificate_keeps_its_own_copy_of_what_it_says() -> None:
         assert not columns[name].foreign_keys
     # Empty until the worker has drawn the PDF.
     assert columns.pdf_key.nullable is True
+
+
+def test_qa_hangs_off_the_lesson_and_the_author() -> None:
+    """A question about a lesson that is gone has nothing left to be about."""
+    for model, parent in ((QaThread, "lesson_id"), (QaReply, "thread_id"), (QaVote, "thread_id")):
+        for column in (parent, "user_id"):
+            fk = next(iter(model.__table__.c[column].foreign_keys))
+            assert fk.ondelete == "CASCADE"
+    assert index_names(QaThread) == {"ix_qa_threads_lesson_created"}
+    assert index_names(QaReply) == {"ix_qa_replies_thread_created"}
+
+
+def test_a_vote_is_a_row_one_per_person_and_carries_no_value() -> None:
+    """Upvotes only: the row is the vote, the unique is what keeps it one."""
+    assert "value" not in QaVote.__table__.c
+    assert "uq_qa_votes_thread_user" in constraint_names(QaVote)
+
+
+def test_the_instructor_badge_is_a_column_decided_at_write_time() -> None:
+    column = QaReply.__table__.c.is_instructor_reply
+    assert column.nullable is False
+    assert column.server_default is not None
+
+
+def test_the_bell_reads_a_partial_index_of_unread_notifications() -> None:
+    index = next(iter(Notification.__table__.indexes))
+    assert index.name == "ix_notifications_user_unread"
+    assert str(index.dialect_options["postgresql"]["where"]) == "read_at IS NULL"
+    assert {"ck_notifications_type", "ck_notifications_payload_object"} <= constraint_names(
+        Notification
+    )
+    assert next(iter(Notification.__table__.c.user_id.foreign_keys)).ondelete == "CASCADE"

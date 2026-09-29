@@ -30,6 +30,11 @@ from app.models.grading import (
     SubmissionResult,
     TestCase,
 )
+from app.models.notification import (
+    NOTIFICATION_QA_REPLY,
+    NOTIFICATION_TYPES,
+    Notification,
+)
 from app.models.order import (
     ORDER_CODE_LENGTH,
     ORDER_STATUSES,
@@ -39,6 +44,13 @@ from app.models.order import (
     PaymentEvent,
 )
 from app.models.progress import LessonProgress
+from app.models.qa import (
+    QA_BODY_MAX_LENGTH,
+    QA_TITLE_MAX_LENGTH,
+    QaReply,
+    QaThread,
+    QaVote,
+)
 from app.models.quiz import Quiz, QuizAttempt, QuizQuestion
 from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
 from app.models.recommendation import CourseEmbedding
@@ -74,12 +86,20 @@ __all__ = [
     "MAX_CART_ITEMS",
     "MAX_CODE_LENGTH",
     "Note",
+    "Notification",
+    "NOTIFICATION_QA_REPLY",
+    "NOTIFICATION_TYPES",
     "Order",
     "ORDER_CODE_LENGTH",
     "ORDER_STATUSES",
     "OrderItem",
     "PAYMENT_PROVIDERS",
     "PaymentEvent",
+    "QA_BODY_MAX_LENGTH",
+    "QA_TITLE_MAX_LENGTH",
+    "QaReply",
+    "QaThread",
+    "QaVote",
     "Quiz",
     "QuizAttempt",
     "QuizQuestion",

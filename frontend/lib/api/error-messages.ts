@@ -131,6 +131,12 @@ const MESSAGES: Record<string, string> = {
   LLM_UNAVAILABLE:
     "Trợ giảng AI đang quá tải hoặc tạm ngừng. Câu hỏi chưa được lưu — thử lại sau ít phút nhé.",
   LLM_NOT_CONFIGURED: "Máy chủ này chưa bật trợ giảng AI (thiếu khóa Gemini).",
+
+  // Hỏi đáp. QA_NOT_ALLOWED cố ý không có ở đây: câu của backend nói đúng luật
+  // nào chặn (chỉ người hỏi sửa được, chỉ người hỏi hoặc giảng viên xóa được…).
+  QA_THREAD_NOT_FOUND: "Câu hỏi này không còn nữa — có thể đã bị xóa.",
+  QA_REPLY_NOT_FOUND: "Câu trả lời này không còn nữa — có thể đã bị xóa.",
+  CANNOT_VOTE_OWN_THREAD: "Bạn không thể bình chọn câu hỏi của chính mình.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

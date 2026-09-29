@@ -110,8 +110,11 @@ export type CourseUpdate = Partial<
 export function listMyCourses(
   accessToken: string,
   page = 1,
+  pageSize = 20,
 ): Promise<Page<Course>> {
-  return apiFetch<Page<Course>>(`/api/v1/courses/me?page=${page}`, { accessToken });
+  return apiFetch<Page<Course>>(`/api/v1/courses/me?page=${page}&page_size=${pageSize}`, {
+    accessToken,
+  });
 }
 
 export function getCourse(courseId: string, accessToken?: string | null): Promise<Course> {

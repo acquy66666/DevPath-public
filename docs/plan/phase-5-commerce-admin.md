@@ -41,7 +41,19 @@
   - **Đã chạy thật:** hoàn thành bài cuối → chứng chỉ được cấp → worker vẽ PDF sau 3 giây → tải được. Mã QR trên PDF giải ra đúng URL xác thực. Mã sai trả 404 thật.
   - Sửa kèm: `apiUrl()` trên frontend từng ghi host nội bộ `backend:8000` vào link khi render phía server; nút Google cũng mắc lỗi tiềm ẩn này.
   - Mục gate "quét QR verify được" đã chạy được; ảnh và PDF mẫu thu ở mục bằng chứng cuối phase.
-- [ ] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
+- [x] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
+  - Migration `8f1cea268f50` (`qa_threads`, `qa_replies`, `qa_votes`, `notifications`), `services/qa.py` + `services/notifications.py`, router `qa.py`, tab "Hỏi đáp" dưới bài học và trang `/giang-day/hoi-dap`. Ngày hoàn thành: 29/09/2026.
+  - **Chỉ upvote**, nên `qa_votes` bỏ cột `value` của đặc tả: một dòng là một phiếu, mỗi người một phiếu (unique). Người hỏi không vote câu của mình.
+  - **Ai tham gia:** học viên đã ghi danh, giảng viên của khóa, admin; bài học thử cũng vậy (xem được bài thử không có nghĩa là vào được lớp). Người hỏi sửa câu hỏi; người hỏi hoặc giảng viên đánh dấu giải quyết và xóa.
+  - **Badge:** `is_instructor_reply` quyết định lúc viết. Danh sách tính `has_instructor_reply`, số vote và số trả lời lúc đọc, không có cột đếm.
+  - **Notification:** trả lời câu của người khác ghi `notifications` (`qa_reply`, payload là ảnh chụp id + tiêu đề + tên người trả lời) cùng transaction với câu trả lời. Chuông và danh sách để cho task kế tiếp.
+  - **Giảng viên trả lời ở đâu:** giảng viên không ghi danh được khóa mình nên không vào trang học được; hộp thư `/giang-day/hoi-dap` mở sẵn ở "chưa trả lời" (chưa có trả lời của giảng viên và chưa giải quyết).
+  - **Đã chạy thật** bằng một học viên và một giảng viên dùng một lần (đã xóa sau đó), trên stack thật và trong khung trình duyệt:
+    - hỏi → hộp thư có câu đó → giảng viên trả lời trên UI → badge và thông báo xuất hiện → câu rời khỏi "chưa trả lời";
+    - tự vote câu mình → 409;
+    - đặt câu hỏi, đánh dấu giải quyết và xóa trên UI;
+    - bề ngang 375px không cuộn ngang.
+  - Sửa kèm: cột mục lục của trang học tràn 17px trên điện thoại (thiếu `min-w-0` ở grid item).
 - [ ] Thông báo in-app (chuông + danh sách)
 - [ ] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports
   - **Duyệt khóa học phải gọi `enqueue_ingest`** như `submit_for_review` đang làm khi auto-approve bật (`backend/app/services/courses.py`). Tắt auto-approve mà endpoint duyệt quên việc này thì không còn gì nạp khóa học vào kho chatbot. Viết test: duyệt → một job ingest được xếp hàng (ghi 19/09/2026, đợt dọn nợ)

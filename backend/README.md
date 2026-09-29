@@ -579,11 +579,33 @@ docker compose exec backend python -m scripts.issue_certificates [--dry-run]
 
 Chạy thật ngày 29/09/2026: cấp 233 chứng chỉ (87 của học viên seed, 146 của người mua mẫu sau `seed_study`), vẽ 233 PDF trong 98 giây. Mã QR giải ra đúng URL xác thực (kiểm bằng OpenCV trên ảnh PDF render 200 dpi).
 
+## Hỏi đáp theo bài học (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /lessons/{id}/qa-threads?sort=newest\|top` | Câu hỏi của một bài, mới nhất trước hoặc nhiều người hỏi nhất trước; mỗi câu kèm `vote_count`, `voted` (người đọc đã vote chưa), `reply_count`, `has_instructor_reply` |
+| `POST /lessons/{id}/qa-threads` | Đặt câu hỏi (`title` ≤ 200, `body` ≤ 5000 ký tự, Markdown) |
+| `GET /qa-threads/{id}` | Một câu hỏi, kèm khóa và bài của nó |
+| `PATCH /qa-threads/{id}` | Sửa `title`/`body` (chỉ người hỏi) hoặc `resolved` (người hỏi hoặc staff của khóa). Yêu cầu chỉ được làm một nửa thì không làm gì cả |
+| `DELETE /qa-threads/{id}` | Người hỏi hoặc staff; câu trả lời và vote đi theo |
+| `PUT` / `DELETE /qa-threads/{id}/vote` | "Tôi cũng có câu hỏi này". Idempotent cả hai chiều; tự vote câu của mình → 409 `CANNOT_VOTE_OWN_THREAD` |
+| `GET` / `POST /qa-threads/{id}/replies` | Câu trả lời, cũ nhất trước (một cuộc trò chuyện) / trả lời |
+| `DELETE /qa-replies/{id}` | Người viết hoặc staff |
+| `GET /instructor/qa-threads?course_id=&unanswered=true` | Hộp thư của giảng viên: câu hỏi ở mọi khóa mình dạy. `unanswered` = chưa có trả lời của giảng viên **và** người hỏi chưa đánh dấu giải quyết |
+
+**Ai tham gia:** học viên đã ghi danh, giảng viên của khóa, admin. Người khác nhận 403 `NOT_ENROLLED`, kể cả ở bài học thử: ai cũng *xem* được bài thử, nhưng câu hỏi bên dưới là chuyện của lớp. Khóa bị hạ về nháp thì 404 với học viên, đúng như trang học.
+
+**Huy hiệu giảng viên:** `is_instructor_reply` quyết định lúc viết (người trả lời là giảng viên của khóa lúc đó). Admin là staff nhưng không mang huy hiệu.
+
+**Thông báo:** trả lời câu hỏi của người khác ghi một dòng `notifications` (`type='qa_reply'`) cho người hỏi, **cùng transaction** với câu trả lời. Chuông đọc bảng này là task kế tiếp.
+
+Frontend: tab "Hỏi đáp" cạnh "Ghi chú" dưới bài học (`?hoi-dap=<id>` mở thẳng một câu hỏi), và trang `/giang-day/hoi-dap` cho giảng viên (giảng viên không ghi danh được khóa của mình nên không vào trang học được; lối vào ở nút "Hỏi đáp" của `/giang-day` và menu người dùng).
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 21 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 22 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -608,6 +630,7 @@ Migration là một chuỗi thẳng 21 revision, một head (`alembic heads` đ�
 | `3f7c33c23e64` | `order_items.discount` (phần giảm theo dòng, chia lại cho đơn cũ) + index cho dashboard giảng viên |
 | `e9d78af241e6` | `xp_events` (sổ cái XP, append-only), `streaks` (chuỗi ngày học) |
 | `b6fc99d6b6af` | `certificates` (chứng chỉ hoàn thành, tên/khóa/giảng viên đóng băng lúc cấp) |
+| `8f1cea268f50` | `qa_threads`, `qa_replies`, `qa_votes` (hỏi đáp theo bài học, chỉ upvote), `notifications` |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

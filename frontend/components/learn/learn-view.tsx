@@ -209,6 +209,14 @@ export function LearnView({
             {progress.data.completed_count}/{progress.data.lesson_count} bài · {percent}%
             {progress.data.completed_at ? " · đã hoàn thành khóa học 🎉" : null}
           </p>
+          {progress.data.certificate_code ? (
+            <Link
+              href={`/cert/${progress.data.certificate_code}`}
+              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+            >
+              Xem chứng chỉ
+            </Link>
+          ) : null}
         </div>
       </header>
 

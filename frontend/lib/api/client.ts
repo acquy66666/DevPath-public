@@ -52,9 +52,14 @@ function baseUrl(): string {
  * URL of a backend endpoint, for links the browser follows itself. Same-origin
  * deployments get a root-relative path, which is exactly what an `href` wants.
  * `fetch` calls go through apiFetch instead and never need this.
+ *
+ * Always the *browser's* base URL, even while rendering on the server: the
+ * link is written into HTML for a browser to follow, and a Server Component
+ * (or the server pass of a client one) that asked `baseUrl()` would write the
+ * compose hostname `backend` into it -- a link nobody's browser can open.
  */
 export function apiUrl(path: string): string {
-  return `${baseUrl()}${path}`;
+  return `${browserBaseUrl()}${path}`;
 }
 
 /** Mirrors the backend envelope: {"detail": {"code", "message"}}. */

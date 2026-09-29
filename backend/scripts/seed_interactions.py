@@ -63,7 +63,7 @@ from app.models import (
     Review,
     User,
 )
-from app.services import course_stats
+from app.services import certificates, course_stats
 from app.services.collaborative import Interaction, interaction_weight
 
 # Fixed, and written down rather than passed in: an evaluation is reproducible
@@ -835,12 +835,20 @@ async def purge(session: AsyncSession) -> tuple[int, int]:
         await session.execute(
             delete(Review).where(Review.course_id.in_(course_ids))
         )
+        await certificates.delete_for_enrollments(
+            session, select(Enrollment.id).where(Enrollment.course_id.in_(course_ids))
+        )
         await session.execute(
             delete(Enrollment).where(Enrollment.course_id.in_(course_ids))
         )
 
     # Deleting the learners cascades whatever they did to the real courses too.
     if learner_ids:
+        # Their certificates in the real courses hold on to those
+        # enrolments (RESTRICT), so they go first, on purpose.
+        await certificates.delete_for_enrollments(
+            session, select(Enrollment.id).where(Enrollment.user_id.in_(learner_ids))
+        )
         await session.execute(delete(User).where(User.id.in_(learner_ids)))
 
     if course_ids:

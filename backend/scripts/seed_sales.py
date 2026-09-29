@@ -55,8 +55,8 @@ from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import Coupon, Course, Enrollment, Order, PaymentEvent, User
+from app.services import certificates, course_stats, vnpay
 from app.services import commerce as commerce_service
-from app.services import course_stats, vnpay
 from app.services import orders as orders_service
 
 BUYER_COUNT = 40
@@ -290,6 +290,11 @@ async def purge(session: AsyncSession) -> tuple[int, int]:
     )
 
     orders = await session.execute(delete(Order).where(Order.user_id.in_(buyer_ids)))
+    # `scripts.seed_study` finishes courses for these buyers, and a
+    # certificate holds on to its enrolment (RESTRICT).
+    await certificates.delete_for_enrollments(
+        session, select(Enrollment.id).where(Enrollment.user_id.in_(buyer_ids))
+    )
     buyers = await session.execute(delete(User).where(User.email.in_(buyer_emails())))
     await session.execute(delete(Coupon).where(Coupon.code == COUPON_CODE))
     await session.flush()

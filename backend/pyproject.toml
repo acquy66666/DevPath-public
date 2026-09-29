@@ -27,6 +27,14 @@ dependencies = [
     # a canonical request), so the sync client is fine inside async routes;
     # the Celery worker uses the same client for real transfers.
     "boto3>=1.35",
+    # Certificates: HTML and CSS laid out into a PDF. Needs Pango from the
+    # system (see the Dockerfile and CI) -- which is why it is imported only
+    # where a PDF is actually drawn, and a Windows laptop without it can still
+    # run everything else.
+    "weasyprint>=66",
+    # The QR code on a certificate, drawn as SVG straight into the page.
+    # Pure Python, no Pillow.
+    "segno>=1.6",
 ]
 
 [project.optional-dependencies]

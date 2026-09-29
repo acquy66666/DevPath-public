@@ -15,6 +15,7 @@ from app.models import (
     Cart,
     CartItem,
     Category,
+    Certificate,
     Coupon,
     CouponCourse,
     Course,
@@ -95,6 +96,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         # Phase 5 -- XP and the daily streak.
         "xp_events",
         "streaks",
+        # Phase 5 -- certificates of completion.
+        "certificates",
     }
 
 
@@ -661,3 +664,24 @@ def test_one_streak_per_person() -> None:
     assert {"uq_streaks_user_id", "ck_streaks_counts"} <= constraint_names(Streak)
     assert Streak.__table__.c.last_active_date.nullable is False
     assert next(iter(Streak.__table__.c.user_id.foreign_keys)).ondelete == "CASCADE"
+
+
+def test_a_certificate_is_one_per_enrolment_and_outlives_nothing_by_accident() -> None:
+    """RESTRICT: removing an enrolment must not quietly take the proof of it."""
+    assert {
+        "uq_certificates_enrollment",
+        "uq_certificates_code",
+        "ck_certificates_code_format",
+    } <= constraint_names(Certificate)
+    fk = next(iter(Certificate.__table__.c.enrollment_id.foreign_keys))
+    assert fk.ondelete == "RESTRICT"
+
+
+def test_a_certificate_keeps_its_own_copy_of_what_it_says() -> None:
+    """Frozen at issue: none of these may be NULL, and none is a foreign key."""
+    columns = Certificate.__table__.c
+    for name in ("recipient_name", "course_title", "instructor_name", "issued_at"):
+        assert columns[name].nullable is False
+        assert not columns[name].foreign_keys
+    # Empty until the worker has drawn the PDF.
+    assert columns.pdf_key.nullable is True

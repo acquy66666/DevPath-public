@@ -62,7 +62,7 @@ from app.models import (
     User,
     XpEvent,
 )
-from app.services import course_stats, gamification, leaderboard
+from app.services import certificates, course_stats, gamification, leaderboard
 from app.services import enrollments as enrollments_service
 from app.services import progress as progress_service
 from app.services import quiz as quiz_service
@@ -382,6 +382,11 @@ async def purge(session: AsyncSession) -> int:
         )
     )
     awards = await session.execute(delete(XpEvent).where(XpEvent.user_id.in_(buyer_ids)))
+    # Every course these buyers finished was finished here, so every
+    # certificate they hold goes with it.
+    await certificates.delete_for_enrollments(
+        session, select(Enrollment.id).where(Enrollment.user_id.in_(buyer_ids))
+    )
     await session.execute(delete(Streak).where(Streak.user_id.in_(buyer_ids)))
     await session.execute(delete(QuizAttempt).where(QuizAttempt.user_id.in_(buyer_ids)))
     await session.execute(

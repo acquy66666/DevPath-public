@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.api.v1 import (
     auth,
     categories,
+    certificates,
     chat,
     commerce,
     courses,
@@ -29,6 +30,7 @@ api_router.include_router(health.router)
 api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(categories.router)
+api_router.include_router(certificates.router)
 api_router.include_router(chat.router)
 api_router.include_router(commerce.router)
 api_router.include_router(courses.router)

@@ -18,8 +18,17 @@ ENV PYTHONUNBUFFERED=1 \
 # ffmpeg is the transcoder the Celery worker shells out to. Backend and
 # worker share one image (compose builds it once), so the API container
 # carries it too -- ~250 MB for one build instead of maintaining two.
+#
+# Pango and HarfBuzz are what WeasyPrint lays certificate text out with, and
+# DejaVu is the font it lays it out in: the slim image has no fonts at all,
+# and a certificate drawn without one comes out as rows of empty boxes --
+# every Vietnamese name has diacritics, so "most of the text renders" is not
+# a state worth shipping.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ffmpeg \
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 \
+        fonts-dejavu-core \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

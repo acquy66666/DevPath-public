@@ -17,6 +17,8 @@ export interface CourseProgress {
   /** Where "tiếp tục học" goes; null only for a course with no lessons. */
   resume_lesson_id: string | null;
   lessons: LessonProgress[];
+  /** Issued when the course was finished; stays if a lesson is unticked later. */
+  certificate_code: string | null;
 }
 
 export interface ProgressInput {

@@ -54,7 +54,19 @@
     - đặt câu hỏi, đánh dấu giải quyết và xóa trên UI;
     - bề ngang 375px không cuộn ngang.
   - Sửa kèm: cột mục lục của trang học tràn 17px trên điện thoại (thiếu `min-w-0` ở grid item).
-- [ ] Thông báo in-app (chuông + danh sách)
+- [x] Thông báo in-app (chuông + danh sách)
+  - `GET /notifications` (+ `unread=true`), `GET /notifications/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all`. Chuông trên header và trang `/thong-bao`. Ngày hoàn thành: 29/09/2026.
+  - Migration `c7c21bbd1a9b`:
+    - thêm `ix_notifications_user_created`: trang danh sách đọc cả thông báo đã đọc, mà index partial của chuông không chứa chúng;
+    - thêm loại `qa_question`: học viên hỏi thì giảng viên của khóa được báo, khép vòng hỏi → báo giảng viên → trả lời → báo người hỏi.
+  - **Không dùng WebSocket.** Số trên chuông hỏi mỗi 60 giây và mỗi khi cửa sổ được focus lại; danh sách trong dropdown chỉ tải khi mở.
+  - **Đánh dấu đã đọc idempotent**, giữ `read_at` đầu tiên. Bấm một thông báo là đánh dấu đã đọc rồi đi tới nơi nó trỏ.
+  - **Câu chữ và link do frontend dựng** từ `type` + `payload`. Loại mà trang chưa biết vẫn hiện một dòng chung.
+  - **Đã chạy thật** bằng một học viên và một giảng viên dùng một lần, trên một khóa tạm (đã xóa cả ba):
+    - học viên hỏi → chuông giảng viên "1 chưa đọc" → bấm vào → mở đúng câu hỏi trong hộp thư, chuông về 0;
+    - giảng viên trả lời → chuông học viên báo 1 → `/thong-bao` → bấm vào → trang học mở tab Hỏi đáp đúng câu hỏi;
+    - ở 375px không cuộn ngang, dropdown nằm gọn trong màn hình.
+  - Sửa kèm: chuông làm header không còn đủ chỗ ở 375px ("Khóa học" rớt dòng), nên dưới `sm` khoảng cách và padding nút được thu lại. Bộ phân trang của Q&A chuyển thành `components/ui/pager.tsx` dùng chung.
 - [ ] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports
   - **Duyệt khóa học phải gọi `enqueue_ingest`** như `submit_for_review` đang làm khi auto-approve bật (`backend/app/services/courses.py`). Tắt auto-approve mà endpoint duyệt quên việc này thì không còn gì nạp khóa học vào kho chatbot. Viết test: duyệt → một job ingest được xếp hàng (ghi 19/09/2026, đợt dọn nợ)
 - [ ] Admin dashboard: doanh thu sàn, DAU, khóa học hot; quản lý category, coupon toàn sàn, banner trang chủ

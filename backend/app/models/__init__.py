@@ -31,6 +31,7 @@ from app.models.grading import (
     TestCase,
 )
 from app.models.notification import (
+    NOTIFICATION_QA_QUESTION,
     NOTIFICATION_QA_REPLY,
     NOTIFICATION_TYPES,
     Notification,
@@ -87,6 +88,7 @@ __all__ = [
     "MAX_CODE_LENGTH",
     "Note",
     "Notification",
+    "NOTIFICATION_QA_QUESTION",
     "NOTIFICATION_QA_REPLY",
     "NOTIFICATION_TYPES",
     "Order",

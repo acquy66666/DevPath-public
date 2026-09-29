@@ -718,10 +718,12 @@ def test_the_instructor_badge_is_a_column_decided_at_write_time() -> None:
     assert column.server_default is not None
 
 
-def test_the_bell_reads_a_partial_index_of_unread_notifications() -> None:
-    index = next(iter(Notification.__table__.indexes))
-    assert index.name == "ix_notifications_user_unread"
-    assert str(index.dialect_options["postgresql"]["where"]) == "read_at IS NULL"
+def test_the_bell_reads_a_partial_index_and_the_page_a_full_one() -> None:
+    indexes = {index.name: index for index in Notification.__table__.indexes}
+    assert set(indexes) == {"ix_notifications_user_unread", "ix_notifications_user_created"}
+    unread = indexes["ix_notifications_user_unread"]
+    assert str(unread.dialect_options["postgresql"]["where"]) == "read_at IS NULL"
+    assert indexes["ix_notifications_user_created"].dialect_options["postgresql"]["where"] is None
     assert {"ck_notifications_type", "ck_notifications_payload_object"} <= constraint_names(
         Notification
     )

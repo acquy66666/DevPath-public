@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { UserMenu } from "@/components/auth/user-menu";
 import { CartBadge } from "@/components/commerce/cart-badge";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth/auth-provider";
 
@@ -20,23 +21,26 @@ export function SiteHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 sm:gap-6">
           <Link href="/" className="text-[1.575rem] font-semibold tracking-tight">
             Dev<span className="text-muted-foreground">Path</span>
           </Link>
           <Link
             href="/khoa-hoc"
-            className="text-[1.225rem] text-muted-foreground transition-colors hover:text-foreground"
+            className="text-[1.225rem] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
           >
             Khóa học
           </Link>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Tighter below `sm`: bell, cart and avatar next to the logo and
+            "Khóa học" only just fit a 375px phone. */}
+        <div className="flex items-center gap-1 sm:gap-2">
           {status === "loading" ? (
             <div className="h-8 w-32 animate-pulse rounded-md bg-muted" aria-hidden />
           ) : user ? (
             <>
+              <NotificationBell />
               <CartBadge />
               <UserMenu user={user} />
             </>

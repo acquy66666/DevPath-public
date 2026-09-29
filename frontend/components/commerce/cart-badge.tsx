@@ -37,7 +37,7 @@ export function CartBadge() {
     <Button
       variant="ghost"
       size="sm"
-      className="relative h-10 px-3"
+      className="relative h-10 px-2 sm:px-3"
       aria-label={count > 0 ? `Giỏ hàng, ${count} khóa học` : "Giỏ hàng"}
       asChild
     >

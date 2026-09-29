@@ -6,10 +6,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { QA_KEY, QaPager, QaThreadRow } from "@/components/qa/qa-shared";
+import { QA_KEY, QaThreadRow } from "@/components/qa/qa-shared";
 import { QA_MESSAGES, QaThreadView } from "@/components/qa/qa-thread-view";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Pager } from "@/components/ui/pager";
 import { listMyCourses } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { listInstructorThreads } from "@/lib/api/qa";
@@ -162,7 +163,7 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
       ) : null}
 
       {threads.data ? (
-        <QaPager
+        <Pager
           page={threads.data.page}
           pageSize={threads.data.page_size}
           total={threads.data.total}

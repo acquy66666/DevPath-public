@@ -45,7 +45,7 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.models import CodeExercise, Submission, SubmissionResult, TestCase
 from app.schemas.grading import TERMINAL_STATUSES, GradingCaseEvent, GradingEvent
-from app.services import gamification
+from app.services import gamification, leaderboard
 from app.services import progress as progress_service
 from app.services.grading_events import publish_event
 from app.workers.celery_app import celery_app
@@ -324,6 +324,9 @@ async def run_grading(
     _record(session, submission, cases, outcome)
     await _finish_lesson_if_solved(session, submission, exercise)
     await session.commit()
+    # After the commit, like the announcement below: points on the board for
+    # a verdict that was never saved would be points for nothing.
+    await leaderboard.publish_awards(session)
     announce(
         GradingEvent(
             submission_id=submission.id,

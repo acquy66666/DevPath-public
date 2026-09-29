@@ -7,6 +7,7 @@ import {
   Heart,
   LayoutDashboard,
   LogOut,
+  Trophy,
   UserRound,
 } from "lucide-react";
 import Link from "next/link";
@@ -65,6 +66,12 @@ export function UserMenu({ user }: { user: User }) {
           <Link href="/khoa-hoc-cua-toi">
             <BookOpen aria-hidden />
             Khóa học của tôi
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/bang-xep-hang">
+            <Trophy aria-hidden />
+            Bảng xếp hạng
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

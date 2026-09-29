@@ -277,7 +277,11 @@ Mỗi index dưới đây gắn với một truy vấn có thật trong kế ho�
 
 - **`search_vector`** cập nhật bằng trigger Postgres (không phụ thuộc service nào quên gọi); index GIN.
 - **Số liệu denormalize** (`rating_avg`, `rating_count`, `students_count`, `duration_total_s`) cập nhật trong cùng transaction với review/enrollment. Kèm `backend/scripts/rebuild_course_stats.py` tính lại từ nguồn — chạy được bất cứ lúc nào, dùng luôn làm bằng chứng "số liệu tái tạo được" cho báo cáo.
-- **Leaderboard:** nguồn chân lý là `xp_events`, Redis sorted set chỉ là view; có script rebuild.
+- **Leaderboard:** nguồn chân lý là `xp_events`, Redis sorted set chỉ là view (`services/leaderboard.py`).
+  - Ba bảng: `lb:xp:week:<năm ISO>-W<tuần>` (thứ Hai → Chủ nhật), `lb:xp:month:<YYYY-MM>` và `lb:xp:all`. Tuần và tháng tính theo giờ Việt Nam. Key tuần sống 35 ngày, key tháng 400 ngày, `all` không hết hạn.
+  - **Cộng sau commit:** `award()` chỉ ghi tạm vào `session.info`, bên gọi `commit()` xong mới `publish_awards` (`ZINCRBY`). Rollback thì phần đã ghi tạm bị bỏ, nên Redis không nhận điểm của transaction không tồn tại. Redis lỗi thì chỉ ghi log, request vẫn thành công.
+  - **Dựng lại** từ `xp_events` bằng `ZADD` vào key tạm rồi `RENAME` đè lên (người đọc không bao giờ thấy bảng dựng dở). Bảng được dựng lại trong ba trường hợp: lúc đọc nếu thiếu marker `<key>:built` (Redis vừa restart/flush), mỗi đêm 03:30 bằng Celery beat, và khi chạy tay `scripts.rebuild_leaderboard`.
+  - **Chấp nhận lệch tạm thời:** điểm cộng rơi đúng vào khoảng giữa câu truy vấn và cú `RENAME` của một lần dựng lại sẽ mất cho tới lần dựng sau. Người dùng đã xóa vẫn còn dòng trong Redis tới lần dựng sau; trang bỏ qua dòng đó nhưng hạng của người phía dưới vẫn tính nó.
 - **`payment_events` append-only**; trạng thái `orders` chỉ đổi khi verify chữ ký IPN thành công.
 - **Soft delete:** chỉ `courses`. Mọi truy vấn public đi qua một hàm dùng chung đã lọc `deleted_at IS NULL` — không rải điều kiện này khắp nơi rồi quên một chỗ.
 - **`gen_random_uuid()`** không cần extension: từ Postgres 13 nó là hàm dựng sẵn, và dự án chốt Postgres 16. `pgcrypto` vì thế **không** được bật — bản đặc tả trước ghi cần là nhầm.

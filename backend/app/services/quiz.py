@@ -41,7 +41,7 @@ from app.schemas.quiz import (
     check_question_shape,
 )
 from app.services import curriculum as curriculum_service
-from app.services import gamification
+from app.services import gamification, leaderboard
 from app.services import progress as progress_service
 
 #: How long after the deadline an answer is still marked normally.
@@ -613,6 +613,7 @@ async def submit_attempt(
             )
 
     await session.commit()
+    await leaderboard.publish_awards(session)
     return attempt, quiz, questions
 
 

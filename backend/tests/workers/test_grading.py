@@ -878,6 +878,17 @@ async def test_solving_an_exercise_pays_for_it_and_for_its_lesson(
     ]
 
 
+async def test_an_accepted_submission_moves_the_leaderboard_once_committed(
+    db_session: AsyncSession, memory_board
+) -> None:
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("AC"))
+
+    assert memory_board.boards["lb:xp:all"][str(submission.user_id)] == 10 + 30
+
+
 async def test_a_wrong_answer_pays_nothing(db_session: AsyncSession) -> None:
     exercise = await make_exercise(db_session, weights=(1, 1))
     submission = await make_submission(db_session, exercise)

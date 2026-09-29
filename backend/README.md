@@ -495,7 +495,54 @@ Chỉ người **có ghi danh** mới được cộng XP. Giảng viên tự là
 
 Những việc sau **không** tính: xem video mà chưa xong (heartbeat của player), chạy thử code, và nộp quiz quá giờ. Không có job chạy lúc nửa đêm để cắt chuỗi. Chuỗi có ngày cuối trước hôm qua thì API trả `current_streak: 0`; ngày cuối là hôm qua thì chuỗi vẫn còn.
 
-Hiển thị ở đầu trang `/khoa-hoc-cua-toi`: ba thẻ số và 5 lần cộng XP gần nhất.
+Hiển thị ở đầu trang `/khoa-hoc-cua-toi`: ba thẻ số, 5 lần cộng XP gần nhất và lối vào bảng xếp hạng.
+
+## Bảng xếp hạng (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /leaderboard?period=week\|month\|all&page=…&page_size=…` | Một trang của bảng, mỗi dòng có hạng, tên, avatar, XP và `is_me`. Kèm `me` (hạng và XP của người đọc, kể cả khi không nằm trên trang này) và ngày đầu/cuối của kỳ |
+
+Cần đăng nhập, vì đây là danh sách tên học viên. API chỉ trả tên và avatar, không trả email.
+
+Redis giữ ba sorted set, là **view** của `xp_events` (`services/leaderboard.py`):
+- `lb:xp:week:2026-W40`: tuần ISO, thứ Hai → Chủ nhật theo giờ Việt Nam;
+- `lb:xp:month:2026-09`;
+- `lb:xp:all`.
+
+**Đồng hạng xếp kiểu thi đấu** (1, 2, 2, 4). Hạng của một dòng là số người có điểm **lớn hơn hẳn** cộng 1 (`ZCOUNT key (score +inf`). Vì vậy trang 2 bắt đầu giữa một nhóm đồng điểm vẫn ra đúng hạng.
+
+**Ghi:** `gamification.award()` chỉ ghi tạm vào `session.info`. Tiến độ bài học, nộp quiz và worker chấm bài gọi `leaderboard.publish_awards()` **sau** `commit()`. Rollback thì bỏ phần đã ghi tạm. Redis lỗi thì chỉ ghi log, vì XP đã nằm an toàn trong Postgres.
+
+Redis được gọi bằng client **đồng bộ** chạy trong thread (`asyncio.to_thread`). Lý do: một client dùng chung được cho cả event loop của API lẫn worker chấm bài, mà worker lại tạo một loop mới cho mỗi job.
+
+**Dựng lại** từ `xp_events` trong ba trường hợp:
+- lúc đọc, nếu bảng chưa từng được dựng (Redis vừa restart hoặc bị flush);
+- mỗi đêm 03:30 (beat `rebuild-leaderboards-nightly`, queue mặc định);
+- khi chạy tay:
+
+```bash
+docker compose exec backend python -m scripts.rebuild_leaderboard
+```
+
+### Dữ liệu demo
+
+XP chỉ có từ ngày tính năng ra đời, nên trên máy dev ba bảng sẽ giống hệt nhau. `scripts/seed_study.py` cho **40 người mua của `seed_sales`** học trong 70 ngày gần nhất:
+- học các khóa họ đã mua;
+- tham gia thêm 0–2 khóa miễn phí có nhiều bài;
+- có người học mỗi ngày, có người học từng đợt, có người bỏ giữa chừng;
+- quiz thỉnh thoảng trượt rồi làm lại.
+
+```bash
+docker compose exec backend python -m scripts.seed_study
+docker compose exec backend python -m scripts.seed_study --purge
+```
+
+Mọi thao tác **đi qua service thật**: `save_position(completed=True)`, `start_attempt`/`submit_attempt`, `enrol_free`. Chỉ **đồng hồ** là ghi thẳng bảng: sau mỗi thao tác, các dòng được lùi về thời điểm trong kế hoạch. Chuỗi ngày học được phát lại theo từng ngày qua `record_active_day`, rồi bảng xếp hạng được dựng lại. Bài tập code bị bỏ qua vì cần sandbox.
+
+Thứ tự chạy: `scripts.seed_sales` trước, rồi đến script này. Kế hoạch có seed cố định, ngày tính tương đối với lúc chạy. Chạy lần hai không ghi thêm gì. Các lượt ghi danh miễn phí có đi vào recommender, nên **`--purge` trước `scripts.eval_recommender`**.
+
+Kết quả ngày 28/09/2026: 648 bài học, 21 lượt quiz đạt, 3 lượt trượt, 49 lượt tham gia khóa miễn phí. Bảng tuần có 4 người (hôm đó là thứ Hai), bảng tháng 27 người, mọi thời gian 40 người. Đăng nhập `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`) rồi mở `/bang-xep-hang`.
 
 ## Trạng thái
 

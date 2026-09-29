@@ -10,9 +10,9 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.main import create_app
-from app.services import grading_events
+from app.services import grading_events, leaderboard
 from app.services.rate_limit import get_rate_limiter
-from tests.api.fakes import AllowAllRateLimiter
+from tests.api.fakes import AllowAllRateLimiter, MemoryLeaderboard
 
 
 @pytest.fixture(autouse=True)
@@ -33,6 +33,19 @@ def silent_grading_channel(monkeypatch: pytest.MonkeyPatch) -> list:
 
     monkeypatch.setattr(grading_events, "get_publisher", Collector)
     return published
+
+
+@pytest.fixture(autouse=True)
+def memory_board(monkeypatch: pytest.MonkeyPatch) -> MemoryLeaderboard:
+    """The leaderboard is kept in a dictionary unless a test asks otherwise.
+
+    Awards are pushed to it after every commit that pays XP -- from the API,
+    the quiz service and the grading worker alike -- so without this, most of
+    the suite would reach for a Redis that no test here is about.
+    """
+    board = MemoryLeaderboard()
+    monkeypatch.setattr(leaderboard, "get_board", lambda: board)
+    return board
 
 
 @pytest.fixture

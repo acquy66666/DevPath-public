@@ -107,7 +107,12 @@ export function StudyStats() {
       </div>
 
       <div className="rounded-xl border bg-card p-4">
-        <h3 className="text-sm font-medium">XP gần đây</h3>
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="text-sm font-medium">XP gần đây</h3>
+          <Link href="/bang-xep-hang" className="text-sm font-medium text-primary hover:underline">
+            Xem bảng xếp hạng
+          </Link>
+        </div>
         {recent.data && recent.data.items.length > 0 ? (
           <ul className="mt-3 divide-y">
             {recent.data.items.map((event) => (

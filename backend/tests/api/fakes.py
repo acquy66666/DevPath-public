@@ -158,3 +158,57 @@ class FakeQueue:
 
     def enqueue_course_embedding(self, course_id) -> None:
         self.embedded.append(course_id)
+
+
+class MemoryLeaderboard:
+    """The leaderboard's sorted sets as dictionaries.
+
+    Ordered the way Redis orders a `ZREVRANGE`: highest score first, and equal
+    scores by member, descending. Keeps what the adapter keeps -- which keys
+    have been rebuilt from the ledger and with what TTL -- so a test can ask
+    whether a read rebuilt a board rather than guess from its contents.
+    """
+
+    def __init__(self) -> None:
+        self.boards: dict[str, dict[str, int]] = {}
+        self.built: set[str] = set()
+        self.ttls: dict[str, int | None] = {}
+        self.fail = False
+
+    def add(self, increments) -> None:
+        if self.fail:
+            raise ConnectionError("Redis is down")
+        for key, member, amount, ttl in increments:
+            board = self.boards.setdefault(key, {})
+            board[member] = board.get(member, 0) + amount
+            self.ttls[key] = ttl
+
+    def replace(self, key, scores, ttl) -> None:
+        if scores:
+            self.boards[key] = dict(scores)
+        else:
+            self.boards.pop(key, None)
+        self.built.add(key)
+        self.ttls[key] = ttl
+
+    def is_built(self, key) -> bool:
+        return key in self.built
+
+    def snapshot(self, key, offset, limit, member):
+        from app.services.leaderboard import Snapshot
+
+        board = self.boards.get(key, {})
+        ordered = sorted(board.items(), key=lambda row: (row[1], row[0]), reverse=True)
+        rows = ordered[offset : offset + limit]
+
+        def above(score: int) -> int:
+            return sum(1 for value in board.values() if value > score)
+
+        mine = board.get(member)
+        return Snapshot(
+            rows=rows,
+            total=len(board),
+            above_first=above(rows[0][1]) if rows else 0,
+            my_score=mine,
+            my_above=above(mine) if mine is not None else None,
+        )

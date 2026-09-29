@@ -120,3 +120,22 @@ def test_the_catalogue_is_re_embedded_nightly() -> None:
     tasks = {entry["task"] for entry in schedule.values()}
 
     assert EMBED in tasks
+
+
+LEADERBOARD = "app.workers.leaderboard.rebuild_leaderboards"
+
+
+def test_the_leaderboard_is_rebuilt_from_the_ledger_every_night() -> None:
+    """Registered under the name beat publishes, imported by the worker, and
+    kept off the grading queue like every other batch."""
+    import app.workers.leaderboard  # noqa: F401  -- what `include` does at startup
+
+    assert "app.workers.leaderboard" in celery_app.conf.include
+    assert LEADERBOARD in celery_app.tasks
+    entry = celery_app.conf.beat_schedule["rebuild-leaderboards-nightly"]
+    assert entry["task"] == LEADERBOARD
+    assert entry["schedule"].hour == {3} and entry["schedule"].minute == {30}
+    assert not any(
+        LEADERBOARD.startswith(prefix.rstrip("*"))
+        for prefix in celery_app.conf.task_routes
+    )

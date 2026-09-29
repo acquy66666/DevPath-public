@@ -26,12 +26,13 @@ rollback of the completion that justified it.
 
 import uuid
 from dataclasses import dataclass
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
 from sqlalchemy import case, exists, func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import today_in_vietnam
 from app.models import (
     XP_REASON_REF_TYPES,
     CodeExercise,
@@ -43,6 +44,7 @@ from app.models import (
     Streak,
     XpEvent,
 )
+from app.services import leaderboard
 
 #: What each reason is worth. Stored on every event as it is written, so
 #: changing a number here changes what that reason pays from now on and leaves
@@ -53,42 +55,37 @@ XP_AMOUNTS = {
     "exercise_solved": 30,
 }
 
-# Vietnam has had no daylight saving since 1975, so a fixed offset is the
-# same as the named zone and needs no tz database on the host.
-VIETNAM = timezone(timedelta(hours=7))
-
-
-def today_in_vietnam(now: datetime | None = None) -> date:
-    """The calendar day it is in Vietnam -- the day a streak counts in.
-
-    A student studying at 00:30 in Hà Nội is studying on the new day, even
-    though UTC is still on the old one.
-    """
-    return (now or datetime.now(VIETNAM)).astimezone(VIETNAM).date()
-
 
 async def award(
     session: AsyncSession, *, user_id: uuid.UUID, reason: str, ref_id: uuid.UUID
 ) -> bool:
     """Pay `reason` for `ref_id`, unless it has been paid already.
 
-    Returns whether this call paid -- the leaderboard will want to know. Does
-    not check the enrolment: the callers only get here once a completion has
-    been recorded against one.
+    Returns whether this call paid. Does not check the enrolment: the callers
+    only get here once a completion has been recorded against one.
+
+    What was paid is staged for the leaderboard, not sent: the caller commits,
+    then calls `leaderboard.publish_awards`, so Redis never hears about XP from
+    a transaction that was rolled back.
     """
+    amount = XP_AMOUNTS[reason]
     statement = (
         insert(XpEvent)
         .values(
             user_id=user_id,
-            amount=XP_AMOUNTS[reason],
+            amount=amount,
             reason=reason,
             ref_type=XP_REASON_REF_TYPES[reason],
             ref_id=ref_id,
         )
         .on_conflict_do_nothing(constraint="uq_xp_events_ref")
-        .returning(XpEvent.id)
+        .returning(XpEvent.created_at)
     )
-    return await session.scalar(statement) is not None
+    paid_at = await session.scalar(statement)
+    if paid_at is None:
+        return False
+    leaderboard.stage(session, leaderboard.Award(user_id=user_id, amount=amount, at=paid_at))
+    return True
 
 
 async def record_active_day(session: AsyncSession, *, user_id: uuid.UUID, day: date) -> None:

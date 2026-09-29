@@ -22,8 +22,15 @@
 
 - [x] XP events (hoàn thành lesson/quiz/bài code AC lần đầu) + streak theo ngày hoạt động
   - Migration `e9d78af241e6` (`xp_events` append-only + `streaks`), `services/gamification.py`, `GET /users/me/gamification` · `GET /users/me/xp-events`, khối "Chuỗi ngày học / Tổng XP / XP gần đây" đầu trang `/khoa-hoc-cua-toi` (28/09/2026). XP: bài học +10 (mọi loại), quiz đạt +20 và bài code AC +30 cộng thêm vào XP bài học. Luật "lần đầu" nằm ở unique `uq_xp_events_ref` + `ON CONFLICT DO NOTHING`, ghi trong cùng transaction với completion/verdict, chỉ cho người có ghi danh. Một ngày vào chuỗi khi học viên **nộp** một thứ gì đó (hoàn thành bài, nộp quiz kể cả trượt, nộp code không tính chạy thử), theo giờ Việt Nam; chuỗi bị cắt lúc đọc chứ không có job nửa đêm. Đã chạy thật trên stack bằng một tài khoản dùng một lần (sau đó đã xóa): 2 video + quiz 100% + bài code được **sandbox thật** chấm AC → 90 XP, chuỗi 1 ngày; chạy lại cả luồng lần hai thì vẫn 90
-- [ ] Leaderboard Redis sorted set (tuần/tháng/toàn thời gian) + trang leaderboard
-  - **Dữ liệu seed chưa có XP nào**: `xp_events` chỉ ghi từ 28/09/2026, còn `seed_interactions` ghi `completed_at` mà không ghi `lesson_progress`, nên leaderboard sẽ trống. Cần một script dựng XP (từ `lesson_progress`, lượt quiz đạt, bài nộp AC) hoặc seed đi qua đúng service, cùng lúc với script rebuild sorted set từ `xp_events`
+- [x] Leaderboard Redis sorted set (tuần/tháng/toàn thời gian) + trang leaderboard
+  - `services/leaderboard.py`, `GET /leaderboard?period=week|month|all`, trang `/bang-xep-hang` (lối vào ở menu người dùng và khối thành tích). Ngày hoàn thành: 28/09/2026.
+  - **Ba sorted set** là view của `xp_events`: tuần ISO và tháng tính theo giờ Việt Nam, cùng bảng toàn thời gian.
+  - **`ZINCRBY` chỉ chạy sau commit:** `award()` ghi tạm vào `session.info`, rollback thì bỏ.
+  - **Tự lành:** bảng được dựng lại từ ledger khi thiếu marker, mỗi đêm 03:30 bằng Celery beat, và khi chạy `scripts.rebuild_leaderboard`. Dựng lại bằng `ZADD` vào key tạm rồi `RENAME`.
+  - **Đồng hạng kiểu thi đấu** (1, 2, 2, 4), dựa trên `ZCOUNT` những điểm lớn hơn hẳn. Hạng của người đọc vẫn trả về khi không nằm trên trang đang xem.
+  - **Dữ liệu demo** `scripts.seed_study`: 40 người mua của `seed_sales` học 70 ngày qua service thật (chỉ lùi đồng hồ). Kết quả: 648 bài, 21 quiz đạt / 3 lần trượt, 49 lượt tham gia khóa miễn phí; bảng tuần 4 người (hôm đó là thứ Hai), tháng 27 người, mọi thời gian 40 người.
+  - **Đã kiểm:** API trên Redis thật; trang bằng tài khoản người mua mẫu (cả 3 tab, trang 2, không cuộn ngang ở 375px); test adapter với Redis thật (CI có Redis).
+  - Test của kế hoạch học đã bắt được một lỗi: giờ của các bài trong cùng một ngày được bốc độc lập nên lệch thứ tự.
 - [ ] Chứng chỉ PDF khi hoàn thành 100%: job Celery sinh PDF (weasyprint) + mã QR → trang verify công khai `/cert/{code}`
 - [ ] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
 - [ ] Thông báo in-app (chuông + danh sách)

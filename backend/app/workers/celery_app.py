@@ -47,6 +47,7 @@ celery_app = Celery(
         "app.workers.recommendations",
         "app.workers.rag",
         "app.workers.content_based",
+        "app.workers.leaderboard",
     ],
 )
 
@@ -95,6 +96,13 @@ celery_app.conf.update(
         "embed-courses-nightly": {
             "task": "app.workers.content_based.embed_courses",
             "schedule": crontab(hour=2, minute=30),
+        },
+        # 03:30: the leaderboard back to exactly what `xp_events` says. The
+        # boards are kept current by increments after each commit; this is
+        # what corrects whatever an outage or a race left them missing.
+        "rebuild-leaderboards-nightly": {
+            "task": "app.workers.leaderboard.rebuild_leaderboards",
+            "schedule": crontab(hour=3, minute=30),
         },
     },
 )

@@ -23,7 +23,7 @@ from app.core.exceptions import DomainError
 from app.models import CourseSection, Enrollment, Lesson, LessonProgress, User
 from app.services import courses as courses_service
 from app.services import enrollments as enrollments_service
-from app.services import gamification
+from app.services import gamification, leaderboard
 
 
 class NotEnrolledError(DomainError):
@@ -161,6 +161,7 @@ async def save_position(
         )
 
     await session.commit()
+    await leaderboard.publish_awards(session)
 
     progress = await session.get(LessonProgress, progress_id)
     if progress is None:

@@ -31,7 +31,16 @@
   - **Dữ liệu demo** `scripts.seed_study`: 40 người mua của `seed_sales` học 70 ngày qua service thật (chỉ lùi đồng hồ). Kết quả: 648 bài, 21 quiz đạt / 3 lần trượt, 49 lượt tham gia khóa miễn phí; bảng tuần 4 người (hôm đó là thứ Hai), tháng 27 người, mọi thời gian 40 người.
   - **Đã kiểm:** API trên Redis thật; trang bằng tài khoản người mua mẫu (cả 3 tab, trang 2, không cuộn ngang ở 375px); test adapter với Redis thật (CI có Redis).
   - Test của kế hoạch học đã bắt được một lỗi: giờ của các bài trong cùng một ngày được bốc độc lập nên lệch thứ tự.
-- [ ] Chứng chỉ PDF khi hoàn thành 100%: job Celery sinh PDF (weasyprint) + mã QR → trang verify công khai `/cert/{code}`
+- [x] Chứng chỉ PDF khi hoàn thành 100%: job Celery sinh PDF (weasyprint) + mã QR → trang verify công khai `/cert/{code}`
+  - Migration `b6fc99d6b6af` (`certificates`), `services/certificates.py`, job `render_certificate`, `GET /certificates/{code}` + `/pdf` (công khai), trang `/cert/{code}`, nút "Chứng chỉ" ở `/khoa-hoc-cua-toi` và link trong trang học. Ngày hoàn thành: 29/09/2026.
+  - **Cấp** trong cùng transaction với lúc khóa học chuyển sang hoàn thành, mỗi lượt ghi danh một lần. Bỏ tick không thu hồi. Tên người học, tựa khóa và tên giảng viên được **đóng băng** lúc cấp (thêm 3 cột so với đặc tả).
+  - **Mã** 16 ký tự từ 32 ký tự không gây nhầm (80 bit), có CHECK định dạng.
+  - **PDF** do Celery vẽ sau commit (qua `after_commit.run`, cùng chỗ đẩy điểm bảng xếp hạng). Endpoint tải PDF đẩy lại job khi PDF chưa có.
+  - WeasyPrint cần Pango, nên image và CI cài thêm Pango/HarfBuzz và font DejaVu. Test vẽ PDF skip trên Windows, bắt buộc trên CI, và đã chạy trong container.
+  - `scripts.issue_certificates` cấp bù cho các lượt đã hoàn thành trước đó: 233 chứng chỉ, 233 PDF trong 98 giây.
+  - **Đã chạy thật:** hoàn thành bài cuối → chứng chỉ được cấp → worker vẽ PDF sau 3 giây → tải được. Mã QR trên PDF giải ra đúng URL xác thực. Mã sai trả 404 thật.
+  - Sửa kèm: `apiUrl()` trên frontend từng ghi host nội bộ `backend:8000` vào link khi render phía server; nút Google cũng mắc lỗi tiềm ẩn này.
+  - Mục gate "quét QR verify được" đã chạy được; ảnh và PDF mẫu thu ở mục bằng chứng cuối phase.
 - [ ] Q&A theo lesson: thread + reply + upvote; badge "giảng viên trả lời"; notification khi được trả lời
 - [ ] Thông báo in-app (chuông + danh sách)
 - [ ] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports

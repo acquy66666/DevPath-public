@@ -15,6 +15,7 @@ from app.schemas.categories import CategoryOut
 from app.schemas.courses import CourseCardBase, CourseCardOut, CourseInstructorOut
 from app.schemas.enrollments import EnrolledCourseOut, EnrollmentOut
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
+from app.services import certificates as certificates_service
 from app.services import enrollments as enrollments_service
 
 router = APIRouter(tags=["enrollments"])
@@ -74,6 +75,9 @@ async def list_my_enrollments(
     rows, total = await enrollments_service.list_for_user(
         session, current_user, page=page, page_size=page_size
     )
+    codes = await certificates_service.codes_for(
+        session, [enrollment.id for enrollment, *_ in rows]
+    )
 
     return Page[EnrolledCourseOut](
         items=[
@@ -85,6 +89,7 @@ async def list_my_enrollments(
                 ),
                 enrolled_at=enrollment.created_at,
                 completed_at=enrollment.completed_at,
+                certificate_code=codes.get(enrollment.id),
             )
             for enrollment, course, instructor, category in rows
         ],

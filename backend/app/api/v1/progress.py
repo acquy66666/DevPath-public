@@ -10,6 +10,7 @@ from fastapi import APIRouter
 
 from app.core.deps import CurrentUser, DbSession
 from app.schemas.progress import CourseProgressOut, LessonProgressOut, ProgressIn
+from app.services import certificates as certificates_service
 from app.services import progress as progress_service
 
 router = APIRouter(tags=["progress"])
@@ -50,6 +51,7 @@ async def get_course_progress(
     )
 
     known = set(lesson_ids)
+    codes = await certificates_service.codes_for(session, [enrollment.id])
     return CourseProgressOut(
         enrollment_id=enrollment.id,
         completed_at=enrollment.completed_at,
@@ -65,4 +67,5 @@ async def get_course_progress(
         lessons=[
             LessonProgressOut.model_validate(row) for row in rows if row.lesson_id in known
         ],
+        certificate_code=codes.get(enrollment.id),
     )

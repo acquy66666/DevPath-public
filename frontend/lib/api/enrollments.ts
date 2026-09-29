@@ -15,6 +15,8 @@ export interface EnrolledCourse {
   course: CourseCard;
   enrolled_at: string;
   completed_at: string | null;
+  /** The certificate's code, once the course has been finished. */
+  certificate_code: string | null;
 }
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { Award } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -114,11 +115,21 @@ export function MyCourses() {
                   ? `Hoàn thành ${formatDate(item.completed_at)}`
                   : `Đăng ký ${formatDate(item.enrolled_at)}`}
               </p>
-              <Button size="sm" variant="outline" asChild>
-                <Link href={`/hoc/${item.course.slug}`}>
-                  {item.completed_at ? "Xem lại" : "Tiếp tục học"}
-                </Link>
-              </Button>
+              <div className="flex shrink-0 gap-2">
+                {item.certificate_code ? (
+                  <Button size="sm" variant="secondary" asChild>
+                    <Link href={`/cert/${item.certificate_code}`}>
+                      <Award aria-hidden />
+                      Chứng chỉ
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button size="sm" variant="outline" asChild>
+                  <Link href={`/hoc/${item.course.slug}`}>
+                    {item.completed_at ? "Xem lại" : "Tiếp tục học"}
+                  </Link>
+                </Button>
+              </div>
             </div>
           </li>
         ))}

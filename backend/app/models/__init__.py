@@ -6,6 +6,11 @@ tables that have been registered on Base.metadata by import time.
 
 from app.models.base import Base
 from app.models.category import Category
+from app.models.certificate import (
+    CERTIFICATE_CODE_ALPHABET,
+    CERTIFICATE_CODE_LENGTH,
+    Certificate,
+)
 from app.models.chat import ChatMessage, ChatSession
 from app.models.commerce import MAX_CART_ITEMS, Cart, CartItem, Wishlist
 from app.models.coupon import (
@@ -48,6 +53,9 @@ __all__ = [
     "Cart",
     "CartItem",
     "Category",
+    "Certificate",
+    "CERTIFICATE_CODE_ALPHABET",
+    "CERTIFICATE_CODE_LENGTH",
     "ChatMessage",
     "ChatSession",
     "CodeExercise",

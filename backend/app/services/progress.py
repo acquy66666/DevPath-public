@@ -21,9 +21,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
 from app.models import CourseSection, Enrollment, Lesson, LessonProgress, User
+from app.services import after_commit, certificates, gamification
 from app.services import courses as courses_service
 from app.services import enrollments as enrollments_service
-from app.services import gamification, leaderboard
 
 
 class NotEnrolledError(DomainError):
@@ -92,7 +92,12 @@ async def _refresh_course_completion(
 
     if finished and enrollment.completed_at is None:
         enrollment.completed_at = datetime.now(UTC)
+        # The one place a course becomes finished, whatever finished it -- so
+        # the one place a certificate is issued. Once per enrolment: finishing
+        # again after unticking a lesson finds it already there.
+        await certificates.issue(session, enrollment, issued_at=enrollment.completed_at)
     elif not finished and enrollment.completed_at is not None:
+        # The certificate stays. It was true on the day it was issued.
         enrollment.completed_at = None
 
 
@@ -161,7 +166,7 @@ async def save_position(
         )
 
     await session.commit()
-    await leaderboard.publish_awards(session)
+    await after_commit.run(session)
 
     progress = await session.get(LessonProgress, progress_id)
     if progress is None:

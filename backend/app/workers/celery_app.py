@@ -48,6 +48,7 @@ celery_app = Celery(
         "app.workers.rag",
         "app.workers.content_based",
         "app.workers.leaderboard",
+        "app.workers.certificates",
     ],
 )
 

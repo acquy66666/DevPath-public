@@ -46,3 +46,6 @@ class CourseProgressOut(BaseModel):
     # one when nothing has been watched yet.
     resume_lesson_id: uuid.UUID | None
     lessons: list[LessonProgressOut]
+    #: The certificate for this enrolment, once the course has been finished.
+    #: It stays after a lesson is unticked -- it was true when it was issued.
+    certificate_code: str | None = None

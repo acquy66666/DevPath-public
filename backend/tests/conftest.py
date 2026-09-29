@@ -10,7 +10,7 @@ from sqlalchemy.pool import NullPool
 from app.core.config import get_settings
 from app.core.db import get_db
 from app.main import create_app
-from app.services import grading_events, leaderboard
+from app.services import certificates, grading_events, leaderboard
 from app.services.rate_limit import get_rate_limiter
 from tests.api.fakes import AllowAllRateLimiter, MemoryLeaderboard
 
@@ -46,6 +46,19 @@ def memory_board(monkeypatch: pytest.MonkeyPatch) -> MemoryLeaderboard:
     board = MemoryLeaderboard()
     monkeypatch.setattr(leaderboard, "get_board", lambda: board)
     return board
+
+
+@pytest.fixture(autouse=True)
+def rendered_certificates(monkeypatch: pytest.MonkeyPatch) -> list:
+    """Certificate PDFs are asked for, and drawn by nobody.
+
+    Finishing a course -- which dozens of tests do on the way to something
+    else -- issues a certificate and queues its PDF after the commit. This
+    collects the ids instead of reaching for the broker.
+    """
+    queued: list = []
+    monkeypatch.setattr(certificates, "enqueue_render", queued.append)
+    return queued
 
 
 @pytest.fixture

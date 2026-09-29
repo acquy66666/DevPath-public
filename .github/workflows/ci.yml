@@ -85,6 +85,15 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]" -c requirements.lock
 
+      # What WeasyPrint draws certificates with -- the same packages the
+      # backend image installs. The PDF tests skip on a machine without them
+      # but fail here, so a missing library cannot turn into a green run.
+      - name: System libraries for certificate PDFs
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+
       - name: Ruff
         run: ruff check .
 

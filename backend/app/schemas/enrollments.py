@@ -35,3 +35,5 @@ class EnrolledCourseOut(BaseModel):
     course: CourseCardOut
     enrolled_at: datetime
     completed_at: datetime | None
+    #: The certificate's code, for a course that has been finished.
+    certificate_code: str | None = None

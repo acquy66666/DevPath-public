@@ -27,6 +27,7 @@ from app.models import (
     VideoAsset,
 )
 from app.schemas.auth import LoginIn
+from app.services import certificates
 from scripts.seed import CATEGORY_TREE, seed_categories
 from scripts.seed_courses import COURSES, INSTRUCTORS, seed_courses
 
@@ -193,6 +194,9 @@ async def test_the_seed_really_writes_the_code_exercise_and_its_cases(
         # transaction, and rolled back with everything else.
         await db_session.execute(
             delete(Review).where(Review.course_id == existing.id)
+        )
+        await certificates.delete_for_enrollments(
+            db_session, select(Enrollment.id).where(Enrollment.course_id == existing.id)
         )
         await db_session.execute(
             delete(Enrollment).where(Enrollment.course_id == existing.id)

@@ -59,6 +59,7 @@ from app.models import (
     TestCase,
     User,
 )
+from app.services import certificates
 
 API = "http://localhost:8000"
 PASSWORD = "bench-mat-khau-du-dai"
@@ -244,6 +245,11 @@ async def tear_down(fixture: Fixture, tag: str) -> None:
             await session.execute(delete(Lesson).where(Lesson.id.in_(lessons)))
         await session.execute(
             delete(CourseSection).where(CourseSection.course_id == fixture.course_id)
+        )
+        # An accepted run finishes the one-lesson course and issues a
+        # certificate, which holds on to the enrolment (RESTRICT).
+        await certificates.delete_for_enrollments(
+            session, select(Enrollment.id).where(Enrollment.course_id == fixture.course_id)
         )
         await session.execute(
             delete(Enrollment).where(Enrollment.course_id == fixture.course_id)

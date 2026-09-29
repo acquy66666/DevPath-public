@@ -544,11 +544,46 @@ Thứ tự chạy: `scripts.seed_sales` trước, rồi đến script này. Kế
 
 Kết quả ngày 28/09/2026: 648 bài học, 21 lượt quiz đạt, 3 lượt trượt, 49 lượt tham gia khóa miễn phí. Bảng tuần có 4 người (hôm đó là thứ Hai), bảng tháng 27 người, mọi thời gian 40 người. Đăng nhập `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`) rồi mở `/bang-xep-hang`.
 
+## Chứng chỉ hoàn thành (Phase 5)
+
+| Endpoint | Mô tả |
+|---|---|
+| `GET /certificates/{code}` | **Công khai.** Trả đúng những gì in trên tờ chứng chỉ: tên, khóa, giảng viên, ngày, mã; kèm `course_slug` (khi khóa còn trên sàn) và `pdf_ready`. Không có email hay id người dùng. Mã sai định dạng và mã không tồn tại cùng trả 404 `CERTIFICATE_NOT_FOUND`; mã gõ thường hoặc có gạch vẫn nhận |
+| `GET /certificates/{code}/pdf` | **Công khai.** Trả tệp PDF (đọc từ storage qua API, nên không phụ thuộc host MinIO/R2 có phân giải được từ trình duyệt hay không). PDF chưa vẽ thì trả 409 `CERTIFICATE_NOT_READY` **và đẩy lại job** |
+
+Người học thấy mã chứng chỉ ở `certificate_code` của `GET /enrollments/me` và `GET /courses/{id}/progress`. Frontend có nút "Chứng chỉ" ở `/khoa-hoc-cua-toi`, link "Xem chứng chỉ" trong trang học, và trang xác thực công khai `/cert/{code}` (render phía server, trả 404 thật khi mã sai, `noindex`).
+
+**Cấp:** trong cùng transaction với lúc khóa học chuyển sang hoàn thành (`progress._refresh_course_completion`).
+- Mỗi lượt ghi danh một chứng chỉ (`uq_certificates_enrollment`); bỏ tick rồi hoàn thành lại vẫn là chứng chỉ cũ.
+- Tên người học, tựa khóa và tên giảng viên được **chép lúc cấp**, không đổi theo các lần sửa sau.
+- Mã: 16 ký tự, 32 ký tự không gây nhầm, 80 bit ngẫu nhiên; trùng mã thì bốc lại.
+
+**Vẽ PDF:** job Celery `render_certificate` (queue mặc định, worker media).
+- `after_commit.run` đẩy job **sau commit**, cùng chỗ với việc đẩy điểm bảng xếp hạng. Rollback thì không có job nào.
+- WeasyPrint vẽ trang HTML A4 ngang; mã QR là SVG do `segno` sinh, trỏ tới `FRONTEND_URL/cert/{code}`.
+- Job idempotent: chứng chỉ đã có PDF thì bỏ qua. Lỗi storage thì thử lại 3 lần.
+
+**Thư viện hệ thống:** WeasyPrint cần Pango và HarfBuzz; font là DejaVu (image slim không có font nào, thiếu font thì chữ có dấu thành ô vuông). Image backend và CI đều cài `libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core`.
+- Trên Windows không có Pango, nên code chỉ import WeasyPrint trong hàm vẽ.
+- Test vẽ PDF **skip trên host và bắt buộc trên CI**. Chạy ở local bằng:
+
+```bash
+docker compose exec backend pytest tests/api/test_certificates.py
+```
+
+**Cấp bù** cho các lượt đã hoàn thành trước khi có tính năng (qua đúng `certificates.issue`, ghi ngày là ngày hoàn thành thật), rồi vẽ PDF ngay tại chỗ. Chạy lại không làm gì thêm:
+
+```bash
+docker compose exec backend python -m scripts.issue_certificates [--dry-run]
+```
+
+Chạy thật ngày 29/09/2026: cấp 233 chứng chỉ (87 của học viên seed, 146 của người mua mẫu sau `seed_study`), vẽ 233 PDF trong 98 giây. Mã QR giải ra đúng URL xác thực (kiểm bằng OpenCV trên ảnh PDF render 200 dpi).
+
 ## Trạng thái
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 20 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 21 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -572,6 +607,7 @@ Migration là một chuỗi thẳng 20 revision, một head (`alembic heads` đ�
 | `99c7ba304d8d` | `orders`, `order_items`, `payment_events` |
 | `3f7c33c23e64` | `order_items.discount` (phần giảm theo dòng, chia lại cho đơn cũ) + index cho dashboard giảng viên |
 | `e9d78af241e6` | `xp_events` (sổ cái XP, append-only), `streaks` (chuỗi ngày học) |
+| `b6fc99d6b6af` | `certificates` (chứng chỉ hoàn thành, tên/khóa/giảng viên đóng băng lúc cấp) |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

@@ -1,7 +1,16 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck, Check, ListTree, Loader2, Sparkles } from "lucide-react";
+import {
+  Bookmark,
+  BookmarkCheck,
+  Check,
+  ListTree,
+  Loader2,
+  MessageCircleQuestion,
+  NotebookPen,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
@@ -10,6 +19,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
 import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
+import { QaPanel } from "@/components/qa/qa-panel";
 import {
   VideoPlayer,
   type PlayerHandle,
@@ -38,12 +48,15 @@ import { useAuth } from "@/lib/auth/auth-provider";
 export function LearnView({
   slug,
   lessonId,
+  threadId,
 }: {
   slug: string;
   /** From `?bai=`. Null means "wherever I left off". */
   lessonId: string | null;
+  /** From `?hoi-dap=`: a question under this lesson to open straight onto. */
+  threadId: string | null;
 }) {
-  const { accessToken, status } = useAuth();
+  const { accessToken, status, user } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const signedIn = status === "authenticated" && accessToken !== null;
@@ -82,6 +95,18 @@ export function LearnView({
   // visits never open it, and the ones that do must not lose an answer to a
   // glance at the table of contents.
   const [chatOpened, setChatOpened] = useState(false);
+
+  // Under the lesson: the reader's own notes, or the class's questions. A link
+  // that names a question opens on the questions.
+  const [belowTab, setBelowTab] = useState(threadId ? "qa" : "notes");
+  // The same for a link followed while the page is already open: adjusting
+  // state during render rather than in an effect, so there is no frame of the
+  // wrong tab first.
+  const [seenThreadId, setSeenThreadId] = useState(threadId);
+  if (threadId !== seenThreadId) {
+    setSeenThreadId(threadId);
+    if (threadId) setBelowTab("qa");
+  }
 
   // `?bai=` wins; without it, carry on where this reader stopped.
   const currentId = lessonId ?? progress.data?.resume_lesson_id ?? null;
@@ -141,6 +166,12 @@ export function LearnView({
 
   function selectLesson(id: string) {
     router.push(`/hoc/${slug}?bai=${id}`, { scroll: false });
+  }
+
+  function openThread(id: string | null) {
+    if (currentId === null) return;
+    const lessonQuery = `?bai=${currentId}`;
+    router.push(`/hoc/${slug}${lessonQuery}${id ? `&hoi-dap=${id}` : ""}`, { scroll: false });
   }
 
   if (status === "loading") {
@@ -338,19 +369,50 @@ export function LearnView({
                 ) : null}
               </div>
 
-              <NotesPanel
-                lessonId={lesson.data.id}
-                timed={lesson.data.type === "video"}
-                currentTime={() => player.current?.currentTime() ?? 0}
-                onSeek={(seconds) => player.current?.seekTo(seconds)}
-              />
+              <Tabs value={belowTab} onValueChange={setBelowTab} className="pt-2">
+                <TabsList>
+                  <TabsTrigger value="notes">
+                    <NotebookPen aria-hidden />
+                    Ghi chú
+                  </TabsTrigger>
+                  <TabsTrigger value="qa">
+                    <MessageCircleQuestion aria-hidden />
+                    Hỏi đáp
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="notes" className="pt-2">
+                  <NotesPanel
+                    lessonId={lesson.data.id}
+                    timed={lesson.data.type === "video"}
+                    currentTime={() => player.current?.currentTime() ?? 0}
+                    onSeek={(seconds) => player.current?.seekTo(seconds)}
+                  />
+                </TabsContent>
+
+                <TabsContent value="qa" className="pt-2">
+                  <QaPanel
+                    // A fresh board per lesson: sort, page and a half-written
+                    // question belong to the lesson they were started on.
+                    key={lesson.data.id}
+                    lessonId={lesson.data.id}
+                    accessToken={accessToken as string}
+                    currentUserId={user?.id ?? null}
+                    openThreadId={threadId}
+                    onOpenThread={openThread}
+                  />
+                </TabsContent>
+              </Tabs>
             </>
           ) : (
             <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />
           )}
         </div>
 
-        <aside className="lg:sticky lg:top-8 lg:self-start">
+        {/* `min-w-0`: a grid item is at least as wide as its longest
+            unbreakable line, and on a phone the table of contents' was wider
+            than the screen -- the whole column spilled into the right gutter. */}
+        <aside className="min-w-0 lg:sticky lg:top-8 lg:self-start">
           <Tabs
             defaultValue="lessons"
             onValueChange={(value) => value === "assistant" && setChatOpened(true)}

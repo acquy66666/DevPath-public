@@ -1,0 +1,60 @@
+"""In-app notifications: something happened that concerns this person.
+
+**`payload` is a snapshot.** It carries the ids a link needs and the words the
+bell shows (the question's title, who answered), copied when the notification
+is written. The thread may be edited or deleted afterwards; a notification is a
+record that something happened, and it should still read the way it did.
+Following its link to a thread that is gone is a 404 the reader can understand.
+
+**`type` is a closed list** (`ck_notifications_type`), one entry per thing the
+platform knows how to announce. What a payload holds depends on its type, so a
+type nobody renders is a row nobody can read; adding one is a migration on
+purpose.
+
+`read_at` NULL means unread. The only index is the one the bell reads --
+"my unread ones, newest first" -- and it is partial, because read notifications
+are the bulk of the table and the bell never looks at them.
+"""
+
+import uuid
+from datetime import datetime
+
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+
+#: Somebody else answered a question you asked.
+NOTIFICATION_QA_REPLY = "qa_reply"
+NOTIFICATION_TYPES = (NOTIFICATION_QA_REPLY,)
+
+
+class Notification(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    __tablename__ = "notifications"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    type: Mapped[str] = mapped_column(String(40), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (
+        CheckConstraint(
+            "type IN (" + ", ".join(f"'{t}'" for t in NOTIFICATION_TYPES) + ")",
+            name="ck_notifications_type",
+        ),
+        CheckConstraint("jsonb_typeof(payload) = 'object'", name="ck_notifications_payload_object"),
+        Index(
+            "ix_notifications_user_unread",
+            "user_id",
+            text("created_at DESC"),
+            postgresql_where=text("read_at IS NULL"),
+        ),
+    )
+
+    def __repr__(self) -> str:
+        return f"<Notification {self.type} for {self.user_id}>"

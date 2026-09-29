@@ -17,6 +17,7 @@ from app.api.v1 import (
     orders,
     payments,
     progress,
+    qa,
     quiz,
     recommendations,
     reviews,
@@ -43,6 +44,7 @@ api_router.include_router(leaderboard.router)
 api_router.include_router(orders.router)
 api_router.include_router(payments.router)
 api_router.include_router(progress.router)
+api_router.include_router(qa.router)
 api_router.include_router(quiz.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(reviews.router)

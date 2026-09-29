@@ -7,6 +7,7 @@ import {
   Heart,
   LayoutDashboard,
   LogOut,
+  MessageCircleQuestion,
   Trophy,
   UserRound,
 } from "lucide-react";
@@ -91,6 +92,14 @@ export function UserMenu({ user }: { user: User }) {
             <Link href="/giang-day">
               <LayoutDashboard aria-hidden />
               Khóa học tôi dạy
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.role === "instructor" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/giang-day/hoi-dap">
+              <MessageCircleQuestion aria-hidden />
+              Hỏi đáp của học viên
             </Link>
           </DropdownMenuItem>
         ) : null}

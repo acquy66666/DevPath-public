@@ -1,0 +1,169 @@
+ADMIN DUYỆT KHÓA HỌC MỚI TRƯỚC KHI HIỆN CÔNG KHAI — CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 01/10/2026 (00:28–00:40 giờ Việt Nam) · stack dev (infra/docker-compose.yml) · CSDL dev có seed
+Gate Phase 5: "Admin duyệt khóa học mới trước khi hiện công khai"
+
+Vòng gửi duyệt → từ chối → gửi lại → duyệt đã chạy ở task kiểm duyệt (admin-moderation.txt).
+Lần này đo đúng điều gate khẳng định: một khóa đang chờ duyệt KHÔNG lộ ra ở bất kỳ bề mặt
+công khai nào, và cú bấm của admin là thứ duy nhất mở tất cả cùng lúc — kể cả kho của
+trợ giảng AI và recommender.
+
+Ba tài khoản dùng một lần (giảng viên "Phạm Quốc Bảo", học viên, admin — admin tạo bằng ghi
+thẳng CSDL trong container vì đăng ký chỉ ra học viên), đã xóa cùng khóa tạm ở mục 6.
+
+==============================================================================
+1. GIẢNG VIÊN TẠO KHÓA MỚI VÀ GỬI DUYỆT (qua API mà trang soạn khóa học gọi)
+==============================================================================
+  register instructor: 201 · POST /users/me/instructor: 200 role=instructor
+  POST /courses                      201  "Git cho lập trình viên: commit, branch và merge"
+                                          slug git-cho-lap-trinh-vien-commit-branch-va-merge-pmro44
+                                          miễn phí, danh mục Backend, status=draft
+  POST /courses/{id}/sections        201  "Làm quen với Git"
+  POST /sections/{id}/lessons        201  "Commit: ghi lại lịch sử" (bài đọc, học thử)
+  POST /sections/{id}/lessons        201  "Branch và merge" (bài đọc)
+  POST /courses/{id}/submit          200  status=pending_review
+
+==============================================================================
+2. TRƯỚC KHI DUYỆT: KHÓA KHÔNG LỘ RA Ở ĐÂU CẢ
+==============================================================================
+  ai         bề mặt                                     HTTP   kết quả
+  khách      GET /courses/by-slug/{slug}                404    COURSE_NOT_FOUND
+  khách      GET /courses/{id}                          404    COURSE_NOT_FOUND
+  khách      GET /courses?q=Git merge                   200    có khóa: False (0 kết quả)
+  khách      GET /courses?category_id=Backend           200    có khóa: False (6 khóa)
+  khách      GET /courses/{id}/curriculum               404    COURSE_NOT_FOUND
+  khách      GET /lessons/{bài học thử}                 404    COURSE_NOT_FOUND
+  khách      GET /courses/{id}/reviews                  404    COURSE_NOT_FOUND
+  khách      GET /courses/{id}/similar                  404    COURSE_NOT_FOUND
+  khách      trang /khoa-hoc/{slug}                     404    "Không tìm thấy khóa học"
+  khách      trang /khoa-hoc?q=Git merge                200    không có tựa khóa
+  khách      trang chủ /                                200    không có tựa khóa
+  học viên   PUT /wishlist/courses/{id}                 404    COURSE_NOT_FOUND
+  học viên   PUT /cart/courses/{id}                     404    COURSE_NOT_FOUND
+  học viên   POST /courses/{id}/enroll                  404    COURSE_NOT_FOUND
+  giảng viên GET /courses/{id} (chủ khóa)               200    pending_review   <-- chủ khóa vẫn xem được
+  giảng viên GET /notifications                         200    không có
+  admin      GET /admin/summary                         200    {"pending_courses": 1, …}
+  admin      GET /admin/courses?status=pending_review   200    có khóa: True (1 khóa chờ)
+  CSDL       courses.status / published_at              pending_review / -
+  CSDL       doc_chunks / course_embeddings             0 / 0    <-- chatbot và recommender chưa biết gì
+
+Mọi câu trả lời "không có" đều giống hệt câu trả lời cho một khóa không tồn tại (cùng 404
+COURSE_NOT_FOUND), nên không đoán được một id/slug có đang chờ duyệt hay không. Bộ lọc
+published + chưa xóa mềm nằm trong chính câu truy vấn của từng bề mặt (danh sách, tìm
+kiếm, giỏ, wishlist, ghi danh, khóa tương tự), không phải một bước lọc sau.
+
+LỖI TÌM THẤY KHI CHẠY GATE — ĐÃ SỬA:
+  Lần chạy đầu, trang /khoa-hoc/{slug} của khóa chờ duyệt trả HTTP 200 (nội dung là trang
+  "Không tìm thấy", <title> "Không tìm thấy khóa học", noindex) thay vì 404. Không lộ nội
+  dung, nhưng là một "soft 404" — đúng thứ chú thích của page.tsx nói đã cố ý tránh:
+  "There is deliberately no loading.tsx beside this file". Hai loading.tsx đã được thêm
+  ngày 13/09 (commit e1831a6, "loading skeletons for the two pages that really do await
+  the server"): một cái cạnh [slug]/page.tsx, một cái ở khoa-hoc/. Theo tài liệu Next 16
+  đi kèm dự án, loading.js "wrap the page.js file and any children below in a <Suspense>
+  boundary" và khi đã stream thì "the status code of the response cannot be updated".
+
+  Thử nghiệm (restart frontend sau mỗi bước):
+                                   khóa chờ duyệt   slug không tồn tại   khóa công khai   /khoa-hoc
+    như cũ (2 loading.tsx)              200               200                200            200
+    bỏ [slug]/loading.tsx               200               200                200            200
+    bỏ thêm khoa-hoc/loading.tsx        404               404                200            200
+  → cả hai đều góp phần; loading.tsx của thư mục cha bọc luôn [slug].
+
+  Sửa: bỏ [slug]/loading.tsx; trang danh sách giữ skeleton nhưng chuyển page.tsx +
+  loading.tsx vào route group khoa-hoc/(danh-sach)/ (URL vẫn là /khoa-hoc) để nó không
+  còn bọc [slug]. Ghi chú ở cả hai file để không bị thêm lại. /cert/{code} vốn đúng 404
+  vì không có loading.tsx phía trên. Sau khi sửa: bảng trên, dòng "trang /khoa-hoc/{slug}"
+  là 404.
+
+==============================================================================
+3. ADMIN DUYỆT TRÊN UI THẬT
+==============================================================================
+Chrome headless trên máy dev (1440×900, hồ sơ tạm, điều khiển qua DevTools Protocol),
+đăng nhập bằng form thật của admin tạm:
+  /quan-tri/khoa-hoc          tab "Duyệt khóa học" badge 1, thẻ khóa: giảng viên + email,
+                              "Backend · 2 bài học · Miễn phí · gửi duyệt 8 phút trước"
+  bấm thẻ → /quan-tri/khoa-hoc/{id}
+                              mô tả, mục lục; bấm bài "Commit: ghi lại lịch sử" → đọc được
+                              nội dung bài ngay trong trang duyệt; khung "Quyết định":
+                              "Khóa học chỉ hiện với học viên sau khi được duyệt."
+  bấm "Duyệt và xuất bản"     17:36:13.810 UTC (00:36:13 giờ VN)
+                              → badge "Đã xuất bản", "lên sàn lần đầu 01/10/2026",
+                              "Đã duyệt. Khóa học đang hiển thị công khai, giảng viên đã
+                              nhận được thông báo. Trợ giảng AI và gợi ý khóa học sẽ nạp nội
+                              dung trong vài phút." + "Xem trang công khai" / "Gỡ khỏi sàn…"
+
+Log worker ngay sau cú bấm (hai job được xếp SAU commit của quyết định duyệt):
+  17:36:13,855  app.workers.rag.ingest_course[cb2b3841…] received               (+0,045 s)
+  17:36:13,868  app.workers.content_based.embed_courses[31dde3b5…] received     (+0,058 s)
+  17:36:14,949  Nhúng khóa học (66606503…): 1 khóa đã nhúng, 0 khóa không đổi
+  17:36:15,548  Ingest khóa 66606503…: 2 bài học, 2 chunk, 0 bài không đổi, 0 bài bỏ qua
+  17:36:15,552  ingest_course succeeded in 1.69s: {'lessons': 2, 'chunks': 2, …}
+
+==============================================================================
+4. SAU KHI DUYỆT: MỌI BỀ MẶT MỞ CÙNG LÚC
+==============================================================================
+  khách      GET /courses/by-slug/{slug}                200    published
+  khách      GET /courses/{id}                          200    published
+  khách      GET /courses?q=Git merge                   200    có khóa: True (1 kết quả)
+  khách      GET /courses?category_id=Backend           200    có khóa: True (7 khóa)
+  khách      GET /courses/{id}/curriculum               200
+  khách      GET /lessons/{bài học thử}                 200
+  khách      GET /courses/{id}/reviews                  200
+  khách      GET /courses/{id}/similar                  200    6 khóa tương tự
+  khách      trang /khoa-hoc/{slug}                     200    có tựa khóa
+  khách      trang /khoa-hoc?q=Git merge                200    có tựa khóa
+  khách      trang chủ /                                200    không có tựa khóa (*)
+  học viên   PUT /wishlist/courses/{id}                 204
+  học viên   PUT /cart/courses/{id}                     200    (**)
+  học viên   POST /courses/{id}/enroll                  201    free
+  giảng viên GET /courses/{id} (chủ khóa)               200    published
+  giảng viên GET /notifications                         200    course_approved
+  admin      GET /admin/summary                         200    {"pending_courses": 0, …}
+  admin      GET /admin/courses?status=pending_review   200    có khóa: False (0 khóa chờ)
+  CSDL       courses.status / published_at (giờ VN)     published / 01/10 00:36:13
+  CSDL       doc_chunks / course_embeddings             2 / 1
+
+(*) Trang chủ không liệt kê khóa học nào: chỉ có banner, "Gợi ý cho bạn" (chỉ khi đăng
+    nhập, lấy từ cache gợi ý dựng lúc 03:00) và thẻ trạng thái backend. Dòng này có mặt để
+    chắc chắn trước khi duyệt không có gì rò ra ở đó, chứ không phải một bề mặt phải mở.
+(**) Giỏ nhận cả khóa miễn phí qua API (UI không có nút này cho khóa 0đ: khóa miễn phí dùng
+    "Đăng ký học miễn phí"). Cùng với mã giảm 100% hợp lệ, một đơn có thể có total = 0 mà vẫn
+    đi sang VNPay. Ngoài phạm vi gate này — đã tách thành task riêng.
+
+Trợ giảng AI trả lời từ khóa vừa duyệt (học viên tạm đã ghi danh, 1 lượt Gemini):
+  hỏi: Khi hai nhánh cùng sửa một dòng thì merge xử lý thế nào?
+    nguồn [1]: Branch và merge (score 0.721)
+    nguồn [2]: Commit: ghi lại lịch sử (score 0.635)
+    done: cited_numbers = [1]
+  trả lời: Khi hai nhánh cùng sửa một dòng, Git sẽ dừng lại và báo xung đột (conflict) [1].
+  Để xử lý, bạn cần làm theo các bước sau: 1. Mở tệp bị xung đột và giữ lại phần đúng nằm
+  giữa các dấu `<<<<<<<`, `=======`, và `>>>>>>>` [1]. 2. Sử dụng lệnh `git add` [1].
+  3. Sử dụng lệnh `git commit` để hoàn tất quá trình merge [1].
+
+==============================================================================
+5. ẢNH CHỤP
+==============================================================================
+  review-1-public-before.png        khách mở /khoa-hoc/{slug} khi khóa chờ duyệt: "Không tìm
+                                    thấy khóa học" (HTTP 404, sau khi sửa)
+  review-2-instructor-pending.png   /giang-day của giảng viên: khóa mang nhãn "Chờ duyệt"
+  review-3-admin-queue.png          /quan-tri/khoa-hoc: hàng đợi, badge 1
+  review-4-admin-review-page.png    trang duyệt (cả trang), bài học thử mở ra đọc được,
+                                    nút "Duyệt và xuất bản" / "Từ chối…"
+  review-5-admin-approved.png       ngay sau cú bấm: "Đã xuất bản" + câu xác nhận
+  review-6-public-after.png         trang công khai của khóa (cả trang), có "Khóa học tương tự"
+                                    — tức vector của khóa đã có
+  review-7-catalogue-search.png     /khoa-hoc?q=Git merge: 1 khóa
+  review-8-instructor-notified.png  /thong-bao của giảng viên: chuông 1, "Khóa học “…” đã được
+                                    duyệt và đang hiển thị công khai"
+
+==============================================================================
+6. DỌN DẸP
+==============================================================================
+Script trong container backend, kiểm trước khi xóa: 3 email đúng là tài khoản tạm, khóa
+thuộc đúng giảng viên tạm và đúng tựa, không có lượt ghi danh nào của người khác (khóa đã
+công khai ~4 phút; enrollments.course_id là RESTRICT). Rồi: certificates của khóa (0) →
+reports của khóa → học viên tạm (cascade ghi danh, giỏ, wishlist, phiên chat) → khóa tạm
+(cascade chương, bài, doc_chunks, course_embeddings) → giảng viên + admin tạm.
+  scripts.rebuild_course_stats: "Đã kiểm 24 khóa học: mọi số liệu khớp với dữ liệu gốc."
+  users gate5*: 0 · khóa: 0 · doc_chunks: 0 · course_embeddings: 0 · trang cũ: 404
+Cache gợi ý (Redis, job 03:00) chưa dựng lại trong lúc khóa tồn tại nên không giữ id của nó.

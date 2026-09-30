@@ -349,3 +349,81 @@ export function deleteCategory(accessToken: string, categoryId: string): Promise
     accessToken,
   });
 }
+
+// --- Coupons ---------------------------------------------------------------
+
+export type CouponStatus = "scheduled" | "live" | "exhausted" | "ended";
+export type CouponFilter = CouponStatus | "all";
+
+/** Mirrors `AdminCouponOut`. */
+export interface AdminCoupon {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  /** A percentage, or an amount in VND -- a string like every NUMERIC. */
+  value: string;
+  scope: "site" | "courses";
+  courses: { id: string; title: string }[];
+  max_uses: number | null;
+  used_count: number;
+  valid_from: string;
+  valid_to: string | null;
+  status: CouponStatus;
+  created_at: string;
+}
+
+export interface CouponInput {
+  discount_type: "percent" | "fixed";
+  value: string;
+  scope: "site" | "courses";
+  course_ids: string[];
+  max_uses: number | null;
+  valid_from: string | null;
+  valid_to: string | null;
+}
+
+export function listAdminCoupons(
+  accessToken: string,
+  { status, q, page }: { status: CouponFilter; q: string; page: number },
+): Promise<Page<AdminCoupon>> {
+  const params = new URLSearchParams({ status, page: String(page), page_size: "20" });
+  if (q) params.set("q", q);
+  return apiFetch<Page<AdminCoupon>>(`/api/v1/admin/coupons?${params}`, { accessToken });
+}
+
+export function createCoupon(
+  accessToken: string,
+  body: CouponInput & { code: string },
+): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>("/api/v1/admin/coupons", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateCoupon(
+  accessToken: string,
+  couponId: string,
+  body: Partial<CouponInput>,
+): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>(`/api/v1/admin/coupons/${couponId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function endCoupon(accessToken: string, couponId: string): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>(`/api/v1/admin/coupons/${couponId}/end`, {
+    method: "POST",
+    accessToken,
+  });
+}
+
+export function deleteCoupon(accessToken: string, couponId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/coupons/${couponId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}

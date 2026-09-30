@@ -6,6 +6,7 @@ import {
   Flag,
   FolderTree,
   LayoutDashboard,
+  TicketPercent,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -32,6 +33,7 @@ const TABS: Tab[] = [
   { href: "/quan-tri/bao-cao", label: "Báo cáo vi phạm", icon: Flag, count: (s) => s.pending_reports },
   { href: "/quan-tri/nguoi-dung", label: "Người dùng", icon: Users, count: () => 0 },
   { href: "/quan-tri/danh-muc", label: "Danh mục", icon: FolderTree, count: () => 0 },
+  { href: "/quan-tri/ma-giam-gia", label: "Mã giảm giá", icon: TicketPercent, count: () => 0 },
 ];
 
 /**

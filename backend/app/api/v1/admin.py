@@ -36,9 +36,16 @@ from app.schemas.categories import (
     CategoryOut,
     CategoryUpdate,
 )
+from app.schemas.coupons import (
+    AdminCouponCreate,
+    AdminCouponOut,
+    AdminCouponUpdate,
+    CouponCourseRef,
+)
 from app.schemas.instructor_stats import StatsPeriod
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.schemas.reports import ReportTargetType
+from app.services import admin_coupons as coupons_service
 from app.services import admin_users as users_service
 from app.services import categories as categories_service
 from app.services import moderation as moderation_service
@@ -268,6 +275,85 @@ async def reorder_categories(
 async def delete_category(category_id: uuid.UUID, _: Admin, session: DbSession) -> None:
     """Refused (409) while courses or child categories still use it."""
     await categories_service.delete(session, category_id)
+
+
+# --- Coupons ---------------------------------------------------------------
+
+
+def _coupon_out(item: coupons_service.AdminCoupon) -> AdminCouponOut:
+    coupon = item.coupon
+    return AdminCouponOut(
+        id=coupon.id,
+        code=coupon.code,
+        discount_type=coupon.discount_type,
+        value=coupon.value,
+        scope=coupon.scope,
+        courses=[CouponCourseRef(id=ref.id, title=ref.title) for ref in item.courses],
+        max_uses=coupon.max_uses,
+        used_count=coupon.used_count,
+        valid_from=coupon.valid_from,
+        valid_to=coupon.valid_to,
+        status=item.status,
+        created_at=coupon.created_at,
+    )
+
+
+@router.get("/coupons", response_model=Page[AdminCouponOut])
+async def list_coupons(
+    _: Admin,
+    session: DbSession,
+    status: coupons_service.CouponStatusFilter = "all",
+    q: Search = None,
+    page: PageNo = 1,
+    page_size: PageSize = DEFAULT_PAGE_SIZE,
+) -> Page[AdminCouponOut]:
+    """Every campaign, newest first; `status` is derived from dates and uses."""
+    items, total = await coupons_service.list_coupons(
+        session, status_filter=status, q=q, page=page, page_size=page_size
+    )
+    return Page[AdminCouponOut](
+        items=[_coupon_out(item) for item in items], total=total, page=page, page_size=page_size
+    )
+
+
+@router.post("/coupons", response_model=AdminCouponOut, status_code=status.HTTP_201_CREATED)
+async def create_coupon(body: AdminCouponCreate, _: Admin, session: DbSession) -> AdminCouponOut:
+    """A site-wide code, or one limited to the listed courses."""
+    return _coupon_out(
+        await coupons_service.create(
+            session,
+            code=body.code,
+            discount_type=body.discount_type,
+            value=body.value,
+            scope=body.scope,
+            course_ids=body.course_ids,
+            max_uses=body.max_uses,
+            valid_from=body.valid_from,
+            valid_to=body.valid_to,
+        )
+    )
+
+
+@router.patch("/coupons/{coupon_id}", response_model=AdminCouponOut)
+async def update_coupon(
+    coupon_id: uuid.UUID, body: AdminCouponUpdate, _: Admin, session: DbSession
+) -> AdminCouponOut:
+    """Change anything but the code. Orders already placed keep their numbers."""
+    return _coupon_out(
+        await coupons_service.update(session, coupon_id, body.model_dump(exclude_unset=True))
+    )
+
+
+@router.post("/coupons/{coupon_id}/end", response_model=AdminCouponOut)
+async def end_coupon(coupon_id: uuid.UUID, _: Admin, session: DbSession) -> AdminCouponOut:
+    """Stop accepting the code now (`valid_to = now`)."""
+    return _coupon_out(await coupons_service.end_now(session, coupon_id))
+
+
+@router.delete("/coupons/{coupon_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_coupon(coupon_id: uuid.UUID, _: Admin, session: DbSession) -> None:
+    """Only a code nobody has used; a used one is ended instead (409)."""
+    await coupons_service.delete_coupon(session, coupon_id)
 
 
 # --- Users -----------------------------------------------------------------

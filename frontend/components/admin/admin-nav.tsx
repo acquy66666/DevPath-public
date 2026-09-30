@@ -1,7 +1,14 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookCheck, Flag, LayoutDashboard, Users, type LucideIcon } from "lucide-react";
+import {
+  BookCheck,
+  Flag,
+  FolderTree,
+  LayoutDashboard,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -24,6 +31,7 @@ const TABS: Tab[] = [
   { href: "/quan-tri/khoa-hoc", label: "Duyệt khóa học", icon: BookCheck, count: (s) => s.pending_courses },
   { href: "/quan-tri/bao-cao", label: "Báo cáo vi phạm", icon: Flag, count: (s) => s.pending_reports },
   { href: "/quan-tri/nguoi-dung", label: "Người dùng", icon: Users, count: () => 0 },
+  { href: "/quan-tri/danh-muc", label: "Danh mục", icon: FolderTree, count: () => 0 },
 ];
 
 /**

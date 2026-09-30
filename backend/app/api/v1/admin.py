@@ -9,7 +9,7 @@ open) live in the services.
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 
 from app.core.deps import DbSession, require_role
 from app.models import User
@@ -28,11 +28,19 @@ from app.schemas.admin import (
     ReportResolveIn,
     ReportTargetOut,
 )
-from app.schemas.categories import CategoryOut
+from app.schemas.categories import (
+    AdminCategoryOut,
+    AdminCategoryTree,
+    CategoryCreate,
+    CategoryOrderIn,
+    CategoryOut,
+    CategoryUpdate,
+)
 from app.schemas.instructor_stats import StatsPeriod
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.schemas.reports import ReportTargetType
 from app.services import admin_users as users_service
+from app.services import categories as categories_service
 from app.services import moderation as moderation_service
 from app.services import platform_stats as stats_service
 from app.services import reports as reports_service
@@ -183,6 +191,83 @@ async def take_down_course(
 ) -> AdminCourseOut:
     """published -> draft: off the platform, with the reason. Enrolments stay."""
     return _course_out(await moderation_service.take_down(session, course_id, body.reason))
+
+
+# --- Categories ------------------------------------------------------------
+
+
+async def _category_tree(session) -> list[AdminCategoryTree]:
+    counts = await categories_service.course_counts(session)
+
+    def out(category) -> AdminCategoryOut:
+        return AdminCategoryOut(
+            **CategoryOut.model_validate(category).model_dump(),
+            parent_id=category.parent_id,
+            courses_count=counts.get(category.id, 0),
+        )
+
+    return [
+        AdminCategoryTree(**out(parent).model_dump(), children=[out(c) for c in children])
+        for parent, children in await categories_service.list_tree(session)
+    ]
+
+
+@router.get("/categories", response_model=list[AdminCategoryTree])
+async def list_categories(_: Admin, session: DbSession) -> list[AdminCategoryTree]:
+    """The whole tree with how many courses each category holds. Unpaginated,
+    like the public list: a curated taxonomy of a few dozen rows."""
+    return await _category_tree(session)
+
+
+@router.post(
+    "/categories", response_model=AdminCategoryOut, status_code=status.HTTP_201_CREATED
+)
+async def create_category(
+    body: CategoryCreate, _: Admin, session: DbSession
+) -> AdminCategoryOut:
+    """A top-level category, or one nested under a top-level one. Goes last."""
+    category = await categories_service.create(session, name=body.name, parent_id=body.parent_id)
+    return AdminCategoryOut(
+        **CategoryOut.model_validate(category).model_dump(),
+        parent_id=category.parent_id,
+        courses_count=0,
+    )
+
+
+@router.patch("/categories/{category_id}", response_model=AdminCategoryOut)
+async def update_category(
+    category_id: uuid.UUID, body: CategoryUpdate, _: Admin, session: DbSession
+) -> AdminCategoryOut:
+    """Rename and/or move. The slug stays what it was."""
+    # `parent_id: null` sent is "move to the top level"; not sent is "stay".
+    sent_parent = "parent_id" in body.model_fields_set
+    category = await categories_service.update(
+        session,
+        category_id,
+        name=body.name,
+        parent_id=body.parent_id if sent_parent else categories_service.UNSET,
+    )
+    counts = await categories_service.course_counts(session)
+    return AdminCategoryOut(
+        **CategoryOut.model_validate(category).model_dump(),
+        parent_id=category.parent_id,
+        courses_count=counts.get(category.id, 0),
+    )
+
+
+@router.put("/categories/order", response_model=list[AdminCategoryTree])
+async def reorder_categories(
+    body: CategoryOrderIn, _: Admin, session: DbSession
+) -> list[AdminCategoryTree]:
+    """The full order of one level. Answers with the whole tree."""
+    await categories_service.reorder(session, body.parent_id, body.ids)
+    return await _category_tree(session)
+
+
+@router.delete("/categories/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_category(category_id: uuid.UUID, _: Admin, session: DbSession) -> None:
+    """Refused (409) while courses or child categories still use it."""
+    await categories_service.delete(session, category_id)
 
 
 # --- Users -----------------------------------------------------------------

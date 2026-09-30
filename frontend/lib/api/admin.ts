@@ -285,3 +285,67 @@ export function dismissReport(
     body: JSON.stringify({ note }),
   });
 }
+
+// --- Categories ------------------------------------------------------------
+
+/** Mirrors `AdminCategoryOut`. */
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+  parent_id: string | null;
+  /** Courses filed directly here, taken-down ones excluded. */
+  courses_count: number;
+}
+
+export interface AdminCategoryTree extends AdminCategory {
+  children: AdminCategory[];
+}
+
+export function listAdminCategories(accessToken: string): Promise<AdminCategoryTree[]> {
+  return apiFetch<AdminCategoryTree[]>("/api/v1/admin/categories", { accessToken });
+}
+
+export function createCategory(
+  accessToken: string,
+  body: { name: string; parent_id: string | null },
+): Promise<AdminCategory> {
+  return apiFetch<AdminCategory>("/api/v1/admin/categories", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+/** Only the keys present are changed; `parent_id: null` moves to the top level. */
+export function updateCategory(
+  accessToken: string,
+  categoryId: string,
+  body: { name?: string; parent_id?: string | null },
+): Promise<AdminCategory> {
+  return apiFetch<AdminCategory>(`/api/v1/admin/categories/${categoryId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function reorderCategories(
+  accessToken: string,
+  parentId: string | null,
+  ids: string[],
+): Promise<AdminCategoryTree[]> {
+  return apiFetch<AdminCategoryTree[]>("/api/v1/admin/categories/order", {
+    method: "PUT",
+    accessToken,
+    body: JSON.stringify({ parent_id: parentId, ids }),
+  });
+}
+
+export function deleteCategory(accessToken: string, categoryId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/categories/${categoryId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}

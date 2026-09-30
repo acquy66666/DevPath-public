@@ -148,6 +148,9 @@ const MESSAGES: Record<string, string> = {
   REPORT_ALREADY_CLOSED:
     "Báo cáo này vừa được xử lý (có thể bởi một quản trị viên khác). Tải lại trang nhé.",
   USER_NOT_FOUND: "Không tìm thấy tài khoản này.",
+  // CATEGORY_IN_USE, CATEGORY_HAS_CHILDREN, CATEGORY_NAME_TAKEN, CATEGORY_TOO_DEEP
+  // cố ý không có ở đây: câu của backend nói đúng số khóa học/danh mục con đang
+  // chắn và tên bị trùng.
   CANNOT_LOCK_ADMIN: "Không khóa được tài khoản quản trị viên.",
 };
 

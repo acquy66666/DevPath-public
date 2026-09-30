@@ -10,6 +10,7 @@ import pytest
 from app.models import (
     EMBEDDING_DIMENSIONS,
     MAX_CART_ITEMS,
+    Banner,
     Base,
     Bookmark,
     Cart,
@@ -110,6 +111,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "notifications",
         # Phase 5 -- what learners flag for the admin.
         "reports",
+        # Phase 5 -- the homepage banners the admin curates.
+        "banners",
     }
 
 
@@ -768,3 +771,10 @@ def test_the_instructor_hears_about_every_review_decision() -> None:
     )
     for kind in ("course_approved", "course_rejected", "course_taken_down"):
         assert f"'{kind}'" in str(check.sqltext)
+
+
+def test_the_homepage_reads_switched_on_banners_in_order() -> None:
+    index = next(i for i in Banner.__table__.indexes if i.name == "ix_banners_active")
+    assert [c.name for c in index.columns] == ["position"]
+    assert str(index.dialect_options["postgresql"]["where"]) == "is_active"
+    assert {"ck_banners_title_not_empty", "ck_banners_period"} <= constraint_names(Banner)

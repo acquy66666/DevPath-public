@@ -62,7 +62,7 @@ export function InstructorGate({ children }: { children: ReactNode }) {
       <Prompt
         title="Khu vực dành cho giảng viên"
         description="Tài khoản quản trị không tạo khóa học. Việc duyệt khóa học nằm ở khu vực quản trị."
-        action={{ href: "/quan-tri/khoa-hoc", label: "Vào khu vực quản trị" }}
+        action={{ href: "/quan-tri", label: "Vào khu vực quản trị" }}
       />
     );
   }

@@ -148,6 +148,13 @@ const MESSAGES: Record<string, string> = {
   REPORT_ALREADY_CLOSED:
     "Báo cáo này vừa được xử lý (có thể bởi một quản trị viên khác). Tải lại trang nhé.",
   USER_NOT_FOUND: "Không tìm thấy tài khoản này.",
+  COUPON_CODE_TAKEN: "Mã này đã tồn tại — mỗi mã là một chiến dịch, chọn mã khác nhé.",
+  // COUPON_LIMIT_BELOW_USED, COUPON_IN_USE, COUPON_NOT_STARTED (quản trị),
+  // INVALID_COUPON_VALUE, INVALID_COUPON_PERIOD dùng câu của backend: nó nói
+  // đúng số lượt đã dùng và việc phải làm tiếp.
+  // CATEGORY_IN_USE, CATEGORY_HAS_CHILDREN, CATEGORY_NAME_TAKEN, CATEGORY_TOO_DEEP
+  // cố ý không có ở đây: câu của backend nói đúng số khóa học/danh mục con đang
+  // chắn và tên bị trùng.
   CANNOT_LOCK_ADMIN: "Không khóa được tài khoản quản trị viên.",
 };
 

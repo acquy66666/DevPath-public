@@ -6,7 +6,7 @@ the one they are about to lock.
 """
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.report import REPORT_NOTE_MAX_LENGTH
 from app.schemas.categories import CategoryOut
+from app.schemas.instructor_stats import Granularity, StatsPeriod
 from app.schemas.reports import ReportReason, ReportTargetType, blank_to_none
 
 REASON_MAX_LENGTH = 1000
@@ -148,3 +149,70 @@ class AdminSummaryOut(BaseModel):
 
 
 AdminCourseStatus = Literal["pending_review", "published", "rejected", "draft", "all"]
+
+
+# --- The platform dashboard -----------------------------------------------
+
+
+class PlatformTotals(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    #: What buyers paid: `orders.total` of paid orders, by `paid_at`.
+    revenue: Decimal
+    #: Paid orders.
+    orders: int
+    enrollments: int
+    #: Accounts created in the window.
+    new_users: int
+    #: Distinct users who left any recorded trace in the window.
+    active_users: int
+    #: Mean daily active users over the days of the window so far.
+    avg_daily_active: float
+
+
+class PlatformPoint(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    #: First day of the bucket, Vietnamese calendar.
+    bucket: date
+    revenue: Decimal
+    orders: int
+    enrollments: int
+    new_users: int
+    #: DAU for a day bucket; distinct users of the month for a month bucket.
+    active_users: int
+
+
+class PlatformOverviewOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    period: StatsPeriod
+    granularity: Granularity
+    start: date
+    end: date
+    current: PlatformTotals
+    previous: PlatformTotals
+    series: list[PlatformPoint]
+    #: Distinct users active today so far.
+    active_today: int
+    revenue_all_time: Decimal
+    users_total: int
+    courses_published: int
+    enrollments_total: int
+
+
+class HotCourseOut(BaseModel):
+    id: uuid.UUID
+    title: str
+    slug: str
+    status: str
+    is_deleted: bool
+    thumbnail_url: str | None
+    price: Decimal
+    rating_avg: Decimal
+    students_count: int
+    instructor_name: str
+    new_enrollments: int
+    sales: int
+    revenue: Decimal
+

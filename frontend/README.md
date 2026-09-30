@@ -169,16 +169,21 @@ Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đ
 
 | Đường dẫn | Nội dung |
 |---|---|
-| `/quan-tri` | Chuyển về `/quan-tri/khoa-hoc` (dashboard admin là task kế tiếp) |
+| `/quan-tri` | Tổng quan toàn sàn: doanh thu, DAU, người dùng hoạt động, tài khoản mới (so với kỳ trước), biểu đồ doanh thu + DAU, bảng khóa học hot |
 | `/quan-tri/khoa-hoc` | Hàng đợi duyệt: lọc theo trạng thái (mặc định "Chờ duyệt", chờ lâu nhất đứng đầu), tìm theo tên khóa hoặc tên/email giảng viên |
 | `/quan-tri/khoa-hoc/[courseId]` | Đọc khóa học như người mua sẽ thấy (mô tả, mục lục, bấm từng bài để xem trước bài đọc/video) và quyết định: duyệt, từ chối kèm lý do, gỡ khỏi sàn kèm lý do |
 | `/quan-tri/bao-cao` | Báo cáo vi phạm: chờ xử lý / đã xử lý, lọc theo loại nội dung; gỡ nội dung, xác nhận vi phạm mà giữ, bỏ qua; khóa tác giả ngay trên thẻ |
 | `/quan-tri/nguoi-dung` | Mọi tài khoản, mới nhất trước; khóa/mở (tài khoản admin không có nút khóa) |
+| `/quan-tri/danh-muc` | Cây danh mục 2 cấp: thêm, đổi tên, chuyển cấp, lên/xuống, xóa (chỉ danh mục trống) |
+| `/quan-tri/ma-giam-gia` | Chiến dịch mã giảm giá: tạo/sửa trong hộp thoại (chọn khóa học cho mã theo khóa), kết thúc sớm, xóa mã chưa dùng |
+| `/quan-tri/banner` | Banner trang chủ: tải ảnh thẳng lên bucket, bật/tắt, lịch hiện/gỡ, lên/xuống, xóa |
 
 - `(dashboard)/layout.tsx` giờ chỉ là khung header/footer; **ai được vào do từng khu tự quyết**: `giang-day/layout.tsx` bọc `InstructorGate`, `quan-tri/layout.tsx` bọc `AdminGate` + thanh tab. Hai vai trò khớp chính xác ở backend, không khu nào là tập cha của khu kia.
 - Tab có số đang chờ lấy từ `GET /admin/summary`; mọi query của khu này nằm dưới key `["admin"]` nên một quyết định làm mới luôn cả con số trên tab.
 - Trang duyệt đọc bài học qua đúng endpoint học viên dùng (`may_manage` đã mở mọi khóa cho admin), nên thứ admin xem trước chính là thứ sẽ được bán. Video dùng lại `components/learn/video-player.tsx`.
 - **Báo cáo:** `components/reports/report-button.tsx` — nút "Báo cáo" + hộp thoại (5 lý do, "Lý do khác" bắt buộc mô tả) ở trang chi tiết khóa học, từng đánh giá, câu hỏi và câu trả lời Hỏi đáp. Nút tự ẩn trên nội dung của chính người đọc; trong Hỏi đáp nó cũng ẩn với giảng viên/admin vì họ xóa trực tiếp được. `ALREADY_REPORTED` được hiện như thành công ("Bạn đã báo cáo nội dung này"). `components/ui/dialog.tsx` viết tay theo đúng khuôn các component radix khác — `shadcn add dialog` với style `radix-nova` đòi ghi đè `button.tsx` và tự thêm một gói npm tên `cn`.
+- **Tổng quan** dùng lại `ColumnChart`, `StatTile`, `PeriodPicker` và hàm định dạng của dashboard giảng viên (`components/instructor/stats/`) — hai dashboard đọc giống nhau, chỉ khác phạm vi.
+- **Banner trang chủ:** `components/banners/home-banners.tsx` (Server Component, `connection()` để banner hẹn giờ không bị nướng vào HTML lúc build; lỗi thì không vẽ gì) → `banner-carousel.tsx` (client): tự chuyển 6 giây, dừng khi rê chuột/focus, **không tự chuyển** khi hệ thống bật giảm chuyển động; slide ẩn có `aria-hidden` và link của nó ra khỏi thứ tự Tab. Ảnh banner tải lên qua `uploadToStorage` — cùng hàm với video và ảnh đại diện.
 - Ba loại thông báo mới cho giảng viên (`course_approved`, `course_rejected`, `course_taken_down`) có nhánh riêng trong `describe()`, link về `/giang-day/{course_id}` — nơi `course-status-card.tsx` hiện "Lý do từ chối".
 
 ## Cấu trúc

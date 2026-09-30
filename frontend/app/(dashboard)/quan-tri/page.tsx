@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
+import { AdminDashboard } from "@/components/admin/admin-dashboard";
 
-/** Until the admin dashboard exists, the review queue is the front door. */
-export default function AdminIndexPage() {
-  redirect("/quan-tri/khoa-hoc");
+export default function AdminOverviewPage() {
+  return <AdminDashboard />;
 }

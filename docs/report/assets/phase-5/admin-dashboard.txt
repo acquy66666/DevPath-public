@@ -1,0 +1,91 @@
+QUẢN TRỊ — DASHBOARD TOÀN SÀN, DANH MỤC, MÃ GIẢM GIÁ, BANNER — CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 30/09/2026 · stack dev (infra/docker-compose.yml) · CSDL dev có dữ liệu seed
+(seed, seed_interactions, seed_sales, seed_study, seed_coupons) · MinIO làm bucket
+Phase 5, tuần 12: "Admin dashboard: doanh thu sàn, DAU, khóa học hot; quản lý category,
+coupon toàn sàn, banner trang chủ"
+
+Một admin dùng một lần (tạo bằng ghi thẳng CSDL trong container, đã xóa sau khi chạy)
+đăng nhập trong khung trình duyệt của app. Mọi thao tác dưới đây làm trên UI thật.
+
+==============================================================================
+1. DASHBOARD TOÀN SÀN (/quan-tri, kỳ "30 ngày": 01/09/2026 – 30/09/2026)
+==============================================================================
+  Doanh thu sàn          7.683.800 ₫   giảm 36,6% so với 30 ngày trước đó · 10 đơn đã thanh toán
+  DAU trung bình               7,2     tăng 50% so với 30 ngày trước đó   · hôm nay: 1 người
+  Người dùng hoạt động          79     tăng 203,8%                         · khác nhau, trong cả kỳ
+  Tài khoản mới                 93     30 ngày trước đó: 0                 · 228 lượt ghi danh
+  Từ trước tới nay: 59.768.600 ₫ · 93 tài khoản · 24 khóa đang bán · 378 lượt ghi danh
+
+"Hôm nay: 1 người" là chính lần đăng nhập của admin tạm — dấu vết của nó là dòng
+refresh_tokens vừa được cấp.
+
+ĐỊNH NGHĨA DAU (services/platform_stats.py): số người khác nhau có ít nhất một dấu vết
+trong ngày (giờ Việt Nam) ở các bảng vốn đã ghi: refresh_tokens.created_at (đăng nhập
+và mỗi lần mở lại phiên — access token sống 15 phút, tải trang là mở lại), lesson_progress
+(qua enrollments), xp_events, quiz_attempts, submissions, chat_messages của học viên
+(qua chat_sessions), qa_threads, qa_replies, notes, orders, enrollments. Không thêm bảng,
+không ghi gì mỗi request. Bar theo tháng là số người khác nhau của tháng, không phải tổng
+các ngày. Giới hạn đã biết: dòng cập nhật tại chỗ (lesson_progress) chỉ giữ ngày cuối —
+đếm thiếu một chút, không bao giờ đếm thừa.
+
+Khóa học hot (ghi danh mới trong kỳ, bằng nhau thì xét doanh thu):
+   #  Khóa học                                   Ghi danh mới  Lượt bán   Doanh thu
+   1  JavaScript hiện đại: ES6+ và DOM                     18         0         0 ₫
+   2  Python cơ bản cho người mới bắt đầu                  17         0         0 ₫
+   3  Xây dựng REST API với FastAPI                        14         0         0 ₫
+   4  Nhập môn học máy với scikit-learn                    13         4 1.996.000 ₫
+   5  Đồ thị và các thuật toán duyệt                       13         1   399.000 ₫
+   (… 10 dòng; hai khóa 13 ghi danh xếp theo doanh thu)
+
+Test ghim (tests/api/test_admin_stats.py, cửa sổ đặt ở năm 2031 để chỉ chứa dữ liệu của
+test): doanh thu theo paid_at và theo ngày Việt Nam (23:00 VN vẫn là hôm đó); đơn pending
+không tính; một người đăng nhập + ghi danh cùng ngày = 1; tin nhắn của trợ giảng AI không
+tính là học viên hoạt động; tiến độ tìm người qua lượt ghi danh; bar tháng đếm người không
+đếm ngày; trung bình DAU chia cho số ngày đã qua của kỳ.
+
+==============================================================================
+2. DANH MỤC (/quan-tri/danh-muc)
+==============================================================================
+thêm "Kiểm thử quản trị"            -> slug kiem-thu-quan-tri, nằm cuối (4 danh mục cấp trên)
+thêm con "Con kiểm thử"             -> slug con-kiem-thu
+"Đưa lên"                           -> thứ tự: Lập trình web, Ngôn ngữ lập trình,
+                                       Kiểm thử quản trị, Khoa học máy tính
+xóa cha khi còn con                 -> "Danh mục đang có 1 danh mục con — chuyển hoặc xóa
+                                       chúng trước" (409 CATEGORY_HAS_CHILDREN)
+xóa con, rồi xóa cha                -> cây trở về 3 danh mục như trước
+
+==============================================================================
+3. MÃ GIẢM GIÁ (/quan-tri/ma-giam-gia)
+==============================================================================
+"Tạo mã" -> gõ "kiemthu30", giảm 30%  -> ô mã tự thành KIEMTHU30; dòng mới:
+             "KIEMTHU30 | Đang chạy | Giảm 30% | Toàn sàn | 0 lượt đã dùng · không giới hạn"
+"Kết thúc"                            -> "Đã kết thúc … từ 30/09/2026 đến 30/09/2026"
+"Xóa" (chưa ai dùng)                  -> biến mất
+mã BANHANG20 (22 lượt đã dùng)        -> không có nút xóa (backend cũng từ chối: COUPON_IN_USE)
+
+==============================================================================
+4. BANNER TRANG CHỦ (/quan-tri/banner và /)
+==============================================================================
+python -m scripts.seed_banners   -> 3 banner (ảnh gradient 1680×640 PNG tự sinh, tải lên
+                                    banners/ qua service); chạy lại -> 0 banner mới
+trang chủ                        -> carousel 3 slide, ảnh tải được (naturalWidth 1680),
+                                    link /khoa-hoc, /khoa-hoc?q=python, /bang-xep-hang;
+                                    ở 1280px khung 1120×428 (21:8)
+"Thêm banner" + ảnh 1260×480 chọn qua ô tệp -> xin URL ký -> PUT thẳng lên MinIO ->
+                                    banner thứ 4 "Đang hiện", ảnh tải được (naturalWidth 1260)
+"Tắt"                            -> "Đang tắt"; GET /api/v1/banners chỉ còn 3 banner seed
+"Đưa lên"                        -> đứng thứ 3
+"Xóa"                            -> dòng biến mất; URL ảnh cũ trên bucket trả 404
+
+==============================================================================
+5. GIAO DIỆN Ở BỀ NGANG ĐIỆN THOẠI
+==============================================================================
+/quan-tri, /quan-tri/danh-muc, /quan-tri/ma-giam-gia, /quan-tri/banner, / trong iframe
+rộng 375px (360px trừ thanh cuộn): scrollWidth = clientWidth ở cả 5 trang. Bảng khóa học
+hot và dải tab tự cuộn trong khung overflow-x-auto của chúng (có chủ đích).
+
+==============================================================================
+6. TEST
+==============================================================================
+Mới: test_admin_stats.py (7), test_admin_categories.py (10), test_admin_coupons.py (15),
+     test_banners.py (17), test_models.py +1 (đặc tả bảng banners).

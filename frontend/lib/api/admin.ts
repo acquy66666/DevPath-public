@@ -1,6 +1,7 @@
 import type { Category } from "./categories";
 import { apiFetch } from "./client";
 import type { CourseLevel, CourseStatus, Page } from "./courses";
+import type { StatsPeriod } from "./instructor-stats";
 import type { ReportReason, ReportTargetType } from "./reports";
 
 /** Mirrors `AdminPersonOut` — unlike every public person, with the email. */
@@ -21,6 +22,81 @@ export interface AdminSummary {
 
 export function getAdminSummary(accessToken: string): Promise<AdminSummary> {
   return apiFetch<AdminSummary>("/api/v1/admin/summary", { accessToken });
+}
+
+// --- The platform dashboard -----------------------------------------------
+
+/** Mirrors `PlatformTotals`. Money is a string, like every NUMERIC column. */
+export interface PlatformTotals {
+  revenue: string;
+  orders: number;
+  enrollments: number;
+  new_users: number;
+  /** Distinct people who did anything in the period. */
+  active_users: number;
+  /** Mean daily active users over the days of the period so far. */
+  avg_daily_active: number;
+}
+
+export interface PlatformPoint {
+  /** First day of the bucket, YYYY-MM-DD, Vietnamese calendar. */
+  bucket: string;
+  revenue: string;
+  orders: number;
+  enrollments: number;
+  new_users: number;
+  /** DAU for a day; distinct people of the month for a month. */
+  active_users: number;
+}
+
+export interface PlatformOverview {
+  period: StatsPeriod;
+  granularity: "day" | "month";
+  start: string;
+  end: string;
+  current: PlatformTotals;
+  previous: PlatformTotals;
+  series: PlatformPoint[];
+  active_today: number;
+  revenue_all_time: string;
+  users_total: number;
+  courses_published: number;
+  enrollments_total: number;
+}
+
+export interface HotCourse {
+  id: string;
+  title: string;
+  slug: string;
+  status: CourseStatus;
+  is_deleted: boolean;
+  thumbnail_url: string | null;
+  price: string;
+  rating_avg: string;
+  students_count: number;
+  instructor_name: string;
+  new_enrollments: number;
+  sales: number;
+  revenue: string;
+}
+
+export function getPlatformOverview(
+  accessToken: string,
+  period: StatsPeriod,
+): Promise<PlatformOverview> {
+  return apiFetch<PlatformOverview>(`/api/v1/admin/stats/overview?period=${period}`, {
+    accessToken,
+  });
+}
+
+export function listHotCourses(
+  accessToken: string,
+  period: StatsPeriod,
+): Promise<Page<HotCourse>> {
+  return apiFetch<Page<HotCourse>>(
+    `/api/v1/admin/stats/hot-courses?period=${period}&page_size=10`,
+    { accessToken },
+  );
 }
 
 // --- Courses ---------------------------------------------------------------
@@ -207,5 +283,233 @@ export function dismissReport(
     method: "POST",
     accessToken,
     body: JSON.stringify({ note }),
+  });
+}
+
+// --- Categories ------------------------------------------------------------
+
+/** Mirrors `AdminCategoryOut`. */
+export interface AdminCategory {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+  parent_id: string | null;
+  /** Courses filed directly here, taken-down ones excluded. */
+  courses_count: number;
+}
+
+export interface AdminCategoryTree extends AdminCategory {
+  children: AdminCategory[];
+}
+
+export function listAdminCategories(accessToken: string): Promise<AdminCategoryTree[]> {
+  return apiFetch<AdminCategoryTree[]>("/api/v1/admin/categories", { accessToken });
+}
+
+export function createCategory(
+  accessToken: string,
+  body: { name: string; parent_id: string | null },
+): Promise<AdminCategory> {
+  return apiFetch<AdminCategory>("/api/v1/admin/categories", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+/** Only the keys present are changed; `parent_id: null` moves to the top level. */
+export function updateCategory(
+  accessToken: string,
+  categoryId: string,
+  body: { name?: string; parent_id?: string | null },
+): Promise<AdminCategory> {
+  return apiFetch<AdminCategory>(`/api/v1/admin/categories/${categoryId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function reorderCategories(
+  accessToken: string,
+  parentId: string | null,
+  ids: string[],
+): Promise<AdminCategoryTree[]> {
+  return apiFetch<AdminCategoryTree[]>("/api/v1/admin/categories/order", {
+    method: "PUT",
+    accessToken,
+    body: JSON.stringify({ parent_id: parentId, ids }),
+  });
+}
+
+export function deleteCategory(accessToken: string, categoryId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/categories/${categoryId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}
+
+// --- Coupons ---------------------------------------------------------------
+
+export type CouponStatus = "scheduled" | "live" | "exhausted" | "ended";
+export type CouponFilter = CouponStatus | "all";
+
+/** Mirrors `AdminCouponOut`. */
+export interface AdminCoupon {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  /** A percentage, or an amount in VND -- a string like every NUMERIC. */
+  value: string;
+  scope: "site" | "courses";
+  courses: { id: string; title: string }[];
+  max_uses: number | null;
+  used_count: number;
+  valid_from: string;
+  valid_to: string | null;
+  status: CouponStatus;
+  created_at: string;
+}
+
+export interface CouponInput {
+  discount_type: "percent" | "fixed";
+  value: string;
+  scope: "site" | "courses";
+  course_ids: string[];
+  max_uses: number | null;
+  valid_from: string | null;
+  valid_to: string | null;
+}
+
+export function listAdminCoupons(
+  accessToken: string,
+  { status, q, page }: { status: CouponFilter; q: string; page: number },
+): Promise<Page<AdminCoupon>> {
+  const params = new URLSearchParams({ status, page: String(page), page_size: "20" });
+  if (q) params.set("q", q);
+  return apiFetch<Page<AdminCoupon>>(`/api/v1/admin/coupons?${params}`, { accessToken });
+}
+
+export function createCoupon(
+  accessToken: string,
+  body: CouponInput & { code: string },
+): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>("/api/v1/admin/coupons", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateCoupon(
+  accessToken: string,
+  couponId: string,
+  body: Partial<CouponInput>,
+): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>(`/api/v1/admin/coupons/${couponId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function endCoupon(accessToken: string, couponId: string): Promise<AdminCoupon> {
+  return apiFetch<AdminCoupon>(`/api/v1/admin/coupons/${couponId}/end`, {
+    method: "POST",
+    accessToken,
+  });
+}
+
+export function deleteCoupon(accessToken: string, couponId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/coupons/${couponId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}
+
+// --- Homepage banners ------------------------------------------------------
+
+export type BannerStatus = "live" | "scheduled" | "ended" | "off";
+
+/** Mirrors `AdminBannerOut`. */
+export interface AdminBanner {
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string | null;
+  position: number;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: BannerStatus;
+  created_at: string;
+}
+
+export interface BannerInput {
+  title: string;
+  link_url: string | null;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+}
+
+export interface BannerUploadTicket {
+  upload_url: string;
+  storage_key: string;
+  expires_in: number;
+  content_type: string;
+}
+
+export function listAdminBanners(accessToken: string): Promise<AdminBanner[]> {
+  return apiFetch<AdminBanner[]>("/api/v1/admin/banners", { accessToken });
+}
+
+export function createBannerUpload(
+  accessToken: string,
+  file: { filename: string; content_type: string; size_bytes: number },
+): Promise<BannerUploadTicket> {
+  return apiFetch<BannerUploadTicket>("/api/v1/admin/banners/upload-url", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(file),
+  });
+}
+
+export function createBanner(
+  accessToken: string,
+  body: BannerInput & { image_key: string },
+): Promise<AdminBanner> {
+  return apiFetch<AdminBanner>("/api/v1/admin/banners", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateBanner(
+  accessToken: string,
+  bannerId: string,
+  body: Partial<BannerInput> & { image_key?: string },
+): Promise<AdminBanner> {
+  return apiFetch<AdminBanner>(`/api/v1/admin/banners/${bannerId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function reorderBanners(accessToken: string, ids: string[]): Promise<AdminBanner[]> {
+  return apiFetch<AdminBanner[]>("/api/v1/admin/banners/order", {
+    method: "PUT",
+    accessToken,
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export function deleteBanner(accessToken: string, bannerId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/banners/${bannerId}`, {
+    method: "DELETE",
+    accessToken,
   });
 }

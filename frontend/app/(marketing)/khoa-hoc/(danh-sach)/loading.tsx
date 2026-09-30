@@ -3,6 +3,11 @@
  * would otherwise sit on the previous page until both answer. Same grid, same
  * gaps, so the real cards land where the grey ones were instead of shoving the
  * page around.
+ *
+ * It lives in the `(danh-sach)` group, not in `khoa-hoc/` itself, because a
+ * `loading.tsx` wraps every segment below it: one level up it also wrapped
+ * `khoa-hoc/[slug]`, whose page then streamed before it knew whether the course
+ * exists, so an unpublished or mistyped course answered 200 instead of 404.
  */
 export default function Loading() {
   return (

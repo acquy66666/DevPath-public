@@ -23,12 +23,15 @@ import { formatDate, formatDuration, formatPrice } from "@/lib/format";
  * The public page for one course, server-rendered so a crawler reads the whole
  * thing — title, description and every lesson name — in the first response.
  *
- * There is deliberately no `loading.tsx` beside this file. A Suspense fallback
+ * There is deliberately no `loading.tsx` beside this file, nor in `khoa-hoc/`
+ * above it (a loading file wraps every segment below it — the catalogue's
+ * skeleton sits in the `(danh-sach)` group for that reason). A Suspense fallback
  * starts the response streaming, and once headers are out the status is fixed
- * at 200; a course that does not exist would then answer 200 with a `noindex`
- * tag instead of a real 404. Checking before anything streams is what buys the
- * honest status code, and on a page whose whole purpose is search visibility
- * that is worth more than a skeleton.
+ * at 200; a course that does not exist, or one still waiting for an admin,
+ * would then answer 200 with a `noindex` tag instead of a real 404. Checking
+ * before anything streams is what buys the honest status code, and on a page
+ * whose whole purpose is search visibility that is worth more than a skeleton.
+ * Both were added once (13/09/2026) and taken out again at the Phase 5 gate.
  */
 
 /** Roughly what a search result shows before it cuts the description off. */

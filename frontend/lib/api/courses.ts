@@ -22,6 +22,8 @@ export interface Course {
   level: CourseLevel;
   language: string;
   status: CourseStatus;
+  /** Why an admin sent it back; only ever set while `status` is `rejected`. */
+  rejection_reason: string | null;
   published_at: string | null;
   rating_avg: string;
   rating_count: number;

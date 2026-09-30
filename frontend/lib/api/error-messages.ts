@@ -137,6 +137,18 @@ const MESSAGES: Record<string, string> = {
   QA_THREAD_NOT_FOUND: "Câu hỏi này không còn nữa — có thể đã bị xóa.",
   QA_REPLY_NOT_FOUND: "Câu trả lời này không còn nữa — có thể đã bị xóa.",
   CANNOT_VOTE_OWN_THREAD: "Bạn không thể bình chọn câu hỏi của chính mình.",
+
+  // Báo cáo vi phạm.
+  REPORT_TARGET_NOT_FOUND: "Nội dung này không còn nữa — có thể đã bị xóa.",
+  CANNOT_REPORT_OWN_CONTENT: "Bạn không thể báo cáo nội dung của chính mình.",
+  ALREADY_REPORTED: "Bạn đã báo cáo nội dung này rồi, quản trị viên đang xem xét.",
+
+  // Quản trị.
+  REPORT_NOT_FOUND: "Không tìm thấy báo cáo này. Tải lại trang giúp mình nhé.",
+  REPORT_ALREADY_CLOSED:
+    "Báo cáo này vừa được xử lý (có thể bởi một quản trị viên khác). Tải lại trang nhé.",
+  USER_NOT_FOUND: "Không tìm thấy tài khoản này.",
+  CANNOT_LOCK_ADMIN: "Không khóa được tài khoản quản trị viên.",
 };
 
 const NETWORK_FAILURE = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";

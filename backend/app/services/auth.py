@@ -126,7 +126,12 @@ async def _issue_tokens(
     )
 
 
-async def _revoke_all_sessions(session: AsyncSession, user_id: uuid.UUID) -> None:
+async def revoke_all_sessions(session: AsyncSession, user_id: uuid.UUID) -> None:
+    """Sign this account out everywhere: every refresh token it holds stops working.
+
+    Access tokens are not tracked, so they live out their 15 minutes -- which is
+    why the access-token check also reads `users.locked_at`. Does not commit.
+    """
     await session.execute(
         update(RefreshToken)
         .where(RefreshToken.user_id == user_id, RefreshToken.revoked_at.is_(None))
@@ -148,7 +153,7 @@ async def replace_all_sessions(
 
     Does not commit; the caller owns the transaction.
     """
-    await _revoke_all_sessions(session, user.id)
+    await revoke_all_sessions(session, user.id)
     return await _issue_tokens(session, user, client or ClientInfo())
 
 
@@ -235,7 +240,7 @@ async def rotate_refresh_token(
     if row.revoked_at is not None:
         # Either a stolen copy or a replay. We cannot tell which side is the
         # thief, so every session of this user goes.
-        await _revoke_all_sessions(session, row.user_id)
+        await revoke_all_sessions(session, row.user_id)
         await session.commit()
         raise RefreshTokenReusedError(
             "Phiên đăng nhập đã bị thu hồi, vui lòng đăng nhập lại"

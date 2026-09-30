@@ -36,6 +36,7 @@ from app.models import (
     QuizAttempt,
     QuizQuestion,
     RefreshToken,
+    Report,
     Review,
     Streak,
     User,
@@ -107,6 +108,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "qa_replies",
         "qa_votes",
         "notifications",
+        # Phase 5 -- what learners flag for the admin.
+        "reports",
     }
 
 
@@ -728,3 +731,40 @@ def test_the_bell_reads_a_partial_index_and_the_page_a_full_one() -> None:
         Notification
     )
     assert next(iter(Notification.__table__.c.user_id.foreign_keys)).ondelete == "CASCADE"
+
+
+def test_a_report_points_at_anything_and_closes_with_a_record() -> None:
+    """`target_id` is polymorphic, so no foreign key; the reporter cascades,
+    the admin who decided is only forgotten; one pending report per person
+    per target; closed exactly when `resolved_at` says so."""
+    assert Report.__table__.c.target_id.foreign_keys == set()
+    assert next(iter(Report.__table__.c.reporter_id.foreign_keys)).ondelete == "CASCADE"
+    assert next(iter(Report.__table__.c.resolved_by.foreign_keys)).ondelete == "SET NULL"
+    assert {
+        "ck_reports_target_type",
+        "ck_reports_reason",
+        "ck_reports_status",
+        "ck_reports_other_has_details",
+        "ck_reports_closed_at",
+        "ck_reports_removed_only_when_resolved",
+    } <= constraint_names(Report)
+
+    indexes = {index.name: index for index in Report.__table__.indexes}
+    assert set(indexes) == {
+        "ix_reports_status",
+        "ix_reports_target",
+        "uq_reports_pending_per_reporter",
+    }
+    pending = indexes["uq_reports_pending_per_reporter"]
+    assert pending.unique is True
+    assert str(pending.dialect_options["postgresql"]["where"]) == (
+        "status IN ('open', 'reviewing')"
+    )
+
+
+def test_the_instructor_hears_about_every_review_decision() -> None:
+    check = next(
+        c for c in Notification.__table__.constraints if c.name == "ck_notifications_type"
+    )
+    for kind in ("course_approved", "course_rejected", "course_taken_down"):
+        assert f"'{kind}'" in str(check.sqltext)

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessageCircleQuestion,
+  ShieldCheck,
   Trophy,
   UserRound,
 } from "lucide-react";
@@ -108,6 +109,14 @@ export function UserMenu({ user }: { user: User }) {
             <Link href="/giang-day/thong-ke">
               <BarChart3 aria-hidden />
               Thống kê giảng dạy
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.role === "admin" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/quan-tri/khoa-hoc">
+              <ShieldCheck aria-hidden />
+              Quản trị
             </Link>
           </DropdownMenuItem>
         ) : null}

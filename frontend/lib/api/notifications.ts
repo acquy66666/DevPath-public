@@ -24,6 +24,23 @@ export interface QaQuestionPayload {
   asker_name: string;
 }
 
+/** `course_approved`: an admin approved your course; it is on sale now. */
+export interface CourseApprovedPayload {
+  course_id: string;
+  course_slug: string;
+  course_title: string;
+}
+
+/**
+ * `course_rejected`: an admin sent your course back.
+ * `course_taken_down`: an admin took your published course off the platform.
+ */
+export interface CourseDecisionPayload {
+  course_id: string;
+  course_title: string;
+  reason: string;
+}
+
 interface NotificationBase {
   id: string;
   read_at: string | null;
@@ -39,7 +56,10 @@ interface NotificationBase {
  */
 export type AppNotification =
   | (NotificationBase & { type: "qa_reply"; payload: QaReplyPayload })
-  | (NotificationBase & { type: "qa_question"; payload: QaQuestionPayload });
+  | (NotificationBase & { type: "qa_question"; payload: QaQuestionPayload })
+  | (NotificationBase & { type: "course_approved"; payload: CourseApprovedPayload })
+  | (NotificationBase & { type: "course_rejected"; payload: CourseDecisionPayload })
+  | (NotificationBase & { type: "course_taken_down"; payload: CourseDecisionPayload });
 
 export function listNotifications(
   accessToken: string,

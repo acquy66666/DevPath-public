@@ -6,8 +6,10 @@ of operation that looks fine until two rows briefly want the same slot.
 """
 
 import uuid
+from collections.abc import Awaitable, Callable
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
@@ -15,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import hash_password
 from app.models import Category, CourseSection, Lesson, User
+from tests.api.publishing import publish_via_review
 
 PASSWORD = "mật-khẩu-đủ-dài"
 COURSES = "/api/v1/courses"
@@ -58,6 +61,21 @@ async def course(
         headers=owner,
     )
     return response.json()
+
+
+Publish = Callable[[dict], Awaitable[None]]
+
+
+@pytest.fixture
+def publish(
+    app: FastAPI, api_client: AsyncClient, db_session: AsyncSession, owner: dict[str, str]
+) -> Publish:
+    """Submit the course and have an admin approve it."""
+
+    async def run(course: dict) -> None:
+        await publish_via_review(app, api_client, db_session, course["id"], owner)
+
+    return run
 
 
 async def add_section(
@@ -507,12 +525,12 @@ async def test_the_curriculum_of_a_draft_is_private(
 
 
 async def test_the_curriculum_of_a_published_course_is_public(
-    api_client: AsyncClient, course: dict, owner: dict[str, str]
+    api_client: AsyncClient, course: dict, owner: dict[str, str], publish: Publish
 ) -> None:
     """The table of contents is what convinces someone to enrol."""
     section = await add_section(api_client, course, owner, "Mở đầu")
     await add_lesson(api_client, section, owner, "Bài 1")
-    await api_client.post(f"{COURSES}/{course['id']}/submit", headers=owner)
+    await publish(course)
 
     response = await api_client.get(f"{COURSES}/{course['id']}/curriculum")
 
@@ -521,7 +539,7 @@ async def test_the_curriculum_of_a_published_course_is_public(
 
 
 async def test_the_public_curriculum_does_not_hand_out_the_content(
-    api_client: AsyncClient, course: dict, owner: dict[str, str]
+    api_client: AsyncClient, course: dict, owner: dict[str, str], publish: Publish
 ) -> None:
     """A table of contents lists what is inside; it does not open the box."""
     section = await add_section(api_client, course, owner, "Mở đầu")
@@ -531,7 +549,7 @@ async def test_the_public_curriculum_does_not_hand_out_the_content(
         json={"article_content": "Nội dung trả tiền mới được đọc"},
         headers=owner,
     )
-    await api_client.post(f"{COURSES}/{course['id']}/submit", headers=owner)
+    await publish(course)
 
     body = (await api_client.get(f"{COURSES}/{course['id']}/curriculum")).text
 
@@ -568,7 +586,7 @@ async def test_a_stranger_cannot_read_a_lesson_of_a_draft(
 
 
 async def test_a_preview_lesson_is_readable_by_anyone(
-    api_client: AsyncClient, course: dict, owner: dict[str, str]
+    api_client: AsyncClient, course: dict, owner: dict[str, str], publish: Publish
 ) -> None:
     """`is_preview` is the sample chapter: readable without enrolling."""
     section = await add_section(api_client, course, owner, "Mở đầu")
@@ -580,7 +598,7 @@ async def test_a_preview_lesson_is_readable_by_anyone(
         is_preview=True,
         article_content="Đọc thử được",
     )
-    await api_client.post(f"{COURSES}/{course['id']}/submit", headers=owner)
+    await publish(course)
 
     response = await api_client.get(f"/api/v1/lessons/{lesson['id']}")
 
@@ -593,11 +611,12 @@ async def test_a_non_preview_lesson_stays_shut_for_outsiders(
     db_session: AsyncSession,
     course: dict,
     owner: dict[str, str],
+    publish: Publish,
 ) -> None:
     """Enrolment is what opens it, and that is next week's feature."""
     section = await add_section(api_client, course, owner, "Mở đầu")
     lesson = await add_lesson(api_client, section, owner, "Bài trả phí")
-    await api_client.post(f"{COURSES}/{course['id']}/submit", headers=owner)
+    await publish(course)
     student = await sign_in(api_client, await make_user(db_session, "student"))
 
     response = await api_client.get(f"/api/v1/lessons/{lesson['id']}", headers=student)

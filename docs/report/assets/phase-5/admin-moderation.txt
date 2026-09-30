@@ -1,0 +1,101 @@
+QUẢN TRỊ — DUYỆT KHÓA HỌC, BÁO CÁO VI PHẠM, KHÓA TÀI KHOẢN — CHẠY THẬT TRÊN STACK DEV
+Ngày chạy: 30/09/2026 · stack dev (infra/docker-compose.yml) · Postgres + Redis + worker Celery thật
+Phase 5, tuần 12: "Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2),
+quản lý user (khóa/mở), xử lý reports"
+
+Tài khoản dùng một lần (1 admin, 1 giảng viên, 1 học viên, hậu tố 734829) và khóa
+học tạm được tạo qua API/CSDL localhost rồi XÓA sau khi chạy xong (mục 6). Thao tác
+của admin làm trên UI thật (khung trình duyệt của app, http://localhost:3000/quan-tri).
+
+==============================================================================
+0. ĐIỀU QUAN TRỌNG NHẤT: DUYỆT = LÚC NẠP KHÓA HỌC VÀO CHATBOT VÀ RECOMMENDER
+==============================================================================
+Trước Phase 5, cờ AUTO_APPROVE_COURSES=true làm "gửi duyệt" xuất bản ngay, và hai
+job Celery (ingest RAG + nhúng khóa học) treo ở đó. Cờ đã bị BỎ HẲN (config,
+compose, .env mẫu): gửi duyệt giờ luôn dừng ở pending_review và KHÔNG xếp job nào.
+Job chuyển sang POST /admin/courses/{id}/approve, sau commit. Quên chỗ này thì mọi
+khóa mới vừa không hỏi được trợ giảng AI vừa không hiện ở "Khóa học tương tự" — và
+không trang nào báo lỗi. Log worker ngay sau cú bấm "Duyệt và xuất bản" trên UI:
+
+  10:24:58,610 Task app.workers.rag.ingest_course[fba4f85d-…] received
+  10:24:58,625 Task app.workers.content_based.embed_courses[94e4e912-…] received
+  10:24:59,477 Nhúng khóa học (8f143b96-…): 1 khóa đã nhúng, 0 khóa không đổi
+  10:24:59,581 Ingest khóa 8f143b96-…: 1 bài học, 1 chunk, 0 bài không đổi, …
+  10:24:59,588 Task app.workers.rag.ingest_course[…] succeeded in 0.94s:
+               {'lessons': 1, 'chunks': 1, 'unchanged': 0, 'skipped': 0, …}
+
+CSDL sau đó: doc_chunks = 1, course_embeddings = 1 cho khóa này.
+Test ghim: tests/api/test_course_ingest.py (gửi duyệt → 0 job; duyệt → đúng 1 ingest
++ 1 embedding; duyệt lần hai bị 409 → 0 job; từ chối → 0 job; giảng viên tự duyệt → 403).
+
+==============================================================================
+1. VÒNG DUYỆT: GỬI → TỪ CHỐI → SỬA/GỬI LẠI → DUYỆT
+==============================================================================
+giảng viên POST /courses/{id}/submit           -> status pending_review
+khách     GET  /courses/{id}                    -> 404 (chưa công khai)
+admin (UI) hàng đợi /quan-tri/khoa-hoc          -> 1 khóa, tab "Duyệt khóa học" badge 1
+admin (UI) mở /quan-tri/khoa-hoc/{id}           -> mô tả Markdown, mục lục, bấm bài đọc
+                                                   xem được nội dung (qua GET /lessons/{id})
+admin (UI) "Từ chối…" (nút khóa khi chưa có lý do) + lý do
+          -> status rejected, badge tab về 0
+giảng viên GET /courses/{id}                    -> rejection_reason = "Khóa học mới có 1 bài
+                                                   đọc ngắn, cần thêm nội dung trước khi bán."
+giảng viên GET /notifications                   -> course_rejected {reason, course_id, course_title}
+giảng viên POST /courses/{id}/submit            -> pending_review, rejection_reason = null
+admin (UI) "Duyệt và xuất bản"                  -> published, published_at đặt lần đầu
+giảng viên GET /notifications                   -> course_approved {course_id, course_slug, course_title}
+
+==============================================================================
+2. BÁO CÁO VI PHẠM → GỠ KHÓA HỌC
+==============================================================================
+học viên   POST /reports {course, copyright, details}   -> 201 open
+admin (UI) trang công khai /khoa-hoc/{slug} → "Báo cáo khóa học" → hộp thoại 5 lý do
+          → "Vi phạm bản quyền" → "Gửi báo cáo"          -> "Đã gửi báo cáo"
+admin (UI) /quan-tri/bao-cao                            -> 2 thẻ, mỗi thẻ ghi
+                                                          "2 báo cáo cho cùng nội dung"
+admin (UI) ghi chú + "Gỡ khóa học khỏi sàn" trên thẻ 1   -> hàng đợi rỗng (cả 2 đóng một lần)
+CSDL:
+   reason   |  status  | content_removed | has_note
+  copyright | resolved | t               | t
+  copyright | resolved | t               | t
+khóa học: status draft (published_at giữ nguyên), KHÔNG xóa mềm — lượt ghi danh còn nguyên
+giảng viên GET /notifications -> course_taken_down {reason = ghi chú của admin, …}
+tab "Đã xử lý": "Xác nhận vi phạm bởi Admin Kiểm Thử, vừa xong · đã gỡ nội dung — “…”"
+
+==============================================================================
+3. KHÓA / MỞ TÀI KHOẢN
+==============================================================================
+admin (UI) /quan-tri/nguoi-dung → "Khóa" ở học viên tạm → xác nhận "Khóa tài khoản"
+          -> badge "Đã khóa", nút đổi thành "Mở khóa"
+học viên   POST /auth/login -> 403 ACCOUNT_LOCKED
+admin (UI) "Mở khóa"
+học viên   POST /auth/login -> 200, GET /auth/me -> 200
+Hàng của tài khoản quản trị không có nút khóa (backend cũng từ chối: 409 CANNOT_LOCK_ADMIN).
+Khóa tài khoản thu hồi mọi refresh token ngay; access token đang cầm bị từ chối ở
+request kế tiếp vì deps.user_for_access_token đọc users.locked_at — test ghim ở
+tests/api/test_admin_users.py::test_a_locked_account_is_locked_everywhere_at_once.
+
+==============================================================================
+4. GIAO DIỆN Ở 375px
+==============================================================================
+/quan-tri/khoa-hoc, /quan-tri/nguoi-dung, /quan-tri/bao-cao, /quan-tri/khoa-hoc/{id}:
+documentElement.scrollWidth = 375 = clientWidth ở cả 4 trang. Phần tử duy nhất rộng
+hơn màn hình là dải tab, nằm trong khung overflow-x-auto của chính nó (có chủ đích).
+
+==============================================================================
+5. TEST
+==============================================================================
+Mới: test_admin_courses.py (19), test_admin_users.py (8), test_reports.py (25),
+     test_models.py +2 (đặc tả bảng reports, 3 loại thông báo mới).
+Sửa theo luồng mới: test_course_ingest.py (5), test_courses.py, test_curriculum.py
+     (khóa công khai giờ phải qua tests/api/publishing.py: gửi duyệt + admin duyệt).
+Cả bộ trong container: 1487 passed, 2 skipped, 2 failed — hai ca
+"test_storage_that_was_never_configured_answers_503" (avatar, video) đỏ vì trong
+container R2_* trống là tự trỏ về MinIO nên storage không bao giờ "chưa cấu hình";
+không liên quan thay đổi này, CI không có MinIO fallback.
+
+==============================================================================
+6. DỌN DẸP
+==============================================================================
+Xóa theo thứ tự: reports của khóa tạm → khóa tạm (cascade chương/bài/doc_chunks/
+course_embeddings) → 3 tài khoản tạm (cascade thông báo, refresh token).

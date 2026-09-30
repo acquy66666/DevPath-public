@@ -31,6 +31,9 @@ from app.models.grading import (
     TestCase,
 )
 from app.models.notification import (
+    NOTIFICATION_COURSE_APPROVED,
+    NOTIFICATION_COURSE_REJECTED,
+    NOTIFICATION_COURSE_TAKEN_DOWN,
     NOTIFICATION_QA_QUESTION,
     NOTIFICATION_QA_REPLY,
     NOTIFICATION_TYPES,
@@ -56,6 +59,15 @@ from app.models.quiz import Quiz, QuizAttempt, QuizQuestion
 from app.models.rag import EMBEDDING_DIMENSIONS, DocChunk
 from app.models.recommendation import CourseEmbedding
 from app.models.refresh_token import RefreshToken
+from app.models.report import (
+    REPORT_DETAILS_MAX_LENGTH,
+    REPORT_NOTE_MAX_LENGTH,
+    REPORT_PENDING_STATUSES,
+    REPORT_REASONS,
+    REPORT_STATUSES,
+    REPORT_TARGET_TYPES,
+    Report,
+)
 from app.models.review import Review
 from app.models.study import Bookmark, Note
 from app.models.user import User
@@ -88,6 +100,9 @@ __all__ = [
     "MAX_CODE_LENGTH",
     "Note",
     "Notification",
+    "NOTIFICATION_COURSE_APPROVED",
+    "NOTIFICATION_COURSE_REJECTED",
+    "NOTIFICATION_COURSE_TAKEN_DOWN",
     "NOTIFICATION_QA_QUESTION",
     "NOTIFICATION_QA_REPLY",
     "NOTIFICATION_TYPES",
@@ -106,6 +121,13 @@ __all__ = [
     "QuizAttempt",
     "QuizQuestion",
     "RefreshToken",
+    "Report",
+    "REPORT_DETAILS_MAX_LENGTH",
+    "REPORT_NOTE_MAX_LENGTH",
+    "REPORT_PENDING_STATUSES",
+    "REPORT_REASONS",
+    "REPORT_STATUSES",
+    "REPORT_TARGET_TYPES",
     "Review",
     "Streak",
     "Submission",

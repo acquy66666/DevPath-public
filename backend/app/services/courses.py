@@ -18,12 +18,10 @@ from fastapi import status
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.exceptions import DomainError, PermissionDeniedError
 from app.models import Category, Course, User
 from app.schemas.courses import CourseCreate, CourseUpdate
 from app.services.slug import unique_slug
-from app.services.tasks import TaskQueue
 
 
 class CourseNotFoundError(DomainError):
@@ -209,15 +207,14 @@ async def delete_course(session: AsyncSession, course_id: uuid.UUID, user: User)
 
 
 async def submit_for_review(
-    session: AsyncSession,
-    course_id: uuid.UUID,
-    user: User,
-    queue: TaskQueue | None = None,
+    session: AsyncSession, course_id: uuid.UUID, user: User
 ) -> Course:
-    """draft | rejected -> pending_review, and on to published while the flag is on.
+    """draft | rejected -> pending_review. An admin decides the rest.
 
-    The flag stands in for the admin queue that Phase 5 builds. Turning it off
-    is what a real review looks like: the course waits in `pending_review`.
+    Nothing is scheduled here: the chatbot ingest and the course embedding
+    hang off the moment a course is *published*, which is now the admin's
+    approval (`services/moderation.py`). Embedding a course that is only
+    waiting would let the chatbot quote something no student can open.
     """
     course = await load_for_management(session, course_id, user)
 
@@ -227,28 +224,11 @@ async def submit_for_review(
         )
 
     course.status = "pending_review"
+    # The previous reason answered the previous version; the admin reading
+    # this one writes a new one if it is still not right.
     course.rejection_reason = None
-    published_now = False
-
-    if get_settings().auto_approve_courses:
-        course.status = "published"
-        # The check constraint refuses a published course with no timestamp.
-        course.published_at = datetime.now(tz=UTC)
-        published_now = True
 
     await session.commit()
-
-    # After the commit, never before: the worker opens its own connection and
-    # would find the old status -- or no course at all, if the commit failed.
-    # Publishing is also what makes a course answerable by the chatbot, which
-    # is why the ingest hangs off this moment rather than off every lesson edit.
-    if published_now and queue is not None:
-        queue.enqueue_ingest(course.id)
-        # And the recommender's other input: until this runs the course has no
-        # vector, so it appears under nobody's "Khóa học tương tự" and has no
-        # block of its own. Separate from the ingest above because they fail
-        # separately -- a course with no lessons still has a title to embed.
-        queue.enqueue_course_embedding(course.id)
     # updated_at is filled by Postgres, so the attribute is expired after the
     # UPDATE. Refresh here rather than let the response model trip over lazy IO.
     await session.refresh(course)

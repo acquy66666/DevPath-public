@@ -1,0 +1,146 @@
+DEMO END-TO-END: GIỎ HÀNG → COUPON → VNPAY SANDBOX → THANH TOÁN → VÀO HỌC NGAY
+Ngày chạy: 01/10/2026 (01:06–01:08 giờ Việt Nam) · stack dev · merchant sandbox VNPay thật (TmnCode IFW2****)
+Gate Phase 5: "Demo end-to-end: thêm giỏ hàng → áp coupon → VNPay sandbox → thanh toán → vào học ngay"
+Và phần VNPay của mục thu bằng chứng: "screenshot luồng thanh toán VNPay end-to-end, log IPN (đã che
+dữ liệu nhạy cảm)".
+
+==============================================================================
+0. CÁI ĐÃ CHỨNG MINH VÀ CÁI CHƯA — ĐỌC TRƯỚC
+==============================================================================
+THẬT trong lần chạy này: UI (thêm vào giỏ, nhập mã, nút thanh toán, trang kết quả, vào học), API,
+CSDL, và trang thanh toán của VNPay sandbox — VNPay nhận URL do backend ký bằng TmnCode + secret
+thật và mở trang "Chọn phương thức thanh toán (Test)", tức TmnCode hợp lệ và chữ ký HMAC-SHA512 khớp.
+
+GIẢ LẬP: cú callback IPN. VNPay chưa khai IPN URL cho merchant này (cổng merchant không có ô tự khai;
+đã xin qua mail kythuatctt@vnpay.vn ngày 24/09/2026, chưa có hồi âm) — yếu tố bên ngoài duy nhất còn
+lại. Callback được gửi bằng `python -m scripts.simulate_vnpay_ipn <mã đơn>`: ký bằng ĐÚNG secret
+backend dùng để kiểm, gửi vào ĐÚNG route `GET /api/v1/payments/vnpay/ipn`, qua đúng handler — không cửa
+sau nào. Nó chứng minh mọi thứ sau khi tiền chuyển; không chứng minh VNPay sẽ gọi được tới máy mình.
+
+KHÔNG LÀM lần này: bước người mua chọn ngân hàng và điền thẻ test trên trang VNPay (user hoãn bước cần
+thao tác tay ngày 01/10). Bước này đã chạy một lần ngày 24/09/2026 (đơn DP260924SEPXYB, 499.000 ₫):
+VNPay trừ tiền thẻ test và đưa trình duyệt về /thanh-toan/ket-qua; đơn đó đứng ở pending vì IPN chưa
+khai — đúng thiết kế (xem §3).
+
+Người mua: tài khoản dùng một lần "Vũ Minh Châu" (gate5-mua2@devpath.example), đăng ký qua
+POST /auth/register, đã xóa ở §7. Ảnh chụp bằng Chrome headless trên máy dev (1440 px, hồ sơ tạm,
+DevTools Protocol), đăng nhập bằng form thật.
+
+==============================================================================
+1. GIỎ HÀNG VÀ MÃ GIẢM GIÁ (UI)
+==============================================================================
+  trang /khoa-hoc/python-nang-cao-…      "Thêm vào giỏ hàng" → nút đổi thành "Xem giỏ hàng"
+  trang /khoa-hoc/do-thi-va-cac-…        "Thêm vào giỏ hàng" → chuông giỏ: 2       [pay-1]
+  /gio-hang, nhập "python30" → Áp dụng   mã tự thành PYTHON30                      [pay-2]
+      Đồ thị và các thuật toán duyệt                          399.000 ₫
+      Python nâng cao: decorator, generator và context mgr    499.000 ₫  "Đang được giảm giá"
+      Tạm tính 898.000 ₫ · Giảm giá −149.700 ₫ · Tổng cộng 748.300 ₫
+      "PYTHON30 — Giảm 30% cho 1 khóa học trong giỏ"
+
+PYTHON30 giới hạn 2 khóa Python, nên 30% chỉ tính trên 499.000 ₫ = 149.700 ₫; khóa Đồ thị giữ nguyên.
+Gõ mã không tiêu lượt: used_count vẫn 0 tới khi đơn được trả tiền.
+
+==============================================================================
+2. THANH TOÁN QUA VNPAY SANDBOX
+==============================================================================
+  bấm "Thanh toán qua VNPay"   → POST /orders (đóng băng giá + mã) → POST /orders/{code}/payment-url
+                               → trình duyệt rời app sang https://sandbox.vnpayment.vn/paymentv2/…
+  đơn vừa tạo (CSDL)             DP261001NXJKPC · 898000 − 149700 = 748300 · pending · PYTHON30
+  trang VNPay                    "Chọn phương thức thanh toán (Test)": App Ngân hàng và Ví điện tử
+                                 (VNPAY-QR) · Thẻ nội địa và tài khoản ngân hàng · Thẻ thanh toán
+                                 quốc tế · App VNPAY                                       [pay-3]
+
+URL thanh toán đã ký không chép vào đây vì mang TmnCode và chữ ký. Số tiền trong đó là
+vnp_Amount = 74830000 = 748.300 ₫ × 100 (VNPay đếm bằng 1/100 đồng).
+
+==============================================================================
+3. QUAY VỀ TRANG KẾT QUẢ — TRÌNH DUYỆT KHÔNG ĐƯỢC QUYỀN NÓI "ĐÃ TRẢ"
+==============================================================================
+Mở đúng URL mà VNPay đưa người mua về, kèm cả tham số báo thành công mà ai cũng gõ tay được:
+  /thanh-toan/ket-qua?vnp_TxnRef=DP261001NXJKPC&vnp_ResponseCode=00&vnp_TransactionStatus=00
+  → "Đang chờ xác nhận — Ngân hàng chưa báo kết quả về. Trang này tự cập nhật, bạn không cần tải
+     lại."                                                                         [pay-4]
+Trang chỉ lấy mã đơn từ URL rồi hỏi GET /orders/{code}; chỉ IPN server-to-server mới đổi được trạng
+thái đơn. Một trang tin vnp_ResponseCode=00 trong URL là trang cho ai cũng tự ghi danh được.
+
+==============================================================================
+4. IPN (GIẢ LẬP) — TRANG TỰ CHUYỂN SANG THÀNH CÔNG
+==============================================================================
+Trong lúc trang kết quả đang mở và hỏi lại mỗi 3 giây:
+  $ python -m scripts.simulate_vnpay_ipn DP261001NXJKPC
+  đơn hàng : DP261001NXJKPC — 748.300 ₫ (pending)
+  giả lập  : thành công, mã 00
+  IPN trả  : 200 {"RspCode":"00","Message":"Confirm Success"}
+  đơn hàng : paid lúc 01/10/2026 01:07 giờ VN, mã giao dịch 90791618
+
+  → trang tự chuyển sang "Thanh toán thành công — Các khóa học trong đơn đã vào tài khoản của bạn."
+    sau 2,9 s, không tải lại; "Mã giao dịch VNPay 90791618"; nút "Vào học ngay"; chuông giỏ về trống
+                                                                                   [pay-5]
+  "Vào học ngay" → /khoa-hoc-cua-toi: 2 khóa, "Đăng ký 01/10/2026", "Tiếp tục học" [pay-6]
+  → /hoc/python-nang-cao-…: trang học mở được, "0/1 bài · 0%"                     [pay-7]
+
+CSDL sau IPN (một transaction: log → paid → ghi danh → trừ lượt mã → bỏ dòng khỏi giỏ):
+  đơn            DP261001NXJKPC  paid  898000.00 − 149700.00 = 748300.00  PYTHON30
+                 provider_txn_id 90791618 · tạo 01:06:58 · paid 01:07:09 (giờ VN)
+  order_items    Python nâng cao…          499000.00   discount 149700.00
+                 Đồ thị và các thuật toán…  399000.00   discount      0.00
+  enrollments    2 dòng, source = purchase
+  coupons        PYTHON30 used_count 0 → 1
+  giỏ            0 dòng
+
+==============================================================================
+5. IPN LẦN HAI (VNPay GỬI LẠI TỚI KHI NGHE "00") — KHÔNG GHI DANH LẦN HAI
+==============================================================================
+  IPN trả  : 200 {"RspCode":"02","Message":"Order already confirmed"}
+  đơn hàng : paid lúc 01/10/2026 01:07 giờ VN, mã giao dịch 90791618   (không đổi)
+Không có dòng ghi danh thứ ba, mã vẫn 1 lượt.
+
+==============================================================================
+6. LOG IPN — payment_events (append-only, ghi TRƯỚC khi phán xét), ĐÃ CHE
+==============================================================================
+  01:07:09.411  signature_valid=t  vnp_ResponseCode=00  txn 90791618   ← được chấp nhận
+  01:07:20.382  signature_valid=t  vnp_ResponseCode=00  txn 90791618   ← trả lời "02"
+
+Payload dòng đầu. Đã che: vnp_TmnCode (mã merchant thật, 4 ký tự cuối thành ****). Đã bỏ:
+vnp_SecureHash (chữ ký của chính thông điệp này — cột payload lưu nguyên để đối soát, nhưng không đưa
+ra báo cáo). vnp_BankTranNo và vnp_TransactionNo ở đây do script giả lập sinh ra từ mã đơn.
+{
+ "vnp_Amount": "74830000",
+ "vnp_BankCode": "NCB",
+ "vnp_BankTranNo": "VNP01NXJKPC",
+ "vnp_CardType": "ATM",
+ "vnp_OrderInfo": "Thanh toan don hang DP261001NXJKPC",
+ "vnp_PayDate": "20261001010709",
+ "vnp_ResponseCode": "00",
+ "vnp_TmnCode": "IFW2****",
+ "vnp_TransactionNo": "90791618",
+ "vnp_TransactionStatus": "00",
+ "vnp_TxnRef": "DP261001NXJKPC"
+}
+
+==============================================================================
+7. LỖI TÌM THẤY KHI CHẠY GATE — ĐÃ SỬA
+==============================================================================
+(a) Chuông giỏ hàng không cập nhật sau khi thanh toán. Lần chạy đầu (đơn DP2610013PCY56), trang
+    "Thanh toán thành công" và "Khóa học của tôi" vẫn hiện chuông giỏ "2" trong khi CSDL đã 0 dòng;
+    chỉ tải lại toàn trang mới về đúng. Nguyên nhân: OrderResult hỏi lại đơn mỗi 3 s nhưng khi đơn
+    thành paid không làm mới gì khác, còn CartBadge nằm cố định trên header nên giữ số cũ. Sửa: khi
+    đơn chuyển sang paid thì invalidate ["cart"], ["my-enrollments"], ["enrollment"]
+    (frontend/components/commerce/order-result.tsx). Kiểm lại bằng một đơn thứ hai (DP261001STQCRZ,
+    1 khóa): chuông 1 khi pending → 0 sau IPN, không tải lại. Ảnh ở §1–§4 chụp lại sau khi sửa.
+(b) Script giả lập in giờ trả tiền theo UTC ("paid lúc 30/09/2026 18:03" cho 01:03 ngày 01/10 giờ
+    VN) — cùng họ với lỗi ngày ở certificate-demo.txt §5. Giờ in theo giờ Việt Nam, có ghi "giờ VN".
+    (payment-ipn.txt ngày 24/09 còn mang dòng giờ UTC cũ: "paid lúc 23/09/2026 17:34" là 00:34 ngày
+    24/09 giờ VN.)
+
+==============================================================================
+8. DỌN DẸP
+==============================================================================
+Hai người mua tạm (gate5-mua — lần chạy đầu + đơn kiểm lại; gate5-mua2 — lần chạy này), mỗi người:
+trả lại lượt mã các đơn đã trả tiền đã tiêu → xóa đơn (cascade order_items, payment_events; orders.
+user_id là RESTRICT) → xóa người dùng (cascade ghi danh, giỏ) → scripts.rebuild_course_stats.
+  deleted gate5-mua@devpath.example: orders ['DP2610013PCY56', 'DP261001STQCRZ'], PYTHON30 → 0
+  deleted gate5-mua2@devpath.example: orders ['DP261001NXJKPC'], PYTHON30 → 0
+  rebuild_course_stats sau mỗi lần: lần 1 sửa 3 khóa (hai khóa trên + TypeScript của đơn kiểm lại),
+  lần 2 sửa do-thi… 29 → 28, python-nang-cao… 23 → 22
+Sau đó: 77 đơn paid / 59.768.600 ₫ (như trước demo), PYTHON30 used_count 0, không còn tài khoản gate5*.

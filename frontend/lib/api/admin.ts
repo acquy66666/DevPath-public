@@ -427,3 +427,89 @@ export function deleteCoupon(accessToken: string, couponId: string): Promise<voi
     accessToken,
   });
 }
+
+// --- Homepage banners ------------------------------------------------------
+
+export type BannerStatus = "live" | "scheduled" | "ended" | "off";
+
+/** Mirrors `AdminBannerOut`. */
+export interface AdminBanner {
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string | null;
+  position: number;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: BannerStatus;
+  created_at: string;
+}
+
+export interface BannerInput {
+  title: string;
+  link_url: string | null;
+  is_active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+}
+
+export interface BannerUploadTicket {
+  upload_url: string;
+  storage_key: string;
+  expires_in: number;
+  content_type: string;
+}
+
+export function listAdminBanners(accessToken: string): Promise<AdminBanner[]> {
+  return apiFetch<AdminBanner[]>("/api/v1/admin/banners", { accessToken });
+}
+
+export function createBannerUpload(
+  accessToken: string,
+  file: { filename: string; content_type: string; size_bytes: number },
+): Promise<BannerUploadTicket> {
+  return apiFetch<BannerUploadTicket>("/api/v1/admin/banners/upload-url", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(file),
+  });
+}
+
+export function createBanner(
+  accessToken: string,
+  body: BannerInput & { image_key: string },
+): Promise<AdminBanner> {
+  return apiFetch<AdminBanner>("/api/v1/admin/banners", {
+    method: "POST",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateBanner(
+  accessToken: string,
+  bannerId: string,
+  body: Partial<BannerInput> & { image_key?: string },
+): Promise<AdminBanner> {
+  return apiFetch<AdminBanner>(`/api/v1/admin/banners/${bannerId}`, {
+    method: "PATCH",
+    accessToken,
+    body: JSON.stringify(body),
+  });
+}
+
+export function reorderBanners(accessToken: string, ids: string[]): Promise<AdminBanner[]> {
+  return apiFetch<AdminBanner[]>("/api/v1/admin/banners/order", {
+    method: "PUT",
+    accessToken,
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export function deleteBanner(accessToken: string, bannerId: string): Promise<void> {
+  return apiFetch<void>(`/api/v1/admin/banners/${bannerId}`, {
+    method: "DELETE",
+    accessToken,
+  });
+}

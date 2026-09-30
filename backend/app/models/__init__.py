@@ -4,6 +4,7 @@ Every model module must be imported here: Alembic autogenerate only sees the
 tables that have been registered on Base.metadata by import time.
 """
 
+from app.models.banner import BANNER_TITLE_MAX_LENGTH, Banner
 from app.models.base import Base
 from app.models.category import Category
 from app.models.certificate import (
@@ -73,6 +74,8 @@ from app.models.study import Bookmark, Note
 from app.models.user import User
 
 __all__ = [
+    "Banner",
+    "BANNER_TITLE_MAX_LENGTH",
     "Base",
     "Bookmark",
     "Cart",

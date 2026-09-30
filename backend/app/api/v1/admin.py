@@ -7,6 +7,7 @@ open) live in the services.
 """
 
 import uuid
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
@@ -28,6 +29,14 @@ from app.schemas.admin import (
     ReportResolveIn,
     ReportTargetOut,
 )
+from app.schemas.banners import (
+    AdminBannerOut,
+    BannerCreate,
+    BannerOrderIn,
+    BannerUpdate,
+    BannerUploadIn,
+    BannerUploadTicket,
+)
 from app.schemas.categories import (
     AdminCategoryOut,
     AdminCategoryTree,
@@ -47,10 +56,12 @@ from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.schemas.reports import ReportTargetType
 from app.services import admin_coupons as coupons_service
 from app.services import admin_users as users_service
+from app.services import banners as banners_service
 from app.services import categories as categories_service
 from app.services import moderation as moderation_service
 from app.services import platform_stats as stats_service
 from app.services import reports as reports_service
+from app.services.storage import ObjectStorage, get_storage
 from app.services.tasks import TaskQueue, get_task_queue
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -58,6 +69,7 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 Admin = Annotated[User, Depends(require_role("admin"))]
 #: Celery, and overridden in tests.
 Queue = Annotated[TaskQueue, Depends(get_task_queue)]
+Storage = Annotated[ObjectStorage, Depends(get_storage)]
 PageNo = Annotated[int, Query(ge=1)]
 PageSize = Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)]
 Search = Annotated[str | None, Query(max_length=100)]
@@ -354,6 +366,87 @@ async def end_coupon(coupon_id: uuid.UUID, _: Admin, session: DbSession) -> Admi
 async def delete_coupon(coupon_id: uuid.UUID, _: Admin, session: DbSession) -> None:
     """Only a code nobody has used; a used one is ended instead (409)."""
     await coupons_service.delete_coupon(session, coupon_id)
+
+
+# --- Homepage banners ------------------------------------------------------
+
+
+def _banner_out(banner) -> AdminBannerOut:
+    return AdminBannerOut(
+        id=banner.id,
+        title=banner.title,
+        image_url=banner.image_url,
+        link_url=banner.link_url,
+        position=banner.position,
+        is_active=banner.is_active,
+        starts_at=banner.starts_at,
+        ends_at=banner.ends_at,
+        status=banners_service.status_of(banner, datetime.now(UTC)),
+        created_at=banner.created_at,
+    )
+
+
+@router.get("/banners", response_model=list[AdminBannerOut])
+async def list_banners(_: Admin, session: DbSession) -> list[AdminBannerOut]:
+    """Every banner in the homepage's order, whether showing or not."""
+    return [_banner_out(banner) for banner in await banners_service.list_all(session)]
+
+
+@router.post("/banners/upload-url", response_model=BannerUploadTicket)
+async def create_banner_upload(
+    body: BannerUploadIn, _: Admin, storage: Storage
+) -> BannerUploadTicket:
+    """Sign a PUT for one new picture. Nothing is written until the banner is."""
+    url, key, ttl = banners_service.upload_ticket(
+        storage, filename=body.filename, content_type=body.content_type
+    )
+    return BannerUploadTicket(
+        upload_url=url, storage_key=key, expires_in=ttl, content_type=body.content_type
+    )
+
+
+@router.post("/banners", response_model=AdminBannerOut, status_code=status.HTTP_201_CREATED)
+async def create_banner(
+    body: BannerCreate, _: Admin, session: DbSession, storage: Storage
+) -> AdminBannerOut:
+    """A new banner, last in line, with a picture uploaded through the ticket."""
+    banner = await banners_service.create(
+        session,
+        storage,
+        title=body.title,
+        image_key=body.image_key,
+        link_url=body.link_url,
+        is_active=body.is_active,
+        starts_at=body.starts_at,
+        ends_at=body.ends_at,
+    )
+    return _banner_out(banner)
+
+
+@router.put("/banners/order", response_model=list[AdminBannerOut])
+async def reorder_banners(
+    body: BannerOrderIn, _: Admin, session: DbSession
+) -> list[AdminBannerOut]:
+    """The whole order at once."""
+    return [_banner_out(b) for b in await banners_service.reorder(session, body.ids)]
+
+
+@router.patch("/banners/{banner_id}", response_model=AdminBannerOut)
+async def update_banner(
+    banner_id: uuid.UUID, body: BannerUpdate, _: Admin, session: DbSession, storage: Storage
+) -> AdminBannerOut:
+    """Change what was sent; a new `image_key` replaces the picture."""
+    banner = await banners_service.update(
+        session, storage, banner_id, body.model_dump(exclude_unset=True)
+    )
+    return _banner_out(banner)
+
+
+@router.delete("/banners/{banner_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_banner(
+    banner_id: uuid.UUID, _: Admin, session: DbSession, storage: Storage
+) -> None:
+    await banners_service.delete(session, storage, banner_id)
 
 
 # --- Users -----------------------------------------------------------------

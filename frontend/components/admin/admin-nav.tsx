@@ -5,6 +5,7 @@ import {
   BookCheck,
   Flag,
   FolderTree,
+  ImageIcon,
   LayoutDashboard,
   TicketPercent,
   Users,
@@ -34,6 +35,7 @@ const TABS: Tab[] = [
   { href: "/quan-tri/nguoi-dung", label: "Người dùng", icon: Users, count: () => 0 },
   { href: "/quan-tri/danh-muc", label: "Danh mục", icon: FolderTree, count: () => 0 },
   { href: "/quan-tri/ma-giam-gia", label: "Mã giảm giá", icon: TicketPercent, count: () => 0 },
+  { href: "/quan-tri/banner", label: "Banner", icon: ImageIcon, count: () => 0 },
 ];
 
 /**

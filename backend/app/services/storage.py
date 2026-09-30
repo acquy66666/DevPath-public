@@ -61,6 +61,8 @@ ALLOWED_IMAGE_TYPES = (
 # 5 MB. An avatar is drawn at 96 px; anything larger is a photo straight off a
 # phone, and the answer to that is to resize it rather than to store it.
 MAX_AVATAR_BYTES = 5 * 1024 * 1024
+#: A banner is drawn full width, so it may be larger than a face in a circle.
+MAX_BANNER_BYTES = 8 * 1024 * 1024
 
 # Transcripts, keyed by extension. No .vtt yet: nothing has asked for it, and
 # a format accepted is a format that has to keep parsing correctly.
@@ -134,6 +136,18 @@ def avatar_key(user_id: uuid.UUID, filename: str) -> str:
     """
     suffix = PurePosixPath(filename).suffix.lower()[:10]
     return f"{avatar_prefix(user_id)}/{uuid.uuid4().hex}{suffix}"
+
+
+#: Every homepage banner picture, whoever uploaded it: banners belong to the
+#: platform, not to an account.
+BANNER_PREFIX = "banners"
+
+
+def banner_key(filename: str) -> str:
+    """Where one banner picture lands -- a fresh name each time, like avatars,
+    so a replaced picture is never served from a stale cache."""
+    suffix = PurePosixPath(filename).suffix.lower()[:10]
+    return f"{BANNER_PREFIX}/{uuid.uuid4().hex}{suffix}"
 
 
 class ObjectStorage(Protocol):

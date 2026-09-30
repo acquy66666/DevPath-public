@@ -128,11 +128,11 @@ def windows(period: str, today: date) -> tuple[Window, Window]:
     )
 
 
-def _today(now: datetime | None) -> date:
+def vietnam_today(now: datetime | None) -> date:
     return (now or datetime.now(UTC)).astimezone(VIETNAM).date()
 
 
-def _bucket(column: ColumnElement[datetime], granularity: str) -> ColumnElement[date]:
+def bucket_start(column: ColumnElement[datetime], granularity: str) -> ColumnElement[date]:
     """The first day of the bucket `column` falls in, on the Vietnamese calendar.
 
     Both arguments are rendered as literals rather than bound: the expression
@@ -146,11 +146,11 @@ def _bucket(column: ColumnElement[datetime], granularity: str) -> ColumnElement[
     return cast(func.date_trunc(literal_column(f"'{granularity}'"), local), Date)
 
 
-def _rate(part: int, whole: int) -> float | None:
+def rate(part: int, whole: int) -> float | None:
     return None if whole == 0 else round(part / whole, RATE_PLACES)
 
 
-def _money(value: Decimal | int | None) -> Decimal:
+def money(value: Decimal | int | None) -> Decimal:
     return Decimal(value or 0).quantize(ZERO)
 
 
@@ -197,7 +197,7 @@ async def _series(
     mine = Course.instructor_id == instructor_id
     points = {bucket: Point(bucket=bucket) for bucket in window.buckets()}
 
-    sold = _bucket(Order.paid_at, window.granularity).label("bucket")
+    sold = bucket_start(Order.paid_at, window.granularity).label("bucket")
     for bucket, revenue, sales in await session.execute(
         select(sold, func.sum(NET), func.count())
         .select_from(OrderItem)
@@ -206,10 +206,10 @@ async def _series(
         .where(mine, Order.status == "paid", Order.paid_at >= start, Order.paid_at < stop)
         .group_by(sold)
     ):
-        points[bucket].revenue = _money(revenue)
+        points[bucket].revenue = money(revenue)
         points[bucket].sales = sales
 
-    joined = _bucket(Enrollment.created_at, window.granularity).label("bucket")
+    joined = bucket_start(Enrollment.created_at, window.granularity).label("bucket")
     for bucket, count in await session.execute(
         select(joined, func.count())
         .select_from(Enrollment)
@@ -229,7 +229,7 @@ async def _series(
         .group_by(Enrollment.user_id)
         .subquery()
     )
-    arrived = _bucket(first.c.first_at, window.granularity).label("bucket")
+    arrived = bucket_start(first.c.first_at, window.granularity).label("bucket")
     for bucket, count in await session.execute(
         select(arrived, func.count())
         .where(first.c.first_at >= start, first.c.first_at < stop)
@@ -258,7 +258,7 @@ async def overview(
 ) -> Overview:
     """Totals for the period and the one before it, the series behind the
     chart, and the all-time figures that describe the instructor."""
-    today = _today(now)
+    today = vietnam_today(now)
     current, previous = windows(period, today)
     series = await _series(session, instructor_id, current)
     mine = Course.instructor_id == instructor_id
@@ -296,9 +296,9 @@ async def overview(
         current=_sum(series),
         previous=_sum(await _series(session, instructor_id, previous)),
         series=series,
-        revenue_all_time=_money(revenue_all_time),
+        revenue_all_time=money(revenue_all_time),
         students_total=students,
-        completion_rate=_rate(completed, enrolments),
+        completion_rate=rate(completed, enrolments),
         courses_count=courses_count or 0,
     )
 
@@ -340,7 +340,7 @@ async def course_stats(
     onto the course list, so one statement answers the page and the sort runs
     on the real numbers rather than on a page-sized sample of them.
     """
-    window, _ = windows(period, _today(now))
+    window, _ = windows(period, vietnam_today(now))
     start, stop = window.bounds()
     mine = select(Course.id).where(Course.instructor_id == instructor_id)
 
@@ -448,12 +448,12 @@ async def course_stats(
             students=row.students,
             completed=row.completed,
             lessons_count=row.lessons,
-            completion_rate=_rate(row.completed, row.students),
-            avg_progress=_rate(row.done, row.students * row.lessons),
+            completion_rate=rate(row.completed, row.students),
+            avg_progress=rate(row.done, row.students * row.lessons),
             new_enrollments=row.new_enrollments,
             sales=row.sales,
-            revenue=_money(row.revenue),
-            revenue_all_time=_money(row.revenue_all_time),
+            revenue=money(row.revenue),
+            revenue_all_time=money(row.revenue_all_time),
         )
         for row in result
     ]

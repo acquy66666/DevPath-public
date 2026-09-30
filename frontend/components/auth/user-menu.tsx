@@ -114,7 +114,7 @@ export function UserMenu({ user }: { user: User }) {
         ) : null}
         {user.role === "admin" ? (
           <DropdownMenuItem asChild>
-            <Link href="/quan-tri/khoa-hoc">
+            <Link href="/quan-tri">
               <ShieldCheck aria-hidden />
               Quản trị
             </Link>

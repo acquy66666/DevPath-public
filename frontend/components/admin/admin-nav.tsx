@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { BookCheck, Flag, Users, type LucideIcon } from "lucide-react";
+import { BookCheck, Flag, LayoutDashboard, Users, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -20,6 +20,7 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
+  { href: "/quan-tri", label: "Tổng quan", icon: LayoutDashboard, count: () => 0 },
   { href: "/quan-tri/khoa-hoc", label: "Duyệt khóa học", icon: BookCheck, count: (s) => s.pending_courses },
   { href: "/quan-tri/bao-cao", label: "Báo cáo vi phạm", icon: Flag, count: (s) => s.pending_reports },
   { href: "/quan-tri/nguoi-dung", label: "Người dùng", icon: Users, count: () => 0 },
@@ -53,7 +54,10 @@ export function AdminNav() {
       <nav aria-label="Khu vực quản trị" className="-mx-4 overflow-x-auto px-4">
         <ul className="flex min-w-max gap-1 border-b">
           {TABS.map((tab) => {
-            const active = pathname === tab.href || pathname.startsWith(`${tab.href}/`);
+            // "/quan-tri" is the parent of every other tab: it is only active on itself.
+            const active =
+              pathname === tab.href ||
+              (tab.href !== "/quan-tri" && pathname.startsWith(`${tab.href}/`));
             const count = summary.data ? tab.count(summary.data) : 0;
             return (
               <li key={tab.href}>

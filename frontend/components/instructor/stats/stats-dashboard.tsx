@@ -216,7 +216,7 @@ function Overview({
   );
 }
 
-function PeriodPicker({
+export function PeriodPicker({
   value,
   onChange,
 }: {

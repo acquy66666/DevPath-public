@@ -1,6 +1,7 @@
 import type { Category } from "./categories";
 import { apiFetch } from "./client";
 import type { CourseLevel, CourseStatus, Page } from "./courses";
+import type { StatsPeriod } from "./instructor-stats";
 import type { ReportReason, ReportTargetType } from "./reports";
 
 /** Mirrors `AdminPersonOut` — unlike every public person, with the email. */
@@ -21,6 +22,81 @@ export interface AdminSummary {
 
 export function getAdminSummary(accessToken: string): Promise<AdminSummary> {
   return apiFetch<AdminSummary>("/api/v1/admin/summary", { accessToken });
+}
+
+// --- The platform dashboard -----------------------------------------------
+
+/** Mirrors `PlatformTotals`. Money is a string, like every NUMERIC column. */
+export interface PlatformTotals {
+  revenue: string;
+  orders: number;
+  enrollments: number;
+  new_users: number;
+  /** Distinct people who did anything in the period. */
+  active_users: number;
+  /** Mean daily active users over the days of the period so far. */
+  avg_daily_active: number;
+}
+
+export interface PlatformPoint {
+  /** First day of the bucket, YYYY-MM-DD, Vietnamese calendar. */
+  bucket: string;
+  revenue: string;
+  orders: number;
+  enrollments: number;
+  new_users: number;
+  /** DAU for a day; distinct people of the month for a month. */
+  active_users: number;
+}
+
+export interface PlatformOverview {
+  period: StatsPeriod;
+  granularity: "day" | "month";
+  start: string;
+  end: string;
+  current: PlatformTotals;
+  previous: PlatformTotals;
+  series: PlatformPoint[];
+  active_today: number;
+  revenue_all_time: string;
+  users_total: number;
+  courses_published: number;
+  enrollments_total: number;
+}
+
+export interface HotCourse {
+  id: string;
+  title: string;
+  slug: string;
+  status: CourseStatus;
+  is_deleted: boolean;
+  thumbnail_url: string | null;
+  price: string;
+  rating_avg: string;
+  students_count: number;
+  instructor_name: string;
+  new_enrollments: number;
+  sales: number;
+  revenue: string;
+}
+
+export function getPlatformOverview(
+  accessToken: string,
+  period: StatsPeriod,
+): Promise<PlatformOverview> {
+  return apiFetch<PlatformOverview>(`/api/v1/admin/stats/overview?period=${period}`, {
+    accessToken,
+  });
+}
+
+export function listHotCourses(
+  accessToken: string,
+  period: StatsPeriod,
+): Promise<Page<HotCourse>> {
+  return apiFetch<Page<HotCourse>>(
+    `/api/v1/admin/stats/hot-courses?period=${period}&page_size=10`,
+    { accessToken },
+  );
 }
 
 // --- Courses ---------------------------------------------------------------

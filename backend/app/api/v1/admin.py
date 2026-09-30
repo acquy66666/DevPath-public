@@ -21,16 +21,20 @@ from app.schemas.admin import (
     AdminSummaryOut,
     AdminUserOut,
     CourseDecisionIn,
+    HotCourseOut,
+    PlatformOverviewOut,
     ReportCourseRef,
     ReportDismissIn,
     ReportResolveIn,
     ReportTargetOut,
 )
 from app.schemas.categories import CategoryOut
+from app.schemas.instructor_stats import StatsPeriod
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.schemas.reports import ReportTargetType
 from app.services import admin_users as users_service
 from app.services import moderation as moderation_service
+from app.services import platform_stats as stats_service
 from app.services import reports as reports_service
 from app.services.tasks import TaskQueue, get_task_queue
 
@@ -51,6 +55,55 @@ async def get_summary(_: Admin, session: DbSession) -> AdminSummaryOut:
         pending_courses=await moderation_service.pending_count(session),
         pending_reports=await reports_service.pending_count(session),
         locked_users=await users_service.locked_count(session),
+    )
+
+
+# --- The platform dashboard -----------------------------------------------
+
+
+@router.get("/stats/overview", response_model=PlatformOverviewOut)
+async def get_platform_overview(
+    _: Admin, session: DbSession, period: StatsPeriod = "30d"
+) -> PlatformOverviewOut:
+    """Revenue, orders, enrolments, sign-ups and active users for the period,
+    bucket by bucket, against the period just before -- plus all-time totals."""
+    return PlatformOverviewOut.model_validate(await stats_service.overview(session, period))
+
+
+@router.get("/stats/hot-courses", response_model=Page[HotCourseOut])
+async def list_hot_courses(
+    _: Admin,
+    session: DbSession,
+    period: StatsPeriod = "30d",
+    page: PageNo = 1,
+    page_size: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = 10,
+) -> Page[HotCourseOut]:
+    """Courses with the most new enrolments in the period, then the most revenue."""
+    items, total = await stats_service.hot_courses(
+        session, period, page=page, page_size=page_size
+    )
+    return Page[HotCourseOut](
+        items=[
+            HotCourseOut(
+                id=item.course.id,
+                title=item.course.title,
+                slug=item.course.slug,
+                status=item.course.status,
+                is_deleted=item.course.deleted_at is not None,
+                thumbnail_url=item.course.thumbnail_url,
+                price=item.course.price,
+                rating_avg=item.course.rating_avg,
+                students_count=item.course.students_count,
+                instructor_name=item.instructor.full_name,
+                new_enrollments=item.new_enrollments,
+                sales=item.sales,
+                revenue=item.revenue,
+            )
+            for item in items
+        ],
+        total=total,
+        page=page,
+        page_size=page_size,
     )
 
 

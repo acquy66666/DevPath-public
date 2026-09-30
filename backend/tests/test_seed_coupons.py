@@ -105,6 +105,11 @@ async def seeded(db_session: AsyncSession) -> None:
     await seed_categories(db_session)
     await seed_courses(db_session)
     await seed_interactions(db_session, build_population())
+    # The developer database may hold a committed run of this seed, its dates
+    # counted from the day it ran -- and the seed leaves an existing code
+    # alone. A week later "SAPCHAY" has opened and "not started yet" is false.
+    # Start every test from today's plan; the transaction is rolled back.
+    await purge(db_session)
     await db_session.flush()
 
 

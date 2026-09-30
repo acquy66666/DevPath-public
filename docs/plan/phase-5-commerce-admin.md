@@ -84,7 +84,8 @@
   - **Mã giảm giá toàn sàn** (`services/admin_coupons.py`, `/admin/coupons`, trang `/quan-tri/ma-giam-gia`): mã không bao giờ đổi, còn lại sửa được mà đơn cũ giữ nguyên số; giới hạn lượt không hạ dưới số đã dùng; kết thúc sớm = `valid_to = now`; mã đã dùng không xóa được. Trạng thái tính lúc đọc.
   - **Banner** (migration `5b10213a072e`, `services/banners.py`, `GET /banners` công khai, `/admin/banners`, trang `/quan-tri/banner`, carousel trang chủ): đang hiện tính lúc đọc (bật + trong khung giờ, tối đa 5); ảnh tải thẳng lên bucket dưới `banners/`, ảnh cũ bị dọn khi thay/xóa; link chỉ nhận `/…` hoặc `http(s)://`. Mục cắt giảm số 4 nhưng vẫn làm vì dự án đi trước lịch. Dữ liệu demo: `python -m scripts.seed_banners`.
   - **Đã chạy thật** bằng một admin dùng một lần (đã xóa): dashboard 30 ngày ra 7.683.800 ₫ / DAU TB 7,2 / 79 người hoạt động; thêm–thêm con–đổi thứ tự–bị chặn xóa–xóa danh mục; tạo–kết thúc–xóa mã; tải ảnh banner qua ô chọn tệp → PUT lên MinIO → tắt/đưa lên/xóa (ảnh cũ 404); 5 trang không cuộn ngang ở 375px. Bằng chứng: `docs/report/assets/phase-5/admin-dashboard.txt`.
-  - Test: 7 + 10 + 15 + 17 test mới, `test_models.py` thêm đặc tả bảng `banners`.
+  - Test: 7 + 10 + 15 + 17 test mới, `test_models.py` thêm đặc tả bảng `banners`. Cả bộ trong container: 1536 passed, 2 skipped, 3 failed — 2 ca storage-503 quen thuộc (container tự rơi về MinIO) và 1 ca đã sửa kèm bên dưới.
+  - Sửa kèm: `test_seed_coupons.py::test_the_unopened_code_is_refused_as_not_started` đỏ trên CSDL dev vì mã `SAPCHAY` seed ngày 23/09 "mở sau 7 ngày" đã mở đúng hôm nay, mà seed bỏ qua mã đã có; fixture giờ `purge` bộ mã demo trong transaction của test trước khi seed.
 
 ## Gate cuối phase
 

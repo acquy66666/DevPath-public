@@ -165,13 +165,29 @@ Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đ
 
 **Ô "Mã giảm giá" (`coupon-box.tsx`) hỏi lại mỗi khi giỏ đổi.** Query key là `["cart-coupon", mã, hình-dạng-giỏ]`, trong đó hình dạng giỏ là danh sách id cộng tổng tiền: bỏ một khóa ra là một câu hỏi khác, nên câu trả lời cũ không được phép nằm lại trên màn hình, và mã không còn áp được sẽ tự nói ra điều đó ngay trong ô. `retry: false` — mã bị từ chối là một câu trả lời chứ không phải trục trặc mạng, thử lại ba lần chỉ làm câu ấy tới muộn hơn. Mã **không** được nhớ giữa các lần vào trang: dù sao thanh toán cũng kiểm lại từ đầu, nên một mã khôi phục từ storage chỉ là lời hứa trang này không giữ được. Coupon phạm vi từng khóa mới gắn nhãn "Đang được giảm giá" lên dòng — coupon toàn sàn phủ hết mọi dòng, dán nhãn khắp nơi thì không nói thêm gì mà lại chiếm chỗ của dòng "bạn đã có khóa này".
 
+## Khu vực quản trị (Phase 5)
+
+| Đường dẫn | Nội dung |
+|---|---|
+| `/quan-tri` | Chuyển về `/quan-tri/khoa-hoc` (dashboard admin là task kế tiếp) |
+| `/quan-tri/khoa-hoc` | Hàng đợi duyệt: lọc theo trạng thái (mặc định "Chờ duyệt", chờ lâu nhất đứng đầu), tìm theo tên khóa hoặc tên/email giảng viên |
+| `/quan-tri/khoa-hoc/[courseId]` | Đọc khóa học như người mua sẽ thấy (mô tả, mục lục, bấm từng bài để xem trước bài đọc/video) và quyết định: duyệt, từ chối kèm lý do, gỡ khỏi sàn kèm lý do |
+| `/quan-tri/bao-cao` | Báo cáo vi phạm: chờ xử lý / đã xử lý, lọc theo loại nội dung; gỡ nội dung, xác nhận vi phạm mà giữ, bỏ qua; khóa tác giả ngay trên thẻ |
+| `/quan-tri/nguoi-dung` | Mọi tài khoản, mới nhất trước; khóa/mở (tài khoản admin không có nút khóa) |
+
+- `(dashboard)/layout.tsx` giờ chỉ là khung header/footer; **ai được vào do từng khu tự quyết**: `giang-day/layout.tsx` bọc `InstructorGate`, `quan-tri/layout.tsx` bọc `AdminGate` + thanh tab. Hai vai trò khớp chính xác ở backend, không khu nào là tập cha của khu kia.
+- Tab có số đang chờ lấy từ `GET /admin/summary`; mọi query của khu này nằm dưới key `["admin"]` nên một quyết định làm mới luôn cả con số trên tab.
+- Trang duyệt đọc bài học qua đúng endpoint học viên dùng (`may_manage` đã mở mọi khóa cho admin), nên thứ admin xem trước chính là thứ sẽ được bán. Video dùng lại `components/learn/video-player.tsx`.
+- **Báo cáo:** `components/reports/report-button.tsx` — nút "Báo cáo" + hộp thoại (5 lý do, "Lý do khác" bắt buộc mô tả) ở trang chi tiết khóa học, từng đánh giá, câu hỏi và câu trả lời Hỏi đáp. Nút tự ẩn trên nội dung của chính người đọc; trong Hỏi đáp nó cũng ẩn với giảng viên/admin vì họ xóa trực tiếp được. `ALREADY_REPORTED` được hiện như thành công ("Bạn đã báo cáo nội dung này"). `components/ui/dialog.tsx` viết tay theo đúng khuôn các component radix khác — `shadcn add dialog` với style `radix-nova` đòi ghi đè `button.tsx` và tự thêm một gói npm tên `cn`.
+- Ba loại thông báo mới cho giảng viên (`course_approved`, `course_rejected`, `course_taken_down`) có nhánh riêng trong `describe()`, link về `/giang-day/{course_id}` — nơi `course-status-card.tsx` hiện "Lý do từ chối".
+
 ## Cấu trúc
 
 ```
 app/
 ├── (marketing)/     Trang public: home, danh sách + chi tiết khóa học (SSR, SEO)
 ├── (learn)/         Player, quiz, code editor (client-heavy) — Phase 2+
-└── (dashboard)/     Khu vực giảng viên: /giang-day (+ admin ở Phase 5)
+└── (dashboard)/     Khu vực giảng viên /giang-day và quản trị /quan-tri (mỗi khu một gate)
 components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea, markdown
 components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
@@ -179,6 +195,8 @@ components/curriculum/ trình soạn mục lục (kéo-thả)
 components/exercise/   trình soạn bài tập code + test case (Phase 3)
 components/chat/       trợ giảng AI trong trang học (Phase 4)
 components/commerce/   giỏ hàng, yêu thích, mã giảm giá, kết quả thanh toán (Phase 5)
+components/admin/      khu quản trị: duyệt khóa học, báo cáo, người dùng (Phase 5)
+components/reports/    nút + hộp thoại báo cáo vi phạm (Phase 5)
 lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)

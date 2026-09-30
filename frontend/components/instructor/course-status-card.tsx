@@ -5,7 +5,7 @@ import { Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,8 +24,9 @@ import {
 import { useAuth } from "@/lib/auth/auth-provider";
 
 const EXPLANATION: Record<Course["status"], string> = {
-  draft: "Chỉ mình bạn thấy khóa học này. Gửi duyệt để đưa nó ra ngoài.",
-  pending_review: "Khóa học đang chờ quản trị viên duyệt.",
+  draft: "Chỉ mình bạn thấy khóa học này. Gửi duyệt để quản trị viên xem và đưa nó ra ngoài.",
+  pending_review:
+    "Khóa học đang chờ quản trị viên duyệt. Bạn vẫn sửa được nội dung trong lúc chờ.",
   published: "Khóa học đang hiển thị công khai và nhận học viên.",
   rejected: "Khóa học bị từ chối. Sửa nội dung rồi gửi duyệt lại.",
 };
@@ -70,6 +71,15 @@ export function CourseStatusCard({ course }: { course: Course }) {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {course.status === "rejected" && course.rejection_reason ? (
+          <Alert variant="destructive">
+            <AlertTitle>Lý do từ chối</AlertTitle>
+            <AlertDescription className="whitespace-pre-line">
+              {course.rejection_reason}
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
         {error ? (
           <Alert variant="destructive">
             <AlertDescription>{apiErrorMessage(error)}</AlertDescription>

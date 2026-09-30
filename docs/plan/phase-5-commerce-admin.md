@@ -67,8 +67,16 @@
     - giảng viên trả lời → chuông học viên báo 1 → `/thong-bao` → bấm vào → trang học mở tab Hỏi đáp đúng câu hỏi;
     - ở 375px không cuộn ngang, dropdown nằm gọn trong màn hình.
   - Sửa kèm: chuông làm header không còn đủ chỗ ở 375px ("Khóa học" rớt dòng), nên dưới `sm` khoảng cách và padding nút được thu lại. Bộ phân trang của Q&A chuyển thành `components/ui/pager.tsx` dùng chung.
-- [ ] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports
+- [x] Admin: duyệt/từ chối khóa học (bỏ auto-approve flag của phase 2), quản lý user (khóa/mở), xử lý reports
   - **Duyệt khóa học phải gọi `enqueue_ingest`** như `submit_for_review` đang làm khi auto-approve bật (`backend/app/services/courses.py`). Tắt auto-approve mà endpoint duyệt quên việc này thì không còn gì nạp khóa học vào kho chatbot. Viết test: duyệt → một job ingest được xếp hàng (ghi 19/09/2026, đợt dọn nợ)
+  - Ngày hoàn thành: 30/09/2026. Migration `6e27fe4795b3` (`reports` + mở rộng `ck_notifications_type`), `services/moderation.py` + `services/admin_users.py` + `services/reports.py`, router `/admin/*` + `POST /reports`, khu `/quan-tri` (khóa học, báo cáo, người dùng) và nút "Báo cáo" ở trang khóa học, đánh giá, Hỏi đáp.
+  - **Cờ `AUTO_APPROVE_COURSES` bị bỏ hẳn** (config, compose, `.env` mẫu). Gửi duyệt luôn dừng ở `pending_review` và không xếp job nào; **duyệt** mới xếp ingest RAG + nhúng khóa học, sau commit. `test_course_ingest.py` viết lại để ghim điều đó; test cần khóa công khai tạo qua API dùng `tests/api/publishing.py`.
+  - **Quyết định của admin báo giảng viên** cùng transaction: 3 loại thông báo mới `course_approved`, `course_rejected` (kèm lý do), `course_taken_down`. Lý do từ chối hiện ở trang quản lý khóa học (`CourseOut.rejection_reason`).
+  - **Khóa tài khoản** dùng cột `users.locked_at` có sẵn (các chỗ chặn đăng nhập/refresh/access token đã có từ Phase 2), thêm thu hồi mọi refresh token ngay lúc khóa. Admin không khóa được (kể cả tự khóa). Khóa không gỡ nội dung, khóa học của giảng viên bị khóa vẫn bán.
+  - **Báo cáo:** 5 lý do đóng (`other` bắt buộc mô tả), chỉ báo được thứ mình xem được và không phải của mình, mỗi người một báo cáo đang chờ trên một nội dung. Quyết định **đóng mọi báo cáo đang chờ trên cùng nội dung**; "gỡ nội dung" chạy cùng transaction: khóa học → `draft` (không xóa mềm), đánh giá → xóa + tính lại rating, câu hỏi/câu trả lời → xóa.
+  - **Đã chạy thật** bằng 3 tài khoản dùng một lần + khóa tạm (đã xóa): gửi duyệt → từ chối có lý do → gửi lại → duyệt trên UI → worker chạy ingest (1 chunk) + embedding; 2 báo cáo → "Gỡ khóa học khỏi sàn" đóng cả hai; khóa → `ACCOUNT_LOCKED` → mở → đăng nhập lại được; 375px không cuộn ngang. Bằng chứng: `docs/report/assets/phase-5/admin-moderation.txt`.
+  - Sửa kèm: ô "Viết đánh giá" hiện với **mọi** người đã đăng nhập mà chưa ghi danh (gửi thì 403) — `getMyEnrollment` trả `null` khi chưa ghi danh còn `course-reviews.tsx` so với `undefined`. Thấy khi xem trang khóa học bằng tài khoản admin.
+  - Test: 19 + 8 + 25 test mới, `test_course_ingest.py` 5. Cả bộ trong container 1487 passed, 2 failed — hai test "storage chưa cấu hình → 503" đỏ vì container tự rơi về MinIO, không liên quan.
 - [ ] Admin dashboard: doanh thu sàn, DAU, khóa học hot; quản lý category, coupon toàn sàn, banner trang chủ
 
 ## Gate cuối phase

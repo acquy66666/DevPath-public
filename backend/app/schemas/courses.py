@@ -121,6 +121,9 @@ class CourseOut(BaseModel):
     level: str
     language: str
     status: str
+    # Why an admin sent it back. Only ever set while `status='rejected'`:
+    # submitting again and approving both clear it.
+    rejection_reason: str | None
     published_at: datetime | None
     rating_avg: Decimal
     rating_count: int

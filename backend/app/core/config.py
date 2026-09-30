@@ -64,11 +64,6 @@ class Settings(BaseSettings):
     submission_cooldown_seconds: int = 10
     submission_hourly_limit: int = 40
 
-    # Phase 5 replaces this with a real admin review queue; until then a
-    # submitted course goes straight to published so the rest of Phase 2 has
-    # something to show.
-    auto_approve_courses: bool = True
-
     # Gemini. Empty until somebody creates a key in Google AI Studio;
     # `gemini_enabled` is what the ingest job and the chat routes check, and
     # everything they do degrades to a stated "chưa cấu hình" rather than a

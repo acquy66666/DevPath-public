@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
+import { ReportButton } from "@/components/reports/report-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -311,6 +312,16 @@ export function QaThreadView({
               </Button>
             )
           ) : null}
+
+          {/* Staff remove things themselves; a report is for everyone else. */}
+          {!staff ? (
+            <ReportButton
+              targetType="qa_thread"
+              targetId={data.id}
+              authorId={data.author.id}
+              className="ml-auto"
+            />
+          ) : null}
         </div>
       ) : null}
 
@@ -348,18 +359,27 @@ export function QaThreadView({
                   createdAt={reply.created_at}
                   instructor={reply.is_instructor_reply}
                 />
-                {reply.author.id === currentUserId || staff ? (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-7 shrink-0"
-                    aria-label="Xóa câu trả lời"
-                    disabled={removeReply.isPending}
-                    onClick={() => removeReply.mutate(reply)}
-                  >
-                    <Trash2 aria-hidden />
-                  </Button>
-                ) : null}
+                <div className="flex shrink-0 items-center gap-1">
+                  {!staff ? (
+                    <ReportButton
+                      targetType="qa_reply"
+                      targetId={reply.id}
+                      authorId={reply.author.id}
+                    />
+                  ) : null}
+                  {reply.author.id === currentUserId || staff ? (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-7 shrink-0"
+                      aria-label="Xóa câu trả lời"
+                      disabled={removeReply.isPending}
+                      onClick={() => removeReply.mutate(reply)}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
               <Markdown className="text-sm">{reply.body}</Markdown>
             </li>

@@ -9,6 +9,7 @@ import { CourseCurriculum } from "@/components/courses/course-curriculum";
 import { CourseReviews } from "@/components/courses/course-reviews";
 import { EnrollButton } from "@/components/courses/enroll-button";
 import { SimilarCourses } from "@/components/recommendations/similar-courses";
+import { ReportButton } from "@/components/reports/report-button";
 import { Badge } from "@/components/ui/badge";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
@@ -266,6 +267,16 @@ export default async function CourseDetailPage({
                   </div>
                 ) : null}
               </dl>
+
+              <div className="border-t pt-2">
+                <ReportButton
+                  targetType="course"
+                  targetId={course.id}
+                  authorId={course.instructor.id}
+                  label="Báo cáo khóa học"
+                  className="-ml-2"
+                />
+              </div>
             </div>
           </div>
         </aside>

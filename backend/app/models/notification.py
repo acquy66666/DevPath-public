@@ -30,7 +30,19 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 NOTIFICATION_QA_REPLY = "qa_reply"
 #: A learner asked a question in a course you teach.
 NOTIFICATION_QA_QUESTION = "qa_question"
-NOTIFICATION_TYPES = (NOTIFICATION_QA_REPLY, NOTIFICATION_QA_QUESTION)
+#: An admin approved the course you sent for review; it is now on sale.
+NOTIFICATION_COURSE_APPROVED = "course_approved"
+#: An admin sent your course back, with the reason.
+NOTIFICATION_COURSE_REJECTED = "course_rejected"
+#: An admin took your published course off the platform after a report.
+NOTIFICATION_COURSE_TAKEN_DOWN = "course_taken_down"
+NOTIFICATION_TYPES = (
+    NOTIFICATION_QA_REPLY,
+    NOTIFICATION_QA_QUESTION,
+    NOTIFICATION_COURSE_APPROVED,
+    NOTIFICATION_COURSE_REJECTED,
+    NOTIFICATION_COURSE_TAKEN_DOWN,
+)
 
 
 class Notification(Base, UUIDPrimaryKeyMixin, TimestampMixin):

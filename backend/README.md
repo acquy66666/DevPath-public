@@ -104,7 +104,7 @@ CI chạy lại đúng lệnh này và **fail nếu lock đổi**: thêm depende
 
 **Soft delete đi qua đúng một hàm** (`_active_courses()`), để không có truy vấn nào quên `deleted_at IS NULL`.
 
-**`AUTO_APPROVE_COURSES`** (mặc định `true`): gửi duyệt là xuất bản luôn. Phase 5 tắt cờ này và thay bằng hàng đợi duyệt thật của admin — lúc đó khóa học dừng ở `pending_review`, đúng như test `test_submitting_waits_for_review_when_the_flag_is_off` mô tả.
+**Duyệt khóa học là việc của admin** (từ 30/09/2026 — cờ `AUTO_APPROVE_COURSES` của Phase 2 đã bị bỏ hẳn): gửi duyệt luôn dừng ở `pending_review`, `POST /admin/courses/{id}/approve` mới đưa khóa học lên sàn **và** xếp job ingest RAG + nhúng khóa học sau commit (`services/moderation.py`). Test cần một khóa học công khai tạo qua API thì dùng `tests/api/publishing.py::publish_via_review` (gửi duyệt rồi một admin mới tinh duyệt). Khu quản trị còn có khóa/mở tài khoản (`services/admin_users.py` — khóa là thu hồi mọi refresh token ngay, admin không khóa được) và báo cáo vi phạm (`services/reports.py`, `POST /reports` cho mọi tài khoản).
 
 **Slug** sinh từ tiêu đề (bỏ dấu tiếng Việt, `đ` → `d`) kèm hậu tố ngẫu nhiên 6 ký tự, và **không đổi khi đổi tiêu đề** — URL đã chia sẻ phải còn sống. Hậu tố ngẫu nhiên thay cho bộ đếm `-2`, `-3`: bộ đếm cần một truy vấn để tìm số trống và hai request cùng lúc vẫn chọn trúng nhau.
 

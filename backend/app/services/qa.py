@@ -276,6 +276,15 @@ async def get_thread(session: AsyncSession, thread_id: uuid.UUID, user: User) ->
     return await _one(session, thread.id, user)
 
 
+async def visible_thread(session: AsyncSession, thread_id: uuid.UUID, user: User) -> QaThread:
+    """The thread, if this person may read it -- the same rule as every Q&A read.
+
+    For reporting (`services/reports.py`): you can only flag what you can see.
+    """
+    thread, _ = await _thread_and_place(session, thread_id, user)
+    return thread
+
+
 async def list_for_instructor(
     session: AsyncSession,
     instructor: User,

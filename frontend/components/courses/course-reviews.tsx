@@ -12,6 +12,7 @@ import { useState, type FormEvent } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { StarRating, StarRatingInput } from "@/components/courses/star-rating";
+import { ReportButton } from "@/components/reports/report-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,7 +40,7 @@ function ReviewCard({ review }: { review: Review }) {
     <li className="flex gap-3 border-t py-4 first:border-t-0 first:pt-0">
       <UserAvatar user={review.author} className="size-9 shrink-0 text-xs" />
 
-      <div className="min-w-0 space-y-1.5">
+      <div className="min-w-0 flex-1 space-y-1.5">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="font-medium">{review.author.full_name}</p>
           <StarRating value={review.rating} starClassName="size-3.5" />
@@ -47,6 +48,12 @@ function ReviewCard({ review }: { review: Review }) {
             {formatDate(review.created_at)}
             {edited ? " · đã sửa" : ""}
           </p>
+          <ReportButton
+            targetType="review"
+            targetId={review.id}
+            authorId={review.author.id}
+            className="ml-auto"
+          />
         </div>
 
         {review.comment ? (
@@ -231,7 +238,8 @@ export function CourseReviews({
   const missing =
     myReview.error instanceof ApiError && myReview.error.status === 404;
   const settled = myReview.isSuccess || missing;
-  const enrolled = enrollment.data !== undefined;
+  // `getMyEnrollment` answers null for "not enrolled"; only a row means yes.
+  const enrolled = enrollment.data != null;
 
   return (
     <section className="space-y-5">

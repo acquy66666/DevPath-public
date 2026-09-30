@@ -6,17 +6,17 @@ concerned.
 """
 
 import uuid
-from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import get_settings
 from app.core.security import hash_password
 from app.models import Category, Course, User
+from tests.api.publishing import publish_via_review
 
 PASSWORD = "mật-khẩu-đủ-dài"
 COURSES = "/api/v1/courses"
@@ -65,16 +65,6 @@ async def instructor(
 @pytest.fixture
 async def student(api_client: AsyncClient, db_session: AsyncSession) -> dict[str, str]:
     return await sign_in(api_client, await make_user(db_session, "student"))
-
-
-@pytest.fixture
-def manual_review() -> Generator[None, None, None]:
-    """Turn the auto-approve flag off, the way Phase 5 will leave it."""
-    settings = get_settings()
-    original = settings.auto_approve_courses
-    object.__setattr__(settings, "auto_approve_courses", False)
-    yield
-    object.__setattr__(settings, "auto_approve_courses", original)
 
 
 def payload(category: Category, **overrides) -> dict:
@@ -248,10 +238,14 @@ async def test_a_draft_does_not_exist_for_anybody_else(
 
 
 async def test_a_published_course_is_public(
-    api_client: AsyncClient, instructor: dict[str, str], category: Category
+    app: FastAPI,
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    instructor: dict[str, str],
+    category: Category,
 ) -> None:
     created = await create_course(api_client, instructor, category)
-    await api_client.post(f"{COURSES}/{created['id']}/submit", headers=instructor)
+    await publish_via_review(app, api_client, db_session, created["id"], instructor)
 
     response = await api_client.get(f"{COURSES}/{created['id']}")
 
@@ -498,10 +492,10 @@ async def test_another_instructor_cannot_delete_your_course(
 # --- The status machine ----------------------------------------------------
 
 
-async def test_submitting_publishes_while_auto_approve_is_on(
+async def test_submitting_waits_for_an_admin(
     api_client: AsyncClient, instructor: dict[str, str], category: Category
 ) -> None:
-    """Phase 5 replaces the flag with a real admin queue."""
+    """No flag publishes on submit any more: the course waits, unseen."""
     created = await create_course(api_client, instructor, category)
 
     response = await api_client.post(
@@ -509,27 +503,12 @@ async def test_submitting_publishes_while_auto_approve_is_on(
     )
 
     assert response.status_code == 200
-    assert response.json()["status"] == "published"
-    assert response.json()["published_at"] is not None
-
-
-async def test_submitting_waits_for_review_when_the_flag_is_off(
-    api_client: AsyncClient,
-    instructor: dict[str, str],
-    category: Category,
-    manual_review: None,
-) -> None:
-    created = await create_course(api_client, instructor, category)
-
-    response = await api_client.post(
-        f"{COURSES}/{created['id']}/submit", headers=instructor
-    )
-
     assert response.json()["status"] == "pending_review"
     assert response.json()["published_at"] is None
+    assert (await api_client.get(f"{COURSES}/{created['id']}")).status_code == 404
 
 
-async def test_a_published_course_cannot_be_submitted_again(
+async def test_a_course_waiting_for_review_cannot_be_submitted_again(
     api_client: AsyncClient, instructor: dict[str, str], category: Category
 ) -> None:
     created = await create_course(api_client, instructor, category)
@@ -543,12 +522,34 @@ async def test_a_published_course_cannot_be_submitted_again(
     assert response.json()["detail"]["code"] == "INVALID_COURSE_STATUS"
 
 
+async def test_a_published_course_cannot_be_submitted_again(
+    app: FastAPI,
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    instructor: dict[str, str],
+    category: Category,
+) -> None:
+    created = await create_course(api_client, instructor, category)
+    await publish_via_review(app, api_client, db_session, created["id"], instructor)
+
+    response = await api_client.post(
+        f"{COURSES}/{created['id']}/submit", headers=instructor
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "INVALID_COURSE_STATUS"
+
+
 async def test_unpublishing_returns_a_course_to_draft(
-    api_client: AsyncClient, instructor: dict[str, str], category: Category
+    app: FastAPI,
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    instructor: dict[str, str],
+    category: Category,
 ) -> None:
     """Taking a course off the shelf, which the spec spells published -> draft."""
     created = await create_course(api_client, instructor, category)
-    await api_client.post(f"{COURSES}/{created['id']}/submit", headers=instructor)
+    await publish_via_review(app, api_client, db_session, created["id"], instructor)
 
     response = await api_client.post(
         f"{COURSES}/{created['id']}/unpublish", headers=instructor

@@ -86,7 +86,7 @@ Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chư
 
 **Soft delete đi qua đúng một hàm dựng truy vấn** — `_active_courses()` là điểm vào duy nhất, nên không thể có truy vấn thứ tám quên `deleted_at IS NULL`. Đây chính là cạm bẫy `database-design.md` cảnh báo khi chốt chỉ `courses` được soft delete.
 
-**Auto-approve là feature flag, không phải code tạm** — `AUTO_APPROVE_COURSES=true` cho Phase 2 demo được vòng đời khóa học mà chưa cần màn duyệt của admin; Phase 5 tắt cờ là luồng `pending_review` chạy thật. Có test cho **cả hai** nhánh nên lúc tắt cờ không phải cầu may.
+**Auto-approve là feature flag, không phải code tạm** — `AUTO_APPROVE_COURSES=true` cho Phase 2 demo được vòng đời khóa học mà chưa cần màn duyệt của admin; Phase 5 tắt cờ là luồng `pending_review` chạy thật. Có test cho **cả hai** nhánh nên lúc tắt cờ không phải cầu may. *(Cập nhật 30/09/2026, Phase 5:)* cờ đã được **bỏ hẳn** chứ không chỉ tắt — một cờ còn đó là một cách để bản production lỡ bật lại việc xuất bản không qua ai. Chỗ dễ vỡ nhất của việc bỏ cờ không nằm ở trạng thái mà ở hai job treo trên khoảnh khắc xuất bản (ingest RAG, nhúng khóa học): chúng dời sang endpoint **duyệt** của admin, và `tests/api/test_course_ingest.py` được viết lại để ghim đúng điều đó (gửi duyệt → 0 job, duyệt → 1 + 1); bằng chứng chạy thật ở `phase-5/admin-moderation.txt`.
 
 **`updated_at` do Postgres tính nên phải `refresh()` sau UPDATE** — SQLAlchemy đánh dấu thuộc tính hết hạn sau khi UPDATE có `onupdate=now()`, và đọc lại nó trong ngữ cảnh async ném `MissingGreenlet` chứ không phải lỗi dữ liệu. Mất một SELECT mỗi lần sửa, đổi lại giữ được đồng hồ của DB làm nguồn chân lý thay vì đồng hồ của app.
 

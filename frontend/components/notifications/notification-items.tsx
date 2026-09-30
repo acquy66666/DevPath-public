@@ -1,7 +1,15 @@
 "use client";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Bell, MessageCircleQuestion, MessageSquareReply, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  CircleCheck,
+  CircleX,
+  EyeOff,
+  MessageCircleQuestion,
+  MessageSquareReply,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -54,6 +62,36 @@ export function describe(notification: AppNotification): Described {
         href: `/giang-day/hoi-dap?cau-hoi=${p.thread_id}`,
       };
     }
+    case "course_approved": {
+      const p = notification.payload;
+      return {
+        icon: CircleCheck,
+        lead: "Khóa học ",
+        quote: p.course_title,
+        tail: " đã được duyệt và đang hiển thị công khai",
+        href: `/giang-day/${p.course_id}`,
+      };
+    }
+    case "course_rejected": {
+      const p = notification.payload;
+      return {
+        icon: CircleX,
+        lead: "Khóa học ",
+        quote: p.course_title,
+        tail: ` bị từ chối: ${clip(p.reason)}`,
+        href: `/giang-day/${p.course_id}`,
+      };
+    }
+    case "course_taken_down": {
+      const p = notification.payload;
+      return {
+        icon: EyeOff,
+        lead: "Khóa học ",
+        quote: p.course_title,
+        tail: ` đã bị gỡ khỏi trang công khai: ${clip(p.reason)}`,
+        href: `/giang-day/${p.course_id}`,
+      };
+    }
     default:
       return {
         icon: Bell,
@@ -63,6 +101,11 @@ export function describe(notification: AppNotification): Described {
         href: "/thong-bao",
       };
   }
+}
+
+/** A reason is written for the course page; the bell only needs its start. */
+function clip(text: string, max = 140): string {
+  return text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
 }
 
 /** Marking read, shared by the bell and the page so both refresh everything. */

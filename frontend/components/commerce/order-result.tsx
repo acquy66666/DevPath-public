@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Clock, XCircle } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,19 @@ export function OrderResult({ code }: { code: string | null }) {
       return since < POLL_FOR_MS ? POLL_MS : false;
     },
   });
+
+  // The callback that paid the order also enrolled the buyer and took the
+  // bought lines out of their cart -- on the server, while this page waited.
+  // What the header badge and the course pages cached before the trip to the
+  // bank is now wrong, and nothing else here would ever refetch it.
+  const queryClient = useQueryClient();
+  const paid = order.data?.status === "paid";
+  useEffect(() => {
+    if (!paid) return;
+    queryClient.invalidateQueries({ queryKey: ["cart"] });
+    queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
+    queryClient.invalidateQueries({ queryKey: ["enrollment"] });
+  }, [paid, queryClient]);
 
   if (code === null) {
     return (

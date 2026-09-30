@@ -90,6 +90,9 @@
 ## Gate cuối phase
 
 - [ ] Demo end-to-end: thêm giỏ hàng → áp coupon → VNPay sandbox → thanh toán → vào học ngay
-- [ ] Học viên hoàn thành khóa → nhận chứng chỉ PDF, quét QR verify được
+  - **Tạm hoãn 01/10/2026 theo quyết định của user.** Phần trước cổng thanh toán đã chạy trên UI thật (học viên dùng một lần, đã xóa): 2 khóa vào giỏ, mã `PYTHON30` chỉ giảm khóa Python, 898.000 − 149.700 = 748.300 ₫. Còn lại: bấm "Thanh toán qua VNPay", **user tự điền thẻ test NCB** trên trang VNPay (Claude không nhập số thẻ vào trang ngoài), rồi IPN — bật ngrok trước để bắt IPN thật nếu VNPay đã khai URL, không thì `scripts.simulate_vnpay_ipn` và ghi rõ là giả lập
+- [x] Học viên hoàn thành khóa → nhận chứng chỉ PDF, quét QR verify được
+  - Chạy 01/10/2026 bằng một học viên dùng một lần trên khóa seed thật "Python cơ bản" (18 bài; bài code được sandbox chấm AC, 2 quiz đạt 100%, bài cuối tick trên UI) → chứng chỉ cấp cùng transaction, worker vẽ PDF sau ~2 s → QR giải bằng `zbarimg` ra đúng `/cert/{code}` → trang xác thực 200, mã sai 404; bỏ tick rồi tick lại không cấp lần hai. Bằng chứng: `docs/report/assets/phase-5/certificate-demo.txt` + PDF mẫu + 5 ảnh
+  - Sửa kèm: trang xác thực ghi "cấp ngày 30/09" còn PDF ghi "01/10" cho chứng chỉ cấp lúc 00:12 giờ VN — `formatDate` (`frontend/lib/format.ts`) không đặt `timeZone` nên SSR trong container tính theo UTC; giờ cố định `Asia/Ho_Chi_Minh`
 - [ ] Admin duyệt khóa học mới trước khi hiện công khai
 - [ ] Thu bằng chứng vào `docs/report/assets/phase-5/`: screenshot luồng thanh toán VNPay end-to-end, log IPN (đã che dữ liệu nhạy cảm), chứng chỉ PDF mẫu + trang verify, dashboard instructor và admin

@@ -1,0 +1,168 @@
+CHỨNG CHỈ PDF — HỌC VIÊN HOÀN THÀNH KHÓA → NHẬN CHỨNG CHỈ → QUÉT QR XÁC THỰC
+Ngày chạy: 01/10/2026 (00:12 giờ Việt Nam) · stack dev (infra/docker-compose.yml) · CSDL dev có dữ liệu seed
+Gate Phase 5: "Học viên hoàn thành khóa → nhận chứng chỉ PDF, quét QR verify được"
+
+Một học viên dùng một lần ("Lê Thu Hà", gate5-vnpay@devpath.example, đăng ký qua
+POST /auth/register, đã xóa sau khi chạy) học khóa seed thật "Python cơ bản cho người
+mới bắt đầu" — 18 bài: 12 video, 3 bài đọc, 2 quiz, 1 bài code. Chọn khóa này thay vì
+một khóa 1 bài để lần hoàn thành đi qua đủ ba đường ghi tiến độ: tick bài, quiz đạt, và
+bài code được sandbox chấm AC trong worker.
+
+Tệp đi kèm:
+  certificate-sample.pdf        PDF do worker vẽ, tải qua endpoint công khai
+  certificate-sample.png        PDF đổi sang PNG (pdftoppm, 150 dpi) — ảnh dùng cho báo cáo
+  certificate-*.jpg             ảnh chụp trình duyệt (mục 6)
+
+==============================================================================
+1. HỌC 17/18 BÀI QUA ĐÚNG CÁC ENDPOINT MÀ UI GỌI
+==============================================================================
+Script dùng access token của chính học viên (đăng nhập bằng mật khẩu của tài khoản tạm),
+gọi đúng những request trang học gửi. Không ghi thẳng bảng nào.
+
+  ghi danh: 201 Python cơ bản cho người mới bắt đầu      (POST /courses/{id}/enroll — khóa 0đ)
+  video         PUT /lessons/{id}/progress {last_position_s:60} rồi {…, completed:true}
+  article       PUT /lessons/{id}/progress {completed:true}          (nút "Đánh dấu hoàn thành")
+  quiz          POST /quizzes/{id}/attempts → POST /quiz-attempts/{id}/submit
+                  Kiểm tra: ép kiểu        100%  (ngưỡng 70%)
+                  Kiểm tra: vòng lặp for   100%  (ngưỡng 70%)
+                  quiz đạt → bài học tự hoàn thành (quiz.mark_lesson_solved)
+  code_exercise POST /code-exercises/{id}/submissions → worker chấm trong sandbox Docker
+                  Bài tập: đếm số chẵn     AC, 100 điểm, 6 test, 366 ms chạy, verdict sau 5,7 s
+                  AC → bài học tự hoàn thành trong cùng transaction với verdict (worker)
+
+  tiến độ: 17/18, completed_at=None, certificate=None      <-- chưa đủ bài thì chưa có gì
+
+==============================================================================
+2. BÀI CUỐI TICK TRÊN UI → CHỨNG CHỈ ĐƯỢC CẤP → WORKER VẼ PDF
+==============================================================================
+Bài cuối ("Chia chương trình thành nhiều file", video) được hoàn thành bằng nút
+"Đánh dấu hoàn thành" thật trên trang /hoc/python-co-ban-cho-nguoi-moi-bat-dau.
+
+  00:12:44.863  bấm nút (giờ VN)
+  trang học ngay sau đó: "18/18 bài · 100% · đã hoàn thành khóa học 🎉" + link "Xem chứng chỉ"
+                         + khối "Học tiếp theo" (gợi ý khóa gần nhất chưa học)
+
+Đọc thẳng từ CSDL:
+  lesson_progress.completed_at   17:12:44.881 UTC
+  enrollments.completed_at       17:12:44.888 UTC   ┐ cùng một transaction:
+  certificates.issued_at         17:12:44.888 UTC   ┘ cùng giá trị now()
+  certificates.code              CVQFHWWZETZYJTZ2   (hiển thị CVQF-HWWZ-ETZY-JTZ2)
+  recipient_name / course_title / instructor_name   Lê Thu Hà / Python cơ bản cho người mới
+                                 bắt đầu / Trần Minh Khoa — ĐÓNG BĂNG lúc cấp
+  certificates.pdf_key           certificates/CVQFHWWZETZYJTZ2.pdf
+
+Log worker (queue mặc định, đẩy sau commit qua after_commit.run):
+  17:12:44,961  render_certificate[36d1822b…] received       (0,07 s sau khi cấp)
+  17:12:47,365  render_certificate[36d1822b…] succeeded in 2.30s: True
+  (transaction của job mở lúc 17:12:45.46 — updated_at là now() của transaction — tức
+   PDF vẽ + đẩy lên MinIO xong trong khoảng 2 s; thứ tự trong code: upload rồi mới
+   ghi pdf_key và commit, nên không có lúc nào pdf_key trỏ vào tệp chưa tồn tại)
+
+XP của học viên sau cả khóa (sổ cái xp_events): 18 × lesson_completed 10 + 2 × quiz_passed 20
++ 1 × exercise_solved 30 = 250 XP.
+
+==============================================================================
+3. BỎ TICK RỒI TICK LẠI: KHÔNG CẤP LẦN HAI, KHÔNG THU HỒI
+==============================================================================
+  trước               18/18 completed_at=17:12:44.888  certificate=CVQFHWWZETZYJTZ2
+  bỏ tick bài cuối    17/18 completed_at=None          certificate=CVQFHWWZETZYJTZ2
+  tick lại            18/18 completed_at=17:18:44.766  certificate=CVQFHWWZETZYJTZ2
+
+  CSDL: 1 chứng chỉ cho lượt ghi danh, cùng mã, issued_at vẫn 17:12:44.888;
+  worker chỉ nhận đúng 1 job render_certificate; xp_events vẫn 18 dòng lesson_completed.
+  Lý do thiết kế: chứng chỉ là một sự thật đã đúng lúc cấp — học viên bỏ tick để xem lại
+  bài không làm nó sai đi; unique uq_certificates_enrollment giữ "mỗi lượt ghi danh một
+  chứng chỉ" ở tầng CSDL.
+
+==============================================================================
+4. TẢI PDF VÀ QUÉT QR
+==============================================================================
+$ curl -D - http://localhost:8000/api/v1/certificates/CVQFHWWZETZYJTZ2/pdf
+  HTTP/1.1 200 OK
+  content-type: application/pdf
+  content-disposition: inline; filename="devpath-chung-chi-CVQFHWWZETZYJTZ2.pdf"
+  content-length: 19387
+
+$ pdfinfo certificate-sample.pdf
+  Title:     Chứng nhận hoàn thành — Python cơ bản cho người mới bắt đầu
+  Producer:  WeasyPrint 70.0
+  Pages:     1
+  Page size: 841.89 x 595.276 pts (A4, ngang)
+
+$ pdftoppm -png -r 150 -singlefile certificate-sample.pdf certificate-sample
+$ zbarimg --quiet certificate-sample.png
+  QR-Code:http://localhost:3000/cert/CVQFHWWZETZYJTZ2        <-- đúng URL xác thực
+
+(poppler-utils + zbar-tools cài trong một container dùng một lần từ image backend,
+ `docker run --rm --user root`, không đụng vào container đang chạy.)
+
+Chữ trên PDF (pdftotext -layout): DevPath · CERTIFICATE OF COMPLETION · Chứng nhận hoàn
+thành · Trao cho Lê Thu Hà · đã hoàn thành toàn bộ khóa học Python cơ bản cho người mới
+bắt đầu · Giảng viên Trần Minh Khoa · Ngày hoàn thành 01/10/2026 · Mã chứng chỉ
+CVQF-HWWZ-ETZY-JTZ2 · Xác thực tại http://localhost:3000/cert/CVQFHWWZETZYJTZ2
+
+QR mang FRONTEND_URL của môi trường đang chạy. Trên máy dev đó là localhost, nên điện
+thoại quét được mã nhưng không mở được trang — ở đây mã được giải bằng zbarimg rồi mở
+URL trên cùng máy. Trên VPS (Phase 6) FRONTEND_URL là tên miền thật và điện thoại mở
+thẳng được; chứng chỉ cấp trên máy dev không mang sang production.
+
+==============================================================================
+5. TRANG XÁC THỰC CÔNG KHAI /cert/{code}
+==============================================================================
+  GET /cert/CVQFHWWZETZYJTZ2      200  "Chứng chỉ hợp lệ — Do DevPath cấp ngày 01/10/2026,
+                                        mã CVQF-HWWZ-ETZY-JTZ2" + bản xem trước + "Tải chứng chỉ PDF"
+  GET /cert/cvqf-hwwz-etzy-jtz2   200  (gõ tay chữ thường, có gạch — vẫn nhận ra)
+  GET /cert/CVQFHWWZETZYJTZ3      404  (sai một ký tự: 404 thật, không phải trang 200 báo lỗi)
+  API GET /certificates/CVQFHWWZETZYJTZ3 → 404 CERTIFICATE_NOT_FOUND
+  cả ba trang mang <meta name="robots" content="noindex"> — trang có tên người học
+  không nên nằm trong kết quả tìm kiếm. Trang không cần đăng nhập.
+
+LỖI TÌM THẤY KHI CHẠY GATE — ĐÃ SỬA:
+  Lần đầu mở, trang xác thực ghi "cấp ngày 30/09/2026" trong khi PDF ghi "01/10/2026".
+  Chứng chỉ cấp lúc 17:12 UTC ngày 30/09 = 00:12 ngày 01/10 giờ Việt Nam. PDF (backend)
+  tính ngày theo giờ Việt Nam; còn formatDate() ở frontend/lib/format.ts dùng
+  Intl.DateTimeFormat không đặt timeZone, tức múi giờ của nơi chạy — container frontend
+  render SSR ở UTC, trình duyệt ở giờ máy người xem. Mọi mốc từ 00:00 tới 07:00 giờ VN
+  lệch một ngày trên các trang render phía server (trang xác thực, ngày xuất bản ở trang
+  khóa học), và trên trình duyệt ở múi giờ khác.
+
+    runtime UTC, không timeZone:            30/09/2026
+    runtime UTC, timeZone Asia/Ho_Chi_Minh: 01/10/2026
+
+  Sửa: DATE trong lib/format.ts đặt timeZone "Asia/Ho_Chi_Minh" (ngày trên site là ngày
+  Việt Nam, như mọi chỗ ở backend); ProfileForm bỏ bản sao toLocaleDateString riêng để
+  dùng chung formatDate. Sau khi restart frontend, HTML của trang xác thực chứa 01/10/2026
+  đúng 4 lần và không còn 30/09 (hai chỗ hiện ngày trên trang — "cấp ngày …" và "Ngày
+  hoàn thành" — cộng bản của chúng trong dữ liệu RSC), khớp PDF.
+
+==============================================================================
+6. ẢNH CHỤP
+==============================================================================
+Chụp bằng Chrome headless trên máy dev (Chrome 1440×900, hồ sơ tạm, điều khiển qua
+DevTools Protocol): đăng nhập bằng form thật của tài khoản tạm, rồi Page.captureScreenshot.
+Chụp sau khi đã sửa lỗi ngày ở mục 5; nút dev-mode của Next được ẩn khỏi ảnh.
+
+  certificate-1-course-completed.png  trang học: "18/18 bài · 100% · đã hoàn thành khóa
+                                      học 🎉 · Xem chứng chỉ", mục lục tick đủ, bài cuối
+                                      hiện "Bỏ đánh dấu hoàn thành"
+  certificate-2-my-courses.png        /khoa-hoc-cua-toi (cả trang): chuỗi 1 ngày, 250 XP,
+                                      thẻ khóa "Hoàn thành 01/10/2026" + nút "Chứng chỉ"
+  certificate-3-verify-page.png       /cert/CVQFHWWZETZYJTZ2: "Chứng chỉ hợp lệ", bản xem
+                                      trước, "Tải chứng chỉ PDF"
+  certificate-4-wrong-code.png        /cert/CVQFHWWZETZYJTZ3: "Không tìm thấy chứng chỉ"
+  certificate-5-verify-phone.png      trang xác thực ở 390px (bề ngang điện thoại, nơi mở
+                                      mã QR): scrollWidth − clientWidth = 0, không cuộn ngang
+  certificate-sample.png              chính tệp PDF, đổi sang PNG
+
+==============================================================================
+7. DỌN DẸP
+==============================================================================
+Script trong container backend: kiểm email + role = student của tài khoản tạm, rồi
+certificates.delete_for_enrollments (certificates.enrollment_id là RESTRICT — đây là cửa
+duy nhất cố ý để xóa) → DELETE submissions → DELETE users (phần còn lại cascade) → commit.
+  deleted: 1 certificate, 1 submission, user gate5-vnpay@devpath.example
+  scripts.rebuild_course_stats   python-co-ban-cho-nguoi-moi-bat-dau  students_count 26 -> 25
+  scripts.rebuild_leaderboard    bỏ 250 XP của tài khoản tạm khỏi ba sorted set
+Sau đó /cert/CVQFHWWZETZYJTZ2 trả 404; PDF mẫu trong thư mục này là bản duy nhất còn lại
+(tệp trên MinIO được để lại theo thiết kế của hàm dọn: bucket dev có một tệp thừa không
+đáng một script treo khi MinIO chết).

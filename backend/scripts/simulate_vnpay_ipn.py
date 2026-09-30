@@ -131,7 +131,9 @@ async def main() -> None:
 
     print(f"đơn hàng : {after.status}", end="")
     if after.paid_at is not None:
-        print(f" lúc {after.paid_at:%d/%m/%Y %H:%M}, mã giao dịch {after.provider_txn_id}")
+        # paid_at is stored in UTC; the operator reading this thinks in Hà Nội time.
+        paid = after.paid_at.astimezone(vnpay.VIETNAM)
+        print(f" lúc {paid:%d/%m/%Y %H:%M} giờ VN, mã giao dịch {after.provider_txn_id}")
     elif after.failure_code:
         print(f", mã lỗi {after.failure_code}")
     else:

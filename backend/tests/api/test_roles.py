@@ -22,6 +22,8 @@ from app.core.db import get_db
 from app.core.deps import require_role
 from app.core.security import hash_password
 from app.models import User
+from app.services.rate_limit import get_rate_limiter
+from tests.api.fakes import AllowAllRateLimiter
 
 PASSWORD = "mật-khẩu-đủ-dài"
 
@@ -54,6 +56,9 @@ async def probe_client(
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
+    # Signing in counts against the login limit, which would otherwise reach
+    # for a real Redis and remember these addresses between runs.
+    app.dependency_overrides[get_rate_limiter] = AllowAllRateLimiter
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client

@@ -20,11 +20,13 @@ from app.schemas.users import (
     ProfileUpdateIn,
 )
 from app.services import users as users_service
+from app.services.rate_limit import RateLimiter, get_rate_limiter
 from app.services.storage import ObjectStorage, get_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 Storage = Annotated[ObjectStorage, Depends(get_storage)]
+RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
 @router.post("/me/instructor", response_model=UserOut)
@@ -64,18 +66,21 @@ async def change_password(
     response: Response,
     current_user: CurrentUser,
     session: DbSession,
+    limiter: RateLimit,
 ) -> TokenOut:
     """Change your own password, signing every other device out.
 
     Answers with a new token pair and a new refresh cookie: the old refresh
     token was revoked along with the rest, so the caller needs the replacement
-    to stay signed in.
+    to stay signed in. 429 AUTH_RATE_LIMITED after five attempts in fifteen
+    minutes.
     """
     tokens = await users_service.change_password(
         session,
         current_user,
         current_password=payload.current_password,
         new_password=payload.new_password,
+        limiter=limiter,
         client=client_info(request),
     )
     return token_response(response, tokens)

@@ -16,6 +16,8 @@ const MESSAGES: Record<string, string> = {
   REFRESH_TOKEN_REUSED:
     "Phiên đăng nhập đã bị thu hồi vì lý do an toàn. Vui lòng đăng nhập lại.",
   NOT_AUTHENTICATED: "Bạn cần đăng nhập để tiếp tục.",
+  // AUTH_RATE_LIMITED cố ý không có ở đây: câu của backend nói cửa nào bị thử
+  // quá nhiều (email này, mạng này, đổi mật khẩu) và phải đợi khoảng bao lâu.
 
   // Đăng nhập Google — backend chuyển hướng về /dang-nhap?loi=<code>.
   GOOGLE_ACCESS_DENIED: "Bạn đã hủy đăng nhập bằng Google.",

@@ -35,6 +35,7 @@ from app.services.google_oauth import (
     GoogleOAuthClient,
     get_google_oauth_client,
 )
+from app.services.rate_limit import RateLimiter, get_rate_limiter
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -43,6 +44,8 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 STATE_COOKIE_NAME = "devpath_oauth_state"
 STATE_TTL_SECONDS = 10 * 60
 
+RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
+
 
 @router.post("/register", response_model=TokenOut, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -50,17 +53,20 @@ async def register(
     request: Request,
     response: Response,
     session: DbSession,
+    limiter: RateLimit,
 ) -> TokenOut:
     """Create a student account and sign it in. Public by design.
 
     Instructor and admin accounts are never created here: the role is set by
-    the service, so `"role": "admin"` in the body is simply ignored.
+    the service, so `"role": "admin"` in the body is simply ignored. 429
+    AUTH_RATE_LIMITED when one client creates too many accounts in an hour.
     """
     tokens = await auth_service.register_user(
         session,
         email=payload.email,
         password=payload.password,
         full_name=payload.full_name,
+        limiter=limiter,
         client=client_info(request),
     )
     return token_response(response, tokens)
@@ -72,15 +78,19 @@ async def login(
     request: Request,
     response: Response,
     session: DbSession,
+    limiter: RateLimit,
 ) -> TokenOut:
     """Sign in with email and password. Public by design.
 
     Other devices stay signed in -- each sign-in opens its own session row.
+    429 AUTH_RATE_LIMITED after too many attempts at one address, or from one
+    client, in fifteen minutes -- right password or not.
     """
     tokens = await auth_service.authenticate_user(
         session,
         email=payload.email,
         password=payload.password,
+        limiter=limiter,
         client=client_info(request),
     )
     return token_response(response, tokens)

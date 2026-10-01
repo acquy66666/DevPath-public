@@ -100,8 +100,11 @@ services:
       - "8000"
       - --workers
       - "${UVICORN_WORKERS:-2}"
-      # Behind nginx, so the client address arrives in X-Forwarded-For. Only
-      # the proxy is trusted to set it.
+      # Behind nginx, so the client address arrives in X-Forwarded-For.
+      # Trusting every proxy is safe only because nginx is the one thing that
+      # can reach this port and it overwrites the header instead of appending
+      # to it (nginx/snippets/proxy.conf) -- the sign-in limits count per
+      # client address, and an appended header would let a client pick its own.
       - --proxy-headers
       - --forwarded-allow-ips
       - "*"

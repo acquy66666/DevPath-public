@@ -123,6 +123,20 @@ class Settings(BaseSettings):
     # of drafts, reviewed properly.
     quiz_generation_cooldown_seconds: int = 10
     quiz_generation_hourly_limit: int = 20
+    # Signing in and signing up. bcrypt already makes each password guess cost
+    # the server a quarter of a second; these stop a script from simply making
+    # a great many of them. Per address against guessing one account's
+    # password, per client against trying one password on many accounts. The
+    # per-client numbers are sized for a computer lab behind one NAT address:
+    # forty people signing in at once, each mistyping once, stay well under.
+    login_window_seconds: int = 15 * 60
+    login_attempts_per_email: int = 10
+    login_attempts_per_ip: int = 100
+    registration_window_seconds: int = 60 * 60
+    registrations_per_ip: int = 50
+    # Per account, in the login window: somebody at an unlocked laptop guessing
+    # the current password with a live access token.
+    password_changes_per_user: int = 5
 
     # VNPay. Empty until somebody registers a merchant account at
     # sandbox.vnpayment.vn; `vnpay_enabled` is what the payment route checks,

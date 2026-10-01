@@ -24,6 +24,7 @@ from app.core.security import (
 )
 from app.models import RefreshToken, User
 from app.services.google_oauth import GoogleIdentity
+from app.services.rate_limit import RateLimiter
 
 
 class EmailAlreadyRegisteredError(DomainError):
@@ -64,6 +65,106 @@ class InvalidRefreshTokenError(DomainError):
 class RefreshTokenReusedError(DomainError):
     status_code = status.HTTP_401_UNAUTHORIZED
     code = "REFRESH_TOKEN_REUSED"
+
+
+class AuthRateLimitedError(DomainError):
+    """Too many sign-ins, sign-ups or password changes, too fast.
+
+    One code for all of them: the page answers each the same way, by showing
+    the wait. The message says which door was knocked on too often.
+    """
+
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    code = "AUTH_RATE_LIMITED"
+
+    def __init__(self, message: str, *, retry_after: int):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+LOGIN_EMAIL_KEY = "auth:login:email:{email}"
+LOGIN_IP_KEY = "auth:login:ip:{ip}"
+REGISTER_IP_KEY = "auth:register:ip:{ip}"
+PASSWORD_CHANGE_KEY = "auth:password:user:{user}"
+
+
+def _minutes(seconds: int) -> int:
+    """A wait as people say it: never "0 phút"."""
+    return seconds // 60 + 1
+
+
+async def enforce_login_limits(
+    limiter: RateLimiter, *, email: str, ip_address: str | None
+) -> None:
+    """Count this attempt against the client and against the account.
+
+    Every attempt counts, the successful ones too. Counting only failures
+    would need a second round trip after bcrypt, and ten sign-ins to one
+    account in a quarter of an hour is not something a person does.
+
+    The account key is the address whether or not an account exists behind
+    it, so a refusal here says nothing about who is a member. It does let a
+    stranger hold one address's sign-in shut for a window -- the price of
+    stopping guesses at it, paid in minutes, with Google sign-in still open.
+    """
+    settings = get_settings()
+    window = settings.login_window_seconds
+
+    if ip_address:
+        wait = await limiter.count(
+            LOGIN_IP_KEY.format(ip=ip_address), settings.login_attempts_per_ip, window
+        )
+        if wait:
+            raise AuthRateLimitedError(
+                "Có quá nhiều lần đăng nhập từ mạng này. "
+                f"Thử lại sau khoảng {_minutes(wait)} phút.",
+                retry_after=wait,
+            )
+
+    wait = await limiter.count(
+        LOGIN_EMAIL_KEY.format(email=email.lower()), settings.login_attempts_per_email, window
+    )
+    if wait:
+        raise AuthRateLimitedError(
+            "Email này vừa được thử đăng nhập quá nhiều lần. "
+            f"Thử lại sau khoảng {_minutes(wait)} phút.",
+            retry_after=wait,
+        )
+
+
+async def enforce_registration_limit(limiter: RateLimiter, *, ip_address: str | None) -> None:
+    """Count one sign-up against the client, against a script filling the table."""
+    if not ip_address:
+        return
+
+    settings = get_settings()
+    wait = await limiter.count(
+        REGISTER_IP_KEY.format(ip=ip_address),
+        settings.registrations_per_ip,
+        settings.registration_window_seconds,
+    )
+    if wait:
+        raise AuthRateLimitedError(
+            "Có quá nhiều tài khoản vừa được tạo từ mạng này. "
+            f"Thử lại sau khoảng {_minutes(wait)} phút.",
+            retry_after=wait,
+        )
+
+
+async def enforce_password_change_limit(limiter: RateLimiter, user_id: uuid.UUID) -> None:
+    """Count one attempt at the current password, against guessing it."""
+    settings = get_settings()
+    wait = await limiter.count(
+        PASSWORD_CHANGE_KEY.format(user=user_id),
+        settings.password_changes_per_user,
+        settings.login_window_seconds,
+    )
+    if wait:
+        raise AuthRateLimitedError(
+            "Bạn vừa thử đổi mật khẩu quá nhiều lần. "
+            f"Thử lại sau khoảng {_minutes(wait)} phút.",
+            retry_after=wait,
+        )
 
 
 @dataclass(frozen=True)
@@ -163,6 +264,7 @@ async def register_user(
     email: str,
     password: str,
     full_name: str,
+    limiter: RateLimiter,
     client: ClientInfo | None = None,
 ) -> IssuedTokens:
     """Create a student account and sign it in.
@@ -170,6 +272,9 @@ async def register_user(
     Role is not a parameter on purpose: an account cannot be born an instructor
     or an admin, whatever the request body says.
     """
+    client = client or ClientInfo()
+    await enforce_registration_limit(limiter, ip_address=client.ip_address)
+
     existing = await session.scalar(select(User).where(User.email == email))
     if existing is not None:
         raise EmailAlreadyRegisteredError("Email này đã được đăng ký")
@@ -185,7 +290,7 @@ async def register_user(
     # index on email is the last word if two requests raced to here.
     await session.flush()
 
-    tokens = await _issue_tokens(session, user, client or ClientInfo())
+    tokens = await _issue_tokens(session, user, client)
     await session.commit()
     return tokens
 
@@ -195,9 +300,17 @@ async def authenticate_user(
     *,
     email: str,
     password: str,
+    limiter: RateLimiter,
     client: ClientInfo | None = None,
 ) -> IssuedTokens:
-    """Verify a password and open a session. Existing sessions stay open."""
+    """Verify a password and open a session. Existing sessions stay open.
+
+    The limits are checked first, before the account is even looked up: a
+    refused attempt costs a Redis round trip, not a bcrypt round.
+    """
+    client = client or ClientInfo()
+    await enforce_login_limits(limiter, email=email, ip_address=client.ip_address)
+
     user = await session.scalar(select(User).where(User.email == email))
 
     if user is None or user.password_hash is None:
@@ -215,7 +328,7 @@ async def authenticate_user(
         raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
 
     user.last_login_at = datetime.now(tz=UTC)
-    tokens = await _issue_tokens(session, user, client or ClientInfo())
+    tokens = await _issue_tokens(session, user, client)
     await session.commit()
     return tokens
 

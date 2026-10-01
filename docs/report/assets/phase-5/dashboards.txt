@@ -1,0 +1,54 @@
+DASHBOARD GIẢNG VIÊN VÀ ADMIN — ẢNH CHỤP CHO GATE PHASE 5
+Ngày chụp: 01/10/2026 (00:45 giờ Việt Nam) · stack dev · CSDL dev có dữ liệu demo
+(seed, seed_interactions, seed_sales, seed_study, seed_coupons, seed_banners)
+Gate Phase 5, mục thu bằng chứng: "… dashboard instructor và admin"
+
+Cách chụp: Chrome headless trên máy dev (1440 px, hồ sơ tạm, DevTools Protocol), đăng nhập
+bằng form thật với tài khoản seed — giảng viên khoa.tran@devpath.example (người có doanh thu
+lớn nhất: 62 đơn, 7 khóa có bán) và admin@devpath.example; mật khẩu là giá trị mặc định trong
+backend/scripts/seed*.py. Hai phiên tạo ra đã bị thu hồi ngay sau khi chụp (refresh_tokens.
+revoked_at). Nút dev-mode của Next được ẩn khỏi ảnh.
+
+==============================================================================
+1. ẢNH
+==============================================================================
+  instructor-dashboard-30d.png   /giang-day/thong-ke, kỳ 30 ngày (02/09 – 01/10/2026), cả trang
+  instructor-dashboard-12m.png   cùng trang, kỳ 12 tháng (01/11/2025 – 01/10/2026)
+  admin-dashboard-30d.png        /quan-tri "Tổng quan", kỳ 30 ngày, cả trang
+  admin-dashboard-12m.png        cùng trang, kỳ 12 tháng
+  admin-categories.png           /quan-tri/danh-muc — cây 2 cấp, số khóa mỗi danh mục
+  admin-coupons.png              /quan-tri/ma-giam-gia — 7 mã với đủ trạng thái (đang chạy,
+                                 đã kết thúc, hết lượt, giới hạn 2 khóa)
+  admin-banners.png              /quan-tri/banner — 3 banner đang hiện
+  home-banners.png               trang chủ khi chưa đăng nhập: carousel banner
+
+==============================================================================
+2. SỐ TRÊN ẢNH, ĐỐI CHIẾU VỚI SQL GỐC
+==============================================================================
+                                          trên dashboard            SQL trên bảng orders/users
+  Admin, 12 tháng: doanh thu sàn          59.768.600 ₫ · 77 đơn     sum(total) đơn paid = 59768600.00, 77
+  Admin, 30 ngày: doanh thu sàn            6.286.800 ₫ · 9 đơn      paid_at (giờ VN) 02/09–01/10 = 6286800.00, 9
+  Admin: tài khoản                         92                        count(users) = 92
+  Giảng viên, 30 ngày: doanh thu           5.089.400 ₫ · 11 lượt    sum(unit_price − discount) các dòng
+                                                                     của khóa khoa.tran, paid 02/09–01/10 = 5089400.00, 11
+  Giảng viên, 12 tháng / từ trước tới nay 41.032.800 ₫              = 41032800.00 (62 đơn)
+
+Doanh thu sàn cộng orders.total (sau mã giảm giá); doanh thu giảng viên cộng từng dòng
+order_items.unit_price − discount, vì một mã giới hạn khóa không được trừ vào khóa khác cùng đơn.
+
+==============================================================================
+3. ĐỌC ẢNH CHO ĐÚNG — NHỮNG CHỖ LÀ DO DỮ LIỆU DEMO, KHÔNG PHẢI HÀNH VI
+==============================================================================
+- Cột nhô ở ~18/09 (DAU của admin ~55 người, "Học viên mới theo ngày" của giảng viên ~47):
+  ngày CSDL dev được dựng lại từ đầu và seed lại (đỉnh ghi danh: 18/09, 192 lượt). Vì cùng lý do,
+  "Tài khoản mới 92 · 30 ngày trước đó: 0" và "Học viên mới tăng 525%".
+- Kỳ 12 tháng: mọi so sánh "12 tháng trước đó: 0" vì không có dữ liệu nào trước kỳ. Đơn đã trả
+  tiền theo tháng (giờ VN): 01/2026 3 · 02 4 · 03 9 · 04 8 · 05 16 · 06 6 · 07 7 · 08 14 · 09 10 —
+  hai cột 11 và 12/2025 trống, tháng 10/2026 mới bắt đầu nên chưa có đơn.
+- "Hôm nay: 3 người" (DAU hôm nay, 01/10): 2 là chính hai lần đăng nhập để chụp (dấu vết
+  refresh_tokens.created_at, đúng định nghĩa DAU), 1 là một phiên của mai.anh@devpath.example
+  được làm mới lúc 00:00:19 — không từ lần chạy này.
+- Khóa miễn phí đứng đầu "Khóa học hot" với 0 lượt bán: hot = ghi danh mới trong kỳ, bằng nhau
+  mới xét doanh thu (định nghĩa ở admin-dashboard.txt §1).
+- Danh mục cấp trên hiện "0 khóa học": số đếm là khóa gắn trực tiếp vào danh mục đó; khóa gắn
+  vào danh mục con.

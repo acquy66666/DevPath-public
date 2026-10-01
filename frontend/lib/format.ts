@@ -6,10 +6,16 @@ const PRICE = new Intl.NumberFormat("vi-VN", {
   maximumFractionDigits: 0,
 });
 
+// A date on this site is a Vietnamese date, as it is everywhere on the backend
+// and on the certificate PDF. Left to the runtime, the same timestamp is a
+// different day on the server (the container runs in UTC) than in the browser:
+// a certificate issued at 00:12 on 01/10 in Hà Nội read "30/09" on its public
+// page while the PDF it links to said "01/10".
 const DATE = new Intl.DateTimeFormat("vi-VN", {
   day: "2-digit",
   month: "2-digit",
   year: "numeric",
+  timeZone: "Asia/Ho_Chi_Minh",
 });
 
 /**

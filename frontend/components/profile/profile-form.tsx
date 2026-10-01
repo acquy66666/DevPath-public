@@ -20,14 +20,7 @@ import { updateProfile } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { ROLE_LABELS } from "@/lib/auth/roles";
 import { validateFullName } from "@/lib/auth/validation";
-
-function joinedOn(user: User): string {
-  return new Date(user.created_at).toLocaleDateString("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
+import { formatDate } from "@/lib/format";
 
 export function ProfileForm({ user }: { user: User }) {
   const { accessToken, refreshSession } = useAuth();
@@ -59,7 +52,7 @@ export function ProfileForm({ user }: { user: User }) {
       <CardHeader>
         <CardTitle>Thông tin cá nhân</CardTitle>
         <CardDescription>
-          {ROLE_LABELS[user.role]} · Tham gia ngày {joinedOn(user)}
+          {ROLE_LABELS[user.role]} · Tham gia ngày {formatDate(user.created_at)}
         </CardDescription>
       </CardHeader>
 

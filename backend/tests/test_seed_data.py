@@ -155,6 +155,72 @@ def test_every_seeded_account_can_be_typed_into_the_login_form() -> None:
         LoginIn(email=address, password="whatever-the-password-is")
 
 
+SEED_PASSWORD_VARIABLES = ("SEED_ADMIN_PASSWORD", "SEED_INSTRUCTOR_PASSWORD")
+
+
+@pytest.mark.parametrize("missing", SEED_PASSWORD_VARIABLES)
+def test_production_will_not_be_seeded_with_the_passwords_in_this_repository(
+    monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    """The defaults are in the source, so an admin seeded with one is an admin
+    anybody who has read the repository can sign in as.
+
+    A warning printed after the accounts exist is too late, and it was easy to
+    miss: `deploy.sh --seed` did not even pass these variables into the
+    container, so following the runbook to the letter still seeded the
+    defaults.
+    """
+    from app.core.config import get_settings
+    from scripts.seed import refuse_default_passwords_in_production
+
+    monkeypatch.setattr(get_settings(), "env", "production")
+    for name in SEED_PASSWORD_VARIABLES:
+        monkeypatch.setenv(name, "một-mật-khẩu-thật-dài")
+    monkeypatch.delenv(missing)
+
+    with pytest.raises(SystemExit) as refused:
+        refuse_default_passwords_in_production()
+
+    assert missing in str(refused.value)
+
+
+def test_production_is_seeded_once_both_passwords_are_given(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from app.core.config import get_settings
+    from scripts.seed import refuse_default_passwords_in_production
+
+    monkeypatch.setattr(get_settings(), "env", "production")
+    for name in SEED_PASSWORD_VARIABLES:
+        monkeypatch.setenv(name, "một-mật-khẩu-thật-dài")
+
+    refuse_default_passwords_in_production()
+
+
+def test_development_keeps_its_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    from scripts.seed import refuse_default_passwords_in_production
+
+    for name in SEED_PASSWORD_VARIABLES:
+        monkeypatch.delenv(name, raising=False)
+
+    refuse_default_passwords_in_production()
+
+
+def test_deploy_passes_the_seed_passwords_into_the_container() -> None:
+    """`docker compose run` hands a container the service's environment and
+    nothing from the shell that ran it, unless each name is passed with -e."""
+    from pathlib import Path
+
+    deploy = Path(__file__).resolve().parents[2] / "infra" / "scripts" / "deploy.sh"
+    seed_line = next(
+        line for line in deploy.read_text(encoding="utf-8").splitlines()
+        if "scripts.seed" in line
+    )
+
+    for name in SEED_PASSWORD_VARIABLES:
+        assert f"-e {name}" in seed_line
+
+
 # --- The one thing that does need a database -------------------------------
 
 

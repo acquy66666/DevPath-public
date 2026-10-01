@@ -194,13 +194,13 @@ Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script l�
 
 `--seed` chỉ dùng cho lần đầu. Seed idempotent nên chạy lại không hỏng gì, nhưng cũng chẳng để làm gì.
 
-> **Đổi mật khẩu mặc định của tài khoản seed trước khi seed lên máy chủ công khai.** Seed sẽ in cảnh báo này ra màn hình:
+> **Bắt buộc đặt mật khẩu cho tài khoản seed khi seed lên máy chủ công khai:**
 >
 > ```bash
 > SEED_ADMIN_PASSWORD='...' SEED_INSTRUCTOR_PASSWORD='...' ./scripts/deploy.sh --seed
 > ```
 >
-> Không đặt thì admin của trang có mật khẩu `devpath-admin`, và mật khẩu đó nằm trong repo.
+> Thiếu một trong hai biến thì seed **từ chối chạy** ở production (từ 01/10/2026) — mật khẩu mặc định `devpath-admin` nằm trong repo, ai đọc repo cũng đăng nhập được quyền admin. Trước ngày đó `deploy.sh` còn không chuyển hai biến này vào container (`docker compose run` chỉ nhận biến của service, phải có `-e`), nên làm đúng hướng dẫn vẫn ra mật khẩu mặc định.
 
 ## 5. Nghiệm thu
 

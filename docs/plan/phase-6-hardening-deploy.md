@@ -6,7 +6,7 @@
 
 ## Kiểm thử & bảo mật
 
-- [ ] Rà soát bảo mật: authorization mọi endpoint (ownership!), rate limit auth + submit + chat, CORS, security headers, secrets không nằm trong repo
+- [x] Rà soát bảo mật: authorization mọi endpoint (ownership!), rate limit auth + submit + chat, CORS, security headers, secrets không nằm trong repo — xong 01/10: test ma trận 159 route, 0 lỗ phân quyền; sửa 5 lỗi thật (IP giả qua `X-Forwarded-For`, auth chưa có rate limit, `/_next/static/` mất header, `deploy.sh --seed` không chuyển mật khẩu seed vào container, CORS `*`/JWT ngắn/schema mở ở production) — `docs/report/assets/phase-6/security-review.txt`
 - [ ] Chạy `/security-review` trên toàn bộ code và xử lý findings
 - [ ] E2E test các luồng vàng (Playwright): đăng ký → mua → học → nộp code → chứng chỉ
 - [ ] Load test nhẹ (locust/k6): trang danh sách, submit code 20 đồng thời — số liệu vào `docs/report/assets/phase-6/load-test.md`
@@ -19,6 +19,7 @@
 - [ ] Backup DB tự động (cron `pg_dump` → R2); script restore đã thử khôi phục thật một lần
 - [ ] Monitoring tối thiểu: uptime check + log tập trung (docker logging) + alert đơn giản
 - [ ] Rà lại `.env.example`, README chạy dự án, script seed chạy sạch trên máy trắng
+- [ ] Bật **enforce** cho Content-Security-Policy: hiện đang `Content-Security-Policy-Report-Only` (`infra/nginx/snippets/security-headers.conf`, từ 01/10). Chạy luồng vàng trên tên miền thật, console không có vi phạm nào → đổi tên header và bỏ dòng `frame-ancestors` riêng
 
 ## Nợ hoãn lại từ Phase 2–4 (ghi 19/09/2026)
 

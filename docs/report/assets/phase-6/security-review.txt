@@ -1,0 +1,228 @@
+RÀ SOÁT BẢO MẬT — PHÂN QUYỀN, RATE LIMIT, CORS, SECURITY HEADERS, SECRETS
+Ngày chạy: 01/10/2026 · nhánh feature/security-audit · máy dev (Windows, Postgres + Redis của stack dev)
+Phase 6, task 1: "Rà soát bảo mật: authorization mọi endpoint (ownership!), rate limit
+auth + submit + chat, CORS, security headers, secrets không nằm trong repo"
+
+Kết quả gọn: KHÔNG tìm thấy lỗ phân quyền nào trên 159 route. Tìm và sửa 5 lỗi thật:
+  (a) IP client giả được qua X-Forwarded-For (nginx nối thêm, uvicorn tin phần tử đầu)
+  (b) đăng nhập / đăng ký / đổi mật khẩu không có rate limit nào
+  (c) mọi tài nguyên dưới /_next/static/ ra đi không có header bảo mật nào
+  (d) deploy.sh --seed không chuyển SEED_ADMIN_PASSWORD vào container → admin trên
+      máy chủ công khai luôn mang mật khẩu mặc định có trong repo
+  (e) CORS_ORIGINS nhận "*" kèm credentials; JWT_SECRET production chỉ chặn đúng chuỗi
+      mặc định (khóa "secret" vẫn qua); /openapi.json và /redoc vẫn mở ở production
+
+==============================================================================
+1. PHÂN QUYỀN TỪNG ENDPOINT — TEST MA TRẬN
+==============================================================================
+Tệp: backend/tests/api/test_authorization_matrix.py
+
+Cách làm: một bảng RULES xếp loại MỌI route app phục vụ; test đọc danh sách route
+từ chính app nên route mới chưa xếp loại làm test đỏ ngay (test_every_route_is_classified).
+
+  Loại     Số route  Luật được kiểm
+  -------  --------  -----------------------------------------------------------------
+  Public       19    không cần đăng nhập, có ghi lý do (catalogue, auth, IPN có HMAC,
+                     trang verify chứng chỉ, WebSocket tự xác thực ở handshake)
+  Admin        31    học viên và giảng viên đều nhận 403
+  Owned        65    người ngoài nhận 403/404; CHỦ THẬT phải qua được (≠ 401/403/404/422)
+  Scoped       35    chỉ trả dữ liệu của người gọi: body không được chứa id riêng
+                     của học viên khác (ghi chú, bookmark, phiên chat, bài nộp, lượt
+                     quiz, mã đơn, thông báo) / đáp án test ẩn / khóa của giảng viên khác
+  Open          9    mọi người đã đăng nhập làm được trên tài nguyên công khai (ghi
+                     danh khóa miễn phí, giỏ hàng, wishlist, báo cáo, bảng xếp hạng)
+  -------  --------
+  Tổng        159
+
+Người ngoài được chọn là CA KHÓ, không phải ca dễ:
+  - ghi chú / phiên chat / lượt quiz / đơn hàng của học viên A: hỏi bằng BẠN CÙNG LỚP
+    (cũng đã ghi danh) và bằng GIẢNG VIÊN của khóa — không chỉ người lạ;
+  - route soạn bài (sửa khóa, test case, câu hỏi quiz, video, transcript): hỏi bằng
+    HỌC VIÊN ĐÃ GHI DANH và bằng GIẢNG VIÊN KHÁC — đúng vai trò nhưng sai khóa;
+  - GET /quizzes/{id}/questions (đáp án): học viên đã ghi danh phải bị từ chối;
+  - GET /code-exercises/{id}/test-cases: học viên thấy test mẫu, test ẩn có mặt
+    nhưng rỗng — chuỗi đáp án ẩn không xuất hiện trong response.
+
+Chủ thật phải qua được: không có vế này thì một id gõ sai trong "thế giới" test làm
+mọi lời gọi thành 404 và cả bảng xanh suông.
+
+Kết quả:
+  222 passed in 106.15s
+  = 2 kiểm bảng ↔ code (đủ route; công khai trong bảng = không đòi đăng nhập trong code)
+  + 109 "chưa đăng nhập bị từ chối" (mọi route không Public)
+  + 2 vòng admin (31 route × học viên, giảng viên)
+  + 65 owned + 35 scoped + 9 open
+
+Kiểm chứng test bắt được lỗ thật (mutation): gỡ điều kiện `note.user_id != user.id`
+ở app/services/study.py:40 rồi chạy lại phần ghi chú:
+  FAILED ...[DELETE /notes/{note_id}]
+  FAILED ...[PATCH /notes/{note_id}]
+  2 failed, 6 passed
+Khôi phục tệp → xanh lại.
+
+Route "đăng nhập tùy chọn" (OptionalUser — trang khóa học, nội dung bài học, quiz,
+bài tập code): khi chưa đăng nhập, trang công khai trả 200, còn nội dung bài học của
+khóa chưa ghi danh trả 403/404. Bảng ghi rõ loại nào thuộc loại nào.
+
+==============================================================================
+2. RATE LIMIT
+==============================================================================
+Đã có từ Phase 3–4 (giữ nguyên, kiểm lại đường gọi):
+  nộp bài + chạy thử   cooldown 10 s + 40 lần/giờ/người  (services/grading.py)
+  hỏi trợ giảng AI     cooldown 3 s  + 60 câu/giờ/người  (services/chat.py)
+  sinh quiz AI         cooldown 10 s + 20 lần/giờ/người  (services/quiz_generation.py)
+
+Thêm mới (Redis, cùng limiter; 429 AUTH_RATE_LIMITED + Retry-After):
+  đăng nhập     10 lần / 15 phút / email      — đoán mật khẩu một tài khoản
+                100 lần / 15 phút / IP client — rải một mật khẩu lên nhiều tài khoản
+  đăng ký       50 tài khoản / giờ / IP client
+  đổi mật khẩu  5 lần / 15 phút / tài khoản   — đoán mật khẩu hiện tại bằng access
+                                               token còn sống (máy không khóa màn hình)
+
+  - Đếm MỌI lần thử, kể cả đúng mật khẩu: đếm riêng lần sai cần thêm một vòng Redis
+    sau bcrypt, và 10 lần đăng nhập một tài khoản trong 15 phút không phải việc
+    người thật làm. Lần thử thứ 11 bị từ chối kể cả khi đúng mật khẩu — nói với kẻ
+    đoán "lần này lẽ ra đúng" chính là thứ giới hạn tồn tại để chặn.
+  - Kiểm TRƯỚC khi tra tài khoản: lần bị từ chối tốn một vòng Redis, không tốn bcrypt.
+  - Khóa theo email dù email có tài khoản hay không → câu từ chối không tiết lộ ai
+    là thành viên.
+  - Số cho IP được chọn cho phòng máy sau một NAT: 40 người đăng nhập cùng lúc, mỗi
+    người gõ sai một lần, vẫn dưới ngưỡng (test ghim: per-IP ≥ 80, đăng ký ≥ 40).
+
+Test: backend/tests/api/test_auth_rate_limit.py — 8 passed in 13.34s
+  đoán một tài khoản bị cắt; khóa theo email không đổi khi viết hoa; giữ qua nhiều IP;
+  rải nhiều tài khoản từ một IP bị cắt mà IP khác không bị; hết cửa sổ thì mở lại;
+  đăng ký hàng loạt bị cắt; đoán mật khẩu hiện tại bị cắt; ngưỡng production đủ cho
+  một lớp học.
+
+==============================================================================
+3. LỖI (a): IP CLIENT GIẢ ĐƯỢC QUA X-FORWARDED-FOR
+==============================================================================
+Production chạy uvicorn `--proxy-headers --forwarded-allow-ips *`. Với "*", uvicorn
+0.53 lấy PHẦN TỬ ĐẦU của X-Forwarded-For làm IP client
+(.venv/Lib/site-packages/uvicorn/middleware/proxy_headers.py:176-177). nginx lại đặt
+header bằng $proxy_add_x_forwarded_for = NỐI THÊM vào header client gửi. Hệ quả: client
+tự chọn IP của mình → vượt giới hạn đăng nhập theo IP, và ghi IP giả vào danh sách
+phiên (refresh_tokens.ip_address).
+
+Kiểm bằng nginx thật (cấu hình production, chứng chỉ tự ký tạm, upstream giả tên
+`backend` in lại header nó nhận):
+
+  CẤU HÌNH CŨ
+  -- client không gửi X-Forwarded-For
+  x-forwarded-for=172.19.0.1 x-real-ip=172.19.0.1
+  -- client gửi X-Forwarded-For: 6.6.6.6
+  x-forwarded-for=6.6.6.6, 172.19.0.1 x-real-ip=172.19.0.1     ← uvicorn đọc 6.6.6.6
+
+  CẤU HÌNH MỚI (proxy_set_header X-Forwarded-For $remote_addr)
+  -- client không gửi X-Forwarded-For
+  x-forwarded-for=172.19.0.1 x-real-ip=172.19.0.1
+  -- client gửi X-Forwarded-For: 6.6.6.6
+  x-forwarded-for=172.19.0.1 x-real-ip=172.19.0.1
+
+nginx là bước đầu tiên (không CDN phía trước) nên ghi đè là đúng. Nếu sau này đặt
+CDN trước nginx thì phải lấy IP từ header của CDN qua set_real_ip_from — đã ghi chú
+ngay trong infra/nginx/snippets/proxy.conf.
+
+==============================================================================
+4. LỖI (c): /_next/static/ KHÔNG CÓ HEADER BẢO MẬT
+==============================================================================
+nginx chỉ kế thừa add_header từ cấp ngoài khi cấp trong KHÔNG có add_header nào.
+location /_next/static/ có một dòng Cache-Control → mất sạch HSTS, nosniff, X-Frame-
+Options... Kiểm bằng nginx thật (upstream không tồn tại nên 502, header `always` vẫn ra):
+
+  TRƯỚC
+  == https /khoa-hoc                       == https /_next/static/chunks/x.js
+  HTTP/1.1 502 Bad Gateway                 HTTP/1.1 502 Bad Gateway
+  Server: nginx/1.27.5                     Server: nginx/1.27.5
+  Strict-Transport-Security: ...           (không có header bảo mật nào)
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: ...
+  Permissions-Policy: ...
+
+  SAU (cả hai đường dẫn giống hệt nhau)
+  Server: nginx                            ← server_tokens off
+  Strict-Transport-Security: max-age=63072000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'
+    'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:
+    https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self'
+    https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self';
+    form-action 'self'; frame-ancestors 'none'
+
+  nginx -t: syntax is ok / test is successful (cả trước lẫn sau)
+
+CSP đầy đủ để Report-Only có chủ đích: chỉ bản build production chạy trên trình duyệt
+thật mới cho biết chính sách có làm gãy trang nào không (dev server `next dev` chạy
+code lúc runtime nên không đại diện được). Bật enforce sau khi luồng vàng chạy trên tên
+miền thật mà console không có vi phạm — đã ghi thành việc ở Phase 6.
+
+==============================================================================
+5. CORS, JWT_SECRET, SCHEMA API — LỖI (e)
+==============================================================================
+  - CORS_ORIGINS phải là origin thật: từ chối "*" (Starlette trả lời request kèm
+    credentials từ BẤT KỲ trang nào bằng cách phản chiếu origin của trang đó), từ chối
+    origin có đường dẫn hoặc "/" cuối (không trình duyệt nào gửi → khớp với không gì).
+  - allow_methods / allow_headers: từ "*" về đúng thứ frontend gửi
+    (GET POST PUT PATCH DELETE; Authorization, Content-Type).
+  - JWT_SECRET ở production phải ≥ 32 ký tự (HS256 chỉ mạnh bằng khóa; có một access
+    token bất kỳ là đoán khóa offline được). Runbook: openssl rand -hex 32 → 64 ký tự.
+  - Production không còn phục vụ /openapi.json, /docs, /redoc.
+
+Test: backend/tests/test_config.py (+6 ca) và backend/tests/api/test_http_hardening.py
+(preflight từ origin hợp lệ được cấp, từ origin lạ 400 không có ACAO, GET từ origin lạ
+không có ACAO, header lạ bị từ chối, 3 đường dẫn schema 404 ở production, dev vẫn có).
+  20 passed in 2.44s
+
+==============================================================================
+6. SECRETS — VÀ LỖI (d)
+==============================================================================
+Cách quét: lấy GIÁ TRỊ THẬT của từng biến bí mật trong infra/.env (gitignored), bỏ \r,
+tìm trong mọi tệp đang track (git grep -F) và trong TOÀN BỘ lịch sử (git log --all -S).
+Chỉ in tên biến + kết quả, không in giá trị.
+
+  GEMINI_API_KEY     len=53  tracked=0  history=0
+  VNPAY_TMN_CODE     len=8   tracked=0  history=0
+  VNPAY_HASH_SECRET  len=32  tracked=0  history=0
+  NGROK_AUTHTOKEN    len=49  tracked=0  history=0
+  MINIO_ROOT_PASSWORD, POSTGRES_PASSWORD: có trong repo — là giá trị mặc định của máy
+    dev, nằm trong .env.example có chủ đích; production lấy từ .env.prod.
+  R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY: trống (dev dùng MinIO).
+
+Quét thêm theo mẫu định dạng khóa (AIza…, AQ.…, GOCSPX-…, AKIA…, ghp_…, PRIVATE KEY,
+JWT eyJ….eyJ….) trên cây hiện tại và toàn bộ diff lịch sử: 0 kết quả. Chuỗi VNPay duy
+nhất trong repo là vnp_TmnCode=DEMOCODE trong test.
+.gitignore phủ infra/.env, backend/.env, infra/.env.prod. Repo GitHub: PRIVATE.
+
+Lỗi (d): runbook dặn `SEED_ADMIN_PASSWORD='...' ./scripts/deploy.sh --seed`, nhưng
+deploy.sh gọi `docker compose run --rm backend python -m scripts.seed` không kèm -e —
+`compose run` chỉ đưa vào container biến của service, nên seed không bao giờ thấy mật
+khẩu đã đặt và tạo admin với `devpath-admin` (có trong repo). Seed chỉ in cảnh báo SAU
+khi đã tạo tài khoản. Sửa: deploy.sh truyền `-e SEED_ADMIN_PASSWORD -e
+SEED_INSTRUCTOR_PASSWORD`; seed thoát trước khi ghi gì nếu ENV=production mà thiếu một
+trong hai. Test: tests/test_seed_data.py (+5 ca, gồm một ca đọc deploy.sh).
+
+==============================================================================
+7. ĐÃ BIẾT VÀ CHẤP NHẬN
+==============================================================================
+  - Giới hạn theo email cho phép người lạ giữ cửa đăng nhập bằng mật khẩu của MỘT địa
+    chỉ đóng trong 15 phút — cái giá của việc chặn đoán mật khẩu, trả bằng phút; đăng
+    nhập Google vẫn mở.
+  - Limiter "fail open" khi Redis lỗi (giữ nguyên quyết định Phase 3): Redis cũng là
+    broker Celery, Redis chết thì nộp bài vẫn nhận 503 ở bước xếp hàng.
+  - Đăng ký trả EMAIL_ALREADY_REGISTERED cho email đã có — lộ "email này là thành
+    viên", chấp nhận như mọi nền tảng học trực tuyến (đổi lại người dùng biết phải
+    đăng nhập); đã có giới hạn 50/giờ/IP chặn dò hàng loạt.
+  - CSP còn 'unsafe-inline' cho script (Next chèn bootstrap inline; nonce cần
+    middleware riêng) và connect-src https: (host bucket tùy triển khai).
+  - Tài khoản học viên seed (devpath-learner / devpath-buyer) có mật khẩu trong repo;
+    là dữ liệu demo, Phase 6 đã có việc gỡ seed_interactions trước buổi bảo vệ.
+
+Việc kế tiếp trong plan: chạy /security-review trên toàn bộ code (task 2 của Phase 6).

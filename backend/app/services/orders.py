@@ -35,11 +35,11 @@ never heard of it.
 import secrets
 import uuid
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from fastapi import status
-from sqlalchemy import Select, delete, select
+from sqlalchemy import Select, delete, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -49,6 +49,7 @@ from app.models import (
     Cart,
     CartItem,
     Category,
+    Coupon,
     Course,
     Order,
     OrderItem,
@@ -89,6 +90,19 @@ class OrderNotPayableError(DomainError):
 
     status_code = status.HTTP_409_CONFLICT
     code = "ORDER_NOT_PAYABLE"
+
+
+class OrderExpiredError(DomainError):
+    """Still pending, but no longer payable as it was placed.
+
+    Its window ran out, or something it was priced on has gone since: the
+    coupon ended, ran out or was deleted, or a course left the shop. One code
+    for all of them -- the way forward is the same, a fresh checkout from the
+    cart, which still holds the courses -- and a message that says which.
+    """
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "ORDER_EXPIRED"
 
 
 class PaymentNotConfiguredError(DomainError):
@@ -286,14 +300,18 @@ async def payment_url(
     """A signed VNPay URL for one of the caller's pending orders.
 
     Re-requestable on purpose: a person who closed the bank's page has an order
-    sitting there and needs a way back to it, and building the URL again costs
-    nothing and changes nothing.
+    sitting there and needs a way back to it. But only inside the order's
+    window, and only while what it was priced on still stands -- see
+    `_minutes_left_to_pay`.
     """
+    now = now or datetime.now(UTC)
     view = await get_for_user(session, code, user)
     order = view.order
 
     if order.status != "pending":
         raise OrderNotPayableError("Đơn hàng này không còn chờ thanh toán")
+
+    minutes_left = await _minutes_left_to_pay(session, order, settings=settings, now=now)
 
     if not settings.vnpay_enabled:
         raise PaymentNotConfiguredError(
@@ -307,8 +325,10 @@ async def payment_url(
         code=order.code,
         amount=order.total,
         ip_address=ip_address,
-        now=now or datetime.now(UTC),
-        expire_minutes=settings.vnpay_expire_minutes,
+        now=now,
+        # Never past the order's own deadline: a URL signed in its last five
+        # minutes gets five minutes.
+        expire_minutes=min(settings.vnpay_expire_minutes, minutes_left),
     )
 
     return vnpay.payment_url(
@@ -316,6 +336,64 @@ async def payment_url(
         secret=settings.vnpay_hash_secret,
         parameters=parameters,
     )
+
+
+async def _minutes_left_to_pay(
+    session: AsyncSession, order: Order, *, settings: Settings, now: datetime
+) -> int:
+    """Whole minutes before the order stops being payable; refuses if none.
+
+    The order froze its prices and its discount when it was placed, and uses
+    of a coupon are only counted when money arrives. So the checks that ran at
+    checkout are run again here, on every URL: otherwise any number of orders
+    placed while a code was live could be paid after an admin ended it, after
+    its last use was taken, or after it was deleted.
+
+    Nothing is cancelled. The IPN for a payment begun inside the window may
+    land after it, and money that has moved is honoured -- this only stops new
+    payments from starting.
+    """
+    window = settings.order_payment_window_minutes
+    deadline = order.created_at + timedelta(minutes=window)
+    minutes_left = int((deadline - now).total_seconds() // 60)
+    if minutes_left < 1:
+        raise OrderExpiredError(
+            f"Đơn hàng đã quá {window} phút chưa thanh toán nên không thanh toán tiếp "
+            "được nữa. Vào giỏ hàng để đặt lại nhé."
+        )
+
+    if order.coupon_code is not None:
+        coupon = (
+            await session.get(Coupon, order.coupon_id) if order.coupon_id is not None else None
+        )
+        if coupon is None:
+            raise OrderExpiredError(
+                f"Mã giảm giá {order.coupon_code} không còn nữa. "
+                "Vào giỏ hàng để đặt lại nhé."
+            )
+        try:
+            coupons_service.assert_live(coupon, now=now)
+        except DomainError as exc:
+            raise OrderExpiredError(
+                f"Mã {order.coupon_code} không còn dùng được: {exc.message}. "
+                "Vào giỏ hàng để đặt lại nhé."
+            ) from exc
+
+    withdrawn = await session.scalar(
+        select(Course.title)
+        .join(OrderItem, OrderItem.course_id == Course.id)
+        .where(
+            OrderItem.order_id == order.id,
+            or_(Course.status != "published", Course.deleted_at.is_not(None)),
+        )
+        .limit(1)
+    )
+    if withdrawn is not None:
+        raise OrderExpiredError(
+            f"Khóa học “{withdrawn}” đã ngừng bán. Vào giỏ hàng để đặt lại nhé."
+        )
+
+    return minutes_left
 
 
 async def _clear_purchased_lines(

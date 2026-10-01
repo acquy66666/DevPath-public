@@ -125,6 +125,12 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      # Plain `node --test` on the TypeScript files, types stripped: no test
+      # framework to install for a handful of pure functions. The E2E suite is
+      # a separate job once it exists.
+      - name: Unit tests
+        run: npm test
+
       # No separate `tsc --noEmit` step. Next generates the global types the
       # app relies on (LayoutProps, PageProps) into .next/types during the
       # build, so type-checking ahead of it fails on a clean checkout -- and

@@ -7,7 +7,7 @@
 ## Kiểm thử & bảo mật
 
 - [x] Rà soát bảo mật: authorization mọi endpoint (ownership!), rate limit auth + submit + chat, CORS, security headers, secrets không nằm trong repo — xong 01/10: test ma trận 159 route, 0 lỗ phân quyền; sửa 5 lỗi thật (IP giả qua `X-Forwarded-For`, auth chưa có rate limit, `/_next/static/` mất header, `deploy.sh --seed` không chuyển mật khẩu seed vào container, CORS `*`/JWT ngắn/schema mở ở production) — `docs/report/assets/phase-6/security-review.txt`
-- [ ] Chạy `/security-review` trên toàn bộ code và xử lý findings
+- [x] Chạy `/security-review` trên toàn bộ code và xử lý findings — xong 01/10: rà 4 mảng song song + lọc dương tính giả độc lập; 3 lỗ thật đã sửa kèm test (HIGH chiếm trước tài khoản qua liên kết Google, MEDIUM đơn chờ thanh toán không hết hạn → vượt giới hạn coupon, MEDIUM open redirect `?next=/\evil`); sandbox/storage/SSRF/SQL/XSS/hạ tầng sạch — `docs/report/assets/phase-6/security-review-codebase.txt`
 - [ ] E2E test các luồng vàng (Playwright): đăng ký → mua → học → nộp code → chứng chỉ
 - [ ] Load test nhẹ (locust/k6): trang danh sách, submit code 20 đồng thời — số liệu vào `docs/report/assets/phase-6/load-test.md`
 - [ ] Sửa bug UX tồn đọng; empty state, loading, mobile responsive các trang chính

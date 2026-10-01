@@ -467,3 +467,15 @@ Task 1 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/security-revie
 **nginx ghi đè X-Forwarded-For thay vì nối thêm** — uvicorn tin mọi proxy (`*`) và lấy phần tử đầu danh sách; nối thêm thì phần tử đầu là thứ client tự viết. Đúng chừng nào nginx còn là bước đầu tiên; đặt CDN phía trước thì phải đổi.
 
 **CSP đầy đủ ở chế độ Report-Only** — chỉ bản build production trên trình duyệt thật mới cho biết chính sách có làm gãy trang không; bật enforce sau khi luồng vàng chạy trên tên miền thật với console sạch. `frame-ancestors 'none'` thì enforce từ trước.
+
+## Xử lý kết quả /security-review (01/10/2026)
+
+Task 2 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/security-review-codebase.txt`.
+
+**Google chứng minh email thì mật khẩu chưa ai chứng minh bị xóa** — đăng ký không gửi thư xác nhận, nên mật khẩu trên một tài khoản có thể do người khác đặt trước (pre-account takeover). Chọn xóa mật khẩu + thu hồi phiên khi liên kết thay vì từ chối liên kết: từ chối thì chủ thật của email bị khóa ngoài vĩnh viễn (không có luồng quên mật khẩu). Trả giá: người tự đăng ký bằng mật khẩu rồi dùng Google sẽ mất đăng nhập bằng mật khẩu, chỉ còn Google.
+
+**Đơn có hạn thanh toán 30 phút, nhưng không bao giờ bị hủy** — hạn chặn việc *bắt đầu* thanh toán mới (không ký URL mới, URL nào cũng hết hạn trước hạn đơn), còn IPN tới sau hạn cho một lần trả tiền bắt đầu trong hạn vẫn được ghi nhận. Hủy đơn lúc quá hạn thì một IPN đến trễ sẽ gặp đơn đã hủy: tiền đã chuyển mà không được ghi danh.
+
+**Kiểm `?next=` bằng chính bộ phân tích URL thay vì so tiền tố** — trình duyệt đọc `/\evil` và `/<tab>/evil` thành `//evil`; danh sách ký tự cấm luôn thiếu một ký tự. Phân giải như router, giữ khi origin không đổi, trả về đường dẫn đã phân giải.
+
+**Test đơn vị frontend bằng `node --test`, không cài Vitest** — Node chạy TypeScript bằng cách bỏ kiểu; một hàm thuần không cần cả framework. Tệp `*.test.ts` nằm ngoài tsconfig vì Node cần import có đuôi `.ts` còn cấu hình bundler của Next từ chối.

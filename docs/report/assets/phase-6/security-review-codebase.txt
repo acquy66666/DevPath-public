@@ -1,0 +1,191 @@
+RÀ SOÁT BẢO MẬT TOÀN BỘ CODE (/security-review) — PHÁT HIỆN VÀ XỬ LÝ
+Ngày chạy: 01/10/2026 · nhánh feature/security-review-findings (tách từ feature/security-audit)
+Phase 6, task 2: "Chạy /security-review trên toàn bộ code và xử lý findings"
+
+Kết quả gọn: 3 lỗ hổng thật, cả ba đã sửa kèm test:
+  (1) HIGH   — chiếm trước tài khoản (pre-account takeover) qua liên kết Google
+  (2) MEDIUM — đơn chờ thanh toán không bao giờ hết hạn → vượt giới hạn coupon / giá cũ
+  (3) MEDIUM — open redirect sau đăng nhập qua ?next=/\evil.example
+Không có lỗ nào ở sandbox chấm bài, storage/upload, SSRF, SQL, XSS hay hạ tầng.
+
+==============================================================================
+0. CÁCH LÀM
+==============================================================================
+Skill /security-review dựng sẵn cho diff của một nhánh; ở đây chạy trên TOÀN BỘ code,
+chia 4 mảng rà song song, mỗi mảng một lượt đọc code độc lập:
+  A. xác thực, phiên, logic phân quyền, thanh toán/IPN/đơn/coupon, OAuth Google,
+     chứng chỉ
+  B. file & storage (presigned upload, khóa object), ffmpeg, WeasyPrint, SSRF, SQL
+     thô, lộ dữ liệu trong response/log
+  C. sandbox chấm bài + worker Celery (đối chiếu checklist .claude/skills/
+     sandbox-grading), WebSocket tiến độ, rò test ẩn
+  D. frontend (XSS, Markdown, URL do người dùng nhập, token) + hạ tầng (compose,
+     nginx, Dockerfile, CI)
+Ngưỡng báo cáo: chỉ những gì tin > 80 % là khai thác được thật; loại trừ DoS, rate
+limit, thiếu hardening chung chung, thư viện cũ, tài liệu.
+Mỗi phát hiện ứng viên qua một lượt LỌC DƯƠNG TÍNH GIẢ độc lập (đọc lại code từ đầu,
+không tin mô tả), giữ lại khi độ tin cậy ≥ 8/10.
+
+  Mảng  Ứng viên  Qua lọc
+  A        3        2 (+1 trùng với D)
+  B        0        –
+  C        0        –
+  D        1        1
+  -----  -------  -------
+  Tổng     3 lỗ hổng riêng biệt, cả 3 được xác nhận 8/10
+
+==============================================================================
+1. HIGH — CHIẾM TRƯỚC TÀI KHOẢN QUA LIÊN KẾT GOOGLE
+==============================================================================
+Vị trí: backend/app/services/auth.py, sign_in_with_google (nhánh liên kết) + register_user
+Mẫu tấn công đã biết: "classic-federated merge pre-account takeover"
+(Sudhodanan & Paverd, 2022).
+
+Đăng ký không chứng minh quyền sở hữu email (không có thư xác nhận, email_verified_at
+để NULL). Khi một sub Google mới đến với email Google đã xác thực, code liên kết vào
+tài khoản đang giữ email đó, GIỮ NGUYÊN mật khẩu, GIỮ các phiên cũ, và đánh dấu email
+"đã xác thực".
+
+Kịch bản:
+  1. Kẻ tấn công: POST /api/v1/auth/register {"email":"victim@gmail.com",
+     "password":"<của kẻ tấn công>", ...} → 201.
+  2. Nạn nhân sau đó bấm "Đăng nhập với Google" (hoặc đăng ký bằng mật khẩu bị 409
+     EMAIL_ALREADY_REGISTERED rồi chuyển sang Google) → được liên kết êm, dùng tài
+     khoản như của mình: mua khóa, ghi chú, có thể lên giảng viên.
+  3. Kẻ tấn công đăng nhập bằng email + mật khẩu của mình bất cứ lúc nào → toàn quyền.
+     Nạn nhân không gỡ được: đổi mật khẩu cần mật khẩu hiện tại, không có luồng quên
+     mật khẩu.
+Hành vi lỗi còn được GHIM bởi một test cũ ("the password still works").
+Điều kiện: đăng nhập Google bật — đang tắt mặc định, nhưng Phase 6 có task bật nó
+trên tên miền thật.
+
+Sửa: khi Google chứng minh một email mà nền tảng chưa từng chứng minh
+(email_verified_at IS NULL), xóa password_hash và thu hồi mọi phiên của tài khoản
+trước khi liên kết; phiên Google vừa mở vẫn sống. Tài khoản đã xác thực email (chưa
+có trường hợp nào hôm nay) giữ mật khẩu. Kèm: sub Google đã biết đổi sang email
+CHƯA xác thực thì không đi theo nữa (tránh chiếm chỗ địa chỉ của người khác).
+Test: backend/tests/test_google_sign_in.py
+  - liên kết vào tài khoản có sẵn (thay test cũ ghim hành vi lỗi)
+  - email chưa chứng minh → mật khẩu bị xóa, phiên cũ bị thu hồi, phiên Google còn
+    sống, đăng nhập bằng mật khẩu cũ → INVALID_CREDENTIALS
+  - email đã chứng minh → giữ mật khẩu và phiên
+  - đổi sang email chưa xác thực → không đi theo
+  17 passed (trước khi sửa: 2 failed, 15 passed)
+Commit: a9586f7
+
+==============================================================================
+2. MEDIUM — ĐƠN CHỜ THANH TOÁN KHÔNG HẾT HẠN
+==============================================================================
+Vị trí: backend/app/services/orders.py (create_from_cart, payment_url, IPN),
+services/coupons.py (consume)
+
+Đơn đóng băng giá và phần giảm lúc đặt; lượt coupon chỉ được đếm khi tiền về;
+POST /orders/{code}/payment-url ký lại URL mới (hạn 15 phút) cho đơn pending bất cứ
+lúc nào, với số tiền cũ. Không gì chuyển đơn pending sang cancelled.
+Kịch bản: khi SALE50 (max_uses=100) còn hiệu lực, nhiều tài khoản mỗi người đặt
+một đơn (không tốn lượt). Tháng sau — mã đã hết hạn / bị admin "Kết thúc" / hết
+lượt / bị xóa, hoặc giá khóa đã tăng, hoặc khóa đã ngừng bán — mỗi người xin URL
+mới và trả giá cũ; IPN khớp số tiền đóng băng, ghi danh; lỗi "hết lượt" ở IPN bị
+bỏ qua (đúng, vì tiền đã chuyển).
+Mâu thuẫn với ý định có ghi trong code: comment của vnpay_expire_minutes ("đủ ngắn
+để một link cũ không trả được tháng sau với giá tháng trước").
+
+Sửa: ORDER_PAYMENT_WINDOW_MINUTES = 30. payment-url trả 409 ORDER_EXPIRED (kèm câu
+nói rõ lý do) khi đơn quá 30 phút, khi coupon của đơn không qua lại assert_live
+(chưa mở / hết hạn / hết lượt) hoặc đã bị xóa, hoặc khi một khóa trong đơn đã
+ngừng bán; vnp_ExpireDate của mọi URL không vượt hạn của đơn. KHÔNG hủy đơn và
+KHÔNG đổi IPN: một lần thanh toán bắt đầu trong hạn mà IPN tới sau hạn vẫn được
+ghi nhận — hạn chỉ chặn việc BẮT ĐẦU thanh toán mới.
+Test: backend/tests/api/test_orders.py, mục "A pending order does not wait forever"
+  quá hạn → 409, đơn vẫn pending; IPN tới sau hạn cho tiền đã chuyển → 00;
+  URL ký khi đơn còn 5 phút có hạn ≤ hạn đơn; coupon bị kết thúc / hết lượt / bị xóa
+  sau khi đặt → 409; khóa bị hạ về nháp sau khi đặt → 409; đơn trong hạn đủ điều
+  kiện → 200 với đúng số tiền.
+  Trước khi sửa: 7 failed, 1 passed. Sau: test_orders + test_vnpay 57 passed;
+  cùng coupon/admin coupon/ma trận phân quyền 193 passed.
+Commit: fc0dc84
+
+==============================================================================
+3. MEDIUM — OPEN REDIRECT SAU ĐĂNG NHẬP QUA ?next=
+==============================================================================
+Vị trí: frontend/lib/auth/next-path.ts (dùng ở /dang-nhap và /dang-ky, đi tới
+router.push trong login-form / register-form)
+
+Chốt chặn chỉ từ chối chuỗi không bắt đầu bằng "/" hoặc bắt đầu bằng "//".
+"/\evil.example" và "/<TAB>/evil.example" lọt qua, nhưng trình duyệt đọc cả hai
+thành "//evil.example" (dấu \ tính như / trong URL http; tab/xuống dòng bị bỏ trước
+khi phân tích). Đã lần theo router của Next 16.3.1: push() chỉ chặn javascript:,
+URL khác origin → điều hướng cứng ra ngoài.
+Kiểm bằng bộ phân tích URL WHATWG của Node, base https://site.test:
+  "/\evil.example"   → https://evil.example/
+  "/\t/evil.example" → https://evil.example/
+  "/\n/evil.example" → https://evil.example/
+Kịch bản: link https://<site>/dang-nhap?next=/%5Cevil.example/dang-nhap → nạn nhân
+đăng nhập thật trên trang thật → bị đưa sang trang giả "phiên hết hạn, đăng nhập
+lại" để lấy mật khẩu.
+
+Sửa: phân giải giá trị đúng như router sẽ làm (new URL(value, origin-giả)), chỉ giữ
+khi origin không đổi, và trả về đường dẫn đã phân giải — router nhận đúng thứ đã
+được kiểm.
+Test: frontend/lib/auth/next-path.test.ts — test đơn vị đầu tiên của frontend, chạy
+bằng `node --test` trên TypeScript (Node bỏ kiểu, không cần cài framework);
+`npm test` + một bước mới trong CI.
+  Trước khi sửa: ca "đường dẫn trình duyệt đọc thành host khác" đỏ ở "/\evil.example".
+  Sau: tests 4, pass 4, fail 0.
+Commit: 1c8b050
+
+==============================================================================
+4. ĐÃ RÀ VÀ SẠCH (tóm tắt)
+==============================================================================
+Sandbox chấm bài (đối chiếu đủ 9 bất biến của checklist sandbox-grading):
+  - mọi lệnh docker là danh sách argv qua subprocess, không shell; tên container
+    uuid4; image và lệnh là hằng; giới hạn thời gian/bộ nhớ là int có cận
+    (Pydantic + CHECK)
+  - code lưu thành main.py cố định, chỉ thư mục code/ được mount read-only; stdin
+    ngoài mount; đáp án không bao giờ ghi ra đĩa hay vào container
+  - mỗi test case một container mới chỉ nhận stdin của case đó; --network none, không
+    truyền env của worker vào sandbox
+  - không có giao thức đánh dấu trong stdout để giả AC; output bị cắt không bao giờ khớp
+  - stdout test ẩn không lưu, không trả; chạy thử không nạp test ẩn; sự kiện
+    WebSocket chỉ mang vị trí/is_hidden/verdict/thời gian
+  - WebSocket: token qua subprotocol, cùng hàm giải mã với HTTP; không gửi gì trước
+    khi snapshot đầu qua kiểm quyền
+  - Celery chỉ JSON (không pickle); tham số task là UUID do server sinh
+File/storage/SSRF/SQL/dữ liệu:
+  - presigned PUT ký kèm Content-Type; danh sách loại ảnh/video cho phép, không SVG;
+    transcript lưu text/plain do server đặt; video gốc không bao giờ được phục vụ
+  - xác nhận avatar/banner kiểm tiền tố khóa; video không nhận khóa từ client
+  - ffmpeg/ffprobe gọi bằng argv; WeasyPrint: mọi trường người dùng qua html.escape
+  - không có HTTP phía server dựng từ input người dùng; Google id_token kiểm chữ ký,
+    audience, issuer, RS256
+  - một chỗ literal_column(f"...") duy nhất có whitelist; tìm kiếm full-text dùng
+    tham số ràng buộc
+  - email chỉ trả cho chính chủ (/auth/me) và admin; không traceback ra client
+Frontend/hạ tầng:
+  - không dangerouslySetInnerHTML/innerHTML; Markdown không rehype-raw, giữ
+    urlTransform mặc định; React 19.2.8 chặn href javascript:
+  - access token chỉ trong state React; WebSocket gửi token qua header subprotocol
+  - production chỉ nginx mở cổng; không container privileged; image chạy non-root;
+    CI không có pull_request_target hay ${{ }} không tin cậy trong run:
+
+==============================================================================
+5. GHI NHẬN DƯỚI NGƯỠNG (không phải lỗ hổng đã xác nhận)
+==============================================================================
+  - Hoàn thành khóa bằng tự đánh dấu: PUT /lessons/{id}/progress {"completed":true}
+    chạy với mọi loại bài, kể cả quiz và bài code → nhận chứng chỉ công khai mà
+    không cần làm đạt. Nút "Đánh dấu hoàn thành" có cho mọi loại bài nên có vẻ là
+    chủ đích kiểu Udemy — CẦN CHỐT: chứng chỉ có nên đòi đạt quiz/AC không.
+  - VNPay sandbox trên máy chủ công khai: ai cũng "trả tiền" được bằng thẻ test công
+    khai của VNPay → mọi khóa trả phí thực chất miễn phí. Chấp nhận cho demo khóa
+    luận; ghi vào lưu ý triển khai.
+  - Sửa nội dung sau khi được duyệt không phải duyệt lại (PATCH khóa học/mục lục vẫn
+    chạy trên khóa đã xuất bản) — kiểm duyệt chỉ chặn lần xuất bản đầu.
+  - Kênh dò input test ẩn qua thời gian chạy từng case (time.sleep theo ký tự input;
+    vài bit/case/lần nộp, trần 40 lần/giờ) — vốn có ở mọi hệ chấm hiển thị verdict
+    từng case; giảm được bằng cách làm tròn/giấu run_time_ms của case ẩn.
+  - Stack dev dùng JWT_SECRET mặc định; khi tunnel ngrok bật (trỏ vào backend dev
+    để nhận IPN) ai biết giá trị mặc định ký được token admin. Repo private, tunnel
+    chỉ bật lúc thử IPN — khuyến nghị đặt JWT_SECRET ngẫu nhiên trong infra/.env.
+  - Tách thành task riêng: byte NUL trong stdout test mẫu làm bài nộp thành SE thay
+    vì WA (worker chấm); ffmpeg chưa có -protocol_whitelist và đuôi tệp video chưa
+    được kiểm (gia cố, ffmpeg hiện đại đã chặn mặc định).

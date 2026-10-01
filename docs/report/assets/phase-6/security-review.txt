@@ -89,6 +89,20 @@ Thêm mới (Redis, cùng limiter; 429 AUTH_RATE_LIMITED + Retry-After):
   - Số cho IP được chọn cho phòng máy sau một NAT: 40 người đăng nhập cùng lúc, mỗi
     người gõ sai một lần, vẫn dưới ngưỡng (test ghim: per-IP ≥ 80, đăng ký ≥ 40).
 
+Chạy thật trên stack dev (Redis thật, backend tự reload), email không tồn tại, sai mật
+khẩu 11 lần liên tiếp:
+  lần 1–10: 401
+  lần 11:   429
+  HTTP/1.1 429 Too Many Requests
+  retry-after: 888
+  {"detail":{"code":"AUTH_RATE_LIMITED","message":"Email này vừa được thử đăng nhập quá
+   nhiều lần. Thử lại sau khoảng 15 phút.","retry_after":888}}
+  Redis: auth:login:email:thu-gioi-han@devpath.example, auth:login:ip:172.18.0.1 (đã xóa sau)
+Lưu ý cho task E2E: trên stack dev mọi request đến từ cùng một IP gateway Docker, và một
+bộ E2E đăng nhập lặp cùng một tài khoản sẽ chạm 10 lần/15 phút — nâng
+LOGIN_ATTEMPTS_PER_EMAIL trong env của stack chạy E2E, hoặc đăng nhập một lần rồi dùng lại
+storageState của Playwright.
+
 Test: backend/tests/api/test_auth_rate_limit.py — 8 passed in 13.34s
   đoán một tài khoản bị cắt; khóa theo email không đổi khi viết hoa; giữ qua nhiều IP;
   rải nhiều tài khoản từ một IP bị cắt mà IP khác không bị; hết cửa sổ thì mở lại;

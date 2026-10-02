@@ -288,7 +288,7 @@ jobs:
           fi
 
       - name: Shell scripts
-        run: shellcheck infra/scripts/*.sh backend/scripts/*.sh
+        run: shellcheck infra/scripts/*.sh infra/loadtest/*.sh backend/scripts/*.sh
 
       # Runs the image's own entrypoint, so envsubst fills the template exactly
       # as it will on the server. The self-signed certificate mirrors what

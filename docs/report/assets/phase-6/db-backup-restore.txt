@@ -1,0 +1,205 @@
+BACKUP CSDL TỰ ĐỘNG VÀ DIỄN TẬP KHÔI PHỤC THẬT
+Ngày làm: 02/10/2026 · nhánh feature/db-backup · stack dev (infra/docker-compose.yml)
+Phase 6, task: "Backup DB tự động (cron pg_dump → R2); script restore đã thử khôi phục thật
+một lần"
+
+Tệp: infra/backup/{Dockerfile, devpath_backup.py, test_devpath_backup.py}
+     infra/scripts/restore-db.sh · service `backup` trong docker-compose.yml (profile) và
+     docker-compose.prod.yml · runbook docs/huong-dan-deploy-vps.md mục 2c, 7b
+
+==============================================================================
+1. THIẾT KẾ — VÀ VÌ SAO KHÔNG LÀM CÁCH ĐƠN GIẢN HƠN
+==============================================================================
+"cron pg_dump → R2" làm thành một service compose chứ không phải crontab trên host: cùng
+cách certbot đang chạy, nằm trong repo, `up` là có, VPS reboot là tự lên — không có bước
+tay nào trên máy chủ để quên.
+
+  Image      FROM pgvector/pgvector:pg16 — CHÍNH image của service postgres, cộng python3
+             và python3-boto3 từ apt của Debian (không pip). pg_dump/pg_restore vì thế luôn
+             cùng major version với server (đo: pg_dump 16.15 ↔ server 16): pg_dump cũ hơn
+             server thì từ chối chạy, mới hơn thì viết ra bản server cũ có thể không đọc —
+             lỗi kiểu đó chỉ lộ vào đêm cần khôi phục. Không cài postgresql-client vào image
+             backend (Debian bookworm chỉ có bản 15, trixie bản 17 — đều lệch server).
+  Lịch       mỗi ngày BACKUP_HOUR = 02:00 giờ VN (trước các job beat 02:30–03:30). Khởi động
+             mà bản mới nhất > 24 giờ → chạy ngay (máy tắt đúng giờ, hay đêm trước lỗi).
+             Lỗi → thử lại sau 30 phút.
+  Nơi lưu    bucket RIÊNG, PRIVATE, mặc định `devpath-backups`. Bucket media cho tải ẩn
+             danh (player lấy video), bản dump chứa email + hash mật khẩu mọi người dùng →
+             service từ chối nếu BACKUP_BUCKET trùng R2_BUCKET. Thông tin đăng nhập:
+             BACKUP_* nếu có (khuyên dùng token chỉ cấp cho bucket này), không thì R2_* của
+             app, không thì — chỉ ngoài production — MinIO của stack dev. Production không
+             có nơi lưu → không đoán, báo lỗi.
+  Mỗi bản    pg_dump --format=custom → đọc lại bằng `pg_restore --list` (phải thấy
+             alembic_version) → sha256 → tải lên kèm metadata sha256, database, phiên bản
+             pg_dump. Tên: postgres/<db>-<giờ UTC>.dump (sắp xếp được theo thời gian).
+  Xoay vòng  giữ BACKUP_KEEP = 14 bản mới nhất, THEO SỐ BẢN không theo tuổi: đồng hồ sai
+             hay một tháng không chạy cũng không làm nó xóa bản cuối. Chỉ xóa object do
+             chính nó đặt tên; keep < 1 bị từ chối.
+  Health     healthy khi bản thành công gần nhất < 26 giờ (dấu thời gian trong container),
+             hoặc BACKUP_ENABLED=false (cách DUY NHẤT để chạy production không backup mà
+             deploy.sh không dừng lại). Production thiếu nơi lưu: service đứng yên, nói lý
+             do mỗi 6 giờ, unhealthy — không restart liên tục.
+  Khôi phục  KHÔNG ghi đè CSDL đang chạy. restore-db.sh: (1) khôi phục vào CSDL phụ
+             <db>_restore_<giờ> trong lúc site vẫn chạy, kiểm sha256, in so sánh từng bảng;
+             (2) hỏi lại → dừng backend/worker/beat/grading-worker → ĐỔI TÊN: bản khôi phục
+             thành <db>, bản đang chạy cất thành <db>_before_restore_<giờ> (không xóa);
+             (3) bật lại, đợi healthy. Quay lui = đổi tên ngược.
+
+==============================================================================
+2. KIỂM THỬ TỰ ĐỘNG
+==============================================================================
+36 unit test (infra/backup/test_devpath_backup.py) cho phần service tự quyết lúc không
+ai nhìn: đặt/nhận tên object (bỏ qua object lạ, CSDL khác), xoay vòng (giữ đúng N bản
+mới nhất bất kể thứ tự liệt kê, nhiều trang, không bao giờ đụng CSDL khác), lịch (giờ VN
+qua ranh giới ngày, "đúng giờ" thì lần sau là ngày mai, chạy bù khi > 24 giờ), chọn nơi
+lưu (BACKUP_* > R2_* > MinIO dev; production thiếu → lỗi; bucket media → lỗi), tên CSDL
+phụ hợp lệ ≤ 63 ký tự, health (mới / quá 27 giờ / chưa có / tắt có chủ đích).
+Viết trước code (TDD): chạy lần đầu đỏ vì chưa có module, rồi 36 passed.
+CI: job backend chạy `ruff check` + pytest của infra/backup; job deploy config build image
+và kiểm nó chạy được trên Python 3.11 của chính image, và production thiếu nơi lưu bị từ
+chối. shellcheck đã phủ infra/scripts/*.sh (gồm restore-db.sh).
+
+==============================================================================
+3. DIỄN TẬP KHÔI PHỤC THẬT — 02/10/2026, stack dev, CSDL dev thật (16 MB, 41 bảng)
+==============================================================================
+3.1 Backup
+  $ docker compose --profile backup run --rm backup backup
+  20:03:03 đã tạo bucket devpath-backups (private)
+  20:03:03 xong postgres/devpath-20261002T130303Z.dump: 0.6 MB, 254 mục, sha256
+           a3cfbee7f504…, 0.4 s; xóa 0 bản cũ (giữ 14)
+
+3.2 Bản dump không ai ngoài service đọc được
+  GET ẩn danh http://localhost:9000/devpath-backups/postgres/devpath-…dump → 403
+  liệt kê ẩn danh bucket devpath-backups                                   → 403
+  (so sánh: bucket media trả 200 — công khai đúng như thiết kế, và đúng là lý do
+   backup không được nằm ở đó)
+
+3.3 Chụp checksum CSDL đang chạy ngay sau backup
+  Mỗi bảng: số dòng + md5 của mọi dòng theo thứ tự cố định
+  (string_agg(t::text order by t::text)) — 41 dòng, xem phụ lục.
+
+3.4 Khôi phục bằng đúng lệnh của sự cố thật, trả lời "y" khi được hỏi đổi CSDL
+  $ COMPOSE_FILE=docker-compose.yml ./scripts/restore-db.sh latest
+  20:03:32 tải postgres/devpath-20261002T130303Z.dump
+  20:03:32 khôi phục vào CSDL mới devpath_restore_20261002t130332z
+  20:03:33 devpath_restore_20261002t130332z: 41 bảng, 3234 dòng, alembic 5b10213a072e
+           (đang chạy: 41 bảng, 3234 dòng)
+  RESTORED=devpath_restore_20261002t130332z
+  ==> Stopping backend worker beat grading-worker
+  ==> Swapping
+  20:03:40 devpath_restore_20261002t130332z giờ là devpath; bản cũ giữ ở
+           devpath_before_restore_20261002t130340z
+  ==> Starting backend worker beat grading-worker
+  ==> Waiting for health
+  ==> Done.
+  Cả quy trình: 13:03:30Z → 13:03:54Z = 24 giây. Khôi phục vào CSDL phụ mất ~1 giây và
+  site vẫn chạy trong lúc đó; app chỉ dừng từ lúc stop tới lúc healthy lại (~20 giây,
+  phần lớn là backend khởi động và healthcheck).
+
+3.5 Đối chiếu sau khi đổi
+  CSDL đang chạy (bản khôi phục) vs checksum chụp ở 3.3:     41/41 bảng GIỐNG HỆT
+  CSDL đang chạy (bản khôi phục) vs bản cũ đã cất:            41/41 bảng GIỐNG HỆT
+  Schema (pg_dump --schema-only, 2.200 dòng mỗi bên): 107 index, 200 ràng buộc ở cả hai.
+    `diff` chỉ khác hai loại, đều không đổi nghĩa:
+    • Postgres in lại biểu thức CHECK/partial index khác chữ: bản gốc (tạo bằng DDL của
+      Alembic) in `(ARRAY['a'::varchar, …])::text[]`, bản khôi phục (tạo lại từ chính chữ
+      pg_dump in ra) in `ARRAY[('a'::varchar)::text, …]`; vài cặp ngoặc thừa. Cùng một
+      điều kiện.
+    • token `\restrict` ngẫu nhiên mỗi lần dump (tính năng bảo mật của pg_dump 16.10+).
+  Extension: pg_trgm 1.6, plpgsql 1.0, unaccent 1.1 giống nhau; vector 0.8.6 → 0.8.7.
+    Bản khôi phục chạy CREATE EXTENSION nên lấy phiên bản mới nhất có trong image hiện
+    tại; CSDL gốc được tạo khi image còn 0.8.6. Vô hại (ALTER EXTENSION vector UPDATE
+    làm đúng điều đó trên CSDL cũ) — nhưng là một khác biệt có thật, ghi lại.
+  Sequence: không có (khóa chính đều là UUID).
+
+3.6 App chạy trên CSDL đã khôi phục
+  docker compose ps: mọi service healthy · alembic current: 5b10213a072e (head)
+  GET /api/v1/health → ok · GET /api/v1/courses → total 24 · trang chủ 200
+  E2E luồng vàng (đăng ký → mua → học → nộp code chấm trong sandbox → chứng chỉ) trên
+  CSDL vừa khôi phục — ghi vào gần như mọi bảng, nên mọi ràng buộc/index/quyền mất trong
+  lúc khôi phục sẽ lộ ra ở đây:
+    ok 1 [chromium] › e2e\golden-flow.spec.ts › đăng ký → mua → học → nộp code → nhận
+    chứng chỉ (22.2s) — 1 passed (28.5s)
+
+3.7 Các hành vi còn lại, thấy tận mắt
+  serve, bucket đã có bản 20:03  → không chạy bù, "lần chạy tới: 2026-10-03 02:00 giờ
+                                   Việt Nam", health = 0
+  serve, bucket trống (diễn tập) → chạy ngay lúc 20:06:35, rồi hẹn 02:00 sáng mai,
+                                   health = 0
+  BACKUP_KEEP=2, ba bản liên tiếp → bản thứ ba "xóa 1 bản cũ (giữ 2)", còn đúng 2 bản
+  production, không có nơi lưu   → list: "Không biết lưu backup ở đâu: chưa có nơi lưu
+                                   backup: đặt BACKUP_* hoặc R2_* trong .env.prod, hoặc
+                                   BACKUP_ENABLED=false…", exit 1; health exit 1; serve
+                                   đứng yên (state=running, restarts=0) và nói lý do
+  production, BACKUP_ENABLED=false → health exit 0
+  BACKUP_BUCKET=devpath-media     → "…là bucket media (công khai) -- dùng một bucket
+                                   riêng, private", exit 1
+  swap không có --yes             → từ chối, exit 1
+
+3.8 Lỗi tìm ra trong lúc diễn tập, đã sửa
+  `docker compose stop backup` → container thoát mã 130 kèm traceback KeyboardInterrupt.
+  Image gốc khai STOPSIGNAL SIGINT (fast shutdown của Postgres); với Python đó là Ctrl-C,
+  không đi qua handler SIGTERM. Dockerfile đặt lại STOPSIGNAL SIGTERM → thoát mã 0.
+
+3.9 Dọn dẹp
+  Bản cũ devpath_before_restore_20261002t130340z: xóa SAU khi đối chiếu (3.5) — CSDL dev
+  từ đây chính là bản đã khôi phục. Bucket diễn tập devpath-backups-drill: xóa (2 object).
+  Bucket devpath-backups giữ 1 bản thật của CSDL dev.
+
+==============================================================================
+4. CHƯA LÀM / CỐ Ý KHÔNG LÀM
+==============================================================================
+  • Trên VPS thật: chưa có máy chủ (task "Dựng máy chủ thật" còn mở). Runbook mục 2c nêu
+    cách tạo bucket R2 private + token chỉ cấp cho bucket đó, hoặc BACKUP_ENABLED=false
+    khi chưa chốt nơi lưu (task "Quyết định storage cho production" còn mở).
+  • Backup bucket media: R2 tự lưu nhiều bản; backup lo CSDL — thứ duy nhất chỉ nằm trên
+    máy chủ.
+  • Mã hóa phía client: bucket private + token theo bucket + R2 mã hóa lúc lưu. Thêm một
+    khóa riêng là thêm một thứ có thể mất đúng lúc cần khôi phục.
+  • Cảnh báo khi backup hỏng: healthcheck đã báo unhealthy sau 26 giờ; đẩy nó thành thông
+    báo là việc của task "Monitoring tối thiểu".
+
+==============================================================================
+PHỤ LỤC — checksum 41 bảng (giống hệt ở CSDL trước backup, bản khôi phục, bản cũ)
+==============================================================================
+alembic_version 1 29645605725678dd4b33e215d37ec5df
+banners 3 654205f8bdc2d8f2f5cccdf3e8888eed
+bookmarks 0 d41d8cd98f00b204e9800998ecf8427e
+cart_items 9 adeaaf873baf4e0ff91b83fb315acc4d
+carts 45 c35769b4ca8d3cfea6078d501ad7e6e2
+categories 8 16b2f368ba07ceaafb353d97fee46167
+certificates 233 d8cd7c947e898b8dedb57bf355ba09d0
+chat_messages 32 80692f4851b5f26436d5afe8b4d6af5a
+chat_sessions 4 854c41ab89d27c07972490c8e7fa20d1
+code_exercises 1 737f00ac74210a3e0339fb8f29786d2a
+coupon_courses 2 eb9fca58665b1fb5cccdc491e15614c8
+coupons 7 9c57883de1b3098d5c8de06fbbb3090d
+course_embeddings 24 3e8834b26a1da782f2196b7a62c7244a
+course_sections 33 88660480dbc781ecb318e6675a5de758
+courses 24 0759652a4fe7a20bf335e7b2424d19e5
+doc_chunks 43 aa0ff66ae8aae389cbf6ce25f5e102f6
+enrollments 378 f0d872a55ef355eb397cb98d01cf0319
+lesson_progress 673 b338fc1e02ac4e5c181dbaeb46d7d14a
+lessons 71 e29fe583c52d1a6fa92a3d7fc1369379
+notes 0 d41d8cd98f00b204e9800998ecf8427e
+notifications 0 d41d8cd98f00b204e9800998ecf8427e
+order_items 140 9ff975d339515d06019eadf11dc29da5
+orders 78 e1f8c80848e65f41d217466e1865753a
+payment_events 81 11921f1ca8ec89608a51bc1f19c4fdab
+qa_replies 0 d41d8cd98f00b204e9800998ecf8427e
+qa_threads 0 d41d8cd98f00b204e9800998ecf8427e
+qa_votes 0 d41d8cd98f00b204e9800998ecf8427e
+quiz_attempts 25 f641c08c61c309437b845ec26f6df4d2
+quiz_questions 10 b9d44f148ab8473b979fc4b30b2a2fb4
+quizzes 2 23db8991a7c128b7e0fc91ae3f410fe5
+refresh_tokens 333 d570dc6cb2d20dac1b075c58c843d9e8
+reports 0 d41d8cd98f00b204e9800998ecf8427e
+reviews 97 b2e46b0042fffaf1c849a1b4e29ce71d
+streaks 40 b07951ef5b0c1024c2a724a4b98eca11
+submission_results 0 d41d8cd98f00b204e9800998ecf8427e
+submissions 0 d41d8cd98f00b204e9800998ecf8427e
+test_cases 6 102f113f621bc09fc668b89f3951f2d6
+users 92 89e8515a1b1323fa760132059ef94f6a
+video_assets 42 5442b1523be4083f6c8467f7b3ceaf59
+wishlists 7 c8e4b78cee1d2061e0ec31db442c9e00
+xp_events 690 5ce1e48a493de007ea16a3ebce0d2ba5

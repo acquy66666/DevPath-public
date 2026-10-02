@@ -358,6 +358,25 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Before the stack, not after: the frontend container mounts an
+      # anonymous volume at /app/node_modules inside the bind-mounted
+      # frontend/, and Docker creates that mountpoint on the host as root --
+      # an `npm ci` after `compose up` cannot write there (EACCES). Made
+      # first, the folder is the runner's and the volume merely covers it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium for Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
       # The grader starts submissions with `--pull never`: the image has to be
       # on this host before the first one arrives.
       - name: Sandbox image
@@ -372,20 +391,6 @@ jobs:
         run: |
           docker compose exec -T backend alembic upgrade head
           docker compose exec -T backend python -m scripts.seed
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: Install Chromium for Playwright
-        working-directory: frontend
-        run: npx playwright install --with-deps chromium
 
       - name: Golden flow
         working-directory: frontend

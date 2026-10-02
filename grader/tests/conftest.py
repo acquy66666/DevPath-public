@@ -40,6 +40,12 @@ def sandbox_images() -> None:
     tested" into a green tick, which is the one outcome this suite exists to
     prevent.
     """
+    # Run through the Docker proxy (CI's second pass, or inside the worker),
+    # nothing but grading is allowed -- no `docker info`, no builds. The images
+    # were built by the direct pass before it.
+    if os.environ.get("DEVPATH_THROUGH_PROXY"):
+        return
+
     if not _docker_is_running():
         if os.environ.get("CI"):
             pytest.fail("Docker is not available. In CI that is a failure, not a skip.")

@@ -130,7 +130,7 @@ Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại c�
 | `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
 | `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev hoặc ngắn hơn 32 ký tự |
-| `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. Worker chấm bài chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker |
+| `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. `docker-proxy` chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker (worker chấm bài không cầm socket, nó đi qua proxy) |
 
 `GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Riêng địa chỉ API thì không: trình duyệt gọi `/api` cùng origin với trang, nên image không mang tên miền nào và đổi tên miền không cần build lại.
 
@@ -153,14 +153,20 @@ image từ mạng là thứ không bao giờ nên xảy ra. Thiếu image thì m
 lỗi hệ thống, thử lại 3 lần rồi dừng ở trạng thái `error` kèm lời nhắn cho học
 viên, và log worker nói rõ thiếu image.
 
-Kiểm tra worker chấm bài thấy được daemon:
+Worker chấm bài không cầm socket Docker; nó đi qua `docker-proxy`, container
+duy nhất cầm socket và chỉ cho qua đúng các thao tác chấm bài (`infra/README.md`,
+mục "Worker chấm bài, và proxy đứng giữa nó với Docker"). Kiểm proxy thấy được
+daemon — lệnh ping xuyên qua chính proxy:
 
 ```bash
-docker compose -f docker-compose.prod.yml exec grading-worker docker version
+docker compose -f docker-compose.prod.yml exec docker-proxy python -m proxy.server health && echo ok
 ```
 
-Báo `permission denied` là `DOCKER_GID` sai — sửa trong `.env.prod` rồi
-`docker compose -f docker-compose.prod.yml up -d grading-worker`.
+Không ra `ok` thì xem `docker compose -f docker-compose.prod.yml logs docker-proxy`:
+`Permission denied` trên `/var/run/docker.sock` là `DOCKER_GID` sai — sửa trong
+`.env.prod` rồi `docker compose -f docker-compose.prod.yml up -d docker-proxy`.
+Đừng thử bằng `exec grading-worker docker version`: proxy trả 403 cho mọi thứ
+không phải chấm bài, `/version` cũng vậy.
 
 ## 2c. Nơi lưu backup CSDL
 

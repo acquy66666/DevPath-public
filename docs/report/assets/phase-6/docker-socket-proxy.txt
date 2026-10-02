@@ -1,0 +1,158 @@
+PROXY CHO DOCKER SOCKET: WORKER CHẤM BÀI KHÔNG CÒN LÀ ROOT TRÊN HOST
+Ngày làm: 02/10/2026 · nhánh feature/docker-socket-proxy · skill sandbox-grading
+Phase 6, task (nợ sandbox): "Proxy cho Docker socket: grading-worker chỉ được
+create/start/inspect/kill/rm thay vì cầm nguyên /var/run/docker.sock"
+
+Tệp: grader/proxy/{policy.py, server.py, Dockerfile, __init__.py}
+     grader/tests/test_docker_proxy_{policy,server,live}.py
+     grader/tests/fixtures/docker_create_body.json (body thật của CLI, xem §2)
+     service `docker-proxy` + mạng `grading-docker` trong infra/docker-compose.yml và
+     docker-compose.prod.yml · 2 bước CI · infra/README.md, grader/README.md, runbook 2b
+
+==============================================================================
+1. VẤN ĐỀ VÀ LỰA CHỌN
+==============================================================================
+Trước: grading-worker bind-mount /var/run/docker.sock. Socket không phải hệ thống phân
+quyền — `docker run --privileged -v /:/host ...` là một request, và ai chiếm được worker
+là root trên host. Các lớp giảm thiệt hại cũ (không HTTP, không cổng, uid 10001, code
+người nộp chỉ chạy trong sandbox) làm khó việc chiếm worker, không giới hạn gì sau đó.
+
+Không dùng proxy có sẵn (tecnativa/docker-socket-proxy và họ hàng): chúng lọc theo
+endpoint. Runner cần POST /containers/create, và mở endpoint đó là mở luôn create có
+`Privileged: true` + bind `/` — đúng request cần chặn. Nguy hiểm nằm trong BODY của một
+endpoint, nên tự viết một proxy đọc body: Python chỉ thư viện chuẩn, ~300 dòng luật +
+~300 dòng HTTP, đủ nhỏ để đọc hết.
+
+  Vị trí     service compose `docker-proxy`, CONTAINER DUY NHẤT cầm socket; nghe TCP 2375
+             trên mạng `grading-docker` (internal: true) chỉ có nó và grading-worker;
+             không publish cổng. Worker: DOCKER_HOST=tcp://docker-proxy:2375, không socket,
+             không group_add.
+  Production proxy chạy uid 10001 + nhóm docker của host (DOCKER_GID); dev chạy root vì
+             socket Docker Desktop là root:root 660 và worker dev ghi workspace bằng root.
+
+==============================================================================
+2. DANH SÁCH CHO PHÉP LẤY TỪ LƯU LƯỢNG THẬT
+==============================================================================
+Một bộ ghi tạm (không commit) đứng giữa CLI 29.7.2 của worker và daemon, cho runner
+chấm 2 bài (AC và vòng lặp vô hạn). Mỗi lượt chạy gồm đúng:
+
+  HEAD /_ping (×6–7, thương lượng phiên bản API)
+  POST /v1.55/containers/create?name=devpath-grading-<32 hex>
+  GET  /v1.55/containers/<name>/json
+  POST /v1.55/containers/<ID 64 hex>/attach?stderr=1&stdin=1&stdout=1&stream=1  (Upgrade: tcp)
+  POST /v1.55/containers/<ID>/wait?condition=next-exit
+  POST /v1.55/containers/<ID>/start
+  GET  /v1.55/containers/<name>/json
+  DELETE /v1.55/containers/<name>?force=1
+  (+ POST .../kill khi chạm tường thời gian — đường của lớp timeout ngoài)
+
+Phát hiện khi ghi: sau create + inspect theo TÊN, CLI chuyển sang ID 64 hex cho attach/
+wait/start — luật phải nhận cả hai, quyền sở hữu xét bằng nhãn chứ không bằng tên.
+Body create thật lưu nguyên văn làm fixture; các trường khác zero gồm MemorySwappiness
+-1 (mặc định "kế thừa") và NetworkingConfig {"EndpointsConfig": {}}.
+
+==============================================================================
+3. LUẬT (grader/proxy/policy.py)
+==============================================================================
+  Route      chỉ: HEAD/GET /_ping · POST /containers/create · POST start|attach|wait|kill
+             · GET json · DELETE một container. Đường dẫn khớp bộ ký tự chặt trên chuỗi
+             THÔ (không %, không .., không //), query chỉ những khóa route đó dùng.
+             Còn lại 403: exec, images/*, build, containers/json, info, version, events,
+             networks, volumes, prune, swarm, archive, update, commit...
+  Create     image trong danh sách (devpath-sandbox-python:v1) · tên devpath-grading-<hex>
+             · nhãn ĐÚNG {"devpath.grading": "1"} · User 10001:10001 · WorkingDir /sandbox
+             · không Entrypoint/Env/Tty/Volumes/Healthcheck/ExposedPorts
+             · HostConfig BẮT BUỘC: NetworkMode none, ReadonlyRootfs, CapDrop ALL, SecurityOpt
+               chỉ no-new-privileges, 0 < Memory ≤ 512 MiB, MemorySwap = Memory,
+               0 < NanoCpus ≤ 1 CPU, 0 < PidsLimit ≤ 128, Ulimits đúng một "cpu" với
+               soft ≤ hard ≤ 11 s, Tmpfs chỉ /tmp có nosuid,nodev,noexec,size ≤ 128m,
+               LogConfig none, Mounts ĐÚNG MỘT bind read-only
+               <workspace>/devpath-grading-xxxxxxxx/code tới /sandbox, là thư mục thật
+               (realpath == path, proxy xem workspace read-only)
+             · MaskedPaths/ReadonlyPaths phải null ([] nghĩa là bỏ che /proc)
+             · MỌI trường khác phải ở giá trị zero — trường Docker thêm sau bị chặn tới khi
+               có người quyết nó vô hại.
+             Trần lấy từ trần nền tảng (MAX_MEMORY_LIMIT_MB = 512, MAX_TIME_LIMIT_MS = 10 s).
+  Sở hữu     start/attach/wait/kill/json/DELETE: proxy hỏi daemon (inspect) trước, container
+             phải mang nhãn devpath.grading=1 và tên dạng devpath-grading-<hex>; không tồn
+             tại → 404 từ chính proxy. START kiểm lại nguồn mount (daemon mount lúc start).
+  HTTP       mỗi kết nối một request (Connection: close); Transfer-Encoding, hai
+             Content-Length, header gập → 400; body tối đa 256 KiB; attach hai chiều,
+             half-close của client được chuyển tiếp (stdin hết thì bài nộp mới nhận EOF).
+
+==============================================================================
+4. TEST TÌM RA LỖ TRONG CHÍNH BẢN NHÁP ĐẦU (đã sửa trước khi chạy thật)
+==============================================================================
+  - `_is_zero` đệ quy vào dict nên `Volumes: {"/data": {}}` (volume GHI ĐƯỢC) và
+    `NetworkingConfig: {"EndpointsConfig": {"devpath_default": {}}}` (NỐI SANDBOX VÀO
+    MẠNG COMPOSE) đều được coi là "rỗng" và lọt. Sửa: dict có khóa không bao giờ là zero
+    (khóa chính là dữ liệu); struct có tên trường cố định xét riêng.
+  - `//v1.55/containers/create`: urlsplit đọc "v1.55" thành host, đường dẫn còn lại trông
+    hợp lệ. Sửa: tách đường dẫn bằng tay trên chuỗi thô.
+  - `MaskedPaths: []` lọt vì [] là "zero" — mà ở trường này [] là lệnh bỏ che. Sửa: phải null.
+
+==============================================================================
+5. KẾT QUẢ
+==============================================================================
+Test đơn vị (không cần daemon, chạy cả trên Windows):
+  test_docker_proxy_policy.py  144 test — body thật được nhận; ~80 biến thể "lối thoát"
+                               mỗi cái bị chặn đúng luật; route; sở hữu; cấu hình
+  test_docker_proxy_server.py   16 test — request bị từ chối không tới daemon; create
+                               chuyển nguyên byte; chunked/2 Content-Length/header gập →
+                               400; request thứ hai giấu sau request hợp lệ không được
+                               chuyển; Upgrade chỉ cho attach; half-close của attach;
+                               daemon chết → 502
+
+Qua proxy, với daemon thật (stack dev, trong container worker, DEVPATH_THROUGH_PROXY=1):
+  test_verdict_end_to_end + test_sandbox_attacks (7 ca) + test_runner_core
+  + test_docker_proxy_live + bộ thuần: 267 passed, 3 skipped (2 ca cần daemon thật để
+  dựng "nạn nhân", 1 ca đếm container cần liệt kê — đều chạy ở CI), 74 s.
+  (Một ca đỏ lần đầu đúng là proxy làm việc: test đặt workspace ở thư mục tạm tùy ý,
+  proxy từ chối mount ngoài workspace → lỗi hệ thống. Test giờ khẳng định đúng điều đó
+  khi chạy qua proxy.)
+Trực tiếp (không proxy, host Windows): toàn bộ grader 266 passed, 17 skipped (bộ live).
+
+Diễn tập tấn công từ trong worker (stack dev):
+  docker run --rm --privileged devpath-sandbox-python:v1 true
+      → "devpath-docker-proxy: container name must be devpath-grading-<hex>", exit 125
+  (dựng bằng CLI trên host, đi thẳng daemon) một container thường + một container tên
+  devpath-grading-<hex> KHÔNG nhãn, rồi từ worker:
+      docker kill <tên>            → not a grading container name
+      docker kill <ID>             → not a grading container
+      docker rm -f <ID>            → not a grading container
+      docker kill <devpath-grading-... không nhãn> → not a grading container
+      docker exec devpath-postgres-1 true / docker kill devpath-postgres-1 → refused
+  daemon thật xác nhận cả ba container vẫn running=true.
+  Log proxy nhóm theo lý do: mọi DENIED đến từ test/diễn tập; 0 DENIED từ lượt chấm thật.
+
+E2E luồng vàng trên stack dev, phần nộp code đi qua proxy: 1 passed (22,9 s).
+
+Cấu hình PRODUCTION (stack prodtest trên máy dev, DOCKER_GID=0 vì socket Docker
+Desktop root:root 660): docker-proxy uid=10001 groups=0,10001; grading-worker uid 10001,
+không có /var/run/docker.sock. Qua proxy: print(int(input())*2) → exited '42\n';
+`while True: pass` → cpu_time_exceeded; cấp phát 10^9 phần tử → out_of_memory;
+`docker run -v /:/host ...` → refused. (Kiểm realpath đọc được thư mục 700 của worker vì
+cả hai cùng uid 10001.)
+
+Chi phí (cùng image grading dev, 20 lượt chạy sau 1 lượt khởi động, mỗi lượt ~8 request):
+  socket thật:     trung vị 442 ms, TB 447 ms
+  qua proxy:       trung vị 464 ms / 457 ms (hai lượt đo), TB 476 / 465 ms
+  → ~15–22 ms mỗi lượt (~4 %), phần lớn là các lần proxy tự inspect để xét nhãn.
+
+CI: job grader thêm "Pytest through the Docker proxy" (proxy chạy thật trên runner, toàn
+bộ bộ verdict + 7 ca tấn công + bộ live, có DEVPATH_REAL_DOCKER_HOST để dựng nạn nhân);
+job deploy-config thêm "Only the Docker proxy holds the socket" cho cả hai compose. Job
+E2E dựng stack dev nên luồng vàng trên CI cũng chấm qua proxy.
+
+==============================================================================
+6. CÒN LẠI SAU PROXY (nói thẳng)
+==============================================================================
+  - Worker bị chiếm vẫn tạo được sandbox đúng mọi bất biến và chạy code tùy ý TRONG
+    sandbox — thứ học viên nào cũng làm được bằng cách nộp bài.
+  - Khe hở giữa lần kiểm symlink cuối (lúc start) và lúc daemon thực sự mount: về lý
+    thuyết còn. Thứ lọt được là một view READ-ONLY các tệp uid 10001 đọc được, trong
+    container không mạng; tệp nhạy cảm của host (.env.prod 600, khóa SSH 600, dữ liệu
+    Docker 710 root) không thuộc loại đó.
+  - Bản thân proxy là mã đáng tin mới; nó không nhận input nào ngoài từ worker, và đủ nhỏ
+    để đọc hết. Đổi cờ trong runner/sandbox.py mà quên đổi policy.py → mọi bài nộp thành
+    SE (403) — ghi vào skill sandbox-grading và grader/README.

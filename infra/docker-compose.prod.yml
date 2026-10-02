@@ -287,15 +287,15 @@ services:
     volumes:
       - /var/lib/devpath-grading:/var/lib/devpath-grading
 
-  # The only container on this host that can talk to the Docker daemon.
-  #
-  # It holds the socket because starting a sandbox container is what grading
-  # is, and a socket is not a permission system: this container can start any
-  # container it likes here. That is the trade this design makes, and the
-  # mitigations are that it runs nothing else, serves no traffic, is not
-  # reachable from outside the compose network, and never executes submitted
-  # code itself -- every line of that runs in the throwaway container it
-  # starts, with no network, no privileges and a read-only filesystem.
+  # Starts a sandbox container for every test case -- through docker-proxy
+  # below, not the socket. Until 02/10/2026 it held /var/run/docker.sock
+  # itself, and a socket is not a permission system: one request
+  # (`docker run --privileged -v /:/host`) and this container was root on the
+  # host. Now a compromised worker can create sandboxes that obey every
+  # grading invariant and operate on containers labelled as grading runs, and
+  # nothing else. It still never executes submitted code itself -- every line
+  # of that runs in the throwaway container, with no network, no privileges
+  # and a read-only filesystem.
   #
   # Before the first submission, build the sandbox image on this host:
   #     docker build -t devpath-sandbox-python:v1 grader/images/python
@@ -327,20 +327,20 @@ services:
       # Has to name the same directory here and on the host: the daemon
       # resolves the sandbox's bind mount outside this container. See volumes.
       DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+      DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       # The grader is a sibling project, mounted rather than installed -- the
       # same way its own tests import it. Read-only: this container runs it.
       - ../grader:/grader:ro
-      - /var/run/docker.sock:/var/run/docker.sock
       # Same path on both sides. A submission's source file lives here for the
       # seconds it takes to grade, and the runner deletes it afterwards.
       - /var/lib/devpath-grading:/var/lib/devpath-grading
-    # uid 10001 cannot open a socket owned by root:docker. The host's docker
-    # group id goes here -- `getent group docker | cut -d: -f3` on the VPS --
-    # rather than running this container as root.
-    group_add:
-      - "${DOCKER_GID:-999}"
+    networks:
+      - default
+      - grading-docker
     depends_on:
+      docker-proxy:
+        condition: service_healthy
       grading-workspace:
         condition: service_completed_successfully
       redis:
@@ -357,6 +357,47 @@ services:
       timeout: 15s
       retries: 3
       start_period: 30s
+
+  # The one container on this host that holds the Docker socket, and the only
+  # thing it does is decide what the grading worker may ask of the daemon:
+  # create a sandbox that obeys every grading invariant (allowed image, no
+  # network, read-only root, no capabilities, limits, one read-only mount of a
+  # submission directory), and attach / start / wait / kill / inspect / remove
+  # containers labelled as grading runs. Everything else -- exec, image pulls,
+  # networks, volumes, privileged or host-mounted containers -- is a 403.
+  # Rules: grader/proxy/policy.py; why it reads bodies: grader/proxy/server.py.
+  #
+  # Reachable only on `grading-docker`, an internal network it shares with
+  # the grading worker and nothing else; no ports published.
+  docker-proxy:
+    build: ../grader/proxy
+    image: devpath-docker-proxy:prod
+    restart: unless-stopped
+    logging: *logging
+    # uid 10001, like the worker whose workspace it reads; the host's docker
+    # group (`getent group docker | cut -d: -f3`) is what opens the socket.
+    user: "10001:10001"
+    group_add:
+      - "${DOCKER_GID:-999}"
+    environment:
+      DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+      DOCKER_PROXY_IMAGES: devpath-sandbox-python:v1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Read-only: to check a mount source is a real submission directory,
+      # not a link the worker planted to somewhere else on the host.
+      - /var/lib/devpath-grading:/var/lib/devpath-grading:ro
+    networks:
+      - grading-docker
+    depends_on:
+      grading-workspace:
+        condition: service_completed_successfully
+    healthcheck:
+      # A ping through the proxy itself: green means proxy and daemon both.
+      test: ["CMD", "python", "-m", "proxy.server", "health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   frontend:
     build:
@@ -457,6 +498,12 @@ services:
         certbot renew --webroot --webroot-path /var/www/certbot --quiet;
         sleep 12h & wait $${!};
       done"
+
+networks:
+  # The grading worker and the Docker proxy, nobody else. Internal: no route
+  # out, and the proxy's port is reachable from exactly one container.
+  grading-docker:
+    internal: true
 
 volumes:
   postgres_data:

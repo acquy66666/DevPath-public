@@ -13,6 +13,7 @@ runner cleans up after itself.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -222,8 +223,14 @@ def test_no_container_is_left_behind():
     """
     execute(submission("sleep_forever.py"), limits=QUICK)
 
+    # Through the Docker proxy, listing containers is refused by design, so the
+    # question goes to the daemon directly when the run says where it is.
+    host = os.environ.get("DEVPATH_REAL_DOCKER_HOST")
+    if os.environ.get("DEVPATH_THROUGH_PROXY") and not host:
+        pytest.skip("through the proxy, and no direct daemon address to count containers on")
     left = subprocess.run(
-        ["docker", "ps", "--all", "--quiet", "--filter", f"label={GRADING_LABEL}"],
+        ["docker", *(["--host", host] if host else []), "ps", "--all", "--quiet"]
+        + ["--filter", f"label={GRADING_LABEL}"],
         capture_output=True,
         text=True,
         check=True,
@@ -295,5 +302,12 @@ def test_a_submission_is_written_where_the_workspace_root_says(
 
     execution = execute("print('xin chào')")
 
-    assert execution.stdout.strip() == "xin chào"
+    if os.environ.get("DEVPATH_THROUGH_PROXY"):
+        # The proxy lets mounts come from the one workspace it was given and
+        # nowhere else; a root of the test's own choosing is exactly what it
+        # has to refuse -- as our failure, never the student's.
+        assert execution.outcome is Outcome.SYSTEM_ERROR
+        assert "outside the workspace" in execution.system_error
+    else:
+        assert execution.stdout.strip() == "xin chào"
     assert list(root.iterdir()) == []

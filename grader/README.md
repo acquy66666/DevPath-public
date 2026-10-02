@@ -13,7 +13,8 @@ runner/sandbox.py  Chạy 1 file + 1 stdin trong 1 container dùng một lần, 
 runner/compare.py  Chuẩn hóa và so sánh output — chính sách "thế nào là đúng", không cần Docker
 runner/verdict.py  Compile 1 lần, chạy từng test case, đặt tên verdict cho cả bài nộp
 images/python/     Dockerfile sandbox cho Python (v1 chỉ hỗ trợ Python)
-tests/fixtures/    Code mẫu tái hiện từng verdict + 7 ca tấn công (`attack_*.py`)
+proxy/             Proxy Docker API giữa worker và daemon: policy.py (luật), server.py (HTTP), Dockerfile
+tests/fixtures/    Code mẫu tái hiện từng verdict + 7 ca tấn công (`attack_*.py`), body `create` thật của CLI
 ```
 
 ## Chạy
@@ -49,6 +50,17 @@ trỏ biến này vào đó — cùng một cái tên ở cả hai phía.
 - Cắt stdout/stderr trước khi so sánh (chống flood)
 - Code người dùng là dữ liệu độc hại: truyền qua mount + argv, **không bao giờ** nội suy vào shell command
 - Expected output của test case ẩn không bao giờ rời server
+- **Worker không cầm socket Docker** (từ 02/10/2026): nó đi qua `proxy/`, container duy nhất cầm socket, và proxy chỉ cho `create` một container đúng các bất biến trên, cùng start/attach/wait/kill/inspect/rm container mang nhãn `devpath.grading=1`. **Đổi cờ nào trong `runner/sandbox.py` (`_container_flags`) thì phải đổi `proxy/policy.py` cùng lúc** — proxy là danh sách cho phép viết từ chính các cờ đó, cờ mới mà proxy chưa biết sẽ làm mọi bài nộp ra lỗi hệ thống (403). Ghi lại body mới vào `tests/fixtures/docker_create_body.json` và chạy `tests/test_docker_proxy_*.py`
+
+## Chạy qua proxy
+
+Ở máy dev, toàn bộ bộ verdict + tấn công sandbox + tấn công proxy chạy được xuyên qua proxy, ngay trong container worker (proxy không cho build image, nên image phải build sẵn):
+
+```bash
+docker compose -f infra/docker-compose.yml exec -e DEVPATH_THROUGH_PROXY=1 -w /grader grading-worker python -m pytest -q -p no:cacheprovider tests/test_verdict_end_to_end.py tests/test_sandbox_attacks.py tests/test_runner_core.py tests/test_docker_proxy_live.py
+```
+
+CI làm đúng việc đó trên runner (bước "Pytest through the Docker proxy"), thêm `DEVPATH_REAL_DOCKER_HOST` để hai ca cần dựng "nạn nhân" bằng daemon thật cũng chạy.
 
 ## Verdicts
 

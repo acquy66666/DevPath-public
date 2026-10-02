@@ -54,10 +54,27 @@ x-backend-env: &backend-env
   # is pointed at this API on purpose.
   CORS_ORIGINS: https://${DOMAIN}
 
+# Every container's output, rotated. Docker's default json-file driver keeps a
+# container's log for as long as the container exists, with no limit -- one
+# chatty worker on a 40 GB disk is an outage of its own. Five files of 10 MB
+# per container, the older ones compressed, is days of history at this
+# traffic and a ceiling of ~600 MB across the stack.
+#
+# One place to read it all: `docker compose ... logs -t --since 1h`, or one
+# service by name. A container replaced by a deploy takes its log with it,
+# so look before redeploying (docs/huong-dan-deploy-vps.md, mục 4b).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+    compress: "true"
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.prod}
@@ -74,6 +91,7 @@ services:
   redis:
     image: redis:7-alpine
     restart: unless-stopped
+    logging: *logging
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - redis_data:/data
@@ -98,6 +116,7 @@ services:
     build: ./backup
     image: devpath-backup:prod
     restart: unless-stopped
+    logging: *logging
     environment:
       ENV: production
       PGHOST: postgres
@@ -136,6 +155,7 @@ services:
       target: production
     image: devpath-backend:prod
     restart: unless-stopped
+    logging: *logging
     # Two workers on a small VPS: enough that one slow request does not block
     # the health check, few enough to leave room for Postgres and the worker.
     command:
@@ -178,6 +198,7 @@ services:
       target: production
     image: devpath-backend:prod
     restart: unless-stopped
+    logging: *logging
     command:
       - celery
       - -A
@@ -211,6 +232,7 @@ services:
       target: production
     image: devpath-backend:prod
     restart: unless-stopped
+    logging: *logging
     command:
       - celery
       - -A
@@ -247,6 +269,7 @@ services:
     image: devpath-backend:prod
     user: "0"
     restart: "no"
+    logging: *logging
     entrypoint:
       - sh
       - -c
@@ -274,6 +297,7 @@ services:
       target: grading-production
     image: devpath-grading:prod
     restart: unless-stopped
+    logging: *logging
     command:
       - celery
       - -A
@@ -340,6 +364,7 @@ services:
         NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
     image: devpath-frontend:prod
     restart: unless-stopped
+    logging: *logging
     environment:
       # Server Components stay inside the compose network; only the browser
       # goes out through nginx.
@@ -361,6 +386,7 @@ services:
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
+    logging: *logging
     ports:
       - "80:80"
       - "443:443"
@@ -397,6 +423,7 @@ services:
   certbot:
     image: certbot/certbot:v5.8.0
     restart: unless-stopped
+    logging: *logging
     volumes:
       - letsencrypt:/etc/letsencrypt
       - certbot_webroot:/var/www/certbot

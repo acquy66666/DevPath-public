@@ -295,6 +295,21 @@ jobs:
             exit 1
           fi
 
+      # Docker keeps a container's log without limit unless told otherwise, and
+      # a service added later would not inherit the anchor by itself.
+      - name: Every service's log is rotated
+        working-directory: infra
+        run: |
+          docker compose -f docker-compose.prod.yml config --no-interpolate --format json > rendered.json
+          python3 - rendered.json <<'EOF'
+          import json, sys
+          services = json.load(open(sys.argv[1]))["services"]
+          bare = [n for n, s in services.items() if not s.get("logging", {}).get("options", {}).get("max-size")]
+          if bare:
+              sys.exit("No log rotation on: " + ", ".join(sorted(bare)))
+          print(f"{len(services)} services, every one rotated.")
+          EOF
+
       - name: Shell scripts
         run: shellcheck infra/scripts/*.sh infra/loadtest/*.sh backend/scripts/*.sh
 

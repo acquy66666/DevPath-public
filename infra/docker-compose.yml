@@ -149,6 +149,39 @@ services:
       timeout: 3s
       retries: 12
 
+  # Nightly pg_dump to a private bucket, and the way back (infra/backup/).
+  # Behind a profile: a dev database does not need backing up every night,
+  # but this is where the restore drill runs --
+  #   docker compose --profile backup run --rm backup backup
+  #   docker compose --profile backup run --rm backup restore latest
+  # With R2_* empty it writes to the `devpath-backups` bucket of the MinIO
+  # above, created private on first use (the media bucket is public).
+  backup:
+    profiles: ["backup"]
+    build: ./backup
+    image: devpath-backup:dev
+    environment:
+      ENV: development
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-devpath}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-devpath}
+      PGDATABASE: ${POSTGRES_DB:-devpath}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+      R2_BUCKET: ${R2_BUCKET:-devpath-media}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-devpath}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-devpath-minio}
+      BACKUP_BUCKET: ${BACKUP_BUCKET:-devpath-backups}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
   backend:
     build:
       context: ../backend

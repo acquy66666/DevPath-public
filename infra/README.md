@@ -16,7 +16,8 @@ scripts/init-tls.sh      Xin chứng chỉ Let's Encrypt lần đầu
 scripts/deploy.sh        Build → migrate → khởi động → đợi healthy
 scripts/tunnel.sh        Bật/tắt URL công khai tạm, in URL ra màn hình
 loadtest/                k6 vào stack production: trang danh sách + một lớp nộp code cùng lúc (Phase 6)
-scripts/                 backup DB (pg_dump → R2), restore — Phase 6
+backup/                  Service sao lưu: pg_dump mỗi đêm lên bucket private, giữ N bản; image dựng từ chính image Postgres
+scripts/restore-db.sh    Khôi phục: vào CSDL phụ trong lúc site chạy, rồi đổi tên thay CSDL đang chạy (giữ bản cũ)
 ```
 
 ## Chạy stack ở máy dev
@@ -149,7 +150,7 @@ getent group docker | cut -d: -f3
 
 - Grader cần truy cập Docker daemon để spin sandbox container — xem mục trên và skill `sandbox-grading` trước khi đụng vào phần mount socket.
 - Secrets đi qua `.env` (đã gitignore), không bao giờ commit. Mỗi service có `.env.example` liệt kê biến cần thiết.
-- Backup DB tự động là task của [Phase 6](../docs/plan/phase-6-hardening-deploy.md); script restore phải được thử khôi phục thật ít nhất một lần.
+- Backup DB: service `backup` (mục bên dưới). Đã khôi phục thật một lần trên stack dev, 02/10/2026 — `docs/report/assets/phase-6/db-backup-restore.txt`.
 
 ## URL công khai không cần máy chủ
 
@@ -249,6 +250,25 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail 10
 
 Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không phải phỏng đoán — `running (unhealthy)` nghĩa là container sống nhưng không làm được việc, và đó thường là biến môi trường sai chứ không phải code hỏng.
 
-## Chưa có gì ở đây
+## Sao lưu và khôi phục CSDL
 
-- `scripts/` backup và restore DB — [Phase 6](../docs/plan/phase-6-hardening-deploy.md).
+Service `backup` (`backup/devpath_backup.py`) dump CSDL mỗi đêm lúc `BACKUP_HOUR` giờ Việt Nam lên `BACKUP_BUCKET` và giữ `BACKUP_KEEP` bản mới nhất. Bốn quyết định đáng biết:
+
+- **Image dựng từ chính `pgvector/pgvector:pg16`** của service `postgres`, nên `pg_dump`/`pg_restore` luôn cùng major version với server: `pg_dump` cũ hơn server thì từ chối chạy, mới hơn thì viết ra bản mà server cũ có thể không đọc được — kiểu lỗi chỉ lộ ra vào đêm cần khôi phục. Đổi tag của hai service cùng lúc. Image gốc dừng bằng `SIGINT` (fast shutdown của Postgres); Dockerfile đặt lại `SIGTERM` cho Python.
+- **Bucket riêng, private.** Bucket media cho tải ẩn danh; bản dump chứa email và hash mật khẩu. Service từ chối nếu hai tên trùng nhau. Ở máy dev, `R2_*` trống thì nó ghi vào bucket `devpath-backups` của MinIO, tự tạo private.
+- **Giữ theo số bản, không theo tuổi**: đồng hồ sai hay một tháng không có backup cũng không làm nó xóa bản cuối cùng. Chỉ xóa đúng object do chính nó đặt tên (`postgres/<db>-<giờ UTC>.dump`).
+- **Mỗi bản được đọc lại trước khi tải lên** (`pg_restore --list` phải thấy `alembic_version`) và mang sha256 trong metadata; khôi phục thì kiểm lại sha256.
+
+Khởi động mà bản mới nhất đã quá 24 giờ (máy tắt lúc 02:00, hay đêm trước lỗi) thì chạy ngay; lỗi thì thử lại sau 30 phút. Healthcheck đỏ khi quá 26 giờ không có bản thành công, nên `deploy.sh` và `ps` thấy được. Production thiếu nơi lưu thì service đứng yên, unhealthy và nói lý do — muốn chạy không backup phải ghi `BACKUP_ENABLED=false`.
+
+Ở máy dev, service nằm sau profile `backup` (không tự chạy theo `up`):
+
+```bash
+docker compose --profile backup run --rm backup backup
+```
+
+```bash
+docker compose --profile backup run --rm backup list
+```
+
+Khôi phục là `scripts/restore-db.sh` — trên VPS như runbook (`docs/huong-dan-deploy-vps.md`, mục 7b), trên máy dev với `COMPOSE_FILE=docker-compose.yml`. Unit test của phần tự quyết (đặt tên, xoay vòng, lịch, chọn nơi lưu, health): `python -m pytest infra/backup`, chạy trong job backend của CI.

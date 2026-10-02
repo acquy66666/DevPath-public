@@ -83,6 +83,53 @@ services:
       timeout: 3s
       retries: 12
 
+  # A pg_dump every night at BACKUP_HOUR (Vietnam time) to a private bucket,
+  # keeping the newest BACKUP_KEEP. Built from the database's own image so the
+  # dump tools are the server's version (infra/backup/Dockerfile). Started
+  # after a missed night -- the server was off at the hour -- it backs up at
+  # once rather than waiting for the next one.
+  #
+  # Unhealthy when the last good backup is more than 26 hours old, so
+  # `docker compose ps` and deploy.sh both see a backup that stopped. The one
+  # way to run without backups is to say so: BACKUP_ENABLED=false.
+  #
+  # Restoring: infra/scripts/restore-db.sh (docs/huong-dan-deploy-vps.md).
+  backup:
+    build: ./backup
+    image: devpath-backup:prod
+    restart: unless-stopped
+    environment:
+      ENV: production
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+      R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+      R2_BUCKET: ${R2_BUCKET:-devpath-media}
+      # Credentials of its own, scoped to the backup bucket, are better than
+      # the app's: a leaked app key then cannot delete the backups as well.
+      BACKUP_ENDPOINT_URL: ${BACKUP_ENDPOINT_URL:-}
+      BACKUP_ACCESS_KEY_ID: ${BACKUP_ACCESS_KEY_ID:-}
+      BACKUP_SECRET_ACCESS_KEY: ${BACKUP_SECRET_ACCESS_KEY:-}
+      BACKUP_BUCKET: ${BACKUP_BUCKET:-devpath-backups}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BACKUP_HOUR: ${BACKUP_HOUR:-2}
+      BACKUP_ENABLED: ${BACKUP_ENABLED:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "/usr/local/lib/devpath-backup/devpath_backup.py", "health"]
+      interval: 5m
+      timeout: 10s
+      retries: 1
+      # Room for the catch-up backup a fresh start runs before it is healthy.
+      start_period: 10m
+      start_interval: 10s
+
   backend:
     build:
       context: ../backend

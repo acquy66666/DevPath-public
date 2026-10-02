@@ -14,7 +14,14 @@ import path from "node:path";
 
 import { expect, type Page, request as playwrightRequest, test } from "@playwright/test";
 
-import { PASSWORD, simulatePaidIpn, stagePaidCourse, type StagedCourse, unique } from "./support/stack";
+import {
+  PASSWORD,
+  purgeSuiteData,
+  simulatePaidIpn,
+  stagePaidCourse,
+  type StagedCourse,
+  unique,
+} from "./support/stack";
 
 const VNPAY = /^https:\/\/sandbox\.vnpayment\.vn\//;
 
@@ -25,6 +32,8 @@ test.beforeAll(async () => {
   course = await stagePaidCourse(api);
   await api.dispose();
 });
+
+test.afterAll(() => purgeSuiteData());
 
 async function snap(page: Page, name: string) {
   const dir = process.env.E2E_EVIDENCE_DIR;

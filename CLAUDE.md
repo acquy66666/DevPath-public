@@ -31,7 +31,7 @@ E-learning/
 ├── backend/          # FastAPI
 │   ├── app/{api/v1,core,models,schemas,services,workers}/
 │   ├── tests/api/
-│   └── scripts/      # seed.py, seed_interactions.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_embeddings.py, bench_grading.py, rebuild_course_stats.py, eval_chatbot.py, eval_token_estimate.py, eval_recommender.py, lock.sh
+│   └── scripts/      # seed.py, seed_interactions.py, seed_transcripts.py, purge_e2e.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_embeddings.py, bench_grading.py, rebuild_course_stats.py, eval_chatbot.py, eval_token_estimate.py, eval_recommender.py, lock.sh
 ├── frontend/         # Next.js — scaffold bằng create-next-app, xem frontend/README.md
 ├── grader/           # runner/, images/<language>/, tests/fixtures/
 ├── infra/            # docker-compose.yml, nginx/, scripts/

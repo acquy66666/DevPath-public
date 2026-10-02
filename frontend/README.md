@@ -186,6 +186,22 @@ Khách chưa đăng nhập không thấy chuông lẫn trái tim — cả hai đ
 - **Banner trang chủ:** `components/banners/home-banners.tsx` (Server Component, `connection()` để banner hẹn giờ không bị nướng vào HTML lúc build; lỗi thì không vẽ gì) → `banner-carousel.tsx` (client): tự chuyển 6 giây, dừng khi rê chuột/focus, **không tự chuyển** khi hệ thống bật giảm chuyển động; slide ẩn có `aria-hidden` và link của nó ra khỏi thứ tự Tab. Ảnh banner tải lên qua `uploadToStorage` — cùng hàm với video và ảnh đại diện.
 - Ba loại thông báo mới cho giảng viên (`course_approved`, `course_rejected`, `course_taken_down`) có nhánh riêng trong `describe()`, link về `/giang-day/{course_id}` — nơi `course-status-card.tsx` hiện "Lý do từ chối".
 
+## Kiểm thử (Phase 6)
+
+```bash
+npm test                                       # test đơn vị: node --test trên lib/**/*.test.ts
+E2E_CHROME_CHANNEL=chrome npm run test:e2e     # E2E Playwright, chạy vào stack compose đang bật
+```
+
+- **Test đơn vị** chạy bằng `node --test` thẳng trên TypeScript (Node bỏ kiểu), không cài framework. `*.test.ts` nằm ngoài `tsconfig.json` vì Node cần import có đuôi `.ts` còn cấu hình bundler của Next từ chối.
+- **E2E** (`e2e/golden-flow.spec.ts`) chạy luồng vàng trên UI thật: đăng ký → thêm giỏ → thanh toán VNPay → học bài đọc → nộp code trong Monaco, chấm trong sandbox → chứng chỉ. Cần stack dev đang chạy (`docker compose up -d` trong `infra/`, đã seed) — Playwright không tự dựng stack vì luồng này cần đủ cả API, worker chấm bài và worker vẽ chứng chỉ.
+  - Phần của giảng viên và admin (soạn khóa, duyệt) đi qua API trong `e2e/support/stack.ts`; IPN của VNPay do `scripts.simulate_vnpay_ipn` ký **bên trong container backend**, nên secret không ra ngoài mà request vẫn qua đúng bước kiểm chữ ký. Trang của VNPay được thay bằng route interception.
+  - Tài khoản admin: mặc định là tài khoản seed (`admin@devpath.example` / `devpath-admin`), đổi bằng `E2E_ADMIN_EMAIL`/`E2E_ADMIN_PASSWORD`.
+  - Mọi tài khoản E2E có email `@e2e.devpath.example`; sau khi chạy xong, suite gọi `python -m scripts.purge_e2e` để gỡ tài khoản, khóa học, đơn hàng, chứng chỉ của nó (`E2E_KEEP_DATA=1` để giữ lại xem). Dọn tay: `docker compose exec backend python -m scripts.purge_e2e [--dry-run]`.
+  - `E2E_EVIDENCE_DIR=<thư mục>` lưu ảnh từng bước — cách đã chụp `docs/report/assets/phase-6/e2e/`.
+  - Mỗi lượt đăng ký 2 tài khoản và đăng nhập admin 1 lần: chạy liên tục nhiều lần sẽ chạm giới hạn đăng ký 50/giờ/IP hoặc đăng nhập 10/15 phút/email của admin.
+  - CI chạy job riêng "E2E — golden flow": dựng cả stack compose, build image sandbox, seed, cài Chromium của Playwright.
+
 ## Cấu trúc
 
 ```

@@ -142,22 +142,27 @@ export async function stagePaidCourse(request: APIRequestContext): Promise<Stage
   };
 }
 
-/** VNPay reporting that the order was paid, signed the way VNPay signs it. */
-export function simulatePaidIpn(orderCode: string): string {
+/** A backend script, run inside the backend container. */
+function backendScript(...args: string[]): string {
   return execFileSync(
     "docker",
-    [
-      "compose",
-      "-f",
-      COMPOSE_FILE,
-      "exec",
-      "-T",
-      "backend",
-      "python",
-      "-m",
-      "scripts.simulate_vnpay_ipn",
-      orderCode,
-    ],
+    ["compose", "-f", COMPOSE_FILE, "exec", "-T", "backend", "python", "-m", ...args],
     { encoding: "utf8" },
   );
+}
+
+/** VNPay reporting that the order was paid, signed the way VNPay signs it. */
+export function simulatePaidIpn(orderCode: string): string {
+  return backendScript("scripts.simulate_vnpay_ipn", orderCode);
+}
+
+/**
+ * Everything this suite has written -- its accounts, the courses they wrote,
+ * the orders and certificates -- taken back off the database it ran against.
+ * A developer's catalogue would otherwise gain a course and the leaderboard a
+ * student on every run. E2E_KEEP_DATA=1 leaves it all in place to look at.
+ */
+export function purgeSuiteData(): void {
+  if (process.env.E2E_KEEP_DATA) return;
+  backendScript("scripts.purge_e2e");
 }

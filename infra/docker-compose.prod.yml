@@ -387,6 +387,19 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     logging: *logging
+    # The image's own entrypoint, with a loop beside it that reloads nginx
+    # every 6 hours. certbot renews the certificate files on disk, but nginx
+    # reads them only when it (re)loads -- so before this, a renewed
+    # certificate sat unused until somebody happened to redeploy, and the one
+    # in memory expired under it 90 days after the first. Found while writing
+    # the monitor's certificate check (docs/report/assets/phase-6/monitoring.txt).
+    # A reload is graceful: open connections finish on the old workers.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        (while :; do sleep 6h; nginx -s reload; done) &
+        exec /docker-entrypoint.sh nginx -g 'daemon off;'
     ports:
       - "80:80"
       - "443:443"
@@ -416,7 +429,8 @@ services:
 
   # Wakes up twice a day, renews anything inside 30 days of expiry, and does
   # nothing the rest of the time. nginx picks a new certificate up on reload,
-  # which the deploy script does after a successful renewal.
+  # which its own entrypoint loop does every 6 hours (see nginx above); the
+  # host monitor checks the certificate actually being served.
   #
   # A version, not :latest -- a certbot that changed its CLI would only be
   # noticed when a renewal failed, weeks after the pull that brought it in.

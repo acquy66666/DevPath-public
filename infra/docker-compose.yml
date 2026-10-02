@@ -286,6 +286,9 @@ services:
       # directory holding a submission has to exist on both sides under the
       # same name. See the identical entry in `volumes` below.
       DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+      # Not the socket: the proxy below, which forwards only what a grading
+      # run is made of (grader/proxy/policy.py).
+      DOCKER_HOST: tcp://docker-proxy:2375
     volumes:
       - ../backend:/app
       - /app/.venv
@@ -296,15 +299,15 @@ services:
       # runner afterwards. On Docker Desktop this resolves inside the Linux VM,
       # which is exactly where the daemon looks.
       - /var/lib/devpath-grading:/var/lib/devpath-grading
-      # The whole grading design in one line. Everything a submission does is
-      # confined to a container with no network, no privileges and a read-only
-      # filesystem -- but the process that *starts* those containers needs the
-      # daemon, and a socket is not a permission system: this container can
-      # start any container it likes on the host. It is why nothing else in
-      # this stack gets the socket, why this image has no web server in it,
-      # and why no submitted code ever runs in this container.
-      - /var/run/docker.sock:/var/run/docker.sock
+    # No /var/run/docker.sock here any more (until 02/10/2026 there was, which
+    # made this container root on the host by one request). Its own network
+    # for the daemon, shared with the proxy and nothing else.
+    networks:
+      - default
+      - grading-docker
     depends_on:
+      docker-proxy:
+        condition: service_healthy
       redis:
         condition: service_healthy
       postgres:
@@ -320,6 +323,37 @@ services:
       timeout: 15s
       retries: 3
       start_period: 30s
+
+  # The one container that holds the Docker socket, and it serves nothing but
+  # the grading worker. Everything a grading run needs -- create a sandbox,
+  # attach, start, wait, kill, inspect, remove it -- passes; everything else
+  # is refused, including a create that is not a sandbox (privileged, host
+  # mounts, a network, a writable root, an image other than the sandbox's).
+  # The rules: grader/proxy/policy.py. Why it reads request bodies rather than
+  # being an off-the-shelf endpoint filter: grader/proxy/server.py.
+  #
+  # root here only because Docker Desktop's socket is root:root 660 and the
+  # dev worker writes the workspace as root; production runs it as 10001.
+  docker-proxy:
+    build: ../grader/proxy
+    image: devpath-docker-proxy:dev
+    user: "0"
+    environment:
+      DEVPATH_GRADING_WORKSPACE: /var/lib/devpath-grading
+      DOCKER_PROXY_IMAGES: devpath-sandbox-python:v1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      # Read-only, to check a mount source is a real submission directory and
+      # not a link the worker planted to somewhere else on the host.
+      - /var/lib/devpath-grading:/var/lib/devpath-grading:ro
+    networks:
+      - grading-docker
+    healthcheck:
+      # A ping through the proxy itself: green means proxy and daemon both.
+      test: ["CMD", "python", "-m", "proxy.server", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
 
   frontend:
     build:
@@ -365,3 +399,9 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+
+networks:
+  # The grading worker and the Docker proxy, nobody else. Internal: no route
+  # out, so the proxy's port is reachable from exactly one container.
+  grading-docker:
+    internal: true

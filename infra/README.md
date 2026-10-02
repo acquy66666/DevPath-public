@@ -20,6 +20,7 @@ backup/                  Service sao lưu: pg_dump mỗi đêm lên bucket priva
 scripts/restore-db.sh    Khôi phục: vào CSDL phụ trong lúc site chạy, rồi đổi tên thay CSDL đang chạy (giữ bản cũ)
 monitor/                 Giám sát trên host: mỗi phút kiểm container, site, chứng chỉ, đĩa; báo qua ntfy (systemd timer)
 scripts/install-monitor.sh  Cài/gỡ timer của monitor (cần sudo)
+../grader/proxy/          Proxy Docker API: container duy nhất cầm socket, chỉ cho worker chấm bài làm việc chấm bài
 ```
 
 ## Chạy stack ở máy dev
@@ -112,17 +113,27 @@ docker compose -f infra/docker-compose.yml exec minio sh -c 'mc alias set dev ht
 
 **Dùng R2 thật từ stack dev:** điền **đủ** các biến `R2_*`, kể cả `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com`. Để trống biến nào thì biến đó rơi về MinIO chứ không rơi về R2. Xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
 
-## Worker chấm bài, và cái socket nó cầm
+## Worker chấm bài, và proxy đứng giữa nó với Docker
 
-`grading-worker` là service duy nhất trong stack nói chuyện được với Docker daemon, vì chấm bài **chính là** việc khởi động container. Nó dùng image riêng (`grading-development` / `grading-production`) vì chỉ nó cần Docker CLI.
+Chấm bài **chính là** khởi động container, nên `grading-worker` phải nói chuyện được với Docker daemon. Nó dùng image riêng (`grading-development` / `grading-production`) vì chỉ nó cần Docker CLI. Nhưng từ 02/10/2026 nó **không cầm `/var/run/docker.sock`** nữa: CLI của nó trỏ `DOCKER_HOST=tcp://docker-proxy:2375`.
 
-**Đây là chỗ rủi ro nhất của cả kiến trúc, nói thẳng:** một container cầm `/var/run/docker.sock` khởi động được container tùy ý trên host, kể cả container mount cả ổ đĩa. Socket không phải hệ thống phân quyền, và không có cờ nào làm nó thành "chỉ đọc" theo nghĩa có ích. Những gì làm được để thu hẹp thiệt hại:
+**Vì sao:** socket không phải hệ thống phân quyền. Ai cầm nó thì một request — `docker run --privileged -v /:/host` — là thành root trên host. Trước đây worker cầm thẳng socket; các biện pháp giảm thiệt hại (không phục vụ HTTP, không publish cổng, uid 10001, code người nộp chỉ chạy trong container dùng một lần) chỉ làm khó việc chiếm worker, chứ chiếm được rồi thì chiếm luôn host.
 
-- chỉ một container cầm nó, và đó là container không phục vụ HTTP, không publish cổng, không ai từ ngoài gọi tới được;
-- **code người nộp không bao giờ chạy trong container này** — mọi dòng của nó chạy trong container dùng một lần mà worker tạo ra, với `--network none`, `--read-only`, `--cap-drop ALL`, uid 10001;
-- image production chạy uid 10001 chứ không phải root, nên còn phải cho vào nhóm `docker` của host mới chạm được socket (`group_add`). Chạy bằng root sẽ ngắn hơn một dòng và mở hơn rất nhiều.
+**`docker-proxy`** (`grader/proxy/`, Python chỉ thư viện chuẩn) là container **duy nhất** cầm socket, ngồi trên mạng nội bộ `grading-docker` chỉ có nó và worker, không publish cổng. Nó cho qua đúng những gì một lượt chấm cần — lấy từ chính lưu lượng của CLI 29.7 khi runner chấm một bài:
 
-Hướng làm chặt hơn (chưa làm, đã thành checkbox của [Phase 6](../docs/plan/phase-6-hardening-deploy.md), mục "Nợ hoãn lại"): đặt một proxy socket chỉ cho phép `create`/`start`/`wait`/`rm` thay vì đưa nguyên socket.
+| Cho qua | Điều kiện |
+|---|---|
+| `HEAD/GET /_ping` | — |
+| `POST /containers/create` | Body phải là một sandbox: image trong danh sách (`devpath-sandbox-python:v1`), tên `devpath-grading-<hex>`, nhãn đúng `devpath.grading=1`, user `10001:10001`, `NetworkMode none`, rootfs read-only, `CapDrop ALL`, `no-new-privileges`, memory/CPU/pids/CPU-time dưới trần nền tảng, swap = memory, `/tmp` là tmpfs `noexec` có giới hạn, log driver `none`, và **đúng một** bind mount read-only `<workspace>/devpath-grading-xxxxxxxx/code` là thư mục thật (không phải symlink). Mọi trường khác phải ở giá trị zero — trường Docker thêm sau này bị chặn cho tới khi có người quyết nó vô hại |
+| `start` / `attach` / `wait` / `kill` / `json` / `DELETE` một container | Daemon xác nhận container mang nhãn `devpath.grading=1` (proxy hỏi `inspect` trước khi chuyển tiếp). `start` kiểm lại nguồn mount vì daemon mount lúc start chứ không phải lúc create |
+
+Mọi thứ khác là **403**: `exec` (vào Postgres chẳng hạn), pull/build image, liệt kê container, network, volume, prune, swarm. Mỗi kết nối chỉ một request (`Connection: close`), body có `Transfer-Encoding` hay hai `Content-Length` bị từ chối — body đã kiểm đúng là body daemon đọc. `docker compose logs docker-proxy` ghi mỗi request một dòng, `allowed` hay `DENIED: <luật>`.
+
+**Vì sao tự viết thay vì dùng proxy có sẵn** (`tecnativa/docker-socket-proxy` và họ hàng): chúng lọc theo endpoint. Mở `containers` + `POST` cho runner là mở luôn một `create` có `Privileged: true` và bind-mount `/` — đúng request cần chặn. Rủi ro nằm trong body của một endpoint, nên phải đọc body.
+
+**Còn lại sau proxy:** worker bị chiếm vẫn tạo được sandbox (đúng mọi bất biến) và chạy code tùy ý *trong* sandbox — thứ học viên nào cũng làm được bằng cách nộp bài. Khe hở giữa lần kiểm symlink cuối và lúc daemon mount vẫn còn về lý thuyết; thứ lọt qua được là một view read-only các tệp uid 10001 đọc được, trong container không mạng.
+
+Kiểm: `grader/tests/test_docker_proxy_policy.py` (từng luật, trên body thật đã ghi lại), `test_docker_proxy_server.py` (HTTP, smuggling, half-close của attach), `test_docker_proxy_live.py` (tấn công qua proxy vào daemon thật). CI chạy lại toàn bộ bộ verdict + 7 ca tấn công sandbox **xuyên qua proxy**, và đỏ nếu service nào khác ngoài `docker-proxy` cầm socket.
 
 ### Trước lần chấm đầu tiên: build image sandbox
 
@@ -147,7 +158,7 @@ Chung một hàng đợi thì một bài giảng vừa upload sẽ chặn mọi 
 
 Thư mục đó còn phải **ghi được bởi uid 10001**. Daemon tự tạo nguồn bind-mount còn thiếu với quyền `root:root 755`, nên trên máy trắng worker production (uid 10001) không tạo nổi thư mục tạm và mọi bài nộp kết thúc bằng lỗi hệ thống (`PermissionError`). Worker dev chạy bằng root nên không bao giờ lộ ra; load test Phase 6 là lần đầu worker production chấm bài và bắt được nó (`docs/report/assets/phase-6/load-test.md`). Giờ `docker-compose.prod.yml` có service `grading-workspace` chạy một lần trước worker: `chown 10001:10001` + `chmod 700` rồi thoát — không có bước tay nào để quên.
 
-Trên VPS còn cần `DOCKER_GID` trong `.env.prod`:
+Trên VPS còn cần `DOCKER_GID` trong `.env.prod` — cho `docker-proxy` (uid 10001) mở được socket:
 
 ```bash
 getent group docker | cut -d: -f3
@@ -261,7 +272,7 @@ Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không 
 
 **Log** — mọi service ghi stdout, Docker gom lại; anchor `x-logging` trong `docker-compose.prod.yml` xoay vòng 5 tệp × 10 MB mỗi container (tệp cũ nén gzip), vì mặc định Docker giữ log không giới hạn. Một lệnh đọc cả stack, có giờ: `docker compose ... logs -t --since 1h`. CI đỏ nếu một service mới quên anchor. Giới hạn biết trước: container bị thay khi deploy mang log của nó đi theo — có sự cố thì đọc log **trước khi** deploy lại.
 
-**Monitor** (`monitor/devpath_monitor.py`, chỉ thư viện chuẩn) chạy **trên host** bằng systemd timer mỗi phút, không chạy trong container: đọc health của container là nói chuyện với Docker daemon, mà trên host này đúng một container được làm vậy (`grading-worker`, mục trên). Mỗi lượt kiểm:
+**Monitor** (`monitor/devpath_monitor.py`, chỉ thư viện chuẩn) chạy **trên host** bằng systemd timer mỗi phút, không chạy trong container: đọc health của container là nói chuyện với Docker daemon, mà trên host này đúng một container cầm socket — `docker-proxy`, và nó chỉ cho worker chấm bài làm đúng việc chấm bài (mục trên). Mỗi lượt kiểm:
 
 - mọi service compose khai `restart: unless-stopped`/`always` đang chạy và healthcheck không đỏ; container bị Docker tự dựng lại kể từ lượt trước thì báo một lần (`RestartCount`);
 - `https://DOMAIN/`, `/api/v1/health` và `/api/v1/courses?page_size=1` hỏi qua nginx ở `127.0.0.1:443` với đúng tên miền (TLS + định tuyến nằm trong đường đi). Cái thứ ba vì `/health` cố ý không chạm CSDL: diễn tập tắt Postgres thì trang chủ vẫn 200, `/health` vẫn 200, chỉ danh mục trả 500;

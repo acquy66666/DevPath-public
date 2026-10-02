@@ -4,9 +4,10 @@ something breaks -- and again when it is fixed.
 
 Runs on the VPS itself, from a systemd timer (devpath-monitor.timer), not in a
 container. Reading every container's health means talking to the Docker
-daemon, and on this host exactly one container is allowed to do that: the
-grading worker (docker-compose.prod.yml). The host already has the daemon and
-the restart policy; the monitor sits next to them.
+daemon, and on this host exactly one container holds the socket: the Docker
+proxy (grader/proxy), which lets the grading worker do grading and nothing
+else -- listing containers is not grading. The host already has the daemon
+and the restart policy; the monitor sits next to them.
 
     check        one round: look, decide, notify (what the timer runs)
     status       what the last round found, for a human on the server

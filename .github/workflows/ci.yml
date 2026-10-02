@@ -261,6 +261,36 @@ jobs:
       - name: Pytest
         run: pytest -q
 
+      # The verdict and sandbox-attack suites again, this time through the
+      # Docker proxy the worker uses in every stack (grader/proxy) -- so "the
+      # runner works behind the proxy" is all of those tests, not a claim --
+      # plus the attacks on the proxy itself, against this real daemon. Root
+      # in the proxy here only because the runner's temporary directories
+      # belong to the runner user, mode 700; in production both are uid 10001.
+      - name: Pytest through the Docker proxy
+        env:
+          DEVPATH_GRADING_WORKSPACE: /tmp/devpath-grading
+        run: |
+          mkdir -p "$DEVPATH_GRADING_WORKSPACE"
+          docker build -t devpath-docker-proxy:ci proxy
+          docker run -d --name devpath-docker-proxy --user 0 -p 127.0.0.1:2375:2375 \
+            -e DEVPATH_GRADING_WORKSPACE \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$DEVPATH_GRADING_WORKSPACE:$DEVPATH_GRADING_WORKSPACE:ro" \
+            devpath-docker-proxy:ci
+          for _ in $(seq 1 30); do
+            docker exec devpath-docker-proxy python -m proxy.server health && break
+            sleep 1
+          done
+          DOCKER_HOST=tcp://127.0.0.1:2375 DEVPATH_THROUGH_PROXY=1 \
+          DEVPATH_REAL_DOCKER_HOST=unix:///var/run/docker.sock \
+            pytest -q -rs tests/test_verdict_end_to_end.py tests/test_sandbox_attacks.py \
+              tests/test_runner_core.py tests/test_docker_proxy_live.py
+
+      - name: Docker proxy log
+        if: always()
+        run: docker logs devpath-docker-proxy 2>&1 | tail -80 || true
+
   deploy-config:
     name: Deploy config — compose, nginx, production images
     runs-on: ubuntu-24.04
@@ -303,6 +333,27 @@ jobs:
             echo "A source tree is bind-mounted into a production container." >&2
             exit 1
           fi
+
+      # The socket is root on the host. One service may hold it, the proxy
+      # that filters it for the grading worker -- a second holder, or the
+      # worker getting it back, would undo grader/proxy entirely.
+      - name: Only the Docker proxy holds the socket
+        working-directory: infra
+        run: |
+          for file in docker-compose.yml docker-compose.prod.yml; do
+            docker compose -f "$file" --env-file .env.prod config --format json > "rendered-$file.json"
+            python3 - "rendered-$file.json" "$file" <<'EOF'
+          import json, sys
+          services = json.load(open(sys.argv[1]))["services"]
+          holders = sorted(
+              name for name, spec in services.items()
+              if any("docker.sock" in str(v.get("source", "")) for v in spec.get("volumes", []))
+          )
+          if holders != ["docker-proxy"]:
+              sys.exit(f"{sys.argv[2]}: the socket is held by {holders}, expected only docker-proxy")
+          print(f"{sys.argv[2]}: only docker-proxy holds the socket.")
+          EOF
+          done
 
       # Docker keeps a container's log without limit unless told otherwise, and
       # a service added later would not inherit the anchor by itself.

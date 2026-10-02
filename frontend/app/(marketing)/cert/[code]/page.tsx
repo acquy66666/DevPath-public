@@ -1,5 +1,6 @@
 import { BadgeCheck, Download, Hourglass } from "lucide-react";
 import type { Metadata } from "next";
+import { Noto_Serif } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -12,6 +13,18 @@ import {
   type Certificate,
 } from "@/lib/api/certificates";
 import { formatDate } from "@/lib/format";
+
+// The name is the one thing on a certificate that has to come out right, and
+// Vietnamese names stack two marks on one letter (ồ, ễ, ậ). `font-serif` falls
+// back to Georgia on Windows, which has no such glyphs: Chrome then splits the
+// letter into its base and a combining mark Georgia cannot place, and "Luồng"
+// prints as "Luô`ng". A serif with a Vietnamese subset, loaded on this page
+// only, since nothing else on the site is set in serif.
+const certificateSerif = Noto_Serif({
+  subsets: ["latin", "vietnamese"],
+  weight: ["600", "700"],
+  display: "swap",
+});
 
 /**
  * The public page a certificate's QR code points at.
@@ -80,11 +93,15 @@ export default async function CertificatePage({
         <p className="mt-6 text-xs tracking-[0.3em] text-muted-foreground">
           CERTIFICATE OF COMPLETION
         </p>
-        <h1 className="mt-2 font-serif text-3xl font-semibold text-primary sm:text-4xl">
+        <h1
+          className={`mt-2 ${certificateSerif.className} text-3xl font-semibold text-primary sm:text-4xl`}
+        >
           Chứng nhận hoàn thành
         </h1>
         <p className="mt-8 text-sm text-muted-foreground">Trao cho</p>
-        <p className="mt-1 break-words font-serif text-3xl font-bold sm:text-4xl">
+        <p
+          className={`mt-1 break-words ${certificateSerif.className} text-3xl font-bold sm:text-4xl`}
+        >
           {certificate.recipient_name}
         </p>
         <p className="mt-6 text-sm text-muted-foreground">đã hoàn thành toàn bộ khóa học</p>

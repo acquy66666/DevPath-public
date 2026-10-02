@@ -36,4 +36,5 @@ Học viên nộp → API tạo submission (status=pending) → đẩy job vào 
 
 - Viết test trước (TDD): mỗi verdict phải có submission mẫu tái hiện được trong test suite (`grader/tests/fixtures/` — code mẫu AC, vòng lặp vô hạn cho TLE, cấp phát quá đà cho MLE, fork bomb cho pids-limit...).
 - Test bảo mật là test hạng nhất: thử đọc file ngoài mount, thử gọi network, thử ghi rootfs — tất cả phải fail.
+- **Worker không cầm Docker socket** (từ 02/10/2026): nó đi qua `grader/proxy/` — container duy nhất cầm socket, chỉ cho `create` đúng một sandbox và thao tác trên container nhãn `devpath.grading=1`. Thêm/đổi cờ trong `runner/sandbox.py::_container_flags` thì **phải** đổi `grader/proxy/policy.py` + fixture `tests/fixtures/docker_create_body.json` cùng lúc, không thì mọi bài nộp thành SE (403). Không bao giờ mount lại socket vào worker hay service nào khác — CI đỏ nếu có.
 - Ngôn ngữ hỗ trợ ban đầu: Python. Java/C++/Go là hướng phát triển — thiết kế image per-language để mở rộng được, nhưng KHÔNG build sớm.

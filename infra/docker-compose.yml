@@ -135,8 +135,11 @@ services:
       # and stored above, and inside the network the service listens on 9000.
       # Loopback only -- the dev credentials are in this file.
       - "127.0.0.1:9000:9000"
-      # Web console, for looking inside the bucket.
-      - "127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001"
+      # No web console. The image still passes --console-address :9001, but
+      # MinIO's community builds dropped the console in 2025 and nothing
+      # listens there -- the 9001 mapping this file had since 18/09 led
+      # nowhere (docs/report/assets/phase-6/fresh-machine.txt). To look inside
+      # the bucket, use `mc` in this container (infra/README.md).
     volumes:
       - minio_data:/bitnami/minio/data
     networks:

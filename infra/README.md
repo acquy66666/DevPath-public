@@ -41,7 +41,6 @@ Lần đầu mất vài phút để build image. Sau đó:
 | localhost:5432 | Postgres — dùng cho Alembic chạy từ venv trên host |
 | localhost:6379 | Redis |
 | http://minio.localhost:9000 | MinIO — storage S3 thay R2 trên máy dev (xem mục bên dưới) |
-| http://localhost:9001 | Console web của MinIO |
 
 Tám service; bảy cái có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". Riêng `beat` không có, vì nó chỉ phát lịch chứ không nhận việc nên không trả lời `inspect ping` (lý do ghi trong compose). `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
 
@@ -94,8 +93,14 @@ Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy nga
 | Thứ | Giá trị |
 |---|---|
 | API S3 | `http://minio.localhost:9000`, bucket `devpath-media` (đọc ẩn danh được, ghi phải có chữ ký) |
-| Console web | `http://localhost:9001`, đăng nhập bằng `MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD` (mặc định `devpath` / `devpath-minio`) |
+| Xem bên trong bucket | Không có console web: bản MinIO cộng đồng bỏ console từ 2025, image vẫn truyền `--console-address :9001` nhưng không gì nghe ở đó (cổng 9001 trong compose từ 18/09 tới 02/10/2026 dẫn vào khoảng không). Dùng `mc` có sẵn trong container — lệnh ngay dưới bảng |
 | Dữ liệu | volume `minio_data`, còn nguyên qua các lần restart |
+
+```bash
+docker compose -f infra/docker-compose.yml exec minio sh -c 'mc alias set dev http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc ls --recursive dev/devpath-media'
+```
+
+(Alias `local` có sẵn trong image không có khóa, nên `mc ls local/...` treo im lặng — phải khai alias như trên.)
 
 **Vì sao là `minio.localhost` chứ không phải `minio`:** URL ký sẵn chỉ hợp lệ cho đúng một host, và cùng một URL được cả trình duyệt lẫn worker dùng. Trình duyệt dùng nó để PUT file và phát video; worker dùng nó để tải bản gốc và đẩy HLS lên. Chrome và Edge tự đưa mọi `*.localhost` về `127.0.0.1`, nơi cổng 9000 được publish; trong mạng compose, cũng cái tên đó là alias của service. Một tên dùng được cho cả hai phía. Hệ quả:
 

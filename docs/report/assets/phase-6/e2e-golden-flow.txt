@@ -41,7 +41,8 @@ Máy dev (Windows, Docker Desktop, next dev trong container, Chrome 1 worker):
   1 passed (20.7s) · 1 passed (15.8s) · 1 passed (26.9s) · 1 passed (32.1s)
   · 1 passed (17.5s) · 1 passed (18.8s)
   (lượt sau khi khởi động lại frontend chậm hơn vì next dev biên dịch trang lần đầu)
-CI (job "E2E — golden flow", PR #67): xem mục 5.
+CI (job "E2E — golden flow", PR #67, ubuntu-24.04, Chromium của Playwright):
+  1 passed (35.8s), không retry — run 36964368747, commit d29f069. Xem mục 5.
 
 ==============================================================================
 3. HAI LỖI THẬT E2E TÌM RA QUA ẢNH CHỤP (đã sửa, commit a039033)
@@ -83,3 +84,18 @@ Job "E2E — golden flow": dựng nguyên stack compose dev từ số không (`u
 build image sandbox, migrate + seed, cài Chromium của Playwright, chạy spec; lỗi thì in log
 backend/worker/frontend và tải lên report + trace. VNPay dùng giá trị giả (trang VNPay bị
 thay, IPN ký trong container).
+
+Lượt đầu (run 36963785427) đỏ trước khi chạy test: `npm ci` trên runner gặp EACCES ở
+frontend/node_modules. Container frontend gắn volume ẩn danh vào /app/node_modules nằm
+trong thư mục frontend/ được bind-mount, và Docker tạo điểm gắn đó trên host bằng root;
+job bật stack trước rồi mới cài thư viện nên không ghi được. Trên Windows (Docker Desktop)
+không lộ ra. Sửa (d29f069): cài Node, thư viện và Chromium TRƯỚC `compose up` — thư mục
+khi ấy là của runner, volume chỉ che lên.
+
+Lượt sau (run 36964368747, 02/10 04:24–04:28 UTC) xanh, job 4 phút:
+  cài thư viện 13 s · Chromium 26 s · image sandbox 13 s · dựng stack 2 ph 15 s
+  · migrate + seed 4 s · luồng vàng 37 s
+    Running 1 test using 1 worker
+      ✓  1 [chromium] › e2e/golden-flow.spec.ts:46:5 › đăng ký → mua → học → nộp code →
+         nhận chứng chỉ (31.4s)
+      1 passed (35.8s)

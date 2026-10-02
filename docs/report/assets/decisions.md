@@ -479,3 +479,15 @@ Task 2 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/security-revie
 **Kiểm `?next=` bằng chính bộ phân tích URL thay vì so tiền tố** — trình duyệt đọc `/\evil` và `/<tab>/evil` thành `//evil`; danh sách ký tự cấm luôn thiếu một ký tự. Phân giải như router, giữ khi origin không đổi, trả về đường dẫn đã phân giải.
 
 **Test đơn vị frontend bằng `node --test`, không cài Vitest** — Node chạy TypeScript bằng cách bỏ kiểu; một hàm thuần không cần cả framework. Tệp `*.test.ts` nằm ngoài tsconfig vì Node cần import có đuôi `.ts` còn cấu hình bundler của Next từ chối.
+
+## E2E luồng vàng (02/10/2026)
+
+Task 3 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/e2e-golden-flow.txt`.
+
+**E2E chạy vào stack compose có sẵn, Playwright không tự dựng** — luồng vàng cần cùng lúc API, Postgres, Redis, bucket, worker chấm bài trong sandbox Docker và worker vẽ chứng chỉ; không có stack nhỏ hơn mà vẫn nói thật về luồng này. CI dựng chính stack dev từ số không trong một job riêng. Trả giá: job chậm (build 3 image) và phụ thuộc Docker của runner.
+
+**Mọi bước của học viên đi qua UI; phần của người khác đi qua API** — giảng viên soạn khóa và admin duyệt là câu chuyện khác, đã có test riêng; làm qua API mất vài giây thay vì một trình duyệt thứ hai. IPN của VNPay không có trình duyệt nào đi được: ký bằng script của backend chạy trong container, nên secret không ra khỏi container mà request vẫn qua bước kiểm chữ ký thật.
+
+**Chờ verdict tổng, không chờ nhãn đầu tiên** — "Đúng" hiện trên test 1 khi test 2 còn đang chấm; test đầu tiên viết theo nhãn ấy đã xanh quá sớm. Bài học chung cho E2E giao diện realtime: assertion phải gắn vào trạng thái cuối, không vào chữ.
+
+**Suite tự dọn dữ liệu của mình** — mỗi lượt ghi dữ liệu thật vào CSDL nó chạy; nhận diện bằng một tên miền email riêng (`@e2e.devpath.example`) thay vì đánh dấu từng bảng, rồi xóa theo thứ tự 5 khóa ngoại RESTRICT.

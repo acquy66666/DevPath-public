@@ -80,4 +80,12 @@ docker image prune -f >/dev/null
 
 "${COMPOSE[@]}" ps
 echo
-echo "Deployed. Logs: docker compose -f docker-compose.prod.yml logs -f"
+echo "Deployed. Logs: docker compose -f docker-compose.prod.yml --env-file .env.prod logs -t --since 1h"
+
+# A reminder, not a gate: the site runs fine without the monitor, it just
+# breaks without anybody hearing about it.
+if command -v systemctl >/dev/null && ! systemctl is-active --quiet devpath-monitor.timer; then
+    echo
+    echo "The host monitor is not running: sudo ./scripts/install-monitor.sh" \
+        "(docs/huong-dan-deploy-vps.md, mục 4b)."
+fi

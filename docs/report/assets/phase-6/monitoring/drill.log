@@ -1,0 +1,299 @@
+--- round 20:49:21
+1 vấn đề — Docker: không đọc được trạng thái container (template parsing error: template: :1:162: executing "" at <.State.Health>: map has no entry for key "Health")
+exit=0
+--- round 20:49:22
+Thông báo: DevPath: 1 sự cố mới | ✗ Docker: không đọc được trạng thái container (template parsing error: template: :1:162: executing "" at <.State.Health>: map has no entry for key "Health") (từ 20:49 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:49 02/10
+1 vấn đề — Docker: không đọc được trạng thái container (template parsing error: template: :1:162: executing "" at <.State.Health>: map has no entry for key "Health")
+exit=0
+--- round 20:50:11
+Thông báo: DevPath: đã ổn lại | ✓ Docker: ổn lại sau 1 phút | localhost · 20:50 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+--- round 20:50:13
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== A: docker compose stop worker
+--- round 20:51:00
+1 vấn đề — Service worker: đã dừng (mã thoát 0)
+exit=0
+--- round 20:51:02
+Thông báo: DevPath: 1 sự cố mới | ✗ Service worker: đã dừng (mã thoát 0) (từ 20:51 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:51 02/10
+1 vấn đề — Service worker: đã dừng (mã thoát 0)
+exit=0
+--- round 20:51:03
+1 vấn đề — Service worker: đã dừng (mã thoát 0)
+exit=0
+Lượt kiểm gần nhất: 20:51 02/10 (1 phút trước)
+  Service worker: đã dừng (mã thoát 0) -- từ 20:51 02/10, đã báo
+=== A': docker compose start worker
+--- round 20:51:15
+Thông báo: DevPath: đã ổn lại | ✓ Service worker: ổn lại sau 1 phút | localhost · 20:51 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== B: worker's main process exits on its own (SIGTERM from inside), Docker restarts it
+RestartCount=0 Status=running
+--- round 20:51:32
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+--- round 20:51:33
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+(first SIGTERM landed before celery had installed its handler -- PID 1 ignores it -- sent again once ready)
+RestartCount=1 Status=running Started=2026-10-02T13:51:56.610537933Z
+--- round 20:52:06
+Thông báo: DevPath: service tự khởi động lại | ↻ worker: Docker tự khởi động lại 1 lần | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:52 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+--- round 20:52:07
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== C: docker compose stop frontend
+--- round 20:52:17
+2 vấn đề — Service frontend: đã dừng (mã thoát 143); Trang chủ: trả HTTP 502
+exit=0
+--- round 20:52:22
+Thông báo: DevPath: 2 sự cố mới | ✗ Service frontend: đã dừng (mã thoát 143) (từ 20:52 02/10) | ✗ Trang chủ: trả HTTP 502 (từ 20:52 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:52 02/10
+2 vấn đề — Service frontend: đã dừng (mã thoát 143); Trang chủ: trả HTTP 502
+exit=0
+=== C': docker compose start frontend
+--- round 20:52:57
+Thông báo: DevPath: đã ổn lại | ✓ Service frontend: ổn lại sau 1 phút | ✓ Trang chủ: ổn lại sau 1 phút | localhost · 20:52 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== D: docker compose stop postgres
+--- round 20:53:10
+1 vấn đề — Service postgres: đã dừng (mã thoát 0)
+exit=0
+--- round 20:53:15
+Thông báo: DevPath: 1 sự cố mới | ✗ Service postgres: đã dừng (mã thoát 0) (từ 20:53 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:53 02/10
+1 vấn đề — Service postgres: đã dừng (mã thoát 0)
+exit=0
+homepage 200
+/api/v1/courses 500   <- only this one
+=== D': docker compose start postgres
+--- round 20:53:39
+Thông báo: DevPath: đã ổn lại | ✓ Service postgres: ổn lại sau 1 phút | localhost · 20:53 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== D2 (with the catalogue check added): docker compose stop postgres
+--- round 20:54:47
+2 vấn đề — Danh mục khóa học (API + CSDL): trả HTTP 500; Service postgres: đã dừng (mã thoát 0)
+exit=0
+--- round 20:54:56
+Thông báo: DevPath: 2 sự cố mới | ✗ Danh mục khóa học (API + CSDL): trả HTTP 500 (từ 20:54 02/10) | ✗ Service postgres: đã dừng (mã thoát 0) (từ 20:54 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:54 02/10
+2 vấn đề — Danh mục khóa học (API + CSDL): trả HTTP 500; Service postgres: đã dừng (mã thoát 0)
+exit=0
+=== D2': docker compose start postgres
+--- round 20:55:14
+Thông báo: DevPath: đã ổn lại | ✓ Danh mục khóa học (API + CSDL): ổn lại sau 1 phút | ✓ Service postgres: ổn lại sau 1 phút | localhost · 20:55 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== E: a certificate 5 days from expiry is installed and nginx reloaded
+on disk: notAfter=Oct  7 13:55:35 2026 GMT
+served:  notAfter=Oct  7 13:55:35 2026 GMT
+--- round 20:55:40
+1 vấn đề — Chứng chỉ TLS: còn 4 ngày là hết hạn (07/10/2026)
+exit=0
+--- round 20:55:41
+Thông báo: DevPath: 1 sự cố mới | ✗ Chứng chỉ TLS: còn 4 ngày là hết hạn (07/10/2026) (từ 20:55 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:55 02/10
+1 vấn đề — Chứng chỉ TLS: còn 4 ngày là hết hạn (07/10/2026)
+exit=0
+=== E': a renewed 90-day certificate is written to disk -- what certbot does -- and nginx is NOT reloaded (the bug before this branch)
+on disk: notAfter=Dec 31 13:55:59 2026 GMT
+served:  notAfter=Oct  7 13:55:35 2026 GMT
+--- round 20:56:01
+1 vấn đề — Chứng chỉ TLS: còn 4 ngày là hết hạn (07/10/2026)
+exit=0
+=== E'': nginx -s reload -- what the entrypoint loop now does every 6 hours
+served:  notAfter=Dec 31 13:55:59 2026 GMT
+--- round 20:56:06
+Thông báo: DevPath: đã ổn lại | ✓ Chứng chỉ TLS: ổn lại sau 1 phút | localhost · 20:56 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== nginx entrypoint loop, interval shortened to 5 s in a throwaway nginx:1.27-alpine:
+2026/10/02 13:56:20 [notice] 1#1: start worker processes
+2026/10/02 13:56:25 [notice] 40#40: signal process started
+2026/10/02 13:56:25 [notice] 1#1: signal 1 (SIGHUP) received from 40, reconfiguring
+2026/10/02 13:56:25 [notice] 1#1: reconfiguring
+2026/10/02 13:56:25 [notice] 1#1: start worker processes
+2026/10/02 13:56:30 [notice] 50#50: signal process started
+2026/10/02 13:56:30 [notice] 1#1: signal 1 (SIGHUP) received from 50, reconfiguring
+2026/10/02 13:56:30 [notice] 1#1: reconfiguring
+PID   PPID  COMMAND
+    1     0 nginx: master process nginx -g daemon off;
+    7     1 /bin/sh -c (while :; do sleep 5; nginx -s reload; done) & exec /docker-entrypoint.sh nginx -g 'daemon off;'
+   61     7 sleep 5
+stopped: exit=0
+=== F: ntfy is down (docker stop ntfy-drill), then beat stops
+--- round 20:56:54
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+--- round 20:56:55
+Thông báo: DevPath: 1 sự cố mới | ✗ Service beat: đã dừng (mã thoát 0) (từ 20:56 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:56 02/10
+Chưa gửi được thông báo (<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>); còn 1 tin chờ lượt sau
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+outbox: ['DevPath: 1 sự cố mới']   <- kept in state.json for the next round
+=== F': ntfy back (docker start ntfy-drill)
+(the round below delivered the queued alert -- ntfy logged it received at 20:57:03; the journal line saying so, 'Đã gửi bù N tin chờ từ lượt trước', was added after this drill)
+--- round 20:57:02
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+=== F'': docker compose start beat
+--- round 20:57:04
+Thông báo: DevPath: đã ổn lại | ✓ Service beat: ổn lại sau 1 phút | localhost · 20:57 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== F''': re-run of the same outage with the catch-up line in place
+--- round 20:57:57
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+--- round 20:57:58
+Thông báo: DevPath: 1 sự cố mới | ✗ Service beat: đã dừng (mã thoát 0) (từ 20:57 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:57 02/10
+Chưa gửi được thông báo (<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>); còn 1 tin chờ lượt sau
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+--- round 20:58:05
+Đã gửi bù 1 tin chờ từ lượt trước
+1 vấn đề — Service beat: đã dừng (mã thoát 0)
+exit=0
+--- round 20:58:07
+Thông báo: DevPath: đã ổn lại | ✓ Service beat: ổn lại sau 1 phút | localhost · 20:58 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== G: docker compose stop nginx
+nginx stopped in 1.0 s, exit 0
+--- round 20:58:19
+4 vấn đề — API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Service nginx: đã dừng (mã thoát 0); Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it)
+exit=0
+--- round 20:58:29
+Thông báo: DevPath: 4 sự cố mới | ✗ API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10) | ✗ Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10) | ✗ Service nginx: đã dừng (mã thoát 0) (từ 20:58 02/10) | ✗ Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:58 02/10
+4 vấn đề — API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Service nginx: đã dừng (mã thoát 0); Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it)
+exit=0
+=== G': docker compose start nginx
+--- round 20:58:42
+Thông báo: DevPath: đã ổn lại | ✓ API /api/v1/health: ổn lại sau 1 phút | ✓ Danh mục khóa học (API + CSDL): ổn lại sau 1 phút | ✓ Service nginx: ổn lại sau 1 phút | ✓ Trang chủ: ổn lại sau 1 phút | localhost · 20:58 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== G2 (alert lines grouped by text): docker compose stop nginx
+--- round 20:59:34
+4 vấn đề — API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Service nginx: đã dừng (mã thoát 0); Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it)
+exit=0
+--- round 20:59:43
+Thông báo: DevPath: 4 sự cố mới | ✗ API /api/v1/health, Danh mục khóa học (API + CSDL), Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:59 02/10) | ✗ Service nginx: đã dừng (mã thoát 0) (từ 20:59 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 20:59 02/10
+4 vấn đề — API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it); Service nginx: đã dừng (mã thoát 0); Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it)
+exit=0
+--- round 20:59:57
+Thông báo: DevPath: đã ổn lại | ✓ API /api/v1/health, Danh mục khóa học (API + CSDL), Service nginx, Trang chủ: ổn lại sau 1 phút | localhost · 20:59 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== H: disk threshold raised above the real free space (MONITOR_DISK_MIN_FREE_PERCENT=50, actual 43%) -- simulated, not a full disk
+--- round 20:59:58
+1 vấn đề — Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+--- round 20:59:59
+Thông báo: DevPath: 1 sự cố mới | ✗ Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\ (từ 20:59 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 21:00 02/10
+1 vấn đề — Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+--- round 21:00:01
+Thông báo: DevPath: đã ổn lại | ✓ Ổ đĩa: ổn lại sau 1 phút | localhost · 21:00 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+=== H2 (threshold named in the message)
+--- round 21:00:28
+1 vấn đề — Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\, dưới ngưỡng 50%
+exit=0
+--- round 21:00:29
+Thông báo: DevPath: 1 sự cố mới | ✗ Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\, dưới ngưỡng 50% (từ 21:00 02/10) | Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service> | localhost · 21:00 02/10
+1 vấn đề — Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\, dưới ngưỡng 50%
+exit=0
+--- round 21:00:31
+Thông báo: DevPath: đã ổn lại | ✓ Ổ đĩa: ổn lại sau 1 phút | localhost · 21:00 02/10
+ổn — 10 container chạy, TLS hợp lệ, trang chủ + API + danh mục trả lời, đĩa trống 43% (95.5 GB) ở D:\
+exit=0
+Lượt kiểm gần nhất: 21:00 02/10 (vừa xong)
+Không có vấn đề nào.
+=== test-alert
+Đã gửi tới http://127.0.0.1:8090/devpath-drill
+exit=0
+=== duration of 5 healthy rounds
+round 1: 1195 ms
+round 2: 1229 ms
+round 3: 1199 ms
+round 4: 1358 ms
+round 5: 1298 ms
+=== log driver of every container in the stack
+devpath-prodtest-backend-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-backup-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-beat-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-certbot-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-frontend-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-grading-worker-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-grading-workspace-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-nginx-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-postgres-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-redis-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+devpath-prodtest-worker-1 json-file {"compress":"true","max-file":"5","max-size":"10m"}
+=== rotation proof: 120,000 lines (~7 MB) into a container capped at 1 MB x 3
+-rw-r-----    1 root     root        754713 Oct  2 14:01 767f434801ea0140e94f5bccad057c1ddf3fd098e882fea7ce5e852ffcbc5696-json.log
+-rw-r-----    1 root     root         60495 Oct  2 14:01 767f434801ea0140e94f5bccad057c1ddf3fd098e882fea7ce5e852ffcbc5696-json.log.1.gz
+-rw-r-----    1 root     root         60455 Oct  2 14:01 767f434801ea0140e94f5bccad057c1ddf3fd098e882fea7ce5e852ffcbc5696-json.log.2.gz
+-rw-------    1 root     root          3262 Oct  2 14:01 config.v2.json
+-rw-------    1 root     root          1527 Oct  2 14:01 hostconfig.json
+docker logs still answers: 22255 lines kept, last: line 119999 of a chatty worker ......................
+=== what ntfy received (in-memory cache, so since its restart in scenario F'''), as the phone would show it
+20:58:06  priority 4  tags ['rotating_light']
+  DevPath: 1 sự cố mới
+    ✗ Service beat: đã dừng (mã thoát 0) (từ 20:57 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 20:57 02/10
+20:58:08  priority 3  tags ['white_check_mark']
+  DevPath: đã ổn lại
+    ✓ Service beat: ổn lại sau 1 phút
+    localhost · 20:58 02/10
+20:58:38  priority 5  tags ['rotating_light']
+  DevPath: 4 sự cố mới
+    ✗ API /api/v1/health: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10)
+    ✗ Danh mục khóa học (API + CSDL): không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10)
+    ✗ Service nginx: đã dừng (mã thoát 0) (từ 20:58 02/10)
+    ✗ Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:58 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 20:58 02/10
+20:58:43  priority 3  tags ['white_check_mark']
+  DevPath: đã ổn lại
+    ✓ API /api/v1/health: ổn lại sau 1 phút
+    ✓ Danh mục khóa học (API + CSDL): ổn lại sau 1 phút
+    ✓ Service nginx: ổn lại sau 1 phút
+    ✓ Trang chủ: ổn lại sau 1 phút
+    localhost · 20:58 02/10
+20:59:53  priority 5  tags ['rotating_light']
+  DevPath: 4 sự cố mới
+    ✗ API /api/v1/health, Danh mục khóa học (API + CSDL), Trang chủ: không kết nối được ([WinError 10061] No connection could be made because the target machine actively refused it) (từ 20:59 02/10)
+    ✗ Service nginx: đã dừng (mã thoát 0) (từ 20:59 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 20:59 02/10
+20:59:58  priority 3  tags ['white_check_mark']
+  DevPath: đã ổn lại
+    ✓ API /api/v1/health, Danh mục khóa học (API + CSDL), Service nginx, Trang chủ: ổn lại sau 1 phút
+    localhost · 20:59 02/10
+21:00:01  priority 4  tags ['rotating_light']
+  DevPath: 1 sự cố mới
+    ✗ Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\ (từ 20:59 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 21:00 02/10
+21:00:02  priority 3  tags ['white_check_mark']
+  DevPath: đã ổn lại
+    ✓ Ổ đĩa: ổn lại sau 1 phút
+    localhost · 21:00 02/10
+21:00:30  priority 4  tags ['rotating_light']
+  DevPath: 1 sự cố mới
+    ✗ Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\, dưới ngưỡng 50% (từ 21:00 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 21:00 02/10
+21:00:32  priority 3  tags ['white_check_mark']
+  DevPath: đã ổn lại
+    ✓ Ổ đĩa: ổn lại sau 1 phút
+    localhost · 21:00 02/10
+21:00:44  priority 3  tags ['bell']
+  DevPath: thử thông báo
+    Nếu đọc được tin này trên điện thoại thì cảnh báo của localhost đã thông.

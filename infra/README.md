@@ -18,6 +18,8 @@ scripts/tunnel.sh        Bật/tắt URL công khai tạm, in URL ra màn hình
 loadtest/                k6 vào stack production: trang danh sách + một lớp nộp code cùng lúc (Phase 6)
 backup/                  Service sao lưu: pg_dump mỗi đêm lên bucket private, giữ N bản; image dựng từ chính image Postgres
 scripts/restore-db.sh    Khôi phục: vào CSDL phụ trong lúc site chạy, rồi đổi tên thay CSDL đang chạy (giữ bản cũ)
+monitor/                 Giám sát trên host: mỗi phút kiểm container, site, chứng chỉ, đĩa; báo qua ntfy (systemd timer)
+scripts/install-monitor.sh  Cài/gỡ timer của monitor (cần sudo)
 ```
 
 ## Chạy stack ở máy dev
@@ -232,7 +234,7 @@ Thứ tự "migrate trước, khởi động sau" hợp với loại thay đổi
 
 ### Chứng chỉ tự gia hạn
 
-Service `certbot` dậy 12 tiếng một lần, gia hạn thứ gì còn dưới 30 ngày và không làm gì trong phần lớn thời gian còn lại. nginx nhận chứng chỉ mới khi reload — deploy lần kế tiếp là đủ, hoặc chủ động:
+Service `certbot` dậy 12 tiếng một lần, gia hạn thứ gì còn dưới 30 ngày và không làm gì trong phần lớn thời gian còn lại. nginx chỉ đọc tệp chứng chỉ lúc (re)load, nên entrypoint của nó có một vòng lặp reload mỗi 6 giờ. Trước 02/10/2026 không có vòng này và mục này ghi "deploy lần kế tiếp là đủ" — tức chứng chỉ đã gia hạn nằm im trên đĩa, còn bản trong bộ nhớ hết hạn 90 ngày sau lần đầu nếu không ai deploy (diễn tập: `docs/report/assets/phase-6/monitoring.txt`, kịch bản E). Monitor kiểm đúng chứng chỉ **đang được phục vụ**, báo khi còn dưới 14 ngày. Reload ngay, không chờ vòng:
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec nginx nginx -s reload
@@ -249,6 +251,19 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f --tail 10
 ```
 
 Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không phải phỏng đoán — `running (unhealthy)` nghĩa là container sống nhưng không làm được việc, và đó thường là biến môi trường sai chứ không phải code hỏng.
+
+## Giám sát, log, cảnh báo
+
+**Log** — mọi service ghi stdout, Docker gom lại; anchor `x-logging` trong `docker-compose.prod.yml` xoay vòng 5 tệp × 10 MB mỗi container (tệp cũ nén gzip), vì mặc định Docker giữ log không giới hạn. Một lệnh đọc cả stack, có giờ: `docker compose ... logs -t --since 1h`. CI đỏ nếu một service mới quên anchor. Giới hạn biết trước: container bị thay khi deploy mang log của nó đi theo — có sự cố thì đọc log **trước khi** deploy lại.
+
+**Monitor** (`monitor/devpath_monitor.py`, chỉ thư viện chuẩn) chạy **trên host** bằng systemd timer mỗi phút, không chạy trong container: đọc health của container là nói chuyện với Docker daemon, mà trên host này đúng một container được làm vậy (`grading-worker`, mục trên). Mỗi lượt kiểm:
+
+- mọi service compose khai `restart: unless-stopped`/`always` đang chạy và healthcheck không đỏ; container bị Docker tự dựng lại kể từ lượt trước thì báo một lần (`RestartCount`);
+- `https://DOMAIN/`, `/api/v1/health` và `/api/v1/courses?page_size=1` hỏi qua nginx ở `127.0.0.1:443` với đúng tên miền (TLS + định tuyến nằm trong đường đi). Cái thứ ba vì `/health` cố ý không chạm CSDL: diễn tập tắt Postgres thì trang chủ vẫn 200, `/health` vẫn 200, chỉ danh mục trả 500;
+- chứng chỉ nginx đang phục vụ xác thực được và còn ≥ `MONITOR_CERT_MIN_DAYS` (14) ngày;
+- đĩa chứa dữ liệu Docker còn ≥ `MONITOR_DISK_MIN_FREE_PERCENT` (10) %.
+
+Một vấn đề phải thấy ở **2 lượt liên tiếp** mới báo (container bị thay lúc deploy không phải sự cố), nhắc lại mỗi 6 giờ, và có tin "đã ổn lại" kèm thời gian. Tin gửi tới ntfy (`MONITOR_NTFY_URL`, không cần tài khoản); gửi không được thì nằm trong outbox chờ lượt sau. Trạng thái ở `/var/lib/devpath-monitor/state.json`. Cài: `sudo ./scripts/install-monitor.sh`; xem: `journalctl -u devpath-monitor -f` hoặc `python3 monitor/devpath_monitor.py status`. Thứ monitor không thấy được là chính cái máy này chết — việc đó của uptime check bên ngoài (runbook mục 4b). Unit test: `python -m pytest infra/monitor` (job backend của CI); bản cài thật chạy trên systemd của runner trong job deploy-config.
 
 ## Sao lưu và khôi phục CSDL
 

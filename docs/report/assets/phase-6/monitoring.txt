@@ -1,0 +1,189 @@
+GIÁM SÁT TỐI THIỂU: UPTIME CHECK + LOG TẬP TRUNG + CẢNH BÁO
+Ngày làm: 02/10/2026 · nhánh feature/monitoring · stack production dựng trên máy dev
+(project devpath-prodtest, chính infra/docker-compose.prod.yml)
+Phase 6, task: "Monitoring tối thiểu: uptime check + log tập trung (docker logging) + alert
+đơn giản"
+
+Tệp: infra/monitor/{devpath_monitor.py, test_devpath_monitor.py, devpath-monitor.service,
+     devpath-monitor.timer} · infra/scripts/install-monitor.sh · anchor x-logging + entrypoint
+     nginx trong infra/docker-compose.prod.yml · MONITOR_* trong infra/.env.prod.example ·
+     runbook docs/huong-dan-deploy-vps.md mục 4b, 5, 7, 8 · infra/README.md
+Log thô của buổi diễn tập: monitoring/drill.log (45 lượt kiểm, 299 dòng)
+
+==============================================================================
+1. THIẾT KẾ — BA PHẦN, VÀ CHỖ MỖI PHẦN MÙ
+==============================================================================
+  Log        mọi service ghi stdout; Docker gom lại. Anchor `x-logging` gắn cho cả 11
+             service: json-file, 5 tệp × 10 MB mỗi container, tệp cũ nén gzip → trần
+             ~600 MB cho cả stack. Mặc định của Docker là giữ log KHÔNG GIỚI HẠN — một worker
+             nói nhiều trên đĩa 40 GB tự nó đã là một sự cố. Đọc cả stack bằng một lệnh:
+             `docker compose ... logs -t --since 1h`. CI đỏ nếu service mới quên anchor.
+             Giới hạn biết trước, ghi vào runbook: container bị thay khi deploy mang log
+             theo — đọc log TRƯỚC khi deploy lại.
+
+  Monitor    script Python chỉ dùng thư viện chuẩn, chạy TRÊN HOST bằng systemd timer mỗi
+  trên host  phút, dưới user đang deploy (nhóm docker), không phải root. Không chạy trong
+             container: đọc health của container = nói chuyện với Docker daemon, mà compose
+             đã cam kết đúng MỘT container được cầm socket (grading-worker, để chấm bài).
+             Monitor đứng cạnh daemon và restart policy, ở chỗ chúng vốn đã ở.
+             Mỗi lượt (~1,2 s đo trên máy dev):
+               service:<tên>  mọi service compose khai restart unless-stopped/always đang
+                              chạy, healthcheck không đỏ (danh sách lấy từ chính compose
+                              file — thêm service là tự được theo dõi); container Docker tự
+                              dựng lại kể từ lượt trước → báo MỘT lần (RestartCount theo id
+                              container, nên deploy tạo container mới không bị tính)
+               site / api /   https://DOMAIN/, /api/v1/health, /api/v1/courses?page_size=1,
+               catalog        hỏi qua nginx ở 127.0.0.1:443 với đúng tên miền (SNI + Host),
+                              nên TLS và định tuyến nằm trong đường đi
+               tls            chứng chỉ nginx ĐANG PHỤC VỤ xác thực được, còn ≥ 14 ngày
+               disk           đĩa chứa dữ liệu Docker còn ≥ 10 %
+             Chính sách: thấy 2 lượt liên tiếp mới báo (container bị thay lúc deploy không
+             phải sự cố); site/api/catalog hỏng → mức khẩn 5, còn lại mức 4; nhắc lại mỗi
+             6 giờ; hết lỗi → tin "đã ổn lại" kèm thời gian; vấn đề chưa từng báo thì cũng
+             không báo hết (một cú chớp không lọt vào điện thoại theo cả hai chiều); các vấn
+             đề cùng một câu lỗi gộp một dòng. Thoát 0 dù tìm thấy gì — unit systemd "failed"
+             nghĩa là chính monitor hỏng, khác với site có vấn đề.
+             Docker không trả lời → bản thân việc đó là một sự cố, kiểm web vẫn chạy tiếp.
+
+  Cảnh báo   ntfy (JSON publish, tiêu đề tiếng Việt không đi được qua header HTTP). Không
+             cần tài khoản: cài app, đăng ký một topic ngẫu nhiên. Gửi không được → tin nằm
+             trong outbox (state.json, tối đa 20), lượt sau gửi bù đúng thứ tự.
+
+  Uptime     UptimeRobot gói Free (50 monitor, 5 phút, email), keyword "status":"ok" trên
+  bên ngoài  /api/v1/health + HTTP trang chủ. Thấy được đúng thứ monitor trên host không bao
+             giờ thấy: cả máy chết / mất mạng. Tùy chọn MONITOR_HEARTBEAT_URL (healthchecks.io)
+             cho trường hợp chính monitor chết. CẦN TÀI KHOẢN → người dùng tự tạo; mới có
+             trong runbook, chưa chạy thật (chưa có tên miền).
+
+  Không dùng GitHub Actions cron làm uptime check: repo private, mỗi lượt tính tối thiểu
+  1 phút → 5 phút/lần = 8.640 phút/tháng, gấp ~3 lần hạn mức 3.000 phút của gói Pro.
+
+==============================================================================
+2. LỖI PRODUCTION TÌM RA KHI THIẾT KẾ: CHỨNG CHỈ GIA HẠN MÀ KHÔNG BAO GIỜ ĐƯỢC PHỤC VỤ
+==============================================================================
+Service certbot gia hạn tệp chứng chỉ mỗi 12 giờ khi còn < 30 ngày. nginx chỉ đọc tệp lúc
+(re)load. Comment trong compose ghi "which the deploy script does after a successful
+renewal" và infra/README.md ghi "deploy lần kế tiếp là đủ" — deploy.sh không reload gì cả.
+Hệ quả: không ai deploy trong 90 ngày → site phục vụ chứng chỉ hết hạn dù tệp mới đã nằm
+trên đĩa từ ngày 60.
+
+Sửa: entrypoint nginx bọc entrypoint gốc của image, thêm vòng `sleep 6h; nginx -s reload`
+chạy bên cạnh (reload là graceful). Kiểm:
+  - stack prodtest: master nginx PID 1, vòng reload là PID 7 con của nó, template vẫn được
+    envsubst (server_name localhost), site 200, API 200
+  - nginx:1.27-alpine thử với chu kỳ rút còn 5 s: "signal 1 (SIGHUP) received ...
+    reconfiguring" đúng mỗi 5 s; `docker stop` → thoát 0
+  - stack prodtest dừng nginx: 1,0 s, mã thoát 0 (vòng lặp không làm chậm việc dừng)
+  - tái hiện đúng lỗi ở kịch bản E bên dưới.
+
+==============================================================================
+3. DIỄN TẬP TRÊN STACK PRODUCTION (máy dev, Docker Desktop)
+==============================================================================
+Dựng: .env.prodtest tạm (DOMAIN=localhost, mật khẩu ngẫu nhiên, BACKUP_ENABLED=false,
+DOCKER_GID=0), migrate, chứng chỉ tự ký 90 ngày có SAN cho localhost trong volume
+letsencrypt, `up -d --wait` → 10 service healthy. Monitor chạy từ host Windows bằng đúng
+script sẽ chạy trên VPS, với MONITOR_TLS_CA = chứng chỉ tự ký (để kiểm TLS thật, có xác
+thực) và MONITOR_NTFY_URL = một server ntfy chạy cục bộ (binwiederhier/ntfy, cổng
+127.0.0.1:8090) — không tin nào ra Internet. Lượt kiểm gọi tay thay cho timer, nên khoảng
+cách giữa hai lượt là vài giây chứ không phải 60 s; "ổn lại sau 1 phút" là giá trị sàn.
+
+  #   Gây ra                                   Monitor thấy / gửi                     Kết quả
+  --  ---------------------------------------  -------------------------------------  ------
+  0   (lượt đầu)                               Docker: template parsing error ...     LỖI THẬT
+                                               "map has no entry for key Health"      → sửa
+      `.State.Health` làm vỡ cả lệnh docker inspect với container không có healthcheck
+      (beat, certbot) → mọi service thành "không đọc được". Sửa bằng
+      `index .State "Health"`, thêm test chặn tái phát. Lượt sau: "đã ổn lại", ntfy nhận cả
+      hai tin, tiêu đề tiếng Việt nguyên vẹn, priority 4/3, tag đúng.
+  A   compose stop worker                      lượt 1 im lặng; lượt 2 "1 sự cố mới:    đạt
+                                               Service worker: đã dừng (mã thoát 0)";
+                                               lượt 3 im lặng; start → "đã ổn lại"
+  B   SIGTERM vào PID 1 của worker (tiến       "service tự khởi động lại: worker:      đạt
+      trình tự thoát, Docker dựng lại,         Docker tự khởi động lại 1 lần" — đúng
+      RestartCount 0→1)                        một lần, lượt sau im lặng
+      (Lần gửi đầu rơi vào lúc celery chưa cài handler — PID 1 bỏ qua tín hiệu; gửi lại
+      khi worker đã ready.)
+  C   compose stop frontend                    "2 sự cố mới", priority 5: Service      đạt
+                                               frontend đã dừng (mã thoát 143) +
+                                               Trang chủ trả HTTP 502
+  D   compose stop postgres                    CHỈ "Service postgres: đã dừng"         thiếu
+      Đo tay lúc đó: trang chủ 200 (Next vẽ trạng thái rỗng), /api/v1/health 200 (cố ý
+      không chạm CSDL), /api/v1/courses 500. Tức một Postgres "sống mà hỏng" (đầy kết nối,
+      sai mật khẩu, đĩa đầy) sẽ không bị kiểm nào bắt. → thêm kiểm `catalog`.
+  D2  compose stop postgres (có catalog)       "2 sự cố mới": Danh mục khóa học (API   đạt
+                                               + CSDL) trả HTTP 500 + Service
+                                               postgres; start → "đã ổn lại"
+  E   cài chứng chỉ còn 5 ngày + reload        "Chứng chỉ TLS: còn 4 ngày là hết hạn   đạt
+                                               (07/10/2026)"
+  E'  ghi chứng chỉ mới 90 ngày lên đĩa —      trên đĩa:  notAfter Dec 31 2026          lỗi §2
+      việc certbot làm — KHÔNG reload          đang phục vụ: notAfter Oct 7 2026       tái hiện
+                                               monitor: vẫn "còn 4 ngày"
+  E'' nginx -s reload (việc vòng 6 giờ làm)    đang phục vụ: Dec 31 2026; "đã ổn lại"  đạt
+  F   dừng ntfy, rồi compose stop beat         lượt 2: "Chưa gửi được thông báo ...;  đạt
+                                               còn 1 tin chờ lượt sau"; bật ntfy →
+                                               lượt kế "Đã gửi bù 1 tin chờ từ lượt
+                                               trước", ntfy nhận tin cũ trước tin
+                                               "đã ổn lại"
+  G   compose stop nginx                       "4 sự cố mới", priority 5; sau khi gộp  đạt
+                                               dòng: một dòng cho Trang chủ + API +
+                                               Danh mục (cùng lỗi kết nối), một dòng
+                                               Service nginx
+  H   MONITOR_DISK_MIN_FREE_PERCENT=50 (đĩa    "Ổ đĩa: đĩa trống 43% (95.5 GB) ở D:\,  đạt
+      thật trống 43%) — MÔ PHỎNG, không làm    dưới ngưỡng 50%"; bỏ biến → "đã ổn lại" (mô
+      đầy đĩa thật                                                                    phỏng)
+  -   test-alert                               "Đã gửi tới http://127.0.0.1:8090/..."  đạt
+  -   status                                   "Lượt kiểm gần nhất: 21:00 02/10 (vừa   đạt
+                                               xong) / Không có vấn đề nào."
+
+Ba thay đổi sinh ra từ chính buổi diễn tập (đều có test): template inspect an toàn với
+container không healthcheck; kiểm `catalog` chạm CSDL; gộp các dòng cùng một câu lỗi và
+ghi rõ ngưỡng đĩa trong tin.
+
+Một tin như điện thoại nhận (kịch bản G sau khi gộp dòng, trích nguyên văn từ ntfy):
+  DevPath: 4 sự cố mới                                    priority 5, tag rotating_light
+    ✗ API /api/v1/health, Danh mục khóa học (API + CSDL), Trang chủ: không kết nối được
+      ([WinError 10061] ...) (từ 20:59 02/10)
+    ✗ Service nginx: đã dừng (mã thoát 0) (từ 20:59 02/10)
+    Xem log: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100 <service>
+    localhost · 20:59 02/10
+  (Trên VPS câu lỗi là "[Errno 111] Connection refused" — câu dài ở đây là của Windows.)
+
+==============================================================================
+4. LOG XOAY VÒNG — ĐO, KHÔNG TIN SUÔNG
+==============================================================================
+  - docker inspect cả 11 container của stack prodtest: json-file
+    {"compress":"true","max-file":"5","max-size":"10m"}
+  - Container thử cùng driver, trần thu nhỏ 1 MB × 3, in 120.000 dòng (~7 MB):
+      ...-json.log        754.713 byte
+      ...-json.log.1.gz    60.495 byte
+      ...-json.log.2.gz    60.455 byte
+    → ~0,9 MB trên đĩa cho ~7 MB đầu ra; `docker logs` vẫn đọc được 22.255 dòng mới nhất,
+    dòng cuối đúng là "line 119999".
+
+==============================================================================
+5. KIỂM TỰ ĐỘNG
+==============================================================================
+  - infra/monitor/test_devpath_monitor.py: 52 test, 0,31 s — cấu hình (env file, ghi đè
+    bằng biến môi trường chỉ cho MONITOR_*, từ chối URL ntfy sai lúc khởi động), đọc
+    docker inspect (bỏ container one-off), mọi kiểu service hỏng, restart theo id
+    container, toàn bộ chính sách báo/nhắc/ổn lại/gộp dòng, gửi ntfy thật qua HTTP cục bộ
+    với tiêu đề tiếng Việt, outbox giữ thứ tự và có trần, đĩa, state hỏng thì bắt đầu lại,
+    một lượt nối dây đầy đủ với Docker/nginx giả, và lượt Docker không trả lời thì sự cố
+    service đang mở không bị báo nhầm "đã ổn lại" (tìm ra khi đọc lại code sau diễn tập).
+    Chạy trong job backend của CI.
+  - CI deploy-config: "Every service's log is rotated" (đọc compose đã render) và "Host
+    monitor installs and runs under systemd" — chạy chính install-monitor.sh trên systemd
+    của runner, systemd-analyze verify hai unit, timer active, lượt đầu (không có stack)
+    phải thấy mọi service "không có container" và vẫn kết thúc sạch, rồi --remove.
+  - shellcheck sạch cho install-monitor.sh và deploy.sh (deploy.sh giờ nhắc khi timer chưa
+    chạy — chỉ nhắc, không chặn).
+
+==============================================================================
+6. CHƯA LÀM ĐƯỢC TRÊN MÁY DEV — CHỜ TASK DỰNG MÁY CHỦ
+==============================================================================
+  - systemd timer chạy thật mỗi phút trên VPS và sống qua reboot (CI chứng minh cài + một
+    lượt, không chứng minh reboot).
+  - UptimeRobot + (tùy chọn) healthchecks.io: cần tài khoản và tên miền thật.
+  - Tin ntfy tới điện thoại thật: `python3 monitor/devpath_monitor.py test-alert` sau khi
+    đặt MONITOR_NTFY_URL (runbook 4b, bước nghiệm thu 6 ở mục 5).
+  - Chứng chỉ Let's Encrypt thật đi qua vòng reload 6 giờ (lần gia hạn đầu ở ngày 60).

@@ -34,17 +34,17 @@ docker compose -f infra/docker-compose.yml up -d
 
 Lần đầu mất vài phút vì phải build image; những lần sau khoảng 20–30 giây.
 
-**Bước 3 — Tạo bảng và nạp dữ liệu.** Chỉ cần khi database còn trống:
+**Bước 3 — Tạo bảng và nạp dữ liệu.** Chỉ cần khi database còn trống. Chạy trong container backend, nên máy nào có Docker là chạy được, không cần `.venv`:
 
 ```bash
-cd backend && .venv\Scripts\python.exe -m alembic upgrade head
+docker compose -f infra/docker-compose.yml exec backend alembic upgrade head
 ```
 
 ```bash
-cd backend && .venv\Scripts\python.exe -m scripts.seed
+docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
 ```
 
-Chạy lại nhiều lần vô hại: `alembic` bỏ qua migration đã chạy, `seed` bỏ qua dữ liệu đã có.
+Chạy lại nhiều lần vô hại: `alembic` bỏ qua migration đã chạy, `seed` bỏ qua dữ liệu đã có. Dữ liệu demo đầy đủ (đơn hàng, XP, giỏ, mã giảm giá…) và **thứ tự** nạp/gỡ: mục "Dữ liệu demo đầy đủ" của [README](../README.md). Trên máy đã có `.venv` thì `cd backend && .venv\Scripts\python.exe -m scripts.seed` cũng được.
 
 **Bước 4 — Kiểm tra rồi mở trình duyệt.**
 
@@ -52,7 +52,7 @@ Chạy lại nhiều lần vô hại: `alembic` bỏ qua migration đã chạy, 
 docker compose -f infra/docker-compose.yml ps
 ```
 
-Cả 5 dòng phải ghi `(healthy)`. Chữ `(health: starting)` nghĩa là còn đang khởi động — chờ thêm 30 giây. Sau đó:
+8 container: 7 dòng phải ghi `(healthy)`, riêng `beat` chỉ ghi `Up` vì nó không có healthcheck. Chữ `(health: starting)` nghĩa là còn đang khởi động — chờ thêm 30 giây. Sau đó:
 
 | Địa chỉ | Nội dung |
 |---|---|

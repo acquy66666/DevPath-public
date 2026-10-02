@@ -97,6 +97,14 @@ jobs:
       - name: Ruff
         run: ruff check .
 
+      # The backup service lives in infra/ but is Python like this, held to the
+      # same lint. Its tests need no database: they cover what it decides on
+      # its own at night -- what to delete, when to run, where to upload.
+      - name: Backup service — ruff and unit tests
+        run: |
+          ruff check --config pyproject.toml ../infra/backup
+          pytest -q -p no:cacheprovider ../infra/backup
+
       - name: Migrate the test database
         run: alembic upgrade head
 
@@ -314,6 +322,19 @@ jobs:
 
       - name: Backend production image builds
         run: docker build --target production -t devpath-backend:ci backend
+
+      # Built from the database's own image, so its pg_dump is the server's
+      # version. Run once to prove the script works on that image's Python
+      # (Debian's 3.11, not the 3.12 its tests ran on), and that production
+      # with nowhere to put backups is refused rather than guessed.
+      - name: Backup image builds and refuses to guess
+        run: |
+          docker build -t devpath-backup:ci infra/backup
+          docker run --rm devpath-backup:ci --help > /dev/null
+          if docker run --rm -e ENV=production -e PGDATABASE=devpath devpath-backup:ci list; then
+            echo "Production without backup storage was not refused." >&2
+            exit 1
+          fi
 
       # No API URL argument: the production image is served behind nginx and
       # calls /api on its own origin, so it is built without a domain.

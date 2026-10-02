@@ -162,6 +162,27 @@ docker compose -f docker-compose.prod.yml exec grading-worker docker version
 Báo `permission denied` là `DOCKER_GID` sai — sửa trong `.env.prod` rồi
 `docker compose -f docker-compose.prod.yml up -d grading-worker`.
 
+## 2c. Nơi lưu backup CSDL
+
+Service `backup` dump CSDL mỗi đêm lúc `BACKUP_HOUR` (mặc định 02:00 giờ Việt Nam) lên một bucket S3 và giữ `BACKUP_KEEP` bản mới nhất (mặc định 14). Nó cần một bucket **riêng, private** — không phải bucket media, vì bucket media cho tải ẩn danh để player lấy video, còn bản dump chứa email và hash mật khẩu của mọi người dùng (service từ chối nếu hai tên trùng nhau).
+
+Trên Cloudflare R2:
+
+1. Tạo bucket `devpath-backups`. **Không** bật public access, **không** bật URL `r2.dev`.
+2. Tạo API token loại *Object Read & Write*, giới hạn đúng bucket này. Điền vào `BACKUP_ACCESS_KEY_ID` / `BACKUP_SECRET_ACCESS_KEY`. Có thể bỏ trống để dùng chung `R2_*` của app, nhưng token riêng tốt hơn: lộ key của app thì không xóa được backup.
+
+Chưa chốt nơi lưu thì phải **nói rõ** điều đó: `BACKUP_ENABLED=false`. Thiếu cả `BACKUP_*` lẫn `R2_*` mà không có dòng này, service `backup` đứng yên ở trạng thái unhealthy và `deploy.sh` dừng lại — chạy production không có backup là một quyết định, không phải một thứ bị quên.
+
+Sau khi deploy, kiểm bản đầu tiên (service tự chạy ngay nếu bucket chưa có bản nào trong 24 giờ):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs backup
+```
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod run --rm backup list
+```
+
 ## 3. Xin chứng chỉ lần đầu
 
 ```bash
@@ -212,7 +233,7 @@ curl -s https://<DOMAIN>/api/v1/health
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
 ```
 
-Bảy service, tất cả `healthy` (riêng `certbot` không có healthcheck nên cột trạng thái trống — đúng như vậy).
+Bảy service, tất cả `healthy` (riêng `certbot` không có healthcheck nên cột trạng thái trống — đúng như vậy), cộng `backup` từ 02/10/2026: nó `healthy` khi có một bản backup thành công trong 26 giờ qua, hoặc khi `BACKUP_ENABLED=false`.
 
 Kiểm bằng mắt, theo đúng thứ tự của gate Phase 2:
 
@@ -256,6 +277,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 | 503 ở nút đăng nhập Google | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` còn trống |
 | Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định hoặc quá ngắn, hay `CORS_ORIGINS` không phải origin (có `/` cuối, có đường dẫn, hoặc `*`) |
 | Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |
+| `backup` unhealthy | `logs backup`: thiếu nơi lưu (mục 2c), sai key, hoặc bucket không tồn tại. Lỗi một đêm thì service tự thử lại sau 30 phút |
 
 Quay về bản trước:
 
@@ -263,10 +285,43 @@ Quay về bản trước:
 git checkout <commit-cũ> && ./scripts/deploy.sh
 ```
 
-Chỉ đúng khi bản mới không kèm migration phá vỡ tương thích. Có migration như vậy thì phải khôi phục cả database, và script backup/restore là việc của Phase 6.
+Chỉ đúng khi bản mới không kèm migration phá vỡ tương thích. Có migration như vậy thì phải khôi phục cả database — mục 7b.
+
+## 7b. Khôi phục CSDL từ backup
+
+```bash
+./scripts/restore-db.sh
+```
+
+Không tham số: chỉ liệt kê các bản backup, không đổi gì. Khôi phục bản mới nhất (hoặc đưa tên một bản cụ thể thay cho `latest`):
+
+```bash
+./scripts/restore-db.sh latest
+```
+
+Script làm ba bước, và site chỉ dừng ở bước giữa:
+
+1. Tải bản backup, kiểm sha256 với lúc tải lên, rồi khôi phục vào một **CSDL mới bên cạnh** (`devpath_restore_<giờ>`) trong lúc site vẫn chạy trên CSDL cũ. In số bảng, số dòng, phiên bản Alembic, và từng bảng có số dòng khác bản đang chạy.
+2. Hỏi lại. Đồng ý thì dừng `backend`, `worker`, `beat`, `grading-worker` rồi **đổi tên**: bản khôi phục nhận tên `devpath`, bản đang chạy được cất thành `devpath_before_restore_<giờ>` — không bị xóa.
+3. Bật lại bốn service và đợi healthy.
+
+Muốn quay lui là đổi tên ngược lại (dừng bốn service trước):
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec postgres sh -c 'psql -U "$POSTGRES_USER" -d postgres -c "alter database devpath rename to devpath_bad" -c "alter database devpath_before_restore_<giờ> rename to devpath"'
+```
+
+Chắc chắn rồi thì xóa bản đã cất:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec postgres sh -c 'dropdb -U "$POSTGRES_USER" devpath_before_restore_<giờ>'
+```
+
+Đã diễn tập thật một lần trên stack dev ngày 02/10/2026 — từng bảng giống hệt từng dòng, E2E luồng vàng xanh trên CSDL đã khôi phục: `docs/report/assets/phase-6/db-backup-restore.txt`.
 
 ## 8. Những thứ cố ý không có ở đây
 
-- **Backup định kỳ** (`pg_dump` → R2) — Phase 6.
+- **Backup bucket media** (video, ảnh, transcript trên R2) — R2 tự lưu nhiều bản; backup chỉ lo CSDL, thứ duy nhất chỉ nằm trên máy chủ này.
+- **Mã hóa bản dump phía client** — bucket private cộng token chỉ cấp cho đúng bucket đó, R2 mã hóa lúc lưu. Thêm một khóa riêng để giữ là thêm một thứ có thể mất đúng lúc cần khôi phục.
 - **Giám sát và cảnh báo** — Phase 6. Hiện tại `restart: unless-stopped` cộng healthcheck đã lo được phần lớn: container chết thì Docker dựng lại, VPS reboot thì cả stack tự lên.
 - **CI tự deploy** — cố ý không làm. Với một khóa luận, việc bấm deploy bằng tay là tính năng, không phải thiếu sót.

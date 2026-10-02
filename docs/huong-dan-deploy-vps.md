@@ -223,6 +223,77 @@ Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script l�
 >
 > Thiếu một trong hai biến thì seed **từ chối chạy** ở production (từ 01/10/2026) — mật khẩu mặc định `devpath-admin` nằm trong repo, ai đọc repo cũng đăng nhập được quyền admin. Trước ngày đó `deploy.sh` còn không chuyển hai biến này vào container (`docker compose run` chỉ nhận biến của service, phải có `-e`), nên làm đúng hướng dẫn vẫn ra mật khẩu mặc định.
 
+## 4b. Giám sát và cảnh báo
+
+Hai lớp, vì mỗi lớp mù đúng chỗ lớp kia thấy:
+
+| Lớp | Chạy ở đâu | Thấy gì | Không thấy gì |
+|---|---|---|---|
+| **Monitor trên host** (`monitor/devpath_monitor.py`, systemd timer mỗi phút) | Chính VPS | Container dừng/unhealthy/tự khởi động lại, trang chủ + API + danh mục qua nginx, chứng chỉ đang phục vụ sắp hết hạn, đĩa sắp đầy | Cả cái máy chết hoặc mất mạng — không gì trên máy chết báo được điều đó |
+| **Uptime check bên ngoài** (UptimeRobot) | Internet | Site có vào được từ ngoài không: DNS, tường lửa, máy sống | Vì sao hỏng; worker chấm bài chết mà trang vẫn lên |
+
+### Nơi nhận cảnh báo: ntfy
+
+Không cần tài khoản. Cài app **ntfy** (Android/iOS) hoặc mở `https://ntfy.sh/app`, rồi sinh một topic không đoán được — ai biết tên topic trên ntfy.sh cũng đọc được:
+
+```bash
+echo "https://ntfy.sh/devpath-$(openssl rand -hex 12)"
+```
+
+Dán vào `MONITOR_NTFY_URL` trong `.env.prod`, và trong app bấm **Subscribe to topic** với đúng phần sau `ntfy.sh/`.
+
+### Cài monitor
+
+```bash
+sudo ./scripts/install-monitor.sh
+```
+
+Script cài hai unit vào `/etc/systemd/system`, chạy monitor **dưới user đang deploy** (đã ở nhóm `docker`), không phải root, bật timer, chạy ngay một lượt và in dòng kết luận của lượt đó. Kiểm điện thoại nhận được tin:
+
+```bash
+python3 monitor/devpath_monitor.py test-alert
+```
+
+Đổi `MONITOR_*` trong `.env.prod` không cần cài lại — mỗi lượt đọc lại tệp. Chuyển thư mục repo thì chạy lại script (unit trỏ vào đường dẫn tuyệt đối). Gỡ: `sudo ./scripts/install-monitor.sh --remove`.
+
+Cách nó báo, để biết tin nào đáng bật dậy:
+
+- Một vấn đề phải thấy ở **2 lượt liên tiếp** (~2 phút) mới báo — container bị thay lúc deploy không đáng một tin nhắn.
+- Trang chủ, API hoặc danh mục không trả lời → mức **khẩn** (5, kêu cả khi máy đang ở chế độ không làm phiền). Mọi thứ khác → mức cao (4).
+- Còn lỗi thì nhắc lại mỗi 6 giờ; hết lỗi thì có tin "đã ổn lại" kèm kéo dài bao lâu.
+- ntfy không gửi được → tin nằm trong outbox, lượt sau gửi bù.
+
+### Uptime check bên ngoài
+
+Tạo tài khoản miễn phí ở [UptimeRobot](https://uptimerobot.com) (gói Free: 50 monitor, kiểm mỗi 5 phút, báo qua email — không cần thẻ), thêm hai monitor:
+
+| Loại | URL | Ghi chú |
+|---|---|---|
+| Keyword | `https://<DOMAIN>/api/v1/health`, từ khóa `"status":"ok"` | API sống, qua đúng nginx + TLS |
+| HTTP(s) | `https://<DOMAIN>/` | Trang chủ |
+
+Tùy chọn, cho trường hợp **chính monitor** chết (timer hỏng, máy treo): tạo một check ở [healthchecks.io](https://healthchecks.io) (chu kỳ 1 phút, ân hạn 5 phút) rồi dán URL ping vào `MONITOR_HEARTBEAT_URL`. Monitor ping mỗi lượt tốt, ping `/fail` khi có sự cố; ngừng ping là healthchecks.io tự báo.
+
+### Đọc log
+
+Mọi service ghi ra stdout, Docker gom lại và xoay vòng (5 tệp × 10 MB mỗi container, tệp cũ nén). Cả stack trong một giờ qua, có giờ:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod logs -t --since 1h
+```
+
+Lịch sử của monitor — mỗi lượt một dòng, "ổn — …" hoặc danh sách vấn đề:
+
+```bash
+journalctl -u devpath-monitor --since today
+```
+
+```bash
+python3 monitor/devpath_monitor.py status
+```
+
+> Container bị thay khi deploy **mang log của nó đi theo**. Có sự cố thì đọc (hoặc lưu: `... logs -t --since 6h > /tmp/su-co.log`) **trước khi** deploy lại.
+
 ## 5. Nghiệm thu
 
 ```bash
@@ -242,6 +313,7 @@ Kiểm bằng mắt, theo đúng thứ tự của gate Phase 2:
 3. `/khoa-hoc` hiện 4 khóa học đã seed
 4. Đăng ký một tài khoản → enroll một khóa miễn phí → xem video vài giây → **tải lại trang** → player quay về đúng chỗ đang dở
 5. `https://<DOMAIN>/api/docs` trả **404** — tài liệu API tự tắt khi `ENV=production`
+6. `systemctl list-timers devpath-monitor.timer` có lượt kế tiếp trong vòng một phút, `python3 monitor/devpath_monitor.py status` báo "Không có vấn đề nào", và tin `test-alert` đã tới điện thoại (mục 4b)
 
 Chụp màn hình các bước trên vào `docs/report/assets/phase-2/`; đó là bằng chứng cho chương 4 và chương 5 của báo cáo.
 
@@ -278,6 +350,12 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 | Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định hoặc quá ngắn, hay `CORS_ORIGINS` không phải origin (có `/` cuối, có đường dẫn, hoặc `*`) |
 | Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |
 | `backup` unhealthy | `logs backup`: thiếu nơi lưu (mục 2c), sai key, hoặc bucket không tồn tại. Lỗi một đêm thì service tự thử lại sau 30 phút |
+| Tin ntfy "Service X: …" | `ps` rồi `logs --tail 100 X`. "đã dừng" là chính tiến trình thoát (mã thoát nằm trong tin), "unhealthy" là sống mà healthcheck đỏ — Docker **không** tự dựng lại container unhealthy, phải `up -d X` hoặc sửa nguyên nhân |
+| Tin "Docker tự khởi động lại" | Tiến trình đã chết và Docker dựng lại rồi; tin có ghi nếu vì hết bộ nhớ. Một lần thì đọc log cho biết; lặp lại thì đó là lỗi thật đang bị restart che đi |
+| Tin "Danh mục khóa học … HTTP 500" mà trang chủ vẫn lên | Gần như luôn là CSDL: `ps postgres`, `logs backend`. `/api/v1/health` cố ý không chạm CSDL nên vẫn xanh |
+| Tin "Chứng chỉ TLS: còn N ngày" | `logs certbot` (gia hạn có lỗi không), rồi `exec nginx nginx -s reload`. Còn dưới 14 ngày nghĩa là gia hạn hoặc vòng reload 6 giờ của nginx đã ngừng |
+| Tin "Ổ đĩa …" | `docker system df`; ảnh cũ: `docker image prune -a` (deploy chỉ dọn ảnh lơ lửng); log đã có trần nên hiếm khi là thủ phạm |
+| UptimeRobot báo mà ntfy im | Cả máy hoặc mạng: console của nhà cung cấp, trạng thái VPS. ntfy im vì monitor nằm trên chính máy đó |
 
 Quay về bản trước:
 
@@ -323,5 +401,6 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod exec postgres sh 
 
 - **Backup bucket media** (video, ảnh, transcript trên R2) — R2 tự lưu nhiều bản; backup chỉ lo CSDL, thứ duy nhất chỉ nằm trên máy chủ này.
 - **Mã hóa bản dump phía client** — bucket private cộng token chỉ cấp cho đúng bucket đó, R2 mã hóa lúc lưu. Thêm một khóa riêng để giữ là thêm một thứ có thể mất đúng lúc cần khôi phục.
-- **Giám sát và cảnh báo** — Phase 6. Hiện tại `restart: unless-stopped` cộng healthcheck đã lo được phần lớn: container chết thì Docker dựng lại, VPS reboot thì cả stack tự lên.
+- **Prometheus / Grafana / Loki** — giám sát ở đây là một script chạy mỗi phút cộng một uptime check bên ngoài (mục 4b). Một bộ metrics đầy đủ ăn RAM ngang chính ứng dụng trên máy 4 GB, để trả lời những câu chưa ai hỏi.
+- **Đẩy log ra khỏi máy** — log nằm trên VPS, xoay vòng, đọc bằng `docker compose logs`. Mất cả máy thì mất log, đổi lại không có thêm dịch vụ nào phải trả tiền hay giữ khóa.
 - **CI tự deploy** — cố ý không làm. Với một khóa luận, việc bấm deploy bằng tay là tính năng, không phải thiếu sót.

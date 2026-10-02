@@ -491,3 +491,17 @@ Task 3 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/e2e-golden-flo
 **Chờ verdict tổng, không chờ nhãn đầu tiên** — "Đúng" hiện trên test 1 khi test 2 còn đang chấm; test đầu tiên viết theo nhãn ấy đã xanh quá sớm. Bài học chung cho E2E giao diện realtime: assertion phải gắn vào trạng thái cuối, không vào chữ.
 
 **Suite tự dọn dữ liệu của mình** — mỗi lượt ghi dữ liệu thật vào CSDL nó chạy; nhận diện bằng một tên miền email riêng (`@e2e.devpath.example`) thay vì đánh dấu từng bảng, rồi xóa theo thứ tự 5 khóa ngoại RESTRICT.
+
+## Load test nhẹ (02/10/2026)
+
+Task 4 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/load-test.md`.
+
+**k6 thay vì locust** — một binary trong image Docker chính thức, không thêm gói Python nào vào `pyproject.toml`/lock; có sẵn WebSocket với subprotocol (cách trang nộp bài xác thực) và executor `per-vu-iterations` bắn cả lớp cùng một khoảnh khắc. Chạy trong container trên mạng compose, nên trên VPS chạy y nguyên mà không cài gì.
+
+**Đo stack production dựng trên máy dev, không đo stack dev** — stack dev là uvicorn `--reload` một tiến trình, log SQL, `next dev`: đo nó là đo công cụ phát triển. Trả giá: dựng thêm một stack (project riêng, volume riêng) và tạm dừng stack dev trong lúc đo.
+
+**Lớp học dựng bằng script ghi thẳng bảng và mint token** — 21 lần đăng ký từ một địa chỉ vượt giới hạn 50/giờ/IP từ lượt thứ ba, và đăng nhập không phải thứ đang đo. Token ký bằng chính khóa của API nên mọi request vẫn đi qua xác thực thật.
+
+**Thư mục workspace chấm bài được chown bởi một service compose chạy một lần, không phải một bước trong runbook** — lỗi chỉ lộ trên máy trắng, nên bước tay là bước sẽ bị quên đúng lần nó quan trọng. Một container root chạy `chown` rồi thoát, chỉ mount đúng thư mục đó; worker vẫn uid 10001.
+
+**Mỗi lượt đo kèm một mốc hiệu chuẩn trước và sau** — lượt đầu chậm gấp năm vì Docker Desktop đang bận (sau build, và vì chính vòng `docker stats` đang ghi CPU); không có mốc thì đã kết luận sai rằng frontend bão hòa ở 25 người. Thay vòng `docker stats` liên tục bằng một ảnh giữa mỗi mức.

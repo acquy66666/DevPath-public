@@ -52,9 +52,12 @@ export function CatalogFilters({
     <form
       method="get"
       action="/khoa-hoc"
-      className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end"
+      // Two across from the smallest screen up, with the search box and the
+      // buttons spanning both: one field per row made a phone scroll a full
+      // screen of filters before the first course.
+      className="grid grid-cols-2 gap-3 rounded-xl border p-4 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end"
     >
-      <div className="space-y-1.5">
+      <div className="col-span-2 space-y-1.5 lg:col-span-1">
         <Label htmlFor="catalog-q">Tìm kiếm</Label>
         <div className="relative">
           <Search
@@ -137,7 +140,7 @@ export function CatalogFilters({
         </NativeSelect>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="col-span-2 flex items-center gap-3 lg:col-span-1">
         <Button type="submit">Lọc</Button>
         {filtered ? (
           <Link

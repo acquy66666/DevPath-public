@@ -1,7 +1,8 @@
-import { GraduationCap, Star, Users } from "lucide-react";
+import { Star, Users } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { CourseCover } from "@/components/courses/course-cover";
 import { Badge } from "@/components/ui/badge";
 import type { CourseCard as Course } from "@/lib/api/courses";
 import { LEVEL_LABELS } from "@/lib/courses/labels";
@@ -22,18 +23,11 @@ export function CourseCard({ course, note }: { course: Course; note?: ReactNode 
       href={`/khoa-hoc/${course.slug}`}
       className="group flex h-full flex-col overflow-hidden rounded-xl border transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      {course.thumbnail_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={course.thumbnail_url}
-          alt=""
-          className="aspect-video w-full bg-muted object-cover"
-        />
-      ) : (
-        <div className="flex aspect-video w-full items-center justify-center bg-muted">
-          <GraduationCap className="size-8 text-muted-foreground" aria-hidden />
-        </div>
-      )}
+      <CourseCover
+        thumbnailUrl={course.thumbnail_url}
+        colorKey={course.id}
+        iconClassName="size-8"
+      />
 
       <div className="flex flex-1 flex-col gap-2 p-4">
         {note ? (

@@ -7,9 +7,12 @@ import {
   Check,
   ListTree,
   Loader2,
+  Lock,
+  LogIn,
   MessageCircleQuestion,
   NotebookPen,
   Sparkles,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -180,14 +183,13 @@ export function LearnView({
 
   if (!signedIn) {
     return (
-      <Alert>
-        <AlertDescription className="flex flex-wrap items-center gap-3">
-          Đăng nhập để tiếp tục khóa học của bạn.
-          <Button size="sm" asChild>
-            <Link href={`/dang-nhap?next=/hoc/${slug}`}>Đăng nhập</Link>
-          </Button>
-        </AlertDescription>
-      </Alert>
+      <LearnGate
+        icon={LogIn}
+        title="Đăng nhập để vào học"
+        hint="Tiến độ, ghi chú và bài đã nộp được lưu theo tài khoản của bạn."
+        href={`/dang-nhap?next=/hoc/${slug}`}
+        action="Đăng nhập"
+      />
     );
   }
 
@@ -195,12 +197,26 @@ export function LearnView({
     const notEnrolled =
       progress.error instanceof ApiError && progress.error.code === "NOT_ENROLLED";
 
+    if (notEnrolled) {
+      return (
+        <LearnGate
+          icon={Lock}
+          title="Bạn chưa đăng ký khóa học này"
+          hint={
+            course.data
+              ? `Đăng ký “${course.data.title}” ở trang khóa học, rồi quay lại đây để học.`
+              : "Đăng ký ở trang khóa học, rồi quay lại đây để học."
+          }
+          href={`/khoa-hoc/${slug}`}
+          action="Xem khóa học"
+        />
+      );
+    }
+
     return (
-      <Alert variant={notEnrolled ? "default" : "destructive"}>
+      <Alert variant="destructive">
         <AlertDescription className="flex flex-wrap items-center gap-3">
-          {notEnrolled
-            ? "Bạn chưa đăng ký khóa học này."
-            : apiErrorMessage(progress.error)}
+          {apiErrorMessage(progress.error)}
           <Button size="sm" variant="outline" asChild>
             <Link href={`/khoa-hoc/${slug}`}>Xem khóa học</Link>
           </Button>
@@ -252,7 +268,9 @@ export function LearnView({
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="space-y-4">
+        {/* `min-w-0` for the same reason as the aside below: on a phone the
+            lesson column must not set the width of the whole grid. */}
+        <div className="min-w-0 space-y-4">
           {lesson.isError ? (
             <Alert variant="destructive">
               <AlertDescription>{apiErrorMessage(lesson.error)}</AlertDescription>
@@ -322,7 +340,7 @@ export function LearnView({
                 <p className="text-muted-foreground">Bài học này chưa có nội dung.</p>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <Button
                   variant={finished ? "outline" : "default"}
                   onClick={() => setCompleted.mutate(!finished)}
@@ -464,6 +482,36 @@ export function LearnView({
       {progress.data.completed_at ? (
         <NextCourses courseId={course.data.id} accessToken={accessToken as string} />
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Why there is no lesson to show, and the one thing to do about it. Shaped
+ * like the empty states elsewhere -- a dashed card, an icon, one button --
+ * because it is one: the page has nothing yet, and this says what fills it.
+ */
+function LearnGate({
+  icon: Icon,
+  title,
+  hint,
+  href,
+  action,
+}: {
+  icon: LucideIcon;
+  title: string;
+  hint: string;
+  href: string;
+  action: string;
+}) {
+  return (
+    <div className="mx-auto max-w-lg rounded-xl border border-dashed px-6 py-12 text-center">
+      <Icon className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
+      <p className="font-medium">{title}</p>
+      <p className="mt-1 text-sm text-pretty text-muted-foreground">{hint}</p>
+      <Button className="mt-4" asChild>
+        <Link href={href}>{action}</Link>
+      </Button>
     </div>
   );
 }

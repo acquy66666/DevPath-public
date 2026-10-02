@@ -5,12 +5,14 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
+import { CourseCover } from "@/components/courses/course-cover";
 import { CourseCurriculum } from "@/components/courses/course-curriculum";
 import { CourseReviews } from "@/components/courses/course-reviews";
 import { EnrollButton } from "@/components/courses/enroll-button";
 import { SimilarCourses } from "@/components/recommendations/similar-courses";
 import { ReportButton } from "@/components/reports/report-button";
 import { Badge } from "@/components/ui/badge";
+import { Markdown } from "@/components/ui/markdown";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
 import { getCurriculum } from "@/lib/api/curriculum";
@@ -152,96 +154,66 @@ export default async function CourseDetailPage({
         <span>{course.category.name}</span>
       </nav>
 
+      {/* Three grid items, not two columns: on a phone the price card has to
+          come straight after the title -- below the curriculum and the reviews
+          nobody finds the button -- while on a wide screen it is the sticky
+          right-hand column beside both. */}
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className="space-y-10">
-          <header className="space-y-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{course.category.name}</Badge>
-              <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>
-              <Badge variant="outline">{languageLabel(course.language)}</Badge>
-            </div>
+        <header className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{course.category.name}</Badge>
+            <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>
+            <Badge variant="outline">{languageLabel(course.language)}</Badge>
+          </div>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-balance">
-              {course.title}
-            </h1>
+          <h1 className="text-3xl font-semibold tracking-tight text-balance">
+            {course.title}
+          </h1>
 
-            {course.subtitle ? (
-              <p className="text-lg text-muted-foreground text-pretty">
-                {course.subtitle}
-              </p>
-            ) : null}
-
-            <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-1.5">
-                <dt className="sr-only">Đánh giá</dt>
-                <Star className="size-4" aria-hidden />
-                <dd>
-                  {rated
-                    ? `${course.rating_avg} (${course.rating_count} đánh giá)`
-                    : "Chưa có đánh giá"}
-                </dd>
-              </div>
-
-              <div className="flex items-center gap-1.5">
-                <dt className="sr-only">Học viên</dt>
-                <Users className="size-4" aria-hidden />
-                <dd>{course.students_count} học viên</dd>
-              </div>
-
-              {duration ? (
-                <div className="flex items-center gap-1.5">
-                  <dt className="sr-only">Thời lượng</dt>
-                  <GraduationCap className="size-4" aria-hidden />
-                  <dd>{duration}</dd>
-                </div>
-              ) : null}
-            </dl>
-
-            <div className="flex items-center gap-3 pt-2">
-              <UserAvatar user={course.instructor} className="size-10 text-sm" />
-              <div className="text-sm">
-                <p className="font-medium">{course.instructor.full_name}</p>
-                <p className="text-muted-foreground">Giảng viên</p>
-              </div>
-            </div>
-          </header>
-
-          {course.description ? (
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold tracking-tight">Giới thiệu</h2>
-              {/* Plain text for now: a rich-text editor would decide the markup,
-                  and the builder writes into a textarea. */}
-              <p className="whitespace-pre-line text-pretty text-muted-foreground">
-                {course.description}
-              </p>
-            </section>
+          {course.subtitle ? (
+            <p className="text-lg text-muted-foreground text-pretty">
+              {course.subtitle}
+            </p>
           ) : null}
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold tracking-tight">Nội dung khóa học</h2>
-            <CourseCurriculum curriculum={curriculum} />
-          </section>
+          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Đánh giá</dt>
+              <Star className="size-4" aria-hidden />
+              <dd>
+                {rated
+                  ? `${course.rating_avg} (${course.rating_count} đánh giá)`
+                  : "Chưa có đánh giá"}
+              </dd>
+            </div>
 
-          {/* Server-rendered first page, then a Client Component takes over:
-              the reviews are worth crawling, the form behind them needs a
-              token the server never sees. */}
-          <CourseReviews course={course} initial={reviews} />
-        </div>
+            <div className="flex items-center gap-1.5">
+              <dt className="sr-only">Học viên</dt>
+              <Users className="size-4" aria-hidden />
+              <dd>{course.students_count} học viên</dd>
+            </div>
 
-        <aside className="lg:sticky lg:top-8 lg:self-start">
-          <div className="overflow-hidden rounded-xl border">
-            {course.thumbnail_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={course.thumbnail_url}
-                alt=""
-                className="aspect-video w-full bg-muted object-cover"
-              />
-            ) : (
-              <div className="flex aspect-video w-full items-center justify-center bg-muted">
-                <GraduationCap className="size-10 text-muted-foreground" aria-hidden />
+            {duration ? (
+              <div className="flex items-center gap-1.5">
+                <dt className="sr-only">Thời lượng</dt>
+                <GraduationCap className="size-4" aria-hidden />
+                <dd>{duration}</dd>
               </div>
-            )}
+            ) : null}
+          </dl>
+
+          <div className="flex items-center gap-3 pt-2">
+            <UserAvatar user={course.instructor} className="size-10 text-sm" />
+            <div className="text-sm">
+              <p className="font-medium">{course.instructor.full_name}</p>
+              <p className="text-muted-foreground">Giảng viên</p>
+            </div>
+          </div>
+        </header>
+
+        <aside className="lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
+          <div className="overflow-hidden rounded-xl border">
+            <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} />
 
             <div className="space-y-4 p-5">
               <p className="text-2xl font-semibold">{formatPrice(course.price)}</p>
@@ -283,6 +255,28 @@ export default async function CourseDetailPage({
             </div>
           </div>
         </aside>
+
+        <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
+          {course.description ? (
+            <section className="space-y-3">
+              <h2 className="text-xl font-semibold tracking-tight">Giới thiệu</h2>
+              {/* Markdown, as the course builder tells the instructor it is --
+                  through the same renderer as the lessons, which shows raw
+                  HTML as the characters typed. */}
+              <Markdown className="text-muted-foreground">{course.description}</Markdown>
+            </section>
+          ) : null}
+
+          <section className="space-y-3">
+            <h2 className="text-xl font-semibold tracking-tight">Nội dung khóa học</h2>
+            <CourseCurriculum curriculum={curriculum} />
+          </section>
+
+          {/* Server-rendered first page, then a Client Component takes over:
+              the reviews are worth crawling, the form behind them needs a
+              token the server never sees. */}
+          <CourseReviews course={course} initial={reviews} />
+        </div>
       </div>
 
       {similar.length > 0 ? (

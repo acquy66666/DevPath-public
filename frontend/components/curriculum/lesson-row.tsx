@@ -104,17 +104,23 @@ export function LessonRow({
 
         <TypeIcon type={lesson.type} />
 
-        <span className="min-w-0 flex-1 truncate text-sm">{lesson.title}</span>
+        {/* A column on a phone: beside the badge and three buttons, one line
+            left the title three letters wide. */}
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <span className="line-clamp-2 min-w-0 text-sm sm:flex-1 sm:truncate">
+            {lesson.title}
+          </span>
 
-        <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
-          {TYPE_LABELS[lesson.type]}
+          <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+            {TYPE_LABELS[lesson.type]}
+          </span>
+
+          {lesson.is_preview ? (
+            <Badge variant="outline" className="shrink-0">
+              Học thử
+            </Badge>
+          ) : null}
         </span>
-
-        {lesson.is_preview ? (
-          <Badge variant="outline" className="shrink-0">
-            Học thử
-          </Badge>
-        ) : null}
 
         <Button
           size="icon"

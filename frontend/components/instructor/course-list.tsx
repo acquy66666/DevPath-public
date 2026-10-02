@@ -30,7 +30,7 @@ export function CourseList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Khóa học của tôi</h1>
           <p className="text-sm text-muted-foreground">
@@ -81,7 +81,7 @@ export function CourseList() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{course.title}</p>
+                    <p className="line-clamp-2 font-medium sm:truncate">{course.title}</p>
                     {course.subtitle ? (
                       <p className="truncate text-sm text-muted-foreground">
                         {course.subtitle}

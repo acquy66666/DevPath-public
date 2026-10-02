@@ -179,7 +179,7 @@ Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component 
 
 **2. Video không phát, khung báo đỏ.** Mất mạng. Bật 4G điện thoại. Phần còn lại của hệ thống — đăng nhập, tìm kiếm, ghi danh, ghi chú — vẫn chạy bình thường vì toàn bộ dữ liệu nằm trong Docker trên máy.
 
-**3. Trang báo "Không tải được danh sách khóa học", hoặc khối "Kết nối backend" ở trang chủ báo lỗi.** Backend chưa lên. Kiểm tra `http://localhost:8000/api/v1/health`. `/khoa-hoc` có trang lỗi riêng (`khoa-hoc/error.tsx`), nên không trắng trang. Đã thử lại ngày 19/09/2026 bằng cách dừng container backend, cả khi tải lại trang lẫn khi bấm link từ trang chủ. Trang lỗi mất khoảng 4–8 giây mới hiện, vì Next phải chờ tên `backend` phân giải thất bại; trong lúc đó là khung xương đang tải.
+**3. Trang báo "Không tải được danh sách khóa học", hoặc trang chủ thiếu hàng "Khóa học mới".** Backend chưa lên (từ 02/10 trang chủ không còn khối "Kết nối backend"; hàng "Khóa học mới" im lặng biến mất khi không đọc được catalogue). Kiểm tra `http://localhost:8000/api/v1/health`. `/khoa-hoc` có trang lỗi riêng (`khoa-hoc/error.tsx`), nên không trắng trang. Đã thử lại ngày 19/09/2026 bằng cách dừng container backend, cả khi tải lại trang lẫn khi bấm link từ trang chủ. Trang lỗi mất khoảng 4–8 giây mới hiện, vì Next phải chờ tên `backend` phân giải thất bại; trong lúc đó là khung xương đang tải.
 
 **4. Đăng nhập xong F5 là mất phiên.** Đang mở bằng `127.0.0.1`. Trình duyệt coi `127.0.0.1` và `localhost` là hai site khác nhau, mà cookie refresh đặt `SameSite=lax` nên bị bỏ im lặng. Mở lại bằng `localhost:3000`.
 

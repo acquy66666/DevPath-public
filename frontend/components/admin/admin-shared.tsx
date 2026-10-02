@@ -33,7 +33,9 @@ export function SearchBox({
   }
 
   return (
-    <form role="search" onSubmit={submit} className="flex min-w-0 flex-1 gap-2">
+    // The floor is what makes a phone wrap the filters beside it onto the
+    // next line; at `min-w-0` the row kept them and squeezed this to a sliver.
+    <form role="search" onSubmit={submit} className="flex min-w-[min(100%,16rem)] flex-1 gap-2">
       <label htmlFor={id} className="sr-only">
         Tìm kiếm
       </label>

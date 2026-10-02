@@ -63,9 +63,9 @@ export function StudyStats() {
 
   if (!summary.data) {
     return (
-      <div className="mb-8 grid gap-4 sm:grid-cols-3" aria-hidden>
+      <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-4" aria-hidden>
         {[0, 1, 2].map((tile) => (
-          <div key={tile} className="h-28 animate-pulse rounded-xl border bg-muted/40" />
+          <div key={tile} className="h-24 animate-pulse rounded-xl border bg-muted/40 sm:h-28" />
         ))}
       </div>
     );
@@ -79,7 +79,9 @@ export function StudyStats() {
         Thành tích học tập
       </h2>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {/* Three across even on a phone: stacked, the tiles pushed the
+          course list (or its empty state) a whole screen down. */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Tile
           icon={
             <Flame
@@ -180,13 +182,16 @@ function Tile({
   note?: string;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+    // A column with the number pushed to the bottom on a phone, where one label
+    // wraps and the others do not and the three numbers should still line up.
+    // From `sm` up the labels fit and a note may follow, so it stays at the top.
+    <div className="flex min-w-0 flex-col rounded-xl border bg-card p-3 sm:p-4">
+      <p className="flex flex-col items-start gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
         {icon}
         {label}
       </p>
-      <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
-      {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
+      <p className="mt-auto pt-1 text-lg font-semibold tracking-tight sm:mt-0 sm:text-2xl">{value}</p>
+      {note ? <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{note}</p> : null}
     </div>
   );
 }

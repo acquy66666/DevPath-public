@@ -21,20 +21,21 @@ export function SiteHeader() {
   return (
     <header className="border-b">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-4 sm:gap-6">
-          <Link href="/" className="text-[1.575rem] font-semibold tracking-tight">
+        <div className="flex items-center gap-2.5 sm:gap-6">
+          <Link href="/" className="text-xl font-semibold tracking-tight sm:text-[1.575rem]">
             Dev<span className="text-muted-foreground">Path</span>
           </Link>
           <Link
             href="/khoa-hoc"
-            className="text-[1.225rem] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground"
+            className="text-[0.9375rem] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground sm:text-[1.225rem]"
           >
             Khóa học
           </Link>
         </div>
 
         {/* Tighter below `sm`: bell, cart and avatar next to the logo and
-            "Khóa học" only just fit a 375px phone. */}
+            "Khóa học" only just fit a 360px phone -- and so do the two
+            sign-in buttons, once their type steps down a size there. */}
         <div className="flex items-center gap-1 sm:gap-2">
           {status === "loading" ? (
             <div className="h-8 w-32 animate-pulse rounded-md bg-muted" aria-hidden />
@@ -46,10 +47,19 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <Button variant="ghost" size="sm" className="text-[1.12rem] h-10 px-4" asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-9 px-2 sm:h-10 sm:px-4 sm:text-[1.12rem]"
+                asChild
+              >
                 <Link href="/dang-nhap">Đăng nhập</Link>
               </Button>
-              <Button size="sm" className="text-[1.12rem] h-10 px-4" asChild>
+              <Button
+                size="sm"
+                className="h-9 px-3 sm:h-10 sm:px-4 sm:text-[1.12rem]"
+                asChild
+              >
                 <Link href="/dang-ky">Đăng ký</Link>
               </Button>
             </>

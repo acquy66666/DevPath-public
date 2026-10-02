@@ -1,11 +1,12 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GraduationCap, Loader2, Trash2 } from "lucide-react";
+import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CouponBox } from "@/components/commerce/coupon-box";
+import { CourseCover } from "@/components/courses/course-cover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -133,6 +134,7 @@ export function CartView() {
   if (cart.data.items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-12 text-center">
+        <ShoppingCart className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
         <p className="font-medium">Giỏ hàng đang trống</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Thêm khóa học bạn muốn mua vào đây, rồi thanh toán một lần.
@@ -282,25 +284,43 @@ function CartRow({
 }) {
   const { course } = item;
 
+  const price = (
+    <span
+      className={
+        item.already_enrolled
+          ? "font-semibold text-muted-foreground line-through"
+          : "font-semibold"
+      }
+    >
+      {formatPrice(course.price)}
+    </span>
+  );
+  const removeButton = (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onRemove}
+      disabled={removing}
+      aria-label={`Bỏ ${course.title} khỏi giỏ hàng`}
+    >
+      {removing ? <Loader2 className="animate-spin" aria-hidden /> : <Trash2 aria-hidden />}
+      Bỏ
+    </Button>
+  );
+
   return (
-    <div className="flex items-start gap-4 p-4">
+    <div className="flex items-start gap-3 p-4 sm:gap-4">
       <Link
         href={`/khoa-hoc/${course.slug}`}
         className="shrink-0"
         aria-label={course.title}
       >
-        {course.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={course.thumbnail_url}
-            alt=""
-            className="aspect-video w-32 rounded-lg bg-muted object-cover sm:w-40"
-          />
-        ) : (
-          <div className="flex aspect-video w-32 items-center justify-center rounded-lg bg-muted sm:w-40">
-            <GraduationCap className="size-6 text-muted-foreground" aria-hidden />
-          </div>
-        )}
+        <CourseCover
+          thumbnailUrl={course.thumbnail_url}
+          colorKey={course.id}
+          className="w-24 rounded-lg sm:w-40"
+          iconClassName="size-6"
+        />
       </Link>
 
       <div className="min-w-0 flex-1">
@@ -327,32 +347,18 @@ function CartRow({
             . Khóa học này không bị tính tiền.
           </p>
         ) : null}
+
+        {/* On a phone the price goes under the title: a third column there
+            left the title a word per line. */}
+        <div className="mt-2 flex items-center justify-between gap-2 sm:hidden">
+          {price}
+          {removeButton}
+        </div>
       </div>
 
-      <div className="flex shrink-0 flex-col items-end gap-2">
-        <span
-          className={
-            item.already_enrolled
-              ? "font-semibold text-muted-foreground line-through"
-              : "font-semibold"
-          }
-        >
-          {formatPrice(course.price)}
-        </span>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          disabled={removing}
-          aria-label={`Bỏ ${course.title} khỏi giỏ hàng`}
-        >
-          {removing ? (
-            <Loader2 className="animate-spin" aria-hidden />
-          ) : (
-            <Trash2 aria-hidden />
-          )}
-          Bỏ
-        </Button>
+      <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+        {price}
+        {removeButton}
       </div>
     </div>
   );

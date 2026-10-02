@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 
-import { BackendStatus, BackendStatusSkeleton } from "@/components/backend-status";
 import { HomeBanners } from "@/components/banners/home-banners";
+import { NewestCourses, NewestCoursesSkeleton } from "@/components/courses/newest-courses";
 import { RecommendedForYou } from "@/components/recommendations/recommended-for-you";
 import { Button } from "@/components/ui/button";
 
@@ -10,7 +10,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 py-16">
       {/* Nothing at all while there are no live banners -- the hero below
-          already opens the page. Streamed, like the backend status card. */}
+          already opens the page. Streamed, like the newest courses below. */}
       <Suspense fallback={null}>
         <HomeBanners />
       </Suspense>
@@ -37,14 +37,12 @@ export default function HomePage() {
           person's history, and there is no anonymous version of it. */}
       <RecommendedForYou />
 
-      <section className="max-w-md">
-        {/* Suspense giữ phần tĩnh của trang được prerender, còn khối gọi API
-            thì stream tại thời điểm request — nếu không, trạng thái backend bị
-            nướng cứng vào HTML lúc build. */}
-        <Suspense fallback={<BackendStatusSkeleton />}>
-          <BackendStatus />
-        </Suspense>
-      </section>
+      {/* Suspense giữ phần tĩnh của trang được prerender, còn khối gọi API
+          thì stream tại thời điểm request — nếu không, danh sách bị nướng
+          cứng vào HTML lúc build. */}
+      <Suspense fallback={<NewestCoursesSkeleton />}>
+        <NewestCourses />
+      </Suspense>
     </div>
   );
 }

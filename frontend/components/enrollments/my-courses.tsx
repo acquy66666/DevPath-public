@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Award } from "lucide-react";
+import { Award, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -85,6 +85,7 @@ export function MyCourses() {
   if (query.data.items.length === 0) {
     return (
       <div className="rounded-xl border border-dashed p-12 text-center">
+        <BookOpen className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
         <p className="font-medium">Bạn chưa đăng ký khóa học nào</p>
         <p className="mt-1 text-sm text-muted-foreground">
           Khóa học miễn phí đăng ký được ngay, không cần thanh toán.

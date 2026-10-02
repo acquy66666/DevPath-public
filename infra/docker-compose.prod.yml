@@ -180,6 +180,33 @@ services:
       postgres:
         condition: service_healthy
 
+  # Hands the grading workspace to the worker's uid, then exits.
+  #
+  # The daemon creates a missing bind-mount source as root:root 755, and the
+  # worker runs as uid 10001 -- so on a fresh host every submission ended in a
+  # system error, the worker unable to make its temporary directory. Nothing
+  # in development showed it: the dev worker runs as root. Found by the
+  # Phase 6 load test, the first time the production worker graded anything
+  # (docs/report/assets/phase-6/load-test.md).
+  #
+  # 700, because the only reader is the worker: a sandbox sees its own `code/`
+  # directory and nothing above it, and the daemon is root. Done here rather
+  # than as a step in the runbook, so a fresh server cannot skip it -- and on
+  # every `up`, so a directory recreated by hand is put right again.
+  grading-workspace:
+    build:
+      context: ../backend
+      target: production
+    image: devpath-backend:prod
+    user: "0"
+    restart: "no"
+    entrypoint:
+      - sh
+      - -c
+      - chown 10001:10001 /var/lib/devpath-grading && chmod 700 /var/lib/devpath-grading
+    volumes:
+      - /var/lib/devpath-grading:/var/lib/devpath-grading
+
   # The only container on this host that can talk to the Docker daemon.
   #
   # It holds the socket because starting a sandbox container is what grading
@@ -233,6 +260,8 @@ services:
     group_add:
       - "${DOCKER_GID:-999}"
     depends_on:
+      grading-workspace:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
       postgres:

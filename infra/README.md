@@ -15,6 +15,7 @@ nginx/snippets/          Header proxy và header bảo mật dùng chung
 scripts/init-tls.sh      Xin chứng chỉ Let's Encrypt lần đầu
 scripts/deploy.sh        Build → migrate → khởi động → đợi healthy
 scripts/tunnel.sh        Bật/tắt URL công khai tạm, in URL ra màn hình
+loadtest/                k6 vào stack production: trang danh sách + một lớp nộp code cùng lúc (Phase 6)
 scripts/                 backup DB (pg_dump → R2), restore — Phase 6
 ```
 
@@ -135,6 +136,8 @@ Chung một hàng đợi thì một bài giảng vừa upload sẽ chặn mọi 
 ### Một đường dẫn phải giống nhau ở hai phía
 
 `DEVPATH_GRADING_WORKSPACE=/var/lib/devpath-grading`, và đúng đường dẫn đó được bind-mount 1:1 vào worker. Lý do: daemon phân giải `--mount source=` **trên host**, nên thư mục chứa bài nộp phải tồn tại ở cả hai nơi dưới cùng một tên. Thiếu nó thì mọi bài nộp đều hỏng với `bind source path does not exist` — đã gặp thật, xem `docs/report/assets/phase-3/grading-queue.txt`.
+
+Thư mục đó còn phải **ghi được bởi uid 10001**. Daemon tự tạo nguồn bind-mount còn thiếu với quyền `root:root 755`, nên trên máy trắng worker production (uid 10001) không tạo nổi thư mục tạm và mọi bài nộp kết thúc bằng lỗi hệ thống (`PermissionError`). Worker dev chạy bằng root nên không bao giờ lộ ra; load test Phase 6 là lần đầu worker production chấm bài và bắt được nó (`docs/report/assets/phase-6/load-test.md`). Giờ `docker-compose.prod.yml` có service `grading-workspace` chạy một lần trước worker: `chown 10001:10001` + `chmod 700` rồi thoát — không có bước tay nào để quên.
 
 Trên VPS còn cần `DOCKER_GID` trong `.env.prod`:
 

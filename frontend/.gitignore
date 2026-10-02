@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Monaco is copied out of node_modules by scripts/copy-monaco.mjs.
 /public/monaco
+
+# Playwright: per-run output, traces and the HTML report.
+/test-results
+/playwright-report
+/blob-report

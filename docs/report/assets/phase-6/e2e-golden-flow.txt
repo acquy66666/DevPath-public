@@ -1,0 +1,85 @@
+E2E LUỒNG VÀNG (PLAYWRIGHT): ĐĂNG KÝ → MUA → HỌC → NỘP CODE → CHỨNG CHỈ
+Ngày chạy: 01–02/10/2026 · nhánh feature/e2e-golden-flow · stack dev (infra/docker-compose.yml)
+Phase 6, task 3: "E2E test các luồng vàng (Playwright): đăng ký → mua → học → nộp code →
+chứng chỉ"
+
+Tệp: frontend/e2e/golden-flow.spec.ts, frontend/e2e/support/stack.ts,
+     frontend/playwright.config.ts · Playwright 1.63.0 · Chromium (Chrome trên máy dev)
+Chạy: E2E_CHROME_CHANNEL=chrome npm run test:e2e   (trong frontend/, stack đang bật)
+
+==============================================================================
+1. LUỒNG ĐƯỢC KIỂM — MỌI BƯỚC CỦA HỌC VIÊN ĐI QUA UI THẬT
+==============================================================================
+Chuẩn bị (qua API, không phải câu chuyện của học viên):
+  giảng viên mới đăng ký → POST /users/me/instructor → tạo khóa 199.000 ₫ gồm 1 bài
+  đọc + 1 bài tập code (1 test mẫu 21→42, 1 test ẩn -7→-14) → gửi duyệt → admin seed
+  duyệt (POST /admin/courses/{id}/approve) — đúng đường một khóa học lên sàn.
+
+Học viên, trên trình duyệt:
+  01  /dang-ky: điền họ tên, email, mật khẩu → "Tạo tài khoản" → về trang chủ, đã đăng nhập
+  02  /khoa-hoc/{slug}: "Thêm vào giỏ hàng" → nút đổi thành "Xem giỏ hàng"
+  03  /gio-hang: "Thanh toán qua VNPay" → trình duyệt bị đưa sang sandbox.vnpayment.vn
+      với URL đã ký: kiểm vnp_Amount = 19900000 (199.000 ₫ × 100) và có vnp_SecureHash.
+      Trang của VNPay được thay bằng route interception (trang của bên khác).
+  04  IPN: scripts.simulate_vnpay_ipn ký callback BÊN TRONG container backend bằng đúng
+      secret backend kiểm → đơn "paid". Trình duyệt quay về /thanh-toan/ket-qua?vnp_TxnRef=
+      → "Thanh toán thành công", "Vào học ngay".
+  05  /hoc/{slug}?bai=<bài đọc>: "0/2 bài" → "Đánh dấu hoàn thành" → "1/2 bài"
+  06  /hoc/{slug}?bai=<bài code>: gõ lời giải vào Monaco → "Nộp bài" → sandbox chấm 2 test
+      (mỗi test một container) → verdict TỔNG "Đúng", "Điểm: 100/100", câu "Chương trình
+      in ra đúng kết quả mong đợi ở mọi test case."
+  07  AC tự đóng bài học → "2/2 bài · 100% · đã hoàn thành khóa học" + "Xem chứng chỉ"
+  08  /cert/{code}: "Chứng chỉ hợp lệ", tên học viên, tên khóa học, mã 16 ký tự
+
+Ảnh từng bước: docs/report/assets/phase-6/e2e/01-dang-ky.png … 08-chung-chi.png
+(chụp bằng E2E_EVIDENCE_DIR trong lượt chạy 02/10).
+
+==============================================================================
+2. KẾT QUẢ
+==============================================================================
+Máy dev (Windows, Docker Desktop, next dev trong container, Chrome 1 worker):
+  1 passed (20.7s) · 1 passed (15.8s) · 1 passed (26.9s) · 1 passed (32.1s)
+  · 1 passed (17.5s) · 1 passed (18.8s)
+  (lượt sau khi khởi động lại frontend chậm hơn vì next dev biên dịch trang lần đầu)
+CI (job "E2E — golden flow", PR #67): xem mục 5.
+
+==============================================================================
+3. HAI LỖI THẬT E2E TÌM RA QUA ẢNH CHỤP (đã sửa, commit a039033)
+==============================================================================
+(a) Toàn site hiển thị bằng Times New Roman. globals.css có
+    `--font-sans: var(--font-sans)` — biến tự trỏ vào chính nó → font-family vô hiệu lúc
+    tính giá trị → trình duyệt dùng font serif mặc định, từ lần `shadcn init` ghi đè dòng
+    này (Phase 1). Sửa: trỏ về Geist, nạp thêm subset "vietnamese" để chữ có hai dấu
+    (ồ, ễ, ậ) không lấy từ font dự phòng giữa chừng một từ. Mọi ảnh bằng chứng trước
+    02/10 đều chụp với font sai này.
+(b) Trang xác minh chứng chỉ in "Luồng" thành "Luô`ng". Tên đặt bằng `font-serif`, trên
+    Windows rơi về Georgia — font không có glyph chữ Việt hai dấu: Chrome tách "ồ" thành
+    "ô" + dấu huyền tổ hợp mà Georgia không định vị được. Dữ liệu là NFC chuẩn (U+1ED3) —
+    lỗi ở font, không ở dữ liệu. Sửa: Noto Serif có subset Vietnamese, chỉ nạp ở trang
+    này. (PDF chứng chỉ vẽ bằng DejaVu Serif nên không bị.)
+Và một lỗi của chính test, bắt được trước khi commit: assertion đầu tiên chờ chữ "Đúng"
+khớp với nhãn của RIÊNG test 1 khi test 2 còn đang chấm (ảnh bước 6 chụp lúc "Đang chấm
+test 2/2"). Đổi sang chờ câu gợi ý của verdict tổng + "100/100".
+
+==============================================================================
+4. DỮ LIỆU TEST VÀ DỌN DẸP
+==============================================================================
+Mỗi lượt ghi dữ liệu thật qua API thật: 2 tài khoản, 1 khóa đã xuất bản, 1 đơn đã trả,
+1 chứng chỉ. Trên máy dev, sau một buổi sáng catalogue có thêm 7 khóa "Python nhập môn
+E2E" và khối "Học tiếp theo" gợi ý chúng. scripts.purge_e2e gỡ mọi tài khoản
+@e2e.devpath.example, khóa của họ và mọi thứ treo vào, theo đúng thứ tự 5 khóa ngoại
+RESTRICT (đơn hàng → chứng chỉ → ghi danh vào khóa E2E → khóa E2E → tài khoản), đếm lại
+học viên của khóa khác họ từng tham gia, dựng lại bảng xếp hạng. Lần dọn đầu trên CSDL dev:
+  Đã gỡ 14 tài khoản, 7 khóa học, 7 đơn hàng và 7 chứng chỉ do bộ E2E để lại;
+  bảng xếp hạng đã dựng lại.
+Suite tự gọi nó ở afterAll (E2E_KEEP_DATA=1 để giữ lại); sau lượt chạy kế tiếp:
+  Sẽ gỡ 0 tài khoản và 0 khóa học do bộ E2E để lại.
+Test: backend/tests/test_purge_e2e.py — 3 passed.
+
+==============================================================================
+5. CI
+==============================================================================
+Job "E2E — golden flow": dựng nguyên stack compose dev từ số không (`up --build --wait`),
+build image sandbox, migrate + seed, cài Chromium của Playwright, chạy spec; lỗi thì in log
+backend/worker/frontend và tải lên report + trace. VNPay dùng giá trị giả (trang VNPay bị
+thay, IPN ký trong container).

@@ -401,6 +401,201 @@ async def test_an_order_that_is_already_paid_cannot_be_paid_again(
     assert response.json()["detail"]["code"] == "ORDER_NOT_PAYABLE"
 
 
+# --- A pending order does not wait forever ----------------------------------
+#
+# An order freezes its prices and its coupon when it is placed, and a payment
+# URL can be asked for again. Without a deadline on the *order* -- not just on
+# each URL -- a checkout placed during a sale stays payable at the sale price
+# for ever: past the coupon's end date, past its last use, past an admin ending
+# the campaign, past the course leaving the shop. Place a hundred orders while
+# the code is live, pay them next month.
+
+
+async def age(session: AsyncSession, code: str, minutes: int) -> None:
+    """Move an order's placing back in time."""
+    order = await session.scalar(select(Order).where(Order.code == code))
+    order.created_at = datetime.now(UTC) - timedelta(minutes=minutes)
+    await session.flush()
+
+
+async def ask_to_pay(client: AsyncClient, code: str, headers: dict[str, str]):
+    return await client.post(f"/api/v1/orders/{code}/payment-url", headers=headers)
+
+
+def assert_expired(response) -> None:
+    assert response.status_code == 409, response.text
+    assert response.json()["detail"]["code"] == "ORDER_EXPIRED"
+
+
+async def test_an_order_left_past_its_window_gets_no_new_payment_url(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    course = await make_course(db_session, owner, price="199000")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers)
+    await age(db_session, order["code"], get_settings().order_payment_window_minutes)
+
+    assert_expired(await ask_to_pay(api_client, order["code"], headers))
+    # Still pending, not cancelled: a payment begun inside the window may yet
+    # be reported, and money that moved is honoured.
+    status = await db_session.scalar(select(Order.status).where(Order.code == order["code"]))
+    assert status == "pending"
+
+
+async def test_money_that_moved_inside_the_window_is_honoured_after_it(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    """VNPay's callback can land after the deadline for a payment made before
+    it. The deadline stops new URLs; it never refuses a payment."""
+    course = await make_course(db_session, owner, price="199000")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers)
+    await age(db_session, order["code"], get_settings().order_payment_window_minutes + 5)
+
+    response = await send_ipn(api_client, callback(order["code"], order["total"]))
+
+    assert response.json()["RspCode"] == "00"
+
+
+async def test_a_payment_url_never_outlives_its_order(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    """Five minutes left on the order: the bank page gets five, not fifteen."""
+    settings = get_settings()
+    course = await make_course(db_session, owner, price="199000")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers)
+    await age(db_session, order["code"], settings.order_payment_window_minutes - 5)
+    placed = await db_session.scalar(
+        select(Order.created_at).where(Order.code == order["code"])
+    )
+
+    response = await ask_to_pay(api_client, order["code"], headers)
+
+    assert response.status_code == 200, response.text
+    expire = response.json()["payment_url"].split("vnp_ExpireDate=")[1].split("&")[0]
+    expires = datetime.strptime(expire, vnpay.TIME_FORMAT).replace(tzinfo=vnpay.VIETNAM)
+    assert expires <= placed + timedelta(minutes=settings.order_payment_window_minutes)
+    assert expires < datetime.now(UTC) + timedelta(minutes=settings.vnpay_expire_minutes)
+
+
+async def test_a_coupon_ended_after_checkout_stops_the_payment(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    """An admin ending a leaked code has to stop the orders already placed
+    with it, not only the next ones."""
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="50")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers, coupon.code)
+
+    coupon.valid_to = datetime.now(UTC) - timedelta(seconds=1)
+    await db_session.flush()
+
+    assert_expired(await ask_to_pay(api_client, order["code"], headers))
+
+
+async def test_a_coupon_used_up_after_checkout_stops_the_payment(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    """Uses are counted when money arrives, so any number of orders can be
+    placed on the last one. The URL is where that has to stop."""
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="50", max_uses=1)
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers, coupon.code)
+
+    coupon.used_count = 1
+    await db_session.flush()
+
+    assert_expired(await ask_to_pay(api_client, order["code"], headers))
+
+
+async def test_a_coupon_deleted_after_checkout_stops_the_payment(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    """Deleting sets `orders.coupon_id` to NULL and leaves the frozen discount
+    behind -- a discount with nothing left to check it against."""
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="50")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers, coupon.code)
+
+    await db_session.delete(coupon)
+    await db_session.flush()
+    db_session.expire_all()
+
+    assert_expired(await ask_to_pay(api_client, order["code"], headers))
+
+
+async def test_a_course_withdrawn_after_checkout_stops_the_payment(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    course = await make_course(db_session, owner, price="199000")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers)
+
+    course.status = "draft"
+    await db_session.flush()
+
+    assert_expired(await ask_to_pay(api_client, order["code"], headers))
+
+
+async def test_an_order_inside_its_window_with_everything_on_sale_is_payable(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    vnpay_configured: str,
+) -> None:
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="50", max_uses=5)
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+    order = await checkout(api_client, headers, coupon.code)
+    await age(db_session, order["code"], 10)
+
+    response = await ask_to_pay(api_client, order["code"], headers)
+
+    assert response.status_code == 200, response.text
+    assert "vnp_Amount=20000000" in response.json()["payment_url"]
+
+
 # --- The callback -----------------------------------------------------------
 
 

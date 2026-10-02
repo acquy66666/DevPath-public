@@ -6,16 +6,22 @@ is already established. What is left is the part that can go wrong quietly:
 which account does this identity belong to.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import hash_password
+from app.core.security import generate_refresh_token, hash_password, hash_refresh_token
 from app.models import RefreshToken, User
-from app.services.auth import AccountLockedError, sign_in_with_google
+from app.services.auth import (
+    AccountLockedError,
+    InvalidCredentialsError,
+    authenticate_user,
+    sign_in_with_google,
+)
 from app.services.google_oauth import GoogleIdentity
+from tests.api.fakes import AllowAllRateLimiter
 
 IDENTITY = GoogleIdentity(
     sub="google-sub-0001",
@@ -104,24 +110,110 @@ async def test_a_changed_google_email_follows_the_subject_not_the_address(
     assert second.user.email == "ngoc.moi@example.com"
 
 
-async def test_google_links_into_an_existing_password_account(
-    db_session: AsyncSession,
-) -> None:
-    """Same person, same address: one account, two ways in."""
-    existing = User(
+async def password_account(
+    session: AsyncSession, *, verified: bool = False
+) -> tuple[User, RefreshToken]:
+    """An account registered with a password, signed in once on some device.
+
+    Registration proves nothing about the address -- there is no confirmation
+    mail -- so `verified=False` is every password account this platform has.
+    """
+    user = User(
         email=IDENTITY.email,
         full_name="Ngọc Đăng Ký Bằng Mật Khẩu",
         password_hash=hash_password("mật-khẩu-cũ-dài"),
+        email_verified_at=datetime.now(UTC) if verified else None,
     )
-    db_session.add(existing)
-    await db_session.flush()
+    session.add(user)
+    await session.flush()
+
+    device = RefreshToken(
+        user_id=user.id,
+        token_hash=hash_refresh_token(generate_refresh_token()),
+        expires_at=datetime.now(UTC) + timedelta(days=30),
+    )
+    session.add(device)
+    await session.flush()
+    return user, device
+
+
+async def test_google_links_into_an_existing_account(db_session: AsyncSession) -> None:
+    """Same address: one account, reached through Google from now on."""
+    existing, _ = await password_account(db_session)
 
     tokens = await sign_in_with_google(db_session, identity=IDENTITY)
 
     assert tokens.user.id == existing.id
     assert tokens.user.oauth_sub == IDENTITY.sub
-    # The password still works -- linking adds a way in, it does not take one away.
-    assert tokens.user.password_hash == existing.password_hash
+    assert tokens.user.email_verified_at is not None
+
+
+async def test_linking_an_unproven_address_takes_its_password_away(
+    db_session: AsyncSession,
+) -> None:
+    """Pre-account takeover: register a victim's address with your own password,
+    wait for the victim to arrive through Google, then sign in with the password.
+
+    Google has just proved who owns the address; nothing ever proved who chose
+    that password. Whoever registered it may be somebody else entirely, so the
+    password goes, and so does every session it opened.
+    """
+    existing, device = await password_account(db_session)
+
+    tokens = await sign_in_with_google(db_session, identity=IDENTITY)
+
+    assert existing.password_hash is None
+    await db_session.refresh(device)
+    assert device.revoked_at is not None
+    # ...but not the one Google sign-in has just opened.
+    google_session = await db_session.scalar(
+        select(RefreshToken).where(
+            RefreshToken.token_hash == hash_refresh_token(tokens.refresh_token)
+        )
+    )
+    assert google_session is not None
+    assert google_session.revoked_at is None
+
+    with pytest.raises(InvalidCredentialsError):
+        await authenticate_user(
+            db_session,
+            email=IDENTITY.email,
+            password="mật-khẩu-cũ-dài",
+            limiter=AllowAllRateLimiter(),
+        )
+
+
+async def test_an_address_already_proven_keeps_its_password(
+    db_session: AsyncSession,
+) -> None:
+    """Only an unproven password is suspect. Nothing sets `email_verified_at` on
+    a password account today, but the day a confirmation mail does, linking
+    must go back to adding a way in rather than taking one away."""
+    existing, device = await password_account(db_session, verified=True)
+    password_hash = existing.password_hash
+
+    await sign_in_with_google(db_session, identity=IDENTITY)
+
+    assert existing.password_hash == password_hash
+    await db_session.refresh(device)
+    assert device.revoked_at is None
+
+
+async def test_a_rename_to_an_unverified_address_is_not_followed(
+    db_session: AsyncSession,
+) -> None:
+    """The known-subject path takes a new address from Google too. Only a
+    verified one: otherwise a Google account can be pointed at an address its
+    owner does not hold, and that address is then taken here."""
+    first = await sign_in_with_google(db_session, identity=IDENTITY)
+
+    second = await sign_in_with_google(
+        db_session,
+        identity=identity(email="chua-xac-thuc@example.com", email_verified=False),
+    )
+
+    assert second.user.id == first.user.id
+    assert second.user.email == IDENTITY.email
 
 
 async def test_linking_keeps_the_name_the_user_chose(db_session: AsyncSession) -> None:

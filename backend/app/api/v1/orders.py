@@ -115,7 +115,9 @@ async def create_payment_url(
     a fifteen-minute life, and it must never be cached by anything.
 
     Can be asked for again -- somebody who closed the bank's tab needs a way
-    back. 409 `ORDER_NOT_PAYABLE` once the order is settled, and 503
+    back -- but only within the order's window (30 minutes) and while its
+    coupon and courses still stand: 409 `ORDER_EXPIRED` otherwise, with a
+    sentence saying which. 409 `ORDER_NOT_PAYABLE` once the order is settled, and 503
     `PAYMENT_NOT_CONFIGURED` on a server with no merchant credentials, which
     says so rather than building a URL the gateway would refuse.
     """

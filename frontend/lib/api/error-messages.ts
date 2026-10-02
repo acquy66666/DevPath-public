@@ -77,6 +77,8 @@ const MESSAGES: Record<string, string> = {
   PAYMENT_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình cổng thanh toán VNPay nên chưa thanh toán được.",
   ORDER_CODE_UNAVAILABLE: "Chưa tạo được mã đơn hàng. Bấm thanh toán lại giúp mình nhé.",
+  // ORDER_EXPIRED cố ý không có ở đây: câu của backend nói vì sao đơn không còn
+  // thanh toán được (quá hạn, mã giảm giá đã kết thúc/hết lượt, khóa học ngừng bán).
 
   // Video.
   STORAGE_NOT_CONFIGURED:

@@ -161,6 +161,12 @@ class Settings(BaseSettings):
     # How long a payment URL stays payable. Long enough to find a card, short
     # enough that an old link cannot be paid next month at last month's price.
     vnpay_expire_minutes: int = 15
+    # How long an order stays payable at all. A payment URL can be asked for
+    # again, so the URL's expiry alone bounds nothing: without this, an order
+    # placed during a sale -- prices and coupon frozen onto it -- could be paid
+    # next month, after the coupon ended or ran out. Every URL's expiry is
+    # capped at this deadline, and no new URL is signed after it.
+    order_payment_window_minutes: int = 30
 
     # Where the browser lands after the OAuth round trip.
     frontend_url: str = "http://localhost:3000"

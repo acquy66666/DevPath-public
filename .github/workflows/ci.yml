@@ -125,6 +125,12 @@ jobs:
       - name: ESLint
         run: npm run lint
 
+      # Plain `node --test` on the TypeScript files, types stripped: no test
+      # framework to install for a handful of pure functions. The E2E suite is
+      # a separate job once it exists.
+      - name: Unit tests
+        run: npm test
+
       # No separate `tsc --noEmit` step. Next generates the global types the
       # app relies on (LayoutProps, PageProps) into .next/types during the
       # build, so type-checking ahead of it fails on a clean checkout -- and
@@ -331,3 +337,76 @@ jobs:
           echo "Next did not answer within 60s:" >&2
           docker logs devpath-fe >&2
           exit 1
+
+  e2e:
+    name: E2E — golden flow on the whole stack
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    # The same compose stack a developer runs, brought up from nothing: the
+    # golden flow needs the API, Postgres, Redis, the bucket, the worker that
+    # grades in a Docker sandbox and the one that draws certificates, all at
+    # once. Playwright then drives a real Chromium through the UI.
+    #
+    # VNPay credentials are made-up values: the browser is stood in for at
+    # the bank's page, and the IPN is signed inside the backend container by
+    # scripts.simulate_vnpay_ipn with the same secret the backend checks.
+    env:
+      VNPAY_TMN_CODE: CIDEMO01
+      VNPAY_HASH_SECRET: ci-not-a-real-vnpay-secret
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Before the stack, not after: the frontend container mounts an
+      # anonymous volume at /app/node_modules inside the bind-mounted
+      # frontend/, and Docker creates that mountpoint on the host as root --
+      # an `npm ci` after `compose up` cannot write there (EACCES). Made
+      # first, the folder is the runner's and the volume merely covers it.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Chromium for Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      # The grader starts submissions with `--pull never`: the image has to be
+      # on this host before the first one arrives.
+      - name: Sandbox image
+        run: docker build -t devpath-sandbox-python:v1 grader/images/python
+
+      - name: Start the stack
+        working-directory: infra
+        run: docker compose up -d --build --wait --wait-timeout 600
+
+      - name: Migrate and seed
+        working-directory: infra
+        run: |
+          docker compose exec -T backend alembic upgrade head
+          docker compose exec -T backend python -m scripts.seed
+
+      - name: Golden flow
+        working-directory: frontend
+        run: npm run test:e2e
+
+      - name: Stack logs
+        if: failure()
+        working-directory: infra
+        run: docker compose logs --no-color --tail 200 backend worker grading-worker frontend
+
+      - name: Playwright report and traces
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7

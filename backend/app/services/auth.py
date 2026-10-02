@@ -405,7 +405,11 @@ async def sign_in_with_google(
     2. address already registered -> link Google to that account, but only if
        Google has verified the address. Without that check, anyone able to put
        an unverified address on a Google account could walk into someone else's
-       account here.
+       account here. And if this platform never proved the address either --
+       registration sends no confirmation mail -- the password on the account
+       was chosen by whoever typed the address first, who need not be the
+       person Google just vouched for. That password goes, with every session
+       it opened (pre-account takeover).
     3. neither -> a new student account with no password.
     """
     email = identity.email.strip().lower()
@@ -421,9 +425,11 @@ async def sign_in_with_google(
         if user.locked_at is not None:
             raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
 
-        if user.email != email:
+        if user.email != email and identity.email_verified:
             # The Google account was renamed. Follow it, unless somebody else
-            # here already holds the new address.
+            # here already holds the new address -- and only to an address
+            # Google has verified, or a Google account pointed at somebody
+            # else's address would take that address here.
             clash = await session.scalar(
                 select(User).where(User.email == email, User.id != user.id)
             )
@@ -448,8 +454,16 @@ async def sign_in_with_google(
             if existing.locked_at is not None:
                 raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
 
-            # Linking adds a way in; it never touches the password, the name, or
-            # an avatar the user chose for themselves.
+            if existing.email_verified_at is None:
+                # Nothing ever proved this address belonged to whoever set the
+                # password. Google just proved who it belongs to, so the
+                # account is theirs, and a password somebody else may have
+                # chosen -- with the sessions it opened -- no longer gets in.
+                existing.password_hash = None
+                await revoke_all_sessions(session, existing.id)
+
+            # Otherwise linking adds a way in. It never touches the name or an
+            # avatar the user chose for themselves.
             existing.oauth_provider = "google"
             existing.oauth_sub = identity.sub
             existing.email_verified_at = existing.email_verified_at or now

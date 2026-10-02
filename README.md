@@ -52,7 +52,7 @@ cp infra/.env.example infra/.env
 docker build -t devpath-sandbox-python:v1 grader/images/python
 ```
 
-**3. Dựng stack.** Lần đầu mất vài phút để build image. `--wait` chỉ trả về khi mọi service có healthcheck đã healthy.
+**3. Dựng stack.** Lần đầu phải build ba image (backend, worker chấm bài, frontend), mất 5–15 phút tùy mạng — lượt thử ngày 02/10 mất 10,6 phút. `--wait` chỉ trả về khi mọi service có healthcheck đã healthy.
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d --build --wait
@@ -74,7 +74,6 @@ docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
 |---|---|
 | http://localhost:3000 | Giao diện |
 | http://localhost:8000/docs | Tài liệu API tự sinh |
-| http://localhost:9001 | Console MinIO (`devpath` / `devpath-minio`) |
 
 | Tài khoản | Mật khẩu | Có từ |
 |---|---|---|

@@ -1,0 +1,136 @@
+### run 2 -- README.md of feature/fresh-machine-check@1d9a4b6, followed command by command
+### deviations: clone from the local repository instead of github.com; COMPOSE_PROJECT_NAME=devpath-fresh so the dev stack's volumes are untouched (dev stack stopped for the ports)
+$ git clone <repo> DevPath && cd DevPath
+1d9a4b6 docs: a README that runs on a blank machine, and one order for the demo seeds
+$ cp infra/.env.example infra/.env
+$ docker build -t devpath-sandbox-python:v1 grader/images/python
+sha256:bb32c0676f32269f2d4ac45dc24ec80bc639754aa943f6aae842041ae78203c7
+exit=0
+$ docker compose -f infra/docker-compose.yml up -d --build --wait
+ Container devpath-fresh-backend-1 Healthy 
+ Container devpath-fresh-beat-1 Healthy 
+ Container devpath-fresh-frontend-1 Healthy 
+ Container devpath-fresh-grading-worker-1 Healthy 
+ Container devpath-fresh-minio-1 Healthy 
+ Container devpath-fresh-postgres-1 Healthy 
+ Container devpath-fresh-redis-1 Healthy 
+ Container devpath-fresh-worker-1 Healthy 
+ Image devpath-backend:dev Built 
+ Image devpath-frontend:dev Built 
+ Image devpath-grading:dev Built 
+exit=0 (637 s)
+$ docker compose -f infra/docker-compose.yml exec backend alembic upgrade head
+INFO  [alembic.runtime.migration] Running upgrade 6e27fe4795b3 -> 5b10213a072e, add_banners
+exit=0
+$ docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
+admin      : admin@devpath.example (created)
+categories : 8 created
+instructors: 2 created
+courses    : 4 created
+sample HLS : https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+
+WARNING: these accounts have built-in default passwords: admin ('devpath-admin', SEED_ADMIN_PASSWORD); instructor ('devpath-instructor', SEED_INSTRUCTOR_PASSWORD). Set the environment variables named above before seeding anything reachable from the internet.
+exit=0
+--- step 5: the browser addresses
+http://localhost:3000 -> 200
+http://localhost:8000/docs -> 200
+http://localhost:9001 -> 000   <- nothing listens: this MinIO build has no console; the row was taken out of the README after this run
+catalogue total = 4
+
+
+--- README 'Dữ liệu demo đầy đủ', rows 1-9 in order, each run twice
+$ ... exec backend python -m scripts.seed_transcripts   (lần 1): exit=0, 14 dòng, 16 s
+      3-3.txt   2037 ký tự  Chia chương trình thành nhiều file
+    Đã xếp 1 job ingest cho worker (khóa đang xuất bản).
+$ ... exec backend python -m scripts.seed_transcripts   (lần 2): exit=0, 14 dòng, 15 s
+      3-3.txt   2037 ký tự  Chia chương trình thành nhiều file
+    Đã xếp 1 job ingest cho worker (khóa đang xuất bản).
+$ ... exec backend python -m scripts.seed_banners   (lần 1): exit=0, 5 dòng, 9 s
+      Bảng xếp hạng tuần này: ai học chăm nhất?  ->  /bang-xep-hang
+    Xem ở trang chủ; sửa, tắt, sắp xếp ở /quan-tri/banner.
+$ ... exec backend python -m scripts.seed_banners   (lần 2): exit=0, 5 dòng, 9 s
+      Bảng xếp hạng tuần này: ai học chăm nhất?  ->  /bang-xep-hang
+    Xem ở trang chủ; sửa, tắt, sắp xếp ở /quan-tri/banner.
+$ ... exec backend python -m scripts.seed_interactions   (lần 1): exit=0, 8 dòng, 13 s
+    Chạy `python -m scripts.rebuild_recommendations` để tính lại gợi ý.
+    WARNING: 48 tài khoản học viên dùng mật khẩu mặc định 'devpath-learner'. Đặt SEED_LEARNER_PASSWORD trước khi seed vào bất cứ CSDL nào truy cập được từ internet.
+$ ... exec backend python -m scripts.seed_interactions   (lần 2): exit=0, 7 dòng, 10 s
+    tổng tương tác trong kế hoạch: 190
+    Chạy `python -m scripts.rebuild_recommendations` để tính lại gợi ý.
+$ ... exec backend python -m scripts.seed_coupons   (lần 1): exit=0, 9 dòng, 9 s
+      HETLUOT         -50.000 ₫  đã dùng hết lượt (10/10)
+    Gõ mã ở ô "Mã giảm giá" trong trang /gio-hang. Ba mã cuối là để xem lời từ chối.
+$ ... exec backend python -m scripts.seed_coupons   (lần 2): exit=0, 9 dòng, 8 s
+      HETLUOT         -50.000 ₫  đã dùng hết lượt (10/10)
+    Gõ mã ở ô "Mã giảm giá" trong trang /gio-hang. Ba mã cuối là để xem lời từ chối.
+$ ... exec backend python -m scripts.seed_cart   (lần 1): exit=0, 7 dòng, 9 s
+      hocvien25@seed.devpath.example: 2 khóa, 898.000 ₫
+    Đăng nhập bằng mật khẩu học viên seed (SEED_LEARNER_PASSWORD, mặc định 'devpath-learner') rồi mở /gio-hang.
+$ ... exec backend python -m scripts.seed_cart   (lần 2): exit=0, 7 dòng, 7 s
+      hocvien25@seed.devpath.example: 2 khóa, 898.000 ₫
+    Đăng nhập bằng mật khẩu học viên seed (SEED_LEARNER_PASSWORD, mặc định 'devpath-learner') rồi mở /gio-hang.
+$ ... exec backend python -m scripts.seed_sales   (lần 1): exit=0, 1 dòng, 32 s
+    Đã nạp 77 đơn hàng (139 lượt bán) của 40 người mua, tổng 59.768.600 ₫, trải trong 365 ngày gần nhất. Mật khẩu người mua: 'devpath-buyer'.
+$ ... exec backend python -m scripts.seed_sales   (lần 2): exit=0, 1 dòng, 10 s
+    Dữ liệu bán hàng mẫu đã có sẵn. Chạy với --purge để gỡ rồi nạp lại.
+$ ... exec backend python -m scripts.seed_study   (lần 1): exit=0, 5 dòng, 112 s
+      Chuỗi dài nhất từng có: Người mua 06 10 ngày
+      Chuỗi đang giữ dài nhất: Người mua 31 7 ngày
+$ ... exec backend python -m scripts.seed_study   (lần 2): exit=0, 1 dòng, 13 s
+    Dữ liệu học mẫu đã có sẵn. Chạy với --purge để gỡ rồi nạp lại.
+$ ... exec backend python -m scripts.issue_certificates   (lần 1): exit=0, 2 dòng, 50 s
+    Đã cấp 87 chứng chỉ.
+    Đã vẽ 87 tệp PDF.
+$ ... exec backend python -m scripts.issue_certificates   (lần 2): exit=0, 2 dòng, 9 s
+    Đã cấp 0 chứng chỉ.
+    Mọi chứng chỉ đã có PDF.
+$ ... exec backend python -m scripts.rebuild_recommendations   (lần 1): exit=0, 2 dòng, 10 s
+    Không có vector khóa học nào cho model gemini-embedding-001: chỉ dùng nửa collaborative
+    Đã ghi gợi ý cho 88 người dùng (top 20 mỗi người), trộn collaborative + content-based.
+$ ... exec backend python -m scripts.rebuild_recommendations   (lần 2): exit=0, 2 dòng, 10 s
+    Không có vector khóa học nào cho model gemini-embedding-001: chỉ dùng nửa collaborative
+    Đã ghi gợi ý cho 88 người dùng (top 20 mỗi người), trộn collaborative + content-based.
+courses 24
+users 91
+orders 77
+enrollments 378
+certificates 233
+banners 3
+coupons 7
+cart_items 7
+xp_events 657
+(rebuild_recommendations with the message fix copied in, then reverted in this clone) Đã ghi gợi ý cho 88 người dùng (top 20 mỗi người), chỉ collaborative (chưa có vector khóa học: scripts.rebuild_course_embeddings).
+
+--- purging in the wrong order first: seed_interactions --purge while seed_sales data is there
+Không gỡ được: còn 76 đơn hàng trỏ vào khóa học hoặc học viên giả lập, mà đơn hàng là sổ tiền nên script này không xóa. Đơn của scripts.seed_sales thì gỡ theo thứ tự ngược với lúc nạp, rồi chạy lại lệnh này:
+  python -m scripts.seed_study --purge
+  python -m scripts.seed_sales --purge
+Đơn của tài khoản thật thì phải xem và quyết định bằng tay.
+exit=1
+
+--- README: purge in reverse order
+$ ... scripts.seed_study --purge: exit=0 | Đã gỡ 657 lần cộng XP cùng tiến độ học của người mua mẫu.
+$ ... scripts.seed_sales --purge: exit=0 | Đã gỡ 40 người mua và 77 đơn hàng.
+$ ... scripts.seed_cart --purge: exit=0 | Đã xóa 7 dòng giỏ hàng và 6 dòng yêu thích.
+$ ... scripts.seed_coupons --purge: exit=0 | Đã xóa 6 mã giảm giá.
+$ ... scripts.seed_interactions --purge: exit=0 | Đã xóa 20 khóa học giả lập và 48 học viên giả lập.
+courses 4
+users 3
+orders 0
+enrollments 0
+coupons 0
+
+--- README 'Tùy chọn': any two VNPay values, then up -d
+VNPAY_TMN_CODE=<set>
+VNPAY_HASH_SECRET=<set>
+ Container devpath-fresh-postgres-1 Healthy 
+ Container devpath-fresh-redis-1 Healthy 
+ Container devpath-fresh-worker-1 Healthy 
+ Container devpath-fresh-worker-1 Recreated 
+ Container devpath-fresh-worker-1 Started 
+--- E2E golden flow (frontend/e2e/golden-flow.spec.ts) against this stack
+> frontend@0.1.0 test:e2e
+> playwright test
+Running 1 test using 1 worker
+  ok 1 [chromium] › e2e\golden-flow.spec.ts:46:5 › đăng ký → mua → học → nộp code → nhận chứng chỉ (26.1s)
+  1 passed (32.1s)

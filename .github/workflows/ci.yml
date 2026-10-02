@@ -105,6 +105,13 @@ jobs:
           ruff check --config pyproject.toml ../infra/backup
           pytest -q -p no:cacheprovider ../infra/backup
 
+      # Same for the host monitor: when a problem is real enough to send, when
+      # it is over, and that a message the notifier missed is not lost.
+      - name: Host monitor — ruff and unit tests
+        run: |
+          ruff check --config pyproject.toml ../infra/monitor
+          pytest -q -p no:cacheprovider ../infra/monitor
+
       - name: Migrate the test database
         run: alembic upgrade head
 
@@ -334,6 +341,26 @@ jobs:
                 -subj /CN=devpath.example.com 2>/dev/null
               /docker-entrypoint.sh nginx -t
             '
+
+      # The real installer on a real systemd: the runner has both, and no
+      # stack is up, so the first round must run, find every service missing,
+      # and still finish cleanly -- a failed unit means the monitor broke, not
+      # the site.
+      - name: Host monitor installs and runs under systemd
+        run: |
+          sudo MONITOR_USER="$USER" ./infra/scripts/install-monitor.sh
+          sudo systemd-analyze verify /etc/systemd/system/devpath-monitor.service /etc/systemd/system/devpath-monitor.timer
+          systemctl is-active --quiet devpath-monitor.timer
+          sudo python3 - <<'EOF'
+          import json
+          state = json.load(open("/var/lib/devpath-monitor/state.json"))
+          missing = {k: v for k, v in state["problems"].items() if v["detail"] == "không có container"}
+          assert "service:backend" in missing and "service:nginx" in missing, state["problems"]
+          assert "site" in state["problems"], state["problems"]
+          print(f"{len(state['problems'])} problems found with no stack running, as expected.")
+          EOF
+          sudo ./infra/scripts/install-monitor.sh --remove
+          test ! -e /etc/systemd/system/devpath-monitor.timer
 
       - name: Backend production image builds
         run: docker build --target production -t devpath-backend:ci backend

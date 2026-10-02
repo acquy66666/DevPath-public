@@ -1,0 +1,19 @@
+# A monitoring round every minute, from two minutes after boot.
+#
+# Installed by infra/scripts/install-monitor.sh. A timer rather than cron:
+# a round still running when the next is due is skipped rather than doubled,
+# each round's output lands in the journal, and `systemctl list-timers` shows
+# when it last ran.
+
+[Unit]
+Description=DevPath monitoring round, every minute
+
+[Timer]
+# Two minutes in: long enough for the stack's containers to have started, so
+# the first round after a reboot does not report them as missing.
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

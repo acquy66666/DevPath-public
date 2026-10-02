@@ -1,0 +1,29 @@
+# One monitoring round. Started every minute by devpath-monitor.timer.
+#
+# Installed by infra/scripts/install-monitor.sh, which fills in @INFRA@ and
+# @USER@ -- do not copy this file by hand.
+#
+#   journalctl -u devpath-monitor -f        each round's one-line verdict
+#   python3 @INFRA@/monitor/devpath_monitor.py status
+
+[Unit]
+Description=DevPath monitoring round (containers, site, TLS, disk)
+Documentation=file://@INFRA@/monitor/devpath_monitor.py
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# The user deploy.sh runs as, already in the docker group -- not root. Being
+# able to talk to the daemon is root-equivalent anyway; the point is that the
+# script itself has nothing more than that.
+User=@USER@
+SupplementaryGroups=docker
+StateDirectory=devpath-monitor
+Environment=MONITOR_STATE_DIR=/var/lib/devpath-monitor
+ExecStart=/usr/bin/python3 @INFRA@/monitor/devpath_monitor.py check --env-file @INFRA@/.env.prod --compose-file @INFRA@/docker-compose.prod.yml
+# Under a minute, so a round that hangs ends before the next one is due.
+TimeoutStartSec=50
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full

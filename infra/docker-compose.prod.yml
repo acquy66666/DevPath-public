@@ -53,6 +53,16 @@ x-backend-env: &backend-env
   # host it loaded the page from, so this only ever matters if something else
   # is pointed at this API on purpose.
   CORS_ORIGINS: https://${DOMAIN}
+  # VNPay. Missing from this file until 02/10/2026, so on the VPS the payment
+  # endpoint would have answered 503 whatever .env.prod said, and the return
+  # URL fallen back to localhost (docs/report/assets/phase-6/fresh-machine.txt).
+  # Empty keys still mean "chưa cấu hình" and the rest of the site runs. The
+  # return URL is built from DOMAIN, like Google's redirect URI above; the IPN
+  # URL to give VNPay is https://<DOMAIN>/api/v1/payments/vnpay/ipn.
+  VNPAY_TMN_CODE: ${VNPAY_TMN_CODE:-}
+  VNPAY_HASH_SECRET: ${VNPAY_HASH_SECRET:-}
+  VNPAY_PAYMENT_URL: ${VNPAY_PAYMENT_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  VNPAY_RETURN_URL: https://${DOMAIN}/thanh-toan/ket-qua
 
 # Every container's output, rotated. Docker's default json-file driver keeps a
 # container's log for as long as the container exists, with no limit -- one

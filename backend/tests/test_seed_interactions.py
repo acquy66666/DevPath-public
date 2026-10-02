@@ -17,18 +17,21 @@ The last one is the point of the whole file. It runs the real `fit` from
 produced plausible-looking rows with no structure in them would fail here
 rather than three tasks later, as a disappointing evaluation table.
 
-Almost none of it needs a database. The two at the bottom do: they are what
+Almost none of it needs a database. The ones at the bottom do: they are what
 proves the rows survive the schema and come back out of `load_interactions`
-carrying the weights they went in with.
+carrying the weights they went in with, and that `--purge` -- the clean-up
+the plan runs before the defence -- says what to do instead of failing on a
+foreign key.
 """
 
 from collections import Counter
 from statistics import mean
 
+import pytest
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Course, Enrollment, User
+from app.models import Course, Enrollment, OrderItem, User
 from app.schemas.auth import LoginIn
 from app.services.collaborative import (
     WEIGHT_COMPLETED,
@@ -37,14 +40,17 @@ from app.services.collaborative import (
     fit,
     load_interactions,
 )
+from scripts import seed_sales
 from scripts.seed import CATEGORY_TREE, seed_categories
 from scripts.seed_courses import seed_courses
 from scripts.seed_interactions import (
     CLUSTERS,
     LEARNER_COUNT,
     SYNTHETIC_COURSES,
+    PurgeBlocked,
     build_population,
     cluster_of,
+    purge,
     seed_interactions,
     to_interactions,
 )
@@ -283,7 +289,7 @@ def test_two_learners_from_different_clusters_see_different_recommendations(
             assert mine != theirs, (key, other)
 
 
-# --- The two that need a database ------------------------------------------
+# --- The ones that need a database -----------------------------------------
 
 
 async def test_the_seed_writes_rows_the_recommender_then_loads(
@@ -366,3 +372,40 @@ async def test_running_the_seed_twice_writes_nothing_the_second_time(
         0,
     )
     assert await db_session.scalar(select(func.count()).select_from(Enrollment)) == before
+
+
+async def test_purge_stops_with_directions_while_orders_still_point_at_its_courses(
+    db_session: AsyncSession,
+) -> None:
+    """`scripts.seed_sales` buys synthetic courses too, and an order is a money
+    record: nothing here deletes one, and the foreign key would refuse anyway.
+    On a database holding every seed -- the one the pre-defence clean-up runs
+    on -- that refusal used to be an IntegrityError traceback. Now it is a
+    message naming the order to purge in, and nothing is deleted."""
+    await seed_categories(db_session)
+    await seed_courses(db_session)
+    await seed_interactions(db_session, build_population())
+    await seed_sales.purge(db_session)
+    await db_session.flush()
+    await seed_sales.seed_sales(db_session, limit=12)
+
+    synthetic = select(Course.id).where(
+        Course.slug.in_([course.slug for course in SYNTHETIC_COURSES])
+    )
+    bought = await db_session.scalar(
+        select(func.count()).select_from(OrderItem).where(OrderItem.course_id.in_(synthetic))
+    )
+    assert bought, "the first purchases of the sales plan should include a synthetic course"
+
+    with pytest.raises(PurgeBlocked) as blocked:
+        await purge(db_session)
+    assert "seed_study --purge" in str(blocked.value)
+    assert "seed_sales --purge" in str(blocked.value)
+    assert await db_session.scalar(
+        select(func.count()).select_from(Course).where(Course.id.in_(synthetic))
+    ) == len(SYNTHETIC_COURSES)
+
+    await seed_sales.purge(db_session)
+    await db_session.flush()
+    courses, learners = await purge(db_session)
+    assert (courses, learners) == (len(SYNTHETIC_COURSES), LEARNER_COUNT)

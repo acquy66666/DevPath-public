@@ -687,6 +687,8 @@ Chạy sau `scripts.seed` (script này tra cứu khóa neo và giảng viên, kh
 docker compose exec backend python -m scripts.seed_interactions --purge
 ```
 
+Còn dữ liệu của `seed_sales` thì lệnh trên **dừng lại, không xóa gì** và in thứ tự cần gỡ trước (`seed_study --purge`, `seed_sales --purge`): đơn hàng mẫu cũng mua các khóa giả, và đơn hàng — sổ tiền — trỏ vào khóa và người mua bằng khóa ngoại RESTRICT. Trước 02/10/2026 chỗ này ra traceback `ForeignKeyViolationError`. Thứ tự nạp/gỡ của mọi script demo: mục "Dữ liệu demo đầy đủ" ở [README gốc](../README.md).
+
 ### Vector khóa học cho "Khóa học tương tự"
 
 Nửa content-based của recommender đọc bảng `course_embeddings`, và bảng đó trống cho tới khi có ai bấm publish hoặc job beat 02:30 chạy. Để có ngay:

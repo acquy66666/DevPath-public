@@ -78,7 +78,7 @@ curl -s "http://localhost:8000/api/v1/courses?page_size=3"
 
 **Đây mới là phép thử thật.** `-s` tắt thanh tiến trình cho output sạch. Phải làm bước này vì `(healthy)` của backend chỉ chứng minh tiến trình còn sống — endpoint `/health` cố ý **không** chạm database. Chỉ khi `/courses` trả về `"total":4` mới chắc là migration đã chạy và dữ liệu đã có.
 
-✅ Đạt khi thấy `"total":4`. Thấy `"total":24` nghĩa là còn 20 khóa giả do `scripts/seed_interactions.py` tạo để đo hệ gợi ý (CSDL dev hiện đang như vậy). Chúng làm bẩn catalog, nên trước buổi demo hãy gỡ bằng lệnh `python -m scripts.seed_interactions --purge` chạy trong thư mục `backend`, rồi kiểm lại thấy `4`.
+✅ Đạt khi thấy `"total":4`. Thấy `"total":24` nghĩa là còn 20 khóa giả do `scripts/seed_interactions.py` tạo để đo hệ gợi ý (CSDL dev hiện đang như vậy). Chúng làm bẩn catalog, nên trước buổi demo hãy gỡ — **theo thứ tự ngược với lúc nạp**, vì đơn hàng mẫu của `seed_sales` cũng mua các khóa giả này và đơn hàng thì không script nào tự xóa (gỡ `seed_interactions` trước sẽ bị từ chối kèm lời nhắc). Mỗi lệnh dạng `docker compose -f infra/docker-compose.yml exec backend python -m scripts.<tên> --purge`, lần lượt `seed_study`, `seed_sales`, `seed_cart`, `seed_coupons`, `seed_interactions` — rồi kiểm lại thấy `4`. Danh sách đầy đủ ở mục "Dữ liệu demo đầy đủ" của [README](../README.md).
 
 Nếu `total` bằng 0 hoặc lệnh báo lỗi thì database còn trắng, chạy hai lệnh sau. Bản PowerShell:
 
@@ -94,6 +94,8 @@ Tạo toàn bộ bảng. Alembic đọc chuỗi kết nối từ `app/core/confi
 
 Nạp 1 admin, 2 giảng viên, 8 danh mục và 4 khóa học kèm mục lục đầy đủ. `-m scripts.seed` chạy `scripts/seed.py` **dưới dạng module** để các lệnh `import app...` bên trong tìm được đường. Script idempotent: chạy lần hai không nhân đôi dữ liệu.
 
+> Máy không có `.venv` (máy mới clone): chạy hai lệnh này trong container — `docker compose -f infra/docker-compose.yml exec backend alembic upgrade head` rồi `docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed`, đứng ở thư mục gốc dự án.
+>
 > Trong Git Bash phải đổi dấu `\` thành `/` — bash coi `\S` là ký tự thoát nên `.venv\Scripts\python.exe` sẽ biến thành `.venvScriptspython.exe`. Bản Git Bash: `cd backend && ./.venv/Scripts/python.exe -m alembic upgrade head`. Ngược lại, PowerShell 5.1 không có toán tử `&&`, phải dùng `;`.
 
 ### Bước 4 — Mở sẵn ba tab

@@ -1,0 +1,144 @@
+RÀ .ENV.EXAMPLE, README CHẠY DỰ ÁN, SEED TRÊN MÁY TRẮNG
+Ngày làm: 02/10/2026 · nhánh feature/fresh-machine-check · máy dev Windows 11, Docker Desktop
+Phase 6, task: "Rà lại .env.example, README chạy dự án, script seed chạy sạch trên máy trắng"
+
+Log thô: fresh-machine/run-1-old-readme.log (README cũ, main@057d01e)
+         fresh-machine/run-2-new-readme.log (README mới, nhánh này)
+
+==============================================================================
+1. "MÁY TRẮNG" Ở ĐÂY NGHĨA LÀ GÌ
+==============================================================================
+Một bản `git clone` mới vào thư mục tạm (Git for Windows, core.autocrlf=true — giống máy
+Windows của người khác: .py ra CRLF, .sh vẫn LF nhờ .gitattributes), không .venv, không
+node_modules, không infra/.env, CSDL/Redis/MinIO là volume rỗng. Hai chỗ khác máy trắng
+thật, có chủ đích:
+  - COMPOSE_PROJECT_NAME=devpath-fresh, để volume của CSDL dev (bản đã khôi phục, có dữ
+    liệu) không bị đụng; stack dev tạm dừng vì trùng cổng, bật lại sau khi xong.
+  - Docker của máy đã có cache build. Lượt 1 build lại cả ba image từ bản clone (156 s),
+    lượt 2 mất 637 s vì cache bị vô hiệu một phần. Build lạnh hoàn toàn được chứng minh
+    hằng ngày ở CI: job "E2E — golden flow" dựng cả stack từ số không trên runner mới.
+
+==============================================================================
+2. LƯỢT 1 — LÀM ĐÚNG THEO README CŨ: HỎNG Ở BƯỚC THỨ BA
+==============================================================================
+  cp infra/.env.example infra/.env                                   ổn
+  docker compose -f infra/docker-compose.yml up -d                   ổn, 8 service healthy
+  cd backend && .venv\Scripts\python.exe -m scripts.seed             HỎNG — không có .venv
+  (người đọc thử tiếp trong container)
+  docker compose ... exec backend python -m scripts.seed             HỎNG — relation "users"
+                                                                     does not exist: README
+                                                                     không có bước migrate
+README cũng không nhắc image sandbox (thiếu nó thì mọi bài nộp ra lỗi hệ thống), và mục
+"Trạng thái" còn ghi Phase 4. Ba hướng dẫn trong docs/ đều bảo chạy alembic/seed bằng
+.venv trên host.
+
+Đi tiếp bằng lệnh trong container, chạy cả 9 script dữ liệu demo, mỗi script hai lần:
+
+  seed, seed_transcripts, seed_banners, seed_interactions, seed_cart, seed_sales,
+  seed_study, issue_certificates   — đều exit 0, lần hai không ghi thêm (đếm lại: banner
+                                     3, giỏ 7 dòng, đơn 77 — không bản trùng)
+  seed_coupons                     — EXIT 1 trên CSDL trắng: "Chưa có các khóa học:
+                                     python-nang-cao-...". Mã PYTHON30 áp vào một khóa do
+                                     seed_interactions tạo → phải chạy SAU seed_interactions.
+                                     Thứ tự này không tài liệu nào ghi.
+  seed_sales / seed_study          — in 9.495 và 34.169 dòng, gần như toàn bộ là log SQL
+                                     (dev chạy DEBUG=true → engine echo), dòng kết quả bị chôn.
+  seed_interactions --purge        — EXIT 1, ForeignKeyViolationError traceback: đơn hàng của
+  (task dọn dữ liệu trước buổi       seed_sales cũng mua khóa giả. Đây đúng là lệnh trong plan
+  bảo vệ, trên CSDL có mọi seed)     ("Gỡ dữ liệu tương tác giả lập") và trong hướng dẫn demo —
+                                     và CSDL dev hiện tại đang có dữ liệu seed_sales.
+  gỡ theo thứ tự ngược với lúc nạp — study → sales → cart → coupons → interactions: tất cả
+                                     exit 0, còn đúng 4 khóa thật, 3 tài khoản gốc, 0 đơn.
+
+==============================================================================
+3. RÀ .ENV.EXAMPLE — VÀ MỘT LỖI PRODUCTION
+==============================================================================
+Đối chiếu bằng máy (infra/scripts/check_env_examples.py, giờ chạy trong CI):
+  - ${VAR} của docker-compose.yml ↔ infra/.env.example: khớp.
+  - ${VAR} của docker-compose.prod.yml ↔ infra/.env.prod.example: khớp (trừ
+    NGINX_LOCAL_RESOLVERS do entrypoint nginx đọc).
+  - Biến stack dev đưa vào container ứng dụng mà production KHÔNG đưa:
+        backend, worker, beat, grading-worker:  VNPAY_TMN_CODE, VNPAY_HASH_SECRET,
+                                                VNPAY_PAYMENT_URL, VNPAY_RETURN_URL
+    → LỖI THẬT: trên VPS, POST /orders/{code}/payment-url luôn trả 503 "chưa cấu hình" dù
+    .env.prod điền gì, và URL quay về rơi về http://localhost:3000/... Mọi demo VNPay tới
+    nay chạy trên stack dev nên không ai thấy. Đây là chức năng của gate Phase 5.
+    Sửa: compose prod nhận VNPAY_TMN_CODE/HASH_SECRET/PAYMENT_URL từ .env.prod (có mục
+    hướng dẫn, kèm IPN URL phải báo VNPay), VNPAY_RETURN_URL dựng từ DOMAIN như
+    GOOGLE_REDIRECT_URI. Script chạy trên main@057d01e báo đúng lỗi này; trên nhánh: xanh.
+    Còn lại là dev-only có chủ đích, ghi lý do trong script: WATCHFILES_FORCE_POLLING,
+    WATCH_POLL_INTERVAL_MS, NEXT_PUBLIC_API_BASE_URL (production gọi /api cùng origin),
+    MINIO_ROOT_* của service backup (production không có MinIO).
+  - backend/.env.example (cho backend chạy bằng venv): mọi key là field thật của Settings,
+    nhưng thiếu GEMINI_*, VNPAY_*, SUBMISSION_* từ Phase 3–5 → đã thêm, và nói rõ ở đầu
+    rằng container không đọc tệp này.
+  - frontend/.env.example: mọi key đều có chỗ đọc trong code.
+
+Thêm một tài liệu sai, tìm ra ở lượt 2: "Console MinIO http://localhost:9001" (README mới,
+infra/README, infra/.env.example) — curl trả 000. Image bitnamilegacy/minio
+(DEVELOPMENT.2025-07-23) vẫn truyền --console-address :9001 nhưng không gì nghe ở cổng đó
+(/proc/net/tcp chỉ có 9000): bản cộng đồng đã bỏ console. Cổng 9001 trong compose từ 18/09
+dẫn vào khoảng không. Bỏ cổng + MINIO_CONSOLE_PORT, thay bằng lệnh `mc` đã chạy được
+(alias `local` có sẵn trong image không có khóa nên `mc ls local/...` treo im lặng — ghi
+vào infra/README).
+
+==============================================================================
+4. NHỮNG GÌ ĐÃ SỬA
+==============================================================================
+  - docker-compose.prod.yml + .env.prod.example: VNPay (mục 3).
+  - infra/scripts/check_env_examples.py + bước CI "Env examples match the code" (job
+    deploy-config) + lint trong job backend.
+  - backend/scripts/__init__.py: tắt echo SQL cho mọi `python -m scripts.<tên>` (API
+    không import gói này nên log SQL của server giữ nguyên). seed_sales 9.495 → 1 dòng,
+    seed_study 34.169 → 5 dòng.
+  - seed_interactions --purge: đếm đơn hàng trỏ vào khóa/học viên giả TRƯỚC khi xóa, có
+    thì không xóa gì, in thứ tự cần gỡ (seed_study, seed_sales) và thoát 1. Test mới
+    (tests/test_seed_interactions.py): seed_sales mua khóa giả → purge bị từ chối, đủ 20
+    khóa còn nguyên → gỡ sales → purge xóa 20 khóa + 48 học viên.
+  - rebuild_recommendations: dòng cuối từng ghi "trộn collaborative + content-based" ngay
+    dưới cảnh báo không có nửa content-based; giờ nói đúng cái đã chạy.
+  - README gốc: mục "Chạy trên một máy mới" (Git + Docker là đủ; sandbox image; up --build
+    --wait; alembic + seed trong container; bảng tài khoản; khóa ngoài tùy chọn), bảng 9
+    script demo theo thứ tự phụ thuộc + thứ tự gỡ ngược; mục Trạng thái cập nhật Phase 6.
+  - docs/huong-dan-chay-va-docker.md, huong-dan-du-an.md, huong-dan-demo-truoc-giao-vien.md,
+    backend/README.md: lệnh trong container, số service đúng (8, beat không healthcheck),
+    thứ tự gỡ trước buổi bảo vệ.
+
+==============================================================================
+5. LƯỢT 2 — LÀM ĐÚNG THEO README MỚI, TỪNG LỆNH
+==============================================================================
+  git clone … && cd DevPath                                          ổn
+  cp infra/.env.example infra/.env                                   ổn
+  docker build -t devpath-sandbox-python:v1 grader/images/python     exit 0
+  docker compose -f infra/docker-compose.yml up -d --build --wait    exit 0, 637 s, 8 healthy
+  … exec backend alembic upgrade head                                exit 0
+  … exec backend python -m scripts.seed                              exit 0: admin, 8 danh
+                                                                     mục, 2 giảng viên, 4 khóa
+  localhost:3000 → 200, localhost:8000/docs → 200, danh mục total = 4
+  (localhost:9001 → 000: lý do và cách sửa ở mục 3)
+
+  Bảng "Dữ liệu demo đầy đủ", 9 dòng theo đúng thứ tự, mỗi dòng hai lần: 18/18 exit 0;
+  output 1–14 dòng mỗi lần; lần hai không ghi thêm (sales/study báo "đã có sẵn",
+  certificates "Đã cấp 0"). Sau cả bảng: 24 khóa, 91 tài khoản, 77 đơn, 378 lượt ghi danh,
+  233 chứng chỉ, 3 banner, 7 mã (6 + BANHANG20 của seed_sales), 7 dòng giỏ.
+  Gỡ sai thứ tự (interactions trước): exit 1, câu hướng dẫn, không xóa gì.
+  Gỡ đúng thứ tự README: 5/5 exit 0 → 4 khóa, 3 tài khoản, 0 đơn, 0 ghi danh, 0 mã.
+
+  Mục "Tùy chọn" của README (hai giá trị VNPay bất kỳ, `up -d`) rồi E2E luồng vàng vào
+  chính stack này:
+    ok 1 [chromium] › e2e\golden-flow.spec.ts:46:5 › đăng ký → mua → học → nộp code →
+         nhận chứng chỉ (26.1s)
+    1 passed (32.1s)
+
+Đo kèm để ghi vào README: stack dev dùng ~2,4 GB RAM (docker stats, 8 container sau khi
+seed), image ~5,5 GB (backend 1,19 + grading 1,26 + frontend 1,67 + pgvector 0,63 + minio
+0,40 + sandbox 0,19 + redis 0,06).
+
+==============================================================================
+6. GIỚI HẠN
+==============================================================================
+  - Chưa thử trên macOS/Linux desktop; CI (Ubuntu) dựng cùng stack dev từ số không mỗi
+    lần push, nên Linux được phủ ở mức "build + chạy + E2E".
+  - Không có GEMINI_API_KEY trong lượt thử: seed_transcripts lưu tệp nhưng ingest bỏ qua
+    (doc_chunks = 0), rebuild_recommendations chạy nửa collaborative — đúng như README ghi.
+  - Repo đang private: người clone cần được cấp quyền.

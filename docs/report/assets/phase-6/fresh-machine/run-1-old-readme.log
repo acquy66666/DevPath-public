@@ -1,0 +1,218 @@
+### run 1 -- README.md of main@057d01e, followed literally (COMPOSE_PROJECT_NAME=devpath-fresh is the one addition)
+$ cp infra/.env.example infra/.env
+$ docker compose -f infra/docker-compose.yml up -d
+ Container devpath-fresh-postgres-1 Healthy 
+ Container devpath-fresh-postgres-1 Healthy 
+ Container devpath-fresh-redis-1 Healthy 
+ Container devpath-fresh-backend-1 Starting 
+ Container devpath-fresh-redis-1 Healthy 
+ Container devpath-fresh-grading-worker-1 Starting 
+ Container devpath-fresh-minio-1 Healthy 
+ Container devpath-fresh-worker-1 Starting 
+ Container devpath-fresh-beat-1 Started 
+ Container devpath-fresh-worker-1 Started 
+ Container devpath-fresh-grading-worker-1 Started 
+ Container devpath-fresh-backend-1 Started 
+ Container devpath-fresh-backend-1 Healthy 
+ Container devpath-fresh-frontend-1 Starting 
+ Container devpath-fresh-frontend-1 Started 
+(up returned after 51 s)
+(the machine already had the :dev images, which a blank one would not -- rebuilt from this checkout, then recreated)
+$ docker compose -f infra/docker-compose.yml up -d --build --wait
+ Container devpath-fresh-backend-1 Healthy 
+ Container devpath-fresh-beat-1 Healthy 
+ Container devpath-fresh-frontend-1 Healthy 
+ Container devpath-fresh-grading-worker-1 Healthy 
+ Container devpath-fresh-minio-1 Healthy 
+ Container devpath-fresh-postgres-1 Healthy 
+ Container devpath-fresh-redis-1 Healthy 
+ Container devpath-fresh-worker-1 Healthy 
+ Image devpath-backend:dev Built 
+ Image devpath-frontend:dev Built 
+ Image devpath-grading:dev Built 
+(took 156 s)
+backend: Up 20 seconds (healthy)
+beat: Up 20 seconds
+frontend: Up 9 seconds (healthy)
+grading-worker: Up 20 seconds (healthy)
+minio: Up 3 minutes (healthy)
+postgres: Up 3 minutes (healthy)
+redis: Up 3 minutes (healthy)
+worker: Up 20 seconds (healthy)
+$ cd backend && .venv\Scripts\python.exe -m scripts.seed      (README.md, "Nạp dữ liệu mẫu")
+.venv\Scripts\python.exe : The module '.venv' could not be loaded. For more information, run 'Import-Module .venv'.
+At line:1 char:1
++ .venv\Scripts\python.exe -m scripts.seed
+exit=0
+
+--- what a reader would try next: the same script inside the backend container, still without a migration (README never mentions alembic)
+$ docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
+asyncpg.exceptions.UndefinedTableError: relation "users" does not exist
+    self._handle_exception(error)
+    self._adapt_connection._handle_exception(error)
+
+$ docker compose -f infra/docker-compose.yml exec backend alembic upgrade head
+INFO  [alembic.runtime.migration] Running upgrade 6e27fe4795b3 -> 5b10213a072e, add_banners
+exit=0
+
+$ ... exec backend python -m scripts.seed   (lần 1)
+instructors: 2 created
+courses    : 4 created
+sample HLS : https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+WARNING: these accounts have built-in default passwords: admin ('devpath-admin', SEED_ADMIN_PASSWORD); instructor ('devpath-instructor', SEED_INSTRUCTOR_PASSWORD). Set the environment variables named above before seeding anything reachable from the internet.
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed   (lần 2)
+categories : 0 created
+instructors: 0 created
+courses    : 0 created
+sample HLS : https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_transcripts   (lần 1)
+  3-0.txt   1549 ký tự  Định nghĩa hàm, tham số, giá trị trả về
+  3-1.txt   1928 ký tự  Tham số mặc định và tham số từ khóa
+  3-3.txt   2037 ký tự  Chia chương trình thành nhiều file
+Đã xếp 1 job ingest cho worker (khóa đang xuất bản).
+exit=0  (4 s)
+
+$ ... exec backend python -m scripts.seed_transcripts   (lần 2)
+  3-0.txt   1549 ký tự  Định nghĩa hàm, tham số, giá trị trả về
+  3-1.txt   1928 ký tự  Tham số mặc định và tham số từ khóa
+  3-3.txt   2037 ký tự  Chia chương trình thành nhiều file
+Đã xếp 1 job ingest cho worker (khóa đang xuất bản).
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_banners   (lần 1)
+  Chào bạn mới: giảm 50% mọi khóa học với mã CHAOMUNG50  ->  /khoa-hoc
+  Học Python từ số không — bài tập được chấm tự động ngay khi nộp  ->  /khoa-hoc?q=python
+  Bảng xếp hạng tuần này: ai học chăm nhất?  ->  /bang-xep-hang
+Xem ở trang chủ; sửa, tắt, sắp xếp ở /quan-tri/banner.
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_banners   (lần 2)
+  Chào bạn mới: giảm 50% mọi khóa học với mã CHAOMUNG50  ->  /khoa-hoc
+  Học Python từ số không — bài tập được chấm tự động ngay khi nộp  ->  /khoa-hoc?q=python
+  Bảng xếp hạng tuần này: ai học chăm nhất?  ->  /bang-xep-hang
+Xem ở trang chủ; sửa, tắt, sắp xếp ở /quan-tri/banner.
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_coupons   (lần 1)
+WHERE courses.slug IN ($1::VARCHAR, $2::VARCHAR)
+2026-10-02 14:45:24,590 INFO sqlalchemy.engine.Engine [generated in 0.00024s] ('python-nang-cao-decorator-generator-context-manager', 'cau-truc-du-lieu-va-giai-thuat-voi-python')
+2026-10-02 14:45:24,593 INFO sqlalchemy.engine.Engine ROLLBACK
+Chưa có các khóa học: python-nang-cao-decorator-generator-context-manager. Chạy `python -m scripts.seed` và `python -m scripts.seed_interactions` trước.
+exit=1  (2 s)
+
+$ ... exec backend python -m scripts.seed_coupons   (lần 2)
+WHERE courses.slug IN ($1::VARCHAR, $2::VARCHAR)
+2026-10-02 14:45:26,647 INFO sqlalchemy.engine.Engine [generated in 0.00025s] ('cau-truc-du-lieu-va-giai-thuat-voi-python', 'python-nang-cao-decorator-generator-context-manager')
+2026-10-02 14:45:26,649 INFO sqlalchemy.engine.Engine ROLLBACK
+Chưa có các khóa học: python-nang-cao-decorator-generator-context-manager. Chạy `python -m scripts.seed` và `python -m scripts.seed_interactions` trước.
+exit=1  (2 s)
+
+$ ... exec backend python -m scripts.seed_interactions   (lần 1)
+đánh giá   : 97 tạo mới
+tổng tương tác trong kế hoạch: 190
+Chạy `python -m scripts.rebuild_recommendations` để tính lại gợi ý.
+WARNING: 48 tài khoản học viên dùng mật khẩu mặc định 'devpath-learner'. Đặt SEED_LEARNER_PASSWORD trước khi seed vào bất cứ CSDL nào truy cập được từ internet.
+exit=0  (4 s)
+
+$ ... exec backend python -m scripts.seed_interactions   (lần 2)
+đăng ký    : 0 tạo mới
+đánh giá   : 0 tạo mới
+tổng tương tác trong kế hoạch: 190
+Chạy `python -m scripts.rebuild_recommendations` để tính lại gợi ý.
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_cart   (lần 1)
+  hocvien01@seed.devpath.example: 3 khóa, 798.000 ₫
+  hocvien13@seed.devpath.example: 2 khóa, 998.000 ₫
+  hocvien25@seed.devpath.example: 2 khóa, 898.000 ₫
+Đăng nhập bằng mật khẩu học viên seed (SEED_LEARNER_PASSWORD, mặc định 'devpath-learner') rồi mở /gio-hang.
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_cart   (lần 2)
+  hocvien01@seed.devpath.example: 3 khóa, 798.000 ₫
+  hocvien13@seed.devpath.example: 2 khóa, 998.000 ₫
+  hocvien25@seed.devpath.example: 2 khóa, 898.000 ₫
+Đăng nhập bằng mật khẩu học viên seed (SEED_LEARNER_PASSWORD, mặc định 'devpath-learner') rồi mở /gio-hang.
+exit=0  (2 s)
+
+$ ... exec backend python -m scripts.seed_sales   (lần 1)
+2026-10-02 14:45:48,821 INFO sqlalchemy.engine.Engine UPDATE payment_events SET created_at=$1::TIMESTAMP WITH TIME ZONE WHERE payment_events.order_id = $2::UUID
+2026-10-02 14:45:48,821 INFO sqlalchemy.engine.Engine [cached since 6.844s ago] (datetime.datetime(2026, 10, 2, 9, 54, 41, 436161, tzinfo=datetime.timezone.utc), UUID('37c809ac-7fe2-406e-a21d-90eb233dce67'))
+2026-10-02 14:45:48,822 INFO sqlalchemy.engine.Engine COMMIT
+Đã nạp 77 đơn hàng (139 lượt bán) của 40 người mua, tổng 59.768.600 ₫, trải trong 365 ngày gần nhất. Mật khẩu người mua: 'devpath-buyer'.
+exit=0  (11 s)
+
+$ ... exec backend python -m scripts.seed_sales   (lần 2)
+WHERE users.email IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::VARCHAR, $17::VARCHAR, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::VARCHAR, $22::VARCHAR, $23::VARCHAR, $24::VARCHAR, $25::VARCHAR, $26::VARCHAR, $27::VARCHAR, $28::VARCHAR, $29::VARCHAR, $30::VARCHAR, $31::VARCHAR, $32::VARCHAR, $33::VARCHAR, $34::VARCHAR, $35::VARCHAR, $36::VARCHAR, $37::VARCHAR, $38::VARCHAR, $39::VARCHAR, $40::VARCHAR)
+2026-10-02 14:45:51,952 INFO sqlalchemy.engine.Engine [generated in 0.00042s] ('nguoimua01@sales.devpath.example', 'nguoimua02@sales.devpath.example', 'nguoimua03@sales.devpath.example', 'nguoimua04@sales.devpath.example', 'nguoimua05@sales.devpath.example', 'nguoimua06@sales.devpath.example', 'nguoimua07@sales.devpath.example', 'nguoimua08@sales.devpath.example', 'nguoimua09@sales.devpath.example', 'nguoimua10@sales.devpath.example', 'nguoimua11@sales.devpath.example', 'nguoimua12@sales.devpath.example', 'nguoimua13@sales.devpath.example', 'nguoimua14@sales.devpath.example', 'nguoimua15@sales.devpath.example', 'nguoimua16@sales.devpath.example', 'nguoimua17@sales.devpath.example', 'nguoimua18@sales.devpath.example', 'nguoimua19@sales.devpath.example', 'nguoimua20@sales.devpath.example', 'nguoimua21@sales.devpath.example', 'nguoimua22@sales.devpath.example', 'nguoimua23@sales.devpath.example', 'nguoimua24@sales.devpath.example', 'nguoimua25@sales.devpath.example', 'nguoimua26@sales.devpath.example', 'nguoimua27@sales.devpath.example', 'nguoimua28@sales.devpath.example', 'nguoimua29@sales.devpath.example', 'nguoimua30@sales.devpath.example', 'nguoimua31@sales.devpath.example', 'nguoimua32@sales.devpath.example', 'nguoimua33@sales.devpath.example', 'nguoimua34@sales.devpath.example', 'nguoimua35@sales.devpath.example', 'nguoimua36@sales.devpath.example', 'nguoimua37@sales.devpath.example', 'nguoimua38@sales.devpath.example', 'nguoimua39@sales.devpath.example', 'nguoimua40@sales.devpath.example')
+Dữ liệu bán hàng mẫu đã có sẵn. Chạy với --purge để gỡ rồi nạp lại.
+2026-10-02 14:45:51,955 INFO sqlalchemy.engine.Engine ROLLBACK
+exit=0  (3 s)
+
+$ ... exec backend python -m scripts.seed_study   (lần 1)
+2026-10-02 14:46:27,756 INFO sqlalchemy.engine.Engine [cached since 0.0931s ago] (UUID('c9f498b1-d767-4d80-92af-5af043038cfd'),)
+  Chuỗi dài nhất từng có: Người mua 06 10 ngày
+  Chuỗi đang giữ dài nhất: Người mua 31 7 ngày
+2026-10-02 14:46:27,756 INFO sqlalchemy.engine.Engine ROLLBACK
+exit=0  (36 s)
+
+$ ... exec backend python -m scripts.seed_study   (lần 2)
+WHERE users.email IN ($1::VARCHAR, $2::VARCHAR, $3::VARCHAR, $4::VARCHAR, $5::VARCHAR, $6::VARCHAR, $7::VARCHAR, $8::VARCHAR, $9::VARCHAR, $10::VARCHAR, $11::VARCHAR, $12::VARCHAR, $13::VARCHAR, $14::VARCHAR, $15::VARCHAR, $16::VARCHAR, $17::VARCHAR, $18::VARCHAR, $19::VARCHAR, $20::VARCHAR, $21::VARCHAR, $22::VARCHAR, $23::VARCHAR, $24::VARCHAR, $25::VARCHAR, $26::VARCHAR, $27::VARCHAR, $28::VARCHAR, $29::VARCHAR, $30::VARCHAR, $31::VARCHAR, $32::VARCHAR, $33::VARCHAR, $34::VARCHAR, $35::VARCHAR, $36::VARCHAR, $37::VARCHAR, $38::VARCHAR, $39::VARCHAR, $40::VARCHAR))
+2026-10-02 14:46:32,040 INFO sqlalchemy.engine.Engine [generated in 0.00059s] ('nguoimua01@sales.devpath.example', 'nguoimua02@sales.devpath.example', 'nguoimua03@sales.devpath.example', 'nguoimua04@sales.devpath.example', 'nguoimua05@sales.devpath.example', 'nguoimua06@sales.devpath.example', 'nguoimua07@sales.devpath.example', 'nguoimua08@sales.devpath.example', 'nguoimua09@sales.devpath.example', 'nguoimua10@sales.devpath.example', 'nguoimua11@sales.devpath.example', 'nguoimua12@sales.devpath.example', 'nguoimua13@sales.devpath.example', 'nguoimua14@sales.devpath.example', 'nguoimua15@sales.devpath.example', 'nguoimua16@sales.devpath.example', 'nguoimua17@sales.devpath.example', 'nguoimua18@sales.devpath.example', 'nguoimua19@sales.devpath.example', 'nguoimua20@sales.devpath.example', 'nguoimua21@sales.devpath.example', 'nguoimua22@sales.devpath.example', 'nguoimua23@sales.devpath.example', 'nguoimua24@sales.devpath.example', 'nguoimua25@sales.devpath.example', 'nguoimua26@sales.devpath.example', 'nguoimua27@sales.devpath.example', 'nguoimua28@sales.devpath.example', 'nguoimua29@sales.devpath.example', 'nguoimua30@sales.devpath.example', 'nguoimua31@sales.devpath.example', 'nguoimua32@sales.devpath.example', 'nguoimua33@sales.devpath.example', 'nguoimua34@sales.devpath.example', 'nguoimua35@sales.devpath.example', 'nguoimua36@sales.devpath.example', 'nguoimua37@sales.devpath.example', 'nguoimua38@sales.devpath.example', 'nguoimua39@sales.devpath.example', 'nguoimua40@sales.devpath.example')
+Dữ liệu học mẫu đã có sẵn. Chạy với --purge để gỡ rồi nạp lại.
+2026-10-02 14:46:32,044 INFO sqlalchemy.engine.Engine ROLLBACK
+exit=0  (4 s)
+
+$ ... exec backend python -m scripts.issue_certificates   (lần 1)
+2026-10-02 14:46:45,870 INFO sqlalchemy.engine.Engine UPDATE certificates SET pdf_key=$1::VARCHAR, updated_at=now() WHERE certificates.id = $2::UUID
+2026-10-02 14:46:45,870 INFO sqlalchemy.engine.Engine [cached since 9.525s ago] ('certificates/2RVEJQZWCRJSK76Y.pdf', UUID('11db0a52-1492-4a08-b491-29e19d4b12bf'))
+2026-10-02 14:46:45,870 INFO sqlalchemy.engine.Engine COMMIT
+Đã vẽ 87 tệp PDF.
+exit=0  (14 s)
+
+$ ... exec backend python -m scripts.issue_certificates   (lần 2)
+2026-10-02 14:46:48,910 INFO sqlalchemy.engine.Engine [generated in 0.00013s] (1,)
+2026-10-02 14:46:48,911 INFO sqlalchemy.engine.Engine COMMIT
+Đã cấp 0 chứng chỉ.
+Mọi chứng chỉ đã có PDF.
+exit=0  (3 s)
+
+--- seed_coupons again, now that seed_interactions has run
+(lần 1) exit=0, 41 dòng in ra, trong đó 26 dòng log SQL; dòng cuối: Gõ mã ở ô "Mã giảm giá" trong trang /gio-hang. Ba mã cuối là để xem lời từ chối.
+(lần 2) exit=0, 27 dòng in ra, trong đó 12 dòng log SQL; dòng cuối: Gõ mã ở ô "Mã giảm giá" trong trang /gio-hang. Ba mã cuối là để xem lời từ chối.
+seed_sales --purge: 71 dòng, 48 dòng log SQL
+seed_study --purge: 60 dòng, 32 dòng log SQL
+seed_sales (nạp lại sau --purge): exit=0, 9495 dòng in ra, 6418 dòng log SQL
+seed_study (nạp lại sau --purge): exit=0, 34169 dòng in ra, 22582 dòng log SQL
+
+--- the plan's pre-defence clean-up, on a database holding every seed: seed_interactions --purge
+  File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 563, in _prepare_and_execute
+    self._handle_exception(error)
+  File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 513, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "/usr/local/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 797, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.IntegrityError: (sqlalchemy.dialects.postgresql.asyncpg.IntegrityError) <class 'asyncpg.exceptions.ForeignKeyViolationError'>: update or delete on table "courses" violates foreign key constraint "order_items_course_id_fkey" on table "order_items"
+DETAIL:  Key (id)=(47f99831-4c59-4b17-b2b6-9edc2cad0604) is still referenced from table "order_items".
+exit=1
+courses 24
+coupon_courses 2
+cart_items 7
+users 91
+
+--- purging in reverse order of seeding
+seed_study --purge: exit=0 | Đã gỡ 651 lần cộng XP cùng tiến độ học của người mua mẫu.
+seed_sales --purge: exit=0 | Đã gỡ 40 người mua và 77 đơn hàng.
+seed_cart --purge: exit=0 | Đã xóa 7 dòng giỏ hàng và 6 dòng yêu thích.
+seed_coupons --purge: exit=0 | Đã xóa 6 mã giảm giá.
+seed_interactions --purge: exit=0 | Đã xóa 20 khóa học giả lập và 48 học viên giả lập.
+courses 4
+users 3
+orders 0
+enrollments 0
+certificates 0
+coupons 0

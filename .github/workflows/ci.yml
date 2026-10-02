@@ -95,7 +95,9 @@ jobs:
             libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
 
       - name: Ruff
-        run: ruff check .
+        run: |
+          ruff check .
+          ruff check --config pyproject.toml ../infra/scripts
 
       # The backup service lives in infra/ but is Python like this, held to the
       # same lint. Its tests need no database: they cover what it decides on
@@ -316,6 +318,12 @@ jobs:
               sys.exit("No log rotation on: " + ", ".join(sorted(bare)))
           print(f"{len(services)} services, every one rotated.")
           EOF
+
+      # The examples are the documentation of every switch, and production
+      # silently lacking one the dev stack has is how VNPay would have
+      # answered 503 on the VPS. See the script's docstring for the checks.
+      - name: Env examples match the code
+        run: python3 infra/scripts/check_env_examples.py
 
       - name: Shell scripts
         run: shellcheck infra/scripts/*.sh infra/loadtest/*.sh backend/scripts/*.sh

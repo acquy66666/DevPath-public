@@ -49,7 +49,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from decimal import Decimal
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, distinct, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import SessionLocal
@@ -60,6 +60,8 @@ from app.models import (
     CourseSection,
     Enrollment,
     Lesson,
+    Order,
+    OrderItem,
     Review,
     User,
 )
@@ -811,6 +813,10 @@ async def _refresh_course_stats(session: AsyncSession, course_ids: set) -> None:
         await course_stats.rebuild(session, list(course_ids))
 
 
+class PurgeBlocked(Exception):
+    """Orders still point at the courses or learners `--purge` would delete."""
+
+
 async def purge(session: AsyncSession) -> tuple[int, int]:
     """Remove every row this script creates. Returns (courses, learners).
 
@@ -828,6 +834,28 @@ async def purge(session: AsyncSession) -> tuple[int, int]:
             select(User.id).where(User.email.like(f"%@{LEARNER_DOMAIN}"))
         )
     )
+
+    # An order is a money record, and the one thing this does not delete: its
+    # lines hold on to the course and the order to its buyer (both RESTRICT).
+    # `scripts.seed_sales` buys synthetic courses too, so on a database with
+    # every seed this used to end in an IntegrityError traceback -- on the
+    # very clean-up the plan runs before the defence.
+    blocking = await session.scalar(
+        select(func.count(distinct(Order.id)))
+        .select_from(Order)
+        .outerjoin(OrderItem, OrderItem.order_id == Order.id)
+        .where(or_(OrderItem.course_id.in_(course_ids), Order.user_id.in_(learner_ids)))
+    )
+    if blocking:
+        raise PurgeBlocked(
+            f"Không gỡ được: còn {blocking} đơn hàng trỏ vào khóa học hoặc học viên giả "
+            "lập, mà đơn hàng là sổ tiền nên script này không xóa. Đơn của "
+            "scripts.seed_sales thì gỡ theo thứ tự ngược với lúc nạp, rồi chạy lại "
+            "lệnh này:\n"
+            "  python -m scripts.seed_study --purge\n"
+            "  python -m scripts.seed_sales --purge\n"
+            "Đơn của tài khoản thật thì phải xem và quyết định bằng tay."
+        )
 
     if course_ids:
         # Enrolments point at courses with ON DELETE RESTRICT, and by now a
@@ -883,7 +911,11 @@ async def main() -> None:
 
     async with SessionLocal() as session:
         if args.purge:
-            courses, learners = await purge(session)
+            try:
+                courses, learners = await purge(session)
+            except PurgeBlocked as blocked:
+                print(blocked, file=sys.stderr)
+                raise SystemExit(1) from None
             await session.commit()
             print(f"Đã xóa {courses} khóa học giả lập và {learners} học viên giả lập.")
             return

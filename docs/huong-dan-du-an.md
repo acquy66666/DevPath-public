@@ -135,10 +135,10 @@ Với stack đang chạy, kết quả là **471 passed, 2 skipped**. Không có 
 ### 3.5 Nạp dữ liệu mẫu
 
 ```bash
-cd backend && .venv\Scripts\python.exe -m scripts.seed
+docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed
 ```
 
-Chạy lại bao nhiêu lần cũng được, lần thứ hai trở đi không tạo thêm gì. Tài khoản tạo ra:
+(Hoặc `cd backend && .venv\Scripts\python.exe -m scripts.seed` khi đã có venv.) Chạy lại bao nhiêu lần cũng được, lần thứ hai trở đi không tạo thêm gì. Tài khoản tạo ra:
 
 | Email | Mật khẩu | Vai trò |
 |---|---|---|

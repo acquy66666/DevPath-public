@@ -13,11 +13,22 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token, verify_password
-from app.models import Course, Enrollment, Lesson, TestCase, User
+from app.models import Category, Course, Enrollment, Lesson, TestCase, User
 from scripts.purge_e2e import E2E_DOMAIN, count, purge
 from scripts.stage_load_test import NO_PASSWORD, stage
 
 
+@pytest.fixture
+async def a_category(db_session: AsyncSession) -> None:
+    """`stage` files its course under the first category there is. The seeded
+    database on a dev machine always has some; the one CI tests against is
+    migrated but empty -- which is how these went green locally and red there.
+    """
+    db_session.add(Category(name="Tải thử", slug=f"tai-thu-{uuid.uuid4().hex[:8]}"))
+    await db_session.flush()
+
+
+@pytest.mark.usefixtures("a_category")
 async def test_every_token_is_an_enrolled_student(db_session: AsyncSession) -> None:
     staged = await stage(db_session, students=3, cases=4)
 
@@ -41,6 +52,7 @@ async def test_every_token_is_an_enrolled_student(db_session: AsyncSession) -> N
         assert enrolled == 1
 
 
+@pytest.mark.usefixtures("a_category")
 async def test_the_exercise_has_the_cases_asked_for(db_session: AsyncSession) -> None:
     staged = await stage(db_session, students=1, cases=5)
 
@@ -79,6 +91,7 @@ def test_no_password_signs_in(attempt: str) -> None:
     assert verify_password(attempt, NO_PASSWORD) is False
 
 
+@pytest.mark.usefixtures("a_category")
 async def test_purge_e2e_takes_it_all_back(db_session: AsyncSession) -> None:
     staged = await stage(db_session, students=4, cases=2)
 

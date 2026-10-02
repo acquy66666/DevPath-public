@@ -1,0 +1,149 @@
+SỬA BUG UX TỒN ĐỌNG — EMPTY STATE, LOADING, MOBILE RESPONSIVE CÁC TRANG CHÍNH
+Ngày làm: 02/10/2026 · nhánh feature/ux-polish (tách từ feature/load-test khi PR #69 chưa merge)
+Phase 6, task 5: "Sửa bug UX tồn đọng; empty state, loading, mobile responsive các trang chính"
+
+Ảnh trước/sau: ux/01…12-*.png (mỗi tệp một cặp "Trước | Sau" cùng một vùng của trang)
+
+==============================================================================
+1. CÁCH RÀ — ĐO CHỨ KHÔNG NHÌN ƯỚC
+==============================================================================
+Script Playwright (Chrome trên máy dev, headless) mở 47 trang × 2 bề rộng = 94 lượt xem,
+vào stack dev (infra/docker-compose.yml) dưới 5 vai:
+  khách (12 trang)        trang chủ, danh sách (+ tìm không ra), chi tiết khóa, bảng xếp
+                          hạng, chứng chỉ (+ mã sai), đăng nhập/ký, 404, trở thành GV,
+                          khóa học của tôi khi chưa đăng nhập
+  tài khoản mới (11)      đăng ký thật qua /dang-ky → mọi trạng thái rỗng: khóa của tôi,
+                          giỏ, yêu thích, thông báo, hồ sơ, trang học khi chưa ghi danh,
+                          /giang-day khi chưa là giảng viên
+  học viên có dữ liệu (12) hocvien07 (seed): giỏ có hàng, trang học video/bài đọc/quiz/code
+  giảng viên (5)          khoa.tran (seed): danh sách khóa, trình soạn, thống kê, hỏi đáp, tạo mới
+  admin (7)               admin (seed): tổng quan, duyệt khóa, báo cáo, người dùng, danh mục,
+                          mã giảm giá, banner
+Bề rộng: 375 × 812 (điện thoại) và 1440 × 900. Mỗi lượt: chụp toàn trang + đo
+document.scrollWidth so với clientWidth + liệt kê phần tử tràn ra ngoài (bỏ qua phần
+tử nằm trong khung cuộn overflow-x có chủ đích) + gom lỗi console.
+
+Lượt "chậm" cho loading: chặn mọi request tới API (localhost:8000) thêm 4 giây, chụp
+ở 1,5 giây sau khi trang mở — 36 trang ở 375px (khách 12, học viên 12, giảng viên 5, admin 7).
+
+==============================================================================
+2. KẾT QUẢ ĐO
+==============================================================================
+                          Trước     Sau
+Lượt xem bị tràn ngang    14/94     0/94
+  — khách, 375px          10/12 trang, rộng 444px (mọi trang có header công khai; 2 trang
+                          còn lại là đăng nhập/đăng ký, layout riêng không có header)
+  — trang học, 375px      4/4 kiểu bài (video, đọc, quiz, code), rộng 386–388px
+Lượt lỗi tải trang        0         0
+
+Header khách sau khi sửa, đo từng phần (px):
+  bề rộng màn  scrollWidth   trái (logo + "Khóa học")   phải ("Đăng nhập" + "Đăng ký")
+  360          360           152 (77 + 64)              161 (83 + 75)
+  375          375           152                        161
+  390          390           152                        161
+  → 152 + 161 + 32 padding = 345 px: vừa cả máy Android 360px, còn dư 15 px.
+  Bản gốc: scrollWidth 444 ở 375px. Lần sửa đầu (chữ nhỏ hơn một nấc) vẫn 379 px —
+  đo lại từng phần mới thấy cần cắt thêm ~45 px, nên dưới `sm` các nút dùng cỡ chữ
+  mặc định của Button size="sm".
+
+Loading (lượt chậm, đã xem đủ 36 ảnh): không trang nào trắng. Phần render ở server
+(chi tiết khóa, danh sách, chứng chỉ, trang chủ) hiện nội dung ngay vì độ trễ chỉ đặt
+trên request của trình duyệt; mọi phần gọi API từ trình duyệt có khung xương trong lúc
+chờ — header (ô xám thay cho nút trong lúc khôi phục phiên), bảng xếp hạng, khóa của tôi,
+giỏ, hồ sơ, trang học, mọi trang giảng viên và quản trị. Không phải sửa gì ở mục này.
+
+Lỗi console còn lại đều là mã trả về đúng nghĩa của API, không phải lỗi giao diện:
+  401 /auth/refresh   khách chưa đăng nhập — trình duyệt tự in mọi fetch bị từ chối
+  404 ở trang khóa    hỏi "đã ghi danh chưa"/"đánh giá của tôi" khi chưa có
+  403 ở trang học     NOT_ENROLLED — chính là trạng thái trang đang vẽ
+
+==============================================================================
+3. LỖI TÌM RA VÀ CÁCH SỬA
+==============================================================================
+Lỗi bố cục (đo được):
+ 1. Header khi chưa đăng nhập rộng 444px ở 375px → mọi trang công khai cuộn ngang, nút
+    "Đăng ký" ra ngoài màn hình (ux/01). Cỡ chữ to ở header (commit 926266d, 07/09) giữ
+    nguyên từ `sm` trở lên; dưới `sm` chữ và padding nhỏ lại.
+    — components/layout/site-header.tsx
+ 2. Trang học rộng 388px ở 375px (ux/02): cột bài học thiếu `min-w-0` nên hàng nút
+    "Bỏ đánh dấu hoàn thành | Đánh dấu để xem lại" (không xuống dòng) quyết định bề
+    rộng cả lưới. Thêm `min-w-0` + `flex-wrap`. (aside cạnh đó đã có `min-w-0` từ
+    29/09 — cùng một loại lỗi, nửa còn lại.)
+    — components/learn/learn-view.tsx
+ 3. Ô tìm kiếm ở khu quản trị bị bóp còn ~25 px ở 375px, icon kính lúp đè lên ô chọn
+    vai trò (ux/04): `flex-1 min-w-0` trong hàng `flex-wrap` không bao giờ ép xuống
+    dòng, nó chỉ co. Đặt sàn `min-w-[min(100%,16rem)]` → hai ô chọn xuống dòng dưới.
+    Sửa một chỗ cho cả 4 trang dùng chung: người dùng, duyệt khóa, báo cáo, mã giảm giá.
+    — components/admin/admin-shared.tsx (SearchBox)
+
+Lỗi trải nghiệm trên điện thoại:
+ 4. Trang chi tiết khóa học: thẻ giá + nút "Đăng ký/Thêm vào giỏ" nằm sau phần giới
+    thiệu, mục lục và đánh giá — ở y ≈ 1.700 px trên trang dài 3.743 px (ux/03). Lưới
+    đổi từ 2 cột thành 3 phần tử (đầu trang | thẻ giá | phần còn lại): trên điện thoại
+    thẻ giá ngay sau tên giảng viên, trên màn rộng vẫn là cột phải dính (sticky) như cũ.
+    — app/(marketing)/khoa-hoc/[slug]/page.tsx
+ 5. Giỏ hàng: ảnh 128 px + cột giá chừa cho tên khóa ~100 px, tên còn một chữ một dòng
+    (ux/05). Trên điện thoại giá + nút "Bỏ" xuống dưới tên, ảnh 96 px.
+    — components/commerce/cart-view.tsx
+ 6. Bộ lọc danh sách khóa học: 5 trường một cột chiếm cả màn hình đầu (ux/10). Giờ 2 cột
+    (ô tìm kiếm và hàng nút trải hết bề ngang). Vẫn là form GET thuần, không thêm JS.
+    — components/courses/catalog-filters.tsx
+ 7. Khóa học của tôi: 3 thẻ thống kê xếp dọc đẩy danh sách (hoặc trạng thái rỗng) xuống
+    gần một màn hình (ux/06). Giờ 3 thẻ một hàng, số ghim đáy thẻ để thẳng hàng khi
+    một nhãn xuống dòng; dòng ghi chú dưới chuỗi ngày chỉ hiện từ `sm`.
+    — components/gamification/study-stats.tsx
+ 8. Trang giảng viên: 3 nút chồng cạnh tiêu đề, tên khóa cắt còn nửa dòng (ux/11). Đầu
+    trang xếp dọc trên điện thoại, tên khóa 2 dòng. — components/instructor/course-list.tsx
+ 9. Trình soạn nội dung: tên bài học còn "Khóa h…" cạnh badge + 3 nút (ux/12). Tên và
+    badge thành một cột trên điện thoại. — components/curriculum/lesson-row.tsx
+
+Empty state:
+10. Trang học khi chưa ghi danh / chưa đăng nhập: một dòng Alert nhỏ (ux/07). Giờ là
+    trạng thái rỗng cùng kiểu với phần còn lại của site (khung nét đứt, icon, tiêu đề,
+    câu gợi ý có tên khóa, một nút). — components/learn/learn-view.tsx (LearnGate)
+11. Giỏ hàng trống và "Khóa học của tôi" trống thiếu icon, trong khi Yêu thích và Thông
+    báo có → thêm icon cho đồng bộ.
+12. Ảnh bìa: trình soạn khóa học không có chỗ tải ảnh bìa, nên cả 24 khóa đều là ô xám
+    có mũ tốt nghiệp — danh sách trông như tải hỏng (ux/08). Ảnh dự phòng giờ là
+    gradient nhạt, mỗi khóa một màu cố định (băm id khóa, 8 màu); có thumbnail_url thì
+    vẫn dùng ảnh thật. Thử tô theo danh mục trước: 9 khóa "Cấu trúc dữ liệu & giải thuật"
+    thành một hàng hồng giống hệt nhau, nên đổi sang theo khóa (danh mục đã là badge).
+    Thử tông đậm (500→700) trước: lấn át tiêu đề trên nền trắng-đen của site → tông 50→200.
+    — components/courses/course-cover.tsx (dùng ở thẻ khóa, trang chi tiết, giỏ hàng)
+
+Nội dung sai / sót lại:
+13. Trang chủ còn thẻ "Kết nối backend · Hoạt động · Môi trường: development" — vật kiểm
+    tra của Phase 1 — và khách chưa đăng nhập không thấy một khóa học nào (ux/09). Thay
+    bằng hàng "Khóa học mới" (4 khóa, Server Component stream sau Suspense, không đọc
+    được catalogue thì không vẽ gì). Xóa components/backend-status.tsx và lib/api/health.ts
+    (không còn ai dùng). docs/huong-dan-demo-truoc-giao-vien.md mục 3 sửa theo.
+14. Form soạn khóa học ghi "Viết được bằng Markdown — trang chi tiết khóa học sẽ hiển thị
+    đúng định dạng" từ 22/08, nhưng trang chi tiết in mô tả dạng chữ thô (whitespace-pre-
+    line). Giờ mô tả đi qua components/ui/markdown — cùng renderer với bài đọc, không
+    render HTML thô. Đã kiểm mô tả seed: không có xuống dòng đơn, không có cú pháp
+    Markdown → hiển thị y như cũ.
+15. Tiêu đề "Hồ sơ của tôi" text-2xl trong khi mọi trang cá nhân khác text-3xl.
+
+Không sửa, có lý do:
+  • Thanh tab khu quản trị cuộn ngang ở 375px (7 mục) — có chủ đích (`-mx-4 overflow-x-auto`),
+    mục bị cắt ở mép là dấu hiệu cuộn được.
+  • hocvien07 có 3 khóa "đã hoàn thành" nhưng 0 XP — dữ liệu của seed_interactions (ghi
+    completed_at không qua service), đã là task riêng.
+  • Tải ảnh bìa cho khóa học — là tính năng mới, không phải lỗi; Phase 6 không thêm tính năng.
+
+==============================================================================
+4. KIỂM TRA SAU KHI SỬA
+==============================================================================
+  npx tsc --noEmit                         sạch
+  npm run lint                             sạch
+  npm test (node --test, lib/**/*.test.ts) 0 fail
+  npm run build                            qua (29 route)
+  E2E luồng vàng: E2E_CHROME_CHANNEL=chrome npm run test:e2e
+    ok 1 [chromium] › e2e\golden-flow.spec.ts › đăng ký → mua → học → nộp code → nhận
+    chứng chỉ (1.3m) — 1 passed (1.7m)   (đi qua đúng trang khóa học, giỏ, trang học đã đổi)
+  Audit lặp lại sau sửa: 94/94 lượt xem không tràn ngang, 0 lỗi tải trang.
+
+Dọn dẹp: tài khoản ux-*@e2e.devpath.example do script tạo đã bị scripts.purge_e2e (afterAll
+của E2E) xóa cùng tài khoản E2E — còn 0 tài khoản @e2e; 14 phiên đăng nhập của 3 tài khoản
+seed do lượt rà tạo ra đã bị thu hồi (refresh_tokens.revoked_at). Phiên không headless có
+từ trước (04:04–04:47 UTC) không phải của lượt rà nên để nguyên.

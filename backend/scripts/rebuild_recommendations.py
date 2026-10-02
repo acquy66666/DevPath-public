@@ -24,18 +24,33 @@ finds no vectors, and this paragraph is the other half of that warning.
 
 import asyncio
 
+from sqlalchemy import func, select
+
+from app.core.config import get_settings
 from app.core.db import SessionLocal
+from app.models import CourseEmbedding
 from app.services.recommendations import DEFAULT_TOP_N, build_writer, rebuild
 
 
 async def main() -> None:
     async with SessionLocal() as session:
         written = await rebuild(session, build_writer())
+        # The same question `rebuild` asks before its content-based half, so
+        # the last line says which recommender actually ran. It used to say
+        # "trộn collaborative + content-based" right under the warning that
+        # there was no content-based half at all.
+        vectors = await session.scalar(
+            select(func.count())
+            .select_from(CourseEmbedding)
+            .where(CourseEmbedding.embedding_model == get_settings().gemini_embedding_model)
+        )
 
-    print(
-        f"Đã ghi gợi ý cho {written} người dùng (top {DEFAULT_TOP_N} mỗi người), "
-        "trộn collaborative + content-based."
+    blend = (
+        "trộn collaborative + content-based"
+        if vectors
+        else "chỉ collaborative (chưa có vector khóa học: scripts.rebuild_course_embeddings)"
     )
+    print(f"Đã ghi gợi ý cho {written} người dùng (top {DEFAULT_TOP_N} mỗi người), {blend}.")
     if written == 0:
         print(
             "Không có ai để tính: chưa có lượt đăng ký khóa học nào trong CSDL. "

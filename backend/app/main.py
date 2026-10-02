@@ -9,18 +9,26 @@ from app.core.exceptions import register_exception_handlers
 def create_app() -> FastAPI:
     settings = get_settings()
 
+    # The schema is a map of every route and every field. Useful while
+    # building; on the public server it only helps somebody looking for the
+    # route that was forgotten. No schema also means no /docs and no /redoc.
+    public_schema = settings.env != "production"
+
     app = FastAPI(
         title=settings.app_name,
         version="0.1.0",
-        docs_url="/docs" if settings.env != "production" else None,
+        openapi_url="/openapi.json" if public_schema else None,
     )
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        # What the frontend sends (lib/api/client.ts), not "*": with
+        # credentials on, a wildcard is answered by reflecting whatever the
+        # browser asked for. Accept needs no entry -- CORS always allows it.
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     register_exception_handlers(app)

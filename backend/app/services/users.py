@@ -8,7 +8,13 @@ from app.core.exceptions import DomainError
 from app.core.security import hash_password, verify_password
 from app.models import User
 from app.schemas.users import AvatarUploadIn, AvatarUploadTicket
-from app.services.auth import ClientInfo, IssuedTokens, replace_all_sessions
+from app.services.auth import (
+    ClientInfo,
+    IssuedTokens,
+    enforce_password_change_limit,
+    replace_all_sessions,
+)
+from app.services.rate_limit import RateLimiter
 from app.services.storage import (
     ObjectStorage,
     avatar_key,
@@ -83,6 +89,7 @@ async def change_password(
     *,
     current_password: str,
     new_password: str,
+    limiter: RateLimiter,
     client: ClientInfo | None = None,
 ) -> IssuedTokens:
     """Replace the password, then start the sessions over.
@@ -101,6 +108,10 @@ async def change_password(
         raise PasswordNotSetError(
             "Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu để đổi"
         )
+
+    # Before bcrypt, and whether or not the guess turns out right: the limit
+    # is on guessing, and a right guess is a guess too.
+    await enforce_password_change_limit(limiter, user.id)
 
     if not verify_password(current_password, user.password_hash):
         raise InvalidCurrentPasswordError("Mật khẩu hiện tại không đúng")

@@ -16,6 +16,7 @@ import sys
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
 from app.models import Category, User
@@ -114,7 +115,32 @@ async def seed_categories(session: AsyncSession) -> int:
     return created
 
 
+def refuse_default_passwords_in_production() -> None:
+    """Stop before writing anything if production would get a known password.
+
+    The defaults are in this repository, so an admin seeded with one is an
+    admin anybody who has read it can sign in as. Development keeps them: they
+    are what makes a fresh checkout usable in one command.
+    """
+    if get_settings().env != "production":
+        return
+
+    missing = [
+        name
+        for name in ("SEED_ADMIN_PASSWORD", "SEED_INSTRUCTOR_PASSWORD")
+        if not os.environ.get(name)
+    ]
+    if missing:
+        sys.exit(
+            "Refusing to seed a production database with the passwords written in "
+            f"this repository. Set {', '.join(missing)} and run again "
+            "(deploy.sh passes them into the container)."
+        )
+
+
 async def main() -> None:
+    refuse_default_passwords_in_production()
+
     using_default_password = "SEED_ADMIN_PASSWORD" not in os.environ
 
     using_default_instructor_password = "SEED_INSTRUCTOR_PASSWORD" not in os.environ

@@ -254,7 +254,7 @@ jobs:
         working-directory: infra
         run: |
           sed -e 's/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=ci-not-a-real-password/' \
-              -e 's/^JWT_SECRET=$/JWT_SECRET=ci-not-a-real-secret/' \
+              -e 's/^JWT_SECRET=$/JWT_SECRET=ci-not-a-real-secret-only-long-enough-for-hs256/' \
               .env.prod.example > .env.prod
 
       - name: Compose file is valid

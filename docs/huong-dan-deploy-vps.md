@@ -129,7 +129,7 @@ Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại c�
 | `DOMAIN` | Tên miền trần, không `https://`, không dấu `/` cuối |
 | `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
-| `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev |
+| `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev hoặc ngắn hơn 32 ký tự |
 | `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. Worker chấm bài chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker |
 
 `GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Riêng địa chỉ API thì không: trình duyệt gọi `/api` cùng origin với trang, nên image không mang tên miền nào và đổi tên miền không cần build lại.
@@ -194,13 +194,13 @@ Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script l�
 
 `--seed` chỉ dùng cho lần đầu. Seed idempotent nên chạy lại không hỏng gì, nhưng cũng chẳng để làm gì.
 
-> **Đổi mật khẩu mặc định của tài khoản seed trước khi seed lên máy chủ công khai.** Seed sẽ in cảnh báo này ra màn hình:
+> **Bắt buộc đặt mật khẩu cho tài khoản seed khi seed lên máy chủ công khai:**
 >
 > ```bash
 > SEED_ADMIN_PASSWORD='...' SEED_INSTRUCTOR_PASSWORD='...' ./scripts/deploy.sh --seed
 > ```
 >
-> Không đặt thì admin của trang có mật khẩu `devpath-admin`, và mật khẩu đó nằm trong repo.
+> Thiếu một trong hai biến thì seed **từ chối chạy** ở production (từ 01/10/2026) — mật khẩu mặc định `devpath-admin` nằm trong repo, ai đọc repo cũng đăng nhập được quyền admin. Trước ngày đó `deploy.sh` còn không chuyển hai biến này vào container (`docker compose run` chỉ nhận biến của service, phải có `-e`), nên làm đúng hướng dẫn vẫn ra mật khẩu mặc định.
 
 ## 5. Nghiệm thu
 
@@ -254,7 +254,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 | Cảnh báo chứng chỉ | `init-tls.sh` dừng giữa chừng, chứng chỉ đang là bản tự ký. Kiểm tra DNS rồi chạy lại |
 | 503 khi upload video | `R2_*` còn trống trong `.env.prod` |
 | 503 ở nút đăng nhập Google | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` còn trống |
-| Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định |
+| Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định hoặc quá ngắn, hay `CORS_ORIGINS` không phải origin (có `/` cuối, có đường dẫn, hoặc `*`) |
 | Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |
 
 Quay về bản trước:

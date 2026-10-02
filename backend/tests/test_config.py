@@ -66,3 +66,37 @@ def test_refresh_cookie_is_https_only_in_production_only(
     monkeypatch.setenv("ENV", "production")
     monkeypatch.setenv("JWT_SECRET", "a-real-secret-from-the-vps-env-file")
     assert Settings().cookie_secure is True
+
+
+@pytest.mark.parametrize(
+    "origins",
+    [
+        "*",
+        "http://localhost:3000,*",
+        "https://devpath.vn/",
+        "https://devpath.vn/api",
+        "devpath.vn",
+    ],
+)
+def test_cors_origins_must_be_origins(monkeypatch: pytest.MonkeyPatch, origins: str) -> None:
+    """Credentials are allowed, so a wildcard would mean every site, signed in.
+
+    Starlette does not refuse the combination: it answers a credentialed
+    request from anywhere by echoing that caller's own origin back. And an
+    origin with a path or a trailing slash is never what a browser sends, so it
+    would silently match nothing -- a broken deploy that looks like a CORS bug.
+    """
+    monkeypatch.setenv("CORS_ORIGINS", origins)
+
+    with pytest.raises(ValidationError):
+        Settings()
+
+
+def test_production_refuses_a_short_jwt_secret(monkeypatch: pytest.MonkeyPatch) -> None:
+    """HS256 is only as strong as its key, and any token is enough to guess it
+    offline. The runbook's `openssl rand -hex 32` gives 64 characters."""
+    monkeypatch.setenv("ENV", "production")
+    monkeypatch.setenv("JWT_SECRET", "secret")
+
+    with pytest.raises(ValidationError):
+        Settings()

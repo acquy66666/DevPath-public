@@ -44,7 +44,11 @@ echo "==> Migrating the database"
 
 if [[ "${run_seed}" == true ]]; then
     echo "==> Seeding"
-    "${COMPOSE[@]}" run --rm backend python -m scripts.seed
+    # -e NAME with no value hands the container this shell's value. Without
+    # it `compose run` passes only the service's own environment, and the
+    # seed would never see the passwords the runbook says to set -- it now
+    # refuses to run in production without them.
+    "${COMPOSE[@]}" run --rm -e SEED_ADMIN_PASSWORD -e SEED_INSTRUCTOR_PASSWORD backend python -m scripts.seed
 fi
 
 echo "==> Starting"

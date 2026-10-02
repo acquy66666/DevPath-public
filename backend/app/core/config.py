@@ -1,4 +1,5 @@
 import json
+import re
 from functools import lru_cache
 from typing import Annotated, Literal
 
@@ -7,6 +8,13 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 # Fine for development, refused in production by the validator below.
 DEV_JWT_SECRET = "dev-only-insecure-secret-change-me"
+
+# HS256 is only as strong as its key, and any one access token is enough to
+# guess the key offline. The runbook's `openssl rand -hex 32` gives 64.
+MIN_PRODUCTION_JWT_SECRET_LENGTH = 32
+
+# What a browser sends in `Origin`: scheme and host, maybe a port, nothing else.
+ORIGIN = re.compile(r"https?://[^/\s*]+")
 
 
 class Settings(BaseSettings):
@@ -123,6 +131,20 @@ class Settings(BaseSettings):
     # of drafts, reviewed properly.
     quiz_generation_cooldown_seconds: int = 10
     quiz_generation_hourly_limit: int = 20
+    # Signing in and signing up. bcrypt already makes each password guess cost
+    # the server a quarter of a second; these stop a script from simply making
+    # a great many of them. Per address against guessing one account's
+    # password, per client against trying one password on many accounts. The
+    # per-client numbers are sized for a computer lab behind one NAT address:
+    # forty people signing in at once, each mistyping once, stay well under.
+    login_window_seconds: int = 15 * 60
+    login_attempts_per_email: int = 10
+    login_attempts_per_ip: int = 100
+    registration_window_seconds: int = 60 * 60
+    registrations_per_ip: int = 50
+    # Per account, in the login window: somebody at an unlocked laptop guessing
+    # the current password with a live access token.
+    password_changes_per_user: int = 5
 
     # VNPay. Empty until somebody registers a merchant account at
     # sandbox.vnpayment.vn; `vnpay_enabled` is what the payment route checks,
@@ -161,11 +183,39 @@ class Settings(BaseSettings):
 
         return [origin.strip() for origin in value.split(",") if origin.strip()]
 
+    @field_validator("cors_origins")
+    @classmethod
+    def only_real_origins(cls, value: list[str]) -> list[str]:
+        """Each entry exactly as a browser would send it, and never "*".
+
+        The API is called with credentials, and Starlette does not refuse a
+        wildcard alongside them: it answers a credentialed request from any
+        site by echoing that site's origin back -- the one setup CORS exists to
+        prevent. An entry with a path or a trailing slash is the quieter
+        mistake: no browser sends one, so it matches nothing and the deploy
+        looks like a CORS bug.
+        """
+        for origin in value:
+            if not ORIGIN.fullmatch(origin):
+                raise ValueError(
+                    f"CORS_ORIGINS: {origin!r} is not an origin "
+                    "(scheme://host[:port], no path, no wildcard)"
+                )
+        return value
+
     @model_validator(mode="after")
-    def reject_the_dev_secret_in_production(self) -> "Settings":
-        """A shipped default signing key would let anyone mint admin tokens."""
-        if self.env == "production" and self.jwt_secret == DEV_JWT_SECRET:
+    def reject_a_weak_secret_in_production(self) -> "Settings":
+        """A shipped default signing key would let anyone mint admin tokens,
+        and so would a short one, a little later."""
+        if self.env != "production":
+            return self
+        if self.jwt_secret == DEV_JWT_SECRET:
             raise ValueError("JWT_SECRET must be set to a real secret when ENV=production")
+        if len(self.jwt_secret) < MIN_PRODUCTION_JWT_SECRET_LENGTH:
+            raise ValueError(
+                f"JWT_SECRET must be at least {MIN_PRODUCTION_JWT_SECRET_LENGTH} characters "
+                "when ENV=production (openssl rand -hex 32)"
+            )
         return self
 
     @property

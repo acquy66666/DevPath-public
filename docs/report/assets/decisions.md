@@ -455,3 +455,15 @@ Task "Hybrid blend + fallback" của Phase 4 tuần 10. Bằng chứng: `docs/re
 **Danh mục đọc từ `enrollments`, không từ cache.** Người vừa ghi danh sáng nay đã có gu mà batch đêm qua chưa thấy.
 
 **`sources` đi tới tận API.** "Cả hai nửa đều gợi ý khóa này" là điều hệ lai tồn tại để nói được; một hệ lai không nói được nửa nào đã lên tiếng thì không ai kiểm được.
+
+## Rà soát bảo mật (01/10/2026)
+
+Task 1 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/security-review.txt`.
+
+**Phân quyền kiểm bằng một bảng phủ mọi route, không bằng đọc code** — 159 route, mỗi route một luật (công khai / admin / thuộc về ai / chỉ về người gọi / mở cho mọi người đã đăng nhập), test đọc danh sách route từ chính app nên route mới chưa có luật là đỏ. Người ngoài là ca khó (bạn cùng lớp đã ghi danh, giảng viên khác) và chủ thật phải qua được, để một id gõ sai không làm cả bảng xanh suông. Trả giá: bảng phải sửa mỗi lần thêm route — chính là điều muốn có.
+
+**Giới hạn đăng nhập đếm mọi lần thử, theo cả email lẫn IP** — đếm riêng lần sai cần thêm một vòng Redis sau bcrypt; 10 lần/15 phút/email không chạm người thật. Theo IP để chặn rải một mật khẩu lên nhiều tài khoản, ngưỡng 100 để một phòng máy sau NAT không tự khóa mình. Trả giá: người lạ giữ được cửa đăng nhập bằng mật khẩu của một địa chỉ trong 15 phút.
+
+**nginx ghi đè X-Forwarded-For thay vì nối thêm** — uvicorn tin mọi proxy (`*`) và lấy phần tử đầu danh sách; nối thêm thì phần tử đầu là thứ client tự viết. Đúng chừng nào nginx còn là bước đầu tiên; đặt CDN phía trước thì phải đổi.
+
+**CSP đầy đủ ở chế độ Report-Only** — chỉ bản build production trên trình duyệt thật mới cho biết chính sách có làm gãy trang không; bật enforce sau khi luồng vàng chạy trên tên miền thật với console sạch. `frame-ancestors 'none'` thì enforce từ trước.

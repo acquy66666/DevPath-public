@@ -158,7 +158,6 @@ class SubmissionOut(BaseModel):
     verdict: str | None
     score: int | None
     run_time_ms: int | None
-    peak_memory_mb: int | None
     message: str | None
     created_at: datetime
 

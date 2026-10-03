@@ -1,0 +1,113 @@
+BỘ NHỚ ĐỈNH CỦA BÀI NỘP: ĐO HAY BỎ CỘT — BỎ CỘT
+Ngày: 04/10/2026 · nhánh feature/peak-memory · migration 503c1217538c
+Máy: Docker Desktop, Engine 29.7.2 (API 1.55), kernel 6.6.87.2-microsoft-standard-WSL2,
+cgroup v2
+
+Kết luận: bỏ cột `submissions.peak_memory_mb`. Cột có từ Phase 3
+(`86a5023fa0b8`) nhưng chưa từng có dòng nào khác NULL — worker không có gì để
+ghi vào. Verdict MLE không đổi: nó vẫn đọc `State.OOMKilled` + luật thời gian
+sống của container (`grader/runner/sandbox.py::classify`), không cần con số này.
+
+==============================================================================
+1. DOCKER CÓ CHO CON SỐ ĐÓ KHÔNG — KHÔNG (ĐO)
+==============================================================================
+Một container cùng cờ sandbox (`--read-only --cap-drop ALL --security-opt
+no-new-privileges --user 10001:10001 --network none --memory 256m
+--memory-swap 256m --init`, image `devpath-sandbox-python:v1`) cấp phát 80 MB,
+giải phóng, ngủ 6 giây rồi tự in `memory.peak` của cgroup mình. Hỏi API
+`GET /containers/{id}/stats?stream=false&one-shot=true` (từ container
+docker-proxy, nơi duy nhất cầm socket) hai lần:
+
+  == khi đang chạy (sau khi đã giải phóng 80 MB)
+  state running
+  memory_stats keys: ['limit', 'stats', 'usage']
+  usage: 4648960 max_usage: None limit: 268435456
+  stats has peak-like keys: []
+
+  == sau khi thoát
+  state exited
+  memory_stats keys: []
+  usage: None max_usage: None limit: None
+
+  == chương trình tự đọc từ bên trong
+  peak from inside: 88666112 current: 4911104
+
+Đọc ra:
+  - Trên cgroup v2, API chỉ có mức dùng HIỆN TẠI (4,6 MB) — không có
+    `max_usage`, không có trường đỉnh nào. Lấy mẫu trong lúc chạy thì bỏ lỡ
+    đúng cái đỉnh 80 MB vừa qua.
+  - Sau khi container thoát (thời điểm duy nhất mà "đỉnh" có nghĩa), cgroup đã
+    bị xóa và API trả rỗng. Worker gọi `inspect` sau khi thoát, nên không có
+    lúc nào hỏi được.
+  - Con số thật có ở `/sys/fs/cgroup/memory.peak` bên trong container
+    (88.666.112 byte = 84,6 MiB: 80 MiB cấp phát + ~4,6 MiB nền), user 10001
+    đọc được trên rootfs read-only. Nó chỉ tồn tại với tiến trình ở TRONG
+    sandbox.
+  - Thêm nữa, proxy Docker chỉ cho create/start/attach/wait/kill/inspect/rm —
+    `stats` không nằm trong danh sách, và cũng không cần mở vì nó vô dụng.
+(Container thử đã `docker rm -f`.)
+
+==============================================================================
+2. ĐO TỪ BÊN TRONG SANDBOX THÌ PHẢI TRẢ GÌ
+==============================================================================
+Cách duy nhất còn lại: một tiến trình của mình chạy cùng bài nộp trong
+container, sống lâu hơn bài nộp, đọc `memory.peak` rồi báo ra ngoài. Ví dụ
+lệnh chạy thành `sh -c 'python3 main.py; ...; cat /sys/fs/cgroup/memory.peak'`
+hoặc một launcher Python. Đo trước khi kể cái giá (cùng cờ sandbox, 256 MiB):
+
+  nền — chương trình không làm gì, tự đọc memory.peak (3 lượt):
+    python3   4.788 / 5.424 / 4.500 KiB
+    sh        4.844 / 4.756 / 4.940 KiB
+  → ~4,7 MiB là nền của chính container, không phải của trình thông dịch:
+    một `sh` trơn cũng ra đúng mức đó.
+
+  bài cấp phát 50 MiB, đứng một mình vs đứng sau `sh` (5 lượt, KiB):
+    một mình   55.848  55.924  55.808  55.760  55.976
+    sau sh     56.192  56.180  55.988  56.132  55.992
+    chênh        +344    +256    +180    +372     +16
+
+Cái giá:
+  a. Về bộ nhớ: KHÔNG đáng kể với `sh` (16–372 KiB, ~0,2 MiB) — giới hạn bộ
+     nhớ của học viên không phải lý do. Chỉ cần biết học viên sẽ thấy ~5 MB
+     cho một chương trình rỗng, vì đó là nền của container.
+  b. Kênh báo là stdout/stderr — đúng kênh bài nộp ghi vào. Bài nộp in được
+     cùng chuỗi đánh dấu, hoặc tự đọc `memory.peak` rồi in con số khác; stderr
+     bị cắt ở 1 MB thì mất luôn con số. Phải lọc chuỗi đó khỏi thứ học viên thấy.
+  c. Chen một tiến trình vào giữa bài nộp và mã thoát của container. Verdict
+     TLE/MLE đọc từ mã thoát (152 = SIGXCPU, 137 + thời gian sống) và cờ OOM —
+     đúng phần từng lỗi trên CI (`phase-3/oom-classification.txt`). Đổi nó thì
+     phải chạy lại cả bộ verdict + 7 ca tấn công + đổi fixture proxy
+     (`docker_create_body.json`).
+  d. Một launcher Python chạy bài nộp bằng `runpy` thì không thêm tiến trình,
+     nhưng thêm khung của mình vào traceback học viên đọc, và bài nộp ghi đè
+     được chính hook đo.
+Đổi lại được: một con số hiển thị. Không trang nào đang hiện nó
+(`frontend/lib/api/submissions.ts` chỉ khai báo kiểu, không component nào đọc),
+đề cương không yêu cầu, verdict không dùng nó.
+
+Nếu sau này muốn có con số này (vd. hiện "Bộ nhớ" cạnh thời gian chạy như các
+online judge): công thức là `sh -c 'python3 main.py; s=$?; cat
+/sys/fs/cgroup/memory.peak >&2; exit $s'` + bóc dòng cuối khỏi stderr + lấy max
+qua các case, kèm hạ migration này. Làm ở nhánh riêng, qua checklist
+`sandbox-grading`, và chạy lại bộ verdict + tấn công + proxy trước khi merge.
+
+==============================================================================
+3. ĐÃ LÀM
+==============================================================================
+- Migration `503c1217538c_drop_submissions_peak_memory_mb`: drop cột; downgrade
+  thêm lại cột rỗng (nó chưa bao giờ có gì khác). Trước khi drop: CSDL dev
+  `count(peak_memory_mb)` = 0.
+  upgrade → downgrade -1 → upgrade: sạch; `alembic check`: "No new upgrade
+  operations detected."; cột còn lại của `submissions`: user_id exercise_id
+  code language status verdict score run_time_ms message id created_at
+  updated_at is_trial.
+- Bỏ trường khỏi model, `SubmissionOut` (API không trả `peak_memory_mb` nữa),
+  worker (`_record`), kiểu `Submission` ở frontend, test cũ
+  `test_memory_is_left_unknown_rather_than_guessed` (cột không còn để kiểm).
+- `docs/database-design.md` (mục 4 + bảng trạng thái), `backend/README.md`.
+- Không đụng `grader/` — sandbox, runner và proxy giữ nguyên.
+
+Kiểm tra (trong container backend):
+  tests/workers + tests/api/test_grading.py + tests/test_models.py
+  + tests/test_grading_events.py → 239 passed, 2 skipped in 65.36s
+  (cả bộ: xem commit / CI của PR)

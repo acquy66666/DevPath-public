@@ -505,3 +505,17 @@ Task 4 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/load-test.md`.
 **Thư mục workspace chấm bài được chown bởi một service compose chạy một lần, không phải một bước trong runbook** — lỗi chỉ lộ trên máy trắng, nên bước tay là bước sẽ bị quên đúng lần nó quan trọng. Một container root chạy `chown` rồi thoát, chỉ mount đúng thư mục đó; worker vẫn uid 10001.
 
 **Mỗi lượt đo kèm một mốc hiệu chuẩn trước và sau** — lượt đầu chậm gấp năm vì Docker Desktop đang bận (sau build, và vì chính vòng `docker stats` đang ghi CPU); không có mốc thì đã kết luận sai rằng frontend bão hòa ở 25 người. Thay vòng `docker stats` liên tục bằng một ảnh giữa mỗi mức.
+
+## Tiến độ chấm khi không có WebSocket (04/10/2026)
+
+Task nợ sandbox của Phase 6. Bằng chứng: `docs/report/assets/phase-6/polling-progress-decision.txt`.
+
+**Kết quả từng test case vẫn ghi trong một commit lúc chấm xong** — nhánh polling dự phòng vì thế không nhích từng case. Phase 3 hoãn với lý do "8 lần commit"; đo lại chỉ thêm ~1,2 ms/case, nên lý do thật là khác: runner chạy tiếp sau một case SE, commit từng case sẽ để học viên đọc được dòng SE của một lượt sắp chấm lại, và retry/dead letter phải dọn dòng dở. Điều kiện để xem lại (proxy chặn WebSocket) chưa từng xảy ra.
+
+**Biến điều kiện xem lại thành test** — E2E luồng vàng đòi tiến độ từng case và verdict phải tới qua WebSocket; trước đó polling che mất một proxy chặn WebSocket. Gate "luồng vàng trên tên miền thật" vì thế kiểm luôn WebSocket qua nginx của VPS.
+
+## Bộ nhớ đỉnh của bài nộp (04/10/2026)
+
+Task nợ sandbox của Phase 6. Bằng chứng: `docs/report/assets/phase-6/peak-memory-decision.txt`.
+
+**Bỏ cột `submissions.peak_memory_mb` thay vì đo** — cột luôn NULL từ Phase 3. Trên cgroup v2, API `stats` của Docker không có mức đỉnh khi container chạy và trả rỗng sau khi thoát; con số chỉ có bên trong sandbox (`memory.peak`). Đo được bằng một `sh` đứng trước bài nộp (đã đo: chỉ thêm ~0,2 MiB), nhưng nó báo qua stderr mà bài nộp giả được và chen vào mã thoát mà verdict TLE/MLE dựa vào — đổi sandbox ngay trước khi đóng băng tính năng cho một con số không trang nào hiển thị. Công thức để làm sau ghi trong tệp bằng chứng.

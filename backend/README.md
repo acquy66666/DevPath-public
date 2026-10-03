@@ -41,7 +41,7 @@ python -m venv .venv
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-Kiểm tra: `http://127.0.0.1:8000/api/v1/health` và tài liệu API ở `/docs` (tự tắt khi `ENV=production`).
+Kiểm tra: `http://127.0.0.1:8000/api/v1/health` (liveness — tiến trình sống, không chạm gì), `http://127.0.0.1:8000/api/v1/health/ready` (readiness — CSDL và Redis trả lời trong 2 giây, không thì 503 `NOT_READY` kèm `checks` nói phụ thuộc nào là `down`/`timeout`; lý do chi tiết chỉ vào log vì endpoint công khai) và tài liệu API ở `/docs` (tự tắt khi `ENV=production`).
 
 Test và lint:
 

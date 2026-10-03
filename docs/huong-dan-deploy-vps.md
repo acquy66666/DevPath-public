@@ -217,7 +217,7 @@ Từ đây gia hạn là tự động: service `certbot` dậy hai lần mỗi n
 ./scripts/deploy.sh --seed
 ```
 
-Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script làm theo thứ tự: build → `alembic upgrade head` bằng một container dùng một lần trên image mới → khởi động → đợi **healthcheck** của từng service, không phải đợi `sleep`.
+Lần đầu mất khoảng 5–10 phút, gần hết là build image. Script làm theo thứ tự: build → `alembic upgrade head` bằng một container dùng một lần trên image mới → khởi động → đợi **healthcheck** của từng service, không phải đợi `sleep` → hỏi `/api/v1/health/ready` từ trong container backend: API có thật sự với tới CSDL và Redis không. Bước cuối cần riêng vì healthcheck của backend cố ý chỉ là liveness — backend không với tới Redis (vd. một lần sửa compose làm hai service không còn chung mạng) vẫn `healthy` trong khi mọi lượt nộp bài trả 503 `GRADING_UNAVAILABLE` (Redis là hàng đợi chấm bài); chưa sẵn sàng thì script in phụ thuộc nào không trả lời và dừng với mã 1.
 
 `--seed` chỉ dùng cho lần đầu. Seed idempotent nên chạy lại không hỏng gì, nhưng cũng chẳng để làm gì.
 
@@ -275,7 +275,7 @@ Tạo tài khoản miễn phí ở [UptimeRobot](https://uptimerobot.com) (gói 
 
 | Loại | URL | Ghi chú |
 |---|---|---|
-| Keyword | `https://<DOMAIN>/api/v1/health`, từ khóa `"status":"ok"` | API sống, qua đúng nginx + TLS |
+| Keyword | `https://<DOMAIN>/api/v1/health/ready`, từ khóa `"status":"ready"` | API phục vụ được: qua đúng nginx + TLS, CSDL và Redis đều trả lời (mỗi cái tối đa 2 giây, nên luôn có câu trả lời trước khi UptimeRobot hết giờ chờ) |
 | HTTP(s) | `https://<DOMAIN>/` | Trang chủ |
 
 Tùy chọn, cho trường hợp **chính monitor** chết (timer hỏng, máy treo): tạo một check ở [healthchecks.io](https://healthchecks.io) (chu kỳ 1 phút, ân hạn 5 phút) rồi dán URL ping vào `MONITOR_HEARTBEAT_URL`. Monitor ping mỗi lượt tốt, ping `/fail` khi có sự cố; ngừng ping là healthchecks.io tự báo.
@@ -303,8 +303,10 @@ python3 monitor/devpath_monitor.py status
 ## 5. Nghiệm thu
 
 ```bash
-curl -s https://<DOMAIN>/api/v1/health
+curl -s https://<DOMAIN>/api/v1/health/ready
 ```
+
+Mong đợi `{"status":"ready","checks":{"database":"ok","redis":"ok"}}`. `/api/v1/health` (liveness) chỉ nói tiến trình API còn sống.
 
 ```bash
 docker compose -f docker-compose.prod.yml --env-file .env.prod ps
@@ -358,7 +360,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 | `backup` unhealthy | `logs backup`: thiếu nơi lưu (mục 2c), sai key, hoặc bucket không tồn tại. Lỗi một đêm thì service tự thử lại sau 30 phút |
 | Tin ntfy "Service X: …" | `ps` rồi `logs --tail 100 X`. "đã dừng" là chính tiến trình thoát (mã thoát nằm trong tin), "unhealthy" là sống mà healthcheck đỏ — Docker **không** tự dựng lại container unhealthy, phải `up -d X` hoặc sửa nguyên nhân |
 | Tin "Docker tự khởi động lại" | Tiến trình đã chết và Docker dựng lại rồi; tin có ghi nếu vì hết bộ nhớ. Một lần thì đọc log cho biết; lặp lại thì đó là lỗi thật đang bị restart che đi |
-| Tin "Danh mục khóa học … HTTP 500" mà trang chủ vẫn lên | Gần như luôn là CSDL: `ps postgres`, `logs backend`. `/api/v1/health` cố ý không chạm CSDL nên vẫn xanh |
+| Tin "Danh mục khóa học … HTTP 500" mà trang chủ vẫn lên | Gần như luôn là CSDL: `ps postgres`, `logs backend`. `/api/v1/health` cố ý không chạm CSDL nên vẫn xanh; `curl -s https://<DOMAIN>/api/v1/health/ready` nói là CSDL hay Redis |
+| `deploy.sh` dừng ở "not ready" | Dòng ngay trên nó có `checks`: `timeout` là không trả lời trong 2 giây (container dừng, bị pause, tên không phân giải được), `down` là trả lời bằng lỗi (từ chối kết nối, sai mật khẩu). `ps postgres redis`, rồi `logs backend` — lý do chi tiết nằm trong log, không nằm trong phản hồi. Vừa sửa `docker-compose.prod.yml` thì xem mạng của service |
 | Tin "Chứng chỉ TLS: còn N ngày" | `logs certbot` (gia hạn có lỗi không), rồi `exec nginx nginx -s reload`. Còn dưới 14 ngày nghĩa là gia hạn hoặc vòng reload 6 giờ của nginx đã ngừng |
 | Tin "Ổ đĩa …" | `docker system df`; ảnh cũ: `docker image prune -a` (deploy chỉ dọn ảnh lơ lửng); log đã có trần nên hiếm khi là thủ phạm |
 | UptimeRobot báo mà ntfy im | Cả máy hoặc mạng: console của nhà cung cấp, trạng thái VPS. ntfy im vì monitor nằm trên chính máy đó |

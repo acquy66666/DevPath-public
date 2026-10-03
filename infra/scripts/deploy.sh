@@ -75,6 +75,25 @@ while :; do
     sleep 5
 done
 
+echo "==> Checking the API reaches its database and Redis"
+# The backend's healthcheck is liveness on purpose (a Postgres restart must not
+# mark a fine process unhealthy), so "healthy" above does not mean the API can
+# serve: a backend that cannot reach Redis -- a network dropped in a compose
+# edit, say -- stays healthy while every code submission is answered 503,
+# because Redis is the grading queue.
+# Readiness asks what a visitor's first request will. Inside the container,
+# because nginx and its certificate are not this question.
+if ! "${COMPOSE[@]}" exec -T backend python -c '
+import sys, urllib.error, urllib.request
+try:
+    urllib.request.urlopen("http://localhost:8000/api/v1/health/ready", timeout=15)
+except urllib.error.HTTPError as exc:
+    sys.exit(exc.read().decode())
+'; then
+    echo "The API is running but not ready (above: which dependency did not answer)." >&2
+    exit 1
+fi
+
 echo "==> Cleaning up images the new build replaced"
 docker image prune -f >/dev/null
 

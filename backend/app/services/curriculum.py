@@ -266,8 +266,9 @@ async def delete_lesson(session: AsyncSession, lesson_id: uuid.UUID, user: User)
 
     The video asset goes too: the lesson is the only way to reach one, so a
     kept row would be unreachable for good. The objects it names are swept
-    separately -- deleting a lesson must keep working on a deployment that has
-    no bucket configured at all.
+    separately, by the nightly orphan sweep (`services/orphans.py`) --
+    deleting a lesson must keep working on a deployment that has no bucket
+    configured at all.
     """
     lesson, section, course = await lesson_for_management(session, lesson_id, user)
     had_video = lesson.video_asset is not None

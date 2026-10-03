@@ -139,3 +139,33 @@ def test_the_leaderboard_is_rebuilt_from_the_ledger_every_night() -> None:
         LEADERBOARD.startswith(prefix.rstrip("*"))
         for prefix in celery_app.conf.task_routes
     )
+
+
+SWEEP = "app.workers.orphans.sweep_orphans"
+
+
+def test_orphan_objects_are_swept_every_night_after_the_backup() -> None:
+    """04:00, after the 02:00 database backup: the quarantine is counted
+    against backups that exist. Off the grading queue like every batch."""
+    import app.workers.orphans  # noqa: F401  -- what `include` does at startup
+
+    assert "app.workers.orphans" in celery_app.conf.include
+    assert SWEEP in celery_app.tasks
+    entry = celery_app.conf.beat_schedule["sweep-orphan-objects-nightly"]
+    assert entry["task"] == SWEEP
+    assert entry["schedule"].hour == {4} and entry["schedule"].minute == {0}
+    assert not any(
+        SWEEP.startswith(prefix.rstrip("*")) for prefix in celery_app.conf.task_routes
+    )
+
+
+def test_a_server_without_a_bucket_has_nothing_to_sweep(monkeypatch) -> None:
+    from app.services.storage import StorageNotConfiguredError
+    from app.workers import orphans as orphan_worker
+
+    def no_bucket():
+        raise StorageNotConfiguredError("chưa cấu hình")
+
+    monkeypatch.setattr(orphan_worker, "build_storage", no_bucket)
+
+    assert orphan_worker.sweep_orphans.run() == "storage not configured"

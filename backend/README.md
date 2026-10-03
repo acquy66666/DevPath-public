@@ -228,7 +228,7 @@ Tài khoản chỉ đăng nhập Google (`password_hash IS NULL`) nhận 409 `PA
 
 Điểm tính theo **trọng số**, không theo số test case: `round(100 × tổng trọng số các case AC / tổng trọng số)`. Một bài khởi động 1 điểm không đáng bằng case mà cả bài tập nói về.
 
-`run_time_ms` là case chậm nhất chứ không phải tổng — giới hạn thời gian nói về một lần chạy. `peak_memory_mb` để NULL: sandbox báo *bị giết vì bộ nhớ*, không bao giờ báo *đã dùng bao nhiêu*, và một con số bịa ra ở đây sẽ bị đọc như một phép đo.
+`run_time_ms` là case chậm nhất chứ không phải tổng — giới hạn thời gian nói về một lần chạy. Không có cột bộ nhớ: sandbox báo *bị giết vì bộ nhớ*, không báo *đã dùng bao nhiêu* — Docker không có con số đỉnh của container đã thoát, và đo từ bên trong sandbox thì phải chạy thêm một tiến trình cạnh bài nộp. Cột `peak_memory_mb` cũ (luôn NULL) đã bỏ ở migration `503c1217538c`.
 
 Output của test case ẩn **không được ghi xuống** (`stdout_trunc` NULL). API đã từ chối trả nó; đây là lớp trước đó, vì một cột không bao giờ được điền thì không endpoint nào viết sau này làm rò được.
 

@@ -413,10 +413,6 @@ def _record(
         round(100 * passed_weight / total_weight) if total_weight else 0
     )
     submission.run_time_ms = slowest or None
-    # Deliberately not filled: the sandbox reports being killed for memory, and
-    # never how much was used. A number invented here would be read as a
-    # measurement.
-    submission.peak_memory_mb = None
     # Capped like the per-case output, and for the same reason: the compiler's
     # words arrive through the sandbox's 1 MB ceiling, and this column is read
     # back in every page of a student's submission history.

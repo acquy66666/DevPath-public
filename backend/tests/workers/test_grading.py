@@ -260,23 +260,6 @@ async def test_the_run_time_is_the_slowest_case(db_session: AsyncSession) -> Non
     assert submission.run_time_ms == 12
 
 
-async def test_memory_is_left_unknown_rather_than_guessed(
-    db_session: AsyncSession,
-) -> None:
-    """The sandbox reports being killed for memory, never how much was used.
-
-    A number invented here would be read as a measurement, so the column stays
-    NULL until something actually measures it.
-    """
-    exercise = await make_exercise(db_session)
-    submission = await make_submission(db_session, exercise)
-
-    await run_grading(db_session, submission.id, judge=judging("AC"))
-
-    await db_session.refresh(submission)
-    assert submission.peak_memory_mb is None
-
-
 # --- What deliberately does not get written down ---------------------------
 
 

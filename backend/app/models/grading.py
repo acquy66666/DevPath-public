@@ -198,7 +198,9 @@ class Submission(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # Percentage of the exercise's total weight that passed, 0-100.
     score: Mapped[int | None] = mapped_column(Integer)
     run_time_ms: Mapped[int | None] = mapped_column(Integer)
-    peak_memory_mb: Mapped[int | None] = mapped_column(Integer)
+    # No memory column, on purpose: Docker cannot say how much a container used
+    # once it has exited, and only code inside the sandbox could -- see
+    # migration 503c1217538c for why that was not worth it.
 
     # The compiler's words for CE, ours for SE. Not in the original design and
     # added deliberately: a compile error has no per-case results, so without

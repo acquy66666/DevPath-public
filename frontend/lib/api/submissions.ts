@@ -64,7 +64,6 @@ export interface Submission {
   verdict: string | null;
   score: number | null;
   run_time_ms: number | null;
-  peak_memory_mb: number | null;
   message: string | null;
   created_at: string;
 }

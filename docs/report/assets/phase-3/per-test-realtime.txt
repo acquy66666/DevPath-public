@@ -65,6 +65,12 @@ polling, cơ sở dữ liệu thật sự không biết case nào đã chạy.
 nhánh dự phòng — nhánh chỉ chạy khi Redis hoặc WebSocket hỏng. Ghi lại ở đây để
 Phase 6 quyết định lại nếu tunnel/proxy chặn WebSocket thường xuyên hơn dự kiến.
 
+→ Phase 6 (04/10/2026) đã quyết định: giữ nguyên, không commit từng case. Đo lại
+  thì chi phí "8 lần commit" chỉ ~1,2 ms/case — lý do thật là commit từng case sẽ
+  ghi dòng SE của một lượt sắp được retry thành kết quả học viên đọc được. E2E
+  luồng vàng giờ đỏ nếu verdict không tới qua WebSocket, để điều kiện ở trên có
+  thứ quan sát được — `phase-6/polling-progress-decision.txt`.
+
 Điều quan trọng là trang **không bịa**: một case mà máy chủ chưa nói gì thì nằm
 im ở "Chờ", không đoán màu, không đoán chữ. Dòng "Đã chấm" (xong nhưng không rõ
 verdict) tồn tại đúng cho tình huống ảnh chụp báo nhiều case hơn số sự kiện

@@ -1,0 +1,142 @@
+QUYẾT ĐỊNH: NHÁNH POLLING CÓ NHÍCH TỪNG TEST CASE KHÔNG — KHÔNG LÀM
+Ngày: 04/10/2026 · nhánh feature/polling-progress-decision
+Stack đo: compose dev trên máy dev (Docker Desktop, Windows 11), Postgres 16
+
+Kết luận: giữ nguyên — worker ghi `submission_results` trong MỘT commit lúc chấm
+xong. Thay vì đổi worker, biến điều kiện "WebSocket có bị chặn không" (điều kiện
+Phase 3 đặt ra để quyết định lại) thành một kiểm tra tự động trong E2E luồng vàng,
+và chốt tính nguyên khối của việc ghi kết quả bằng test backend.
+
+==============================================================================
+1. CÂU HỎI
+==============================================================================
+Từ `phase-3/per-test-realtime.txt` §2: tiến độ từng test case tới học viên qua
+Redis pub/sub → WebSocket. Khi kênh đó hỏng, trang hạ xuống đọc CSDL:
+  - WebSocket không mở được / bị đóng giữa chừng → trình duyệt polling
+    `GET /submissions/{id}` mỗi 2 s;
+  - WebSocket mở được nhưng Redis không đăng ký được → socket đọc ảnh chụp CSDL
+    mỗi 2 s (`BLIND_SNAPSHOT_SECONDS`).
+Cả hai đường đếm số dòng `submission_results`, mà worker ghi toàn bộ số dòng đó
+trong một commit lúc cuối, nên danh sách đứng ở "đang chấm test 1/8" rồi nhảy
+thẳng tới kết quả. Phase 3 hoãn, kèm điều kiện: "quyết định lại nếu tunnel/proxy
+chặn WebSocket thường xuyên hơn dự kiến".
+
+==============================================================================
+2. ĐIỀU KIỆN ĐÓ CÓ XẢY RA KHÔNG — KHÔNG
+==============================================================================
+  Đường production (nginx TLS → API, đúng `docker-compose.prod.yml`): load test
+  02/10 (`load-test.md`), k6 đọc verdict từ chính khung `done` trên WebSocket
+  của trang nộp bài (`infra/loadtest/submissions.js` dòng 119–140) — 84/84 bài
+  AC qua bốn lượt, 20 người nộp cùng lúc, 25 người duyệt song song. k6 không có
+  nhánh polling, nên 84/84 verdict là 84/84 khung `done` đi qua socket.
+  nginx có sẵn `map $http_upgrade` + `Upgrade`/
+  `Connection`, `proxy_read_timeout 120s` dài hơn nhịp ảnh chụp 10 s của socket.
+
+  Đường dev: E2E luồng vàng chạy vào stack dev (trình duyệt → API :8000 trực
+  tiếp) — xanh trên máy dev và CI từ 02/10.
+
+  Cloudflare Quick Tunnel: chưa từng đo WebSocket qua tunnel. Ghi thẳng ra đây
+  thay vì suy từ tài liệu Cloudflare — và nó hết quan trọng khi có VPS, vì từ
+  Phase 6 URL công khai là nginx trên máy chủ chứ không còn là tunnel.
+
+  Chưa có lần nào ghi nhận WebSocket bị chặn trên đường nào ở trên.
+
+==============================================================================
+3. CHI PHÍ PHASE 3 NÊU RA KHÔNG PHẢI CHI PHÍ THẬT (ĐO)
+==============================================================================
+Phase 3 lấy "8 lần ghi + 8 lần commit thay vì 1" làm lý do. Đo trong container
+backend, cùng driver asyncpg + `NullPool` như worker, bảng nháp cùng hình
+`submission_results` (bảng thường, có WAL — bảng TEMP sẽ bỏ qua đúng phần flush
+mà commit phải trả), 200 lượt × 8 case, xen kẽ hai cách để nhiễu chia đều:
+
+  8 dòng, 1 commit            median    4,05 ms   p95    5,12 ms   max    9,58 ms
+  8 dòng, 8 commit            median   13,38 ms   p95   18,00 ms   max   33,25 ms
+  thêm mỗi bài nộp            median    9,41 ms   p95   13,77 ms   max   28,34 ms
+  thêm mỗi case (median)                1,18 ms
+
+So với 685 ms mỗi test case khi chấm thật (`load-test.md`, cùng máy) là ~0,17 %.
+Bảng nháp đã xóa sau khi đo (`to_regclass` → null). Tức là lý do cũ sai: về
+hiệu năng, commit từng case gần như miễn phí. Lý do thật nằm ở mục 4.
+
+==============================================================================
+4. CÁI GIÁ THẬT: MẤT TÍNH NGUYÊN KHỐI CỦA KẾT QUẢ
+==============================================================================
+Đọc code hiện tại, commit từng case kéo theo bốn thay đổi, cả bốn nằm trong
+worker chấm bài, một tuần trước khi đóng băng tính năng:
+
+  a. Ghi SE thành dòng học viên đọc được. Runner chạy TIẾP sau một case lỗi hệ
+     thống (`grader/runner/verdict.py::grade` — "every case is run"), nên một
+     daemon khởi động lại ở case 3 cho AC, AC, SE… và verdict tổng SE, lần chạy
+     đó sẽ được retry từ đầu. Commit từng case nghĩa là dòng SE nằm trong
+     `GET /submissions/{id}` trong lúc chờ retry — trái luật "lỗi của mình không
+     ghi thành verdict, không đổ cho học viên" (skill `sandbox-grading`, docstring
+     `app/workers/grading.py`). Bỏ qua riêng dòng SE cũng không đủ: các dòng AC
+     của lần chạy đã chết vẫn phải bị xóa.
+  b. Retry và dead letter phải dọn dòng dở. `run_grading` phải xóa kết quả cũ
+     trước khi chấm lại, `park_submission` phải xóa trước khi ghi `error` —
+     thêm một trạng thái mới: "đang chạy, nhưng có kết quả của một lần chạy
+     khác".
+  c. Đổi mô hình đồng thời của worker. `on_case` được runner gọi ĐỒNG BỘ bên
+     trong `judge` (đang chặn event loop), nên không `await session.commit()`
+     được từ đó; phải đẩy `judge` sang thread và chuyển từng kết quả về loop.
+  d. Nới kiểu `CaseProgress`. Kiểu này cố ý không có trường output — "output
+     của test ẩn không rời server" được bảo đảm bằng chính kiểu dữ liệu chứ
+     không bằng một câu `if`. Ghi dòng từng case cần stdout của test mẫu đi qua
+     callback, tức là kiểu đó phải mang output.
+
+Đổi lại chỉ được: danh sách nhích trên nhánh dự phòng. Không được thêm gì ở
+trường hợp tải lại trang giữa chừng — trang nộp bài chỉ theo dõi lượt mà chính
+nó vừa bắt đầu (`exercise-workspace.tsx`, `watchId`), và trang dự phòng đã
+"không bịa" (Phase 3 §2: case chưa có tin thì nằm im ở "Chờ").
+
+==============================================================================
+5. QUYẾT ĐỊNH
+==============================================================================
+Không làm. Kết quả của một lượt chấm vẫn ghi trong một transaction cùng verdict,
+điểm, hoàn thành bài học và XP. Kênh realtime nói case nào vừa xong; CSDL chỉ nói
+điều một lượt chạy HOÀN CHỈNH kết luận. Nhánh dự phòng tiếp tục đứng yên một cách
+trung thực tới khi có kết quả.
+
+==============================================================================
+6. ĐIỀU ĐÃ LÀM THAY: ĐỂ QUYẾT ĐỊNH NÀY KIỂM LẠI ĐƯỢC
+==============================================================================
+a) E2E luồng vàng giờ đỏ nếu verdict không tới qua WebSocket
+   (`frontend/e2e/golden-flow.spec.ts`, bước "nộp bài code"). Trước đây trang
+   tới cùng verdict bằng polling khi socket hỏng, nên một nginx/proxy từ chối
+   nâng cấp WebSocket sẽ đi qua E2E mà không ai biết — tức là điều kiện của
+   Phase 3 không có gì để quan sát. Spec giờ nghe các khung của socket
+   `/api/v1/submissions/{id}/events` và đòi: có ít nhất một khung `progress`
+   mang `case` (tiến độ từng case do worker phát qua Redis), và khung cuối là
+   `done` + `AC`.
+
+   Đã kiểm hai chiều trên stack dev (E2E_CHROME_CHANNEL=chrome):
+     xanh:  1 passed (27,3 s), chạy lại sau khi gỡ dòng thử → 1 passed (19,0 s)
+     đỏ:    thêm tạm `page.routeWebSocket(…/events, ws => ws.close())` — giả
+            một proxy đóng riêng socket chấm bài. Trang VẪN hiện "100/100" nhờ
+            polling (bản E2E cũ sẽ xanh), còn kiểm tra mới đỏ đúng dòng:
+              Error: per-case progress arrived over the WebSocket
+              Expected: true / Received: false
+            (lần thử đầu chặn toàn bộ `window.WebSocket` — thứ bị chặn gồm cả
+            socket HMR của `next dev` — và trang đăng ký không chuyển trang nữa,
+            đỏ từ bước 1 nên không đo được gì; đổi sang chặn đúng một URL.)
+   Trường hợp Redis không phát (socket chỉ gửi khung `snapshot`) cũng làm điều
+   kiện thứ nhất đỏ theo cấu trúc, nhưng không thử bằng cách tắt Redis — Redis
+   còn giữ rate limit và hàng đợi Celery, tắt nó thì E2E đỏ ở chỗ khác trước.
+
+   Ý nghĩa: mục gate "Luồng vàng chạy lại đủ trên tên miền thật" giờ tự kiểm
+   luôn WebSocket qua nginx + chứng chỉ thật của VPS.
+
+b) Test backend chốt tính nguyên khối
+   (`backend/tests/workers/test_grading.py::test_a_run_that_does_not_finish_writes_no_case`,
+   2 ca: SE ở case 3; worker chết sau case 2): kênh nhận ≥ 2 sự kiện case, CSDL
+   có 0 dòng kết quả, bài vẫn `running`, verdict null. Ai đổi sang commit từng
+   case sau này sẽ gặp test này và docstring trỏ về tệp này.
+   Trong container backend: tests/workers/test_grading.py — 51 passed in 4.48s.
+
+==============================================================================
+7. KHI NÀO XEM LẠI
+==============================================================================
+- E2E luồng vàng trên tên miền thật đỏ ở kiểm tra WebSocket mà không sửa được ở
+  tầng nginx/CDN (tức là có thứ nằm giữa thật sự chặn WebSocket).
+- Buổi bảo vệ chạy trên mạng chặn WebSocket: chấm bài vẫn đúng, chỉ danh sách
+  không nhích — chấp nhận được, không phải lý do đổi worker trước buổi bảo vệ.

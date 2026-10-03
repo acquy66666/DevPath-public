@@ -431,6 +431,8 @@ Chặn hẳn WebSocket rồi nộp lại: danh sách **không nhích** suốt 18
 
 Đã cân nhắc và không làm: commit sau mỗi case. Cái giá là 8 lần ghi + 8 lần commit mỗi bài nộp thay vì 1, đổi lấy trải nghiệm của nhánh dự phòng — nhánh chỉ chạy khi Redis hoặc WebSocket hỏng. Ghi lại ở đây để Phase 6 quyết định lại nếu tunnel/proxy chặn WebSocket thường xuyên hơn dự kiến.
 
+> **Phase 6 (04/10/2026): giữ nguyên.** Lý do "8 lần commit" hóa ra sai — đo lại chỉ thêm ~1,2 ms/case (~0,17 % của một lượt chấm). Lý do thật: runner chạy tiếp sau case SE, nên commit từng case sẽ ghi dòng SE của một lượt sắp retry thành kết quả học viên đọc được, và retry/dead letter phải dọn dòng dở. E2E luồng vàng giờ đỏ nếu verdict không tới qua WebSocket, để điều kiện "proxy chặn WebSocket" quan sát được — [`phase-6/polling-progress-decision.txt`](../phase-6/polling-progress-decision.txt).
+
 ## Benchmark: thời gian chấm và throughput (13/09/2026)
 
 `benchmark.md` · script `backend/scripts/bench_grading.py` (chạy lại được: `docker compose exec backend python -m scripts.bench_grading --submissions 10 --cases 5`)

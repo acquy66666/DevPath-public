@@ -350,6 +350,7 @@ QUIZ = {"lesson_id": "quiz_lesson"}
 RULES: dict[str, Rule] = {
     # Public by design ---------------------------------------------------------
     "GET /health": Public("liveness probe"),
+    "GET /health/ready": Public("readiness probe for deploy.sh and uptime checks"),
     "POST /auth/register": Public("the way in"),
     "POST /auth/login": Public("the way in"),
     "POST /auth/refresh": Public("the cookie is the credential"),

@@ -16,6 +16,10 @@ class DomainError(Exception):
 
     status_code: int = status.HTTP_400_BAD_REQUEST
     code: str = "DOMAIN_ERROR"
+    #: Fields added next to `code` and `message`, for the rare error whose
+    #: client needs more than a sentence -- readiness says which dependency.
+    #: Never a place for an exception's text: everything here is public.
+    extra: dict[str, object] | None = None
 
     def __init__(self, message: str, *, code: str | None = None, status_code: int | None = None):
         super().__init__(message)
@@ -58,7 +62,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         # A rate limit that does not say when to come back is a rate limit the
         # client can only answer by guessing -- which is another request.
         retry_after = getattr(exc, "retry_after", None)
-        extra = {"retry_after": retry_after} if retry_after else {}
+        extra = dict(exc.extra or {})
+        if retry_after:
+            extra["retry_after"] = retry_after
 
         response = _error(exc.status_code, exc.code, exc.message, **extra)
         if exc.status_code == status.HTTP_401_UNAUTHORIZED:

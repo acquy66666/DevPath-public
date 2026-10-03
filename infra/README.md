@@ -275,7 +275,7 @@ Cột `Health` trong `ps` là câu trả lời của chính healthcheck, không 
 **Monitor** (`monitor/devpath_monitor.py`, chỉ thư viện chuẩn) chạy **trên host** bằng systemd timer mỗi phút, không chạy trong container: đọc health của container là nói chuyện với Docker daemon, mà trên host này đúng một container cầm socket — `docker-proxy`, và nó chỉ cho worker chấm bài làm đúng việc chấm bài (mục trên). Mỗi lượt kiểm:
 
 - mọi service compose khai `restart: unless-stopped`/`always` đang chạy và healthcheck không đỏ; container bị Docker tự dựng lại kể từ lượt trước thì báo một lần (`RestartCount`);
-- `https://DOMAIN/`, `/api/v1/health` và `/api/v1/courses?page_size=1` hỏi qua nginx ở `127.0.0.1:443` với đúng tên miền (TLS + định tuyến nằm trong đường đi). Cái thứ ba vì `/health` cố ý không chạm CSDL: diễn tập tắt Postgres thì trang chủ vẫn 200, `/health` vẫn 200, chỉ danh mục trả 500;
+- `https://DOMAIN/`, `/api/v1/health` và `/api/v1/courses?page_size=1` hỏi qua nginx ở `127.0.0.1:443` với đúng tên miền (TLS + định tuyến nằm trong đường đi). Cái thứ ba vì `/health` cố ý không chạm CSDL: diễn tập tắt Postgres thì trang chủ vẫn 200, `/health` vẫn 200, chỉ danh mục trả 500. Monitor không hỏi `/api/v1/health/ready` (có từ 04/10): hai câu trên đã tách "tiến trình API chết" khỏi "CSDL chết", còn Redis chết thì healthcheck của chính container `redis` báo — readiness dành cho `deploy.sh` và uptime check bên ngoài;
 - chứng chỉ nginx đang phục vụ xác thực được và còn ≥ `MONITOR_CERT_MIN_DAYS` (14) ngày;
 - đĩa chứa dữ liệu Docker còn ≥ `MONITOR_DISK_MIN_FREE_PERCENT` (10) %.
 

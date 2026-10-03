@@ -519,3 +519,13 @@ Task nợ sandbox của Phase 6. Bằng chứng: `docs/report/assets/phase-6/pol
 Task nợ sandbox của Phase 6. Bằng chứng: `docs/report/assets/phase-6/peak-memory-decision.txt`.
 
 **Bỏ cột `submissions.peak_memory_mb` thay vì đo** — cột luôn NULL từ Phase 3. Trên cgroup v2, API `stats` của Docker không có mức đỉnh khi container chạy và trả rỗng sau khi thoát; con số chỉ có bên trong sandbox (`memory.peak`). Đo được bằng một `sh` đứng trước bài nộp (đã đo: chỉ thêm ~0,2 MiB), nhưng nó báo qua stderr mà bài nộp giả được và chen vào mã thoát mà verdict TLE/MLE dựa vào — đổi sandbox ngay trước khi đóng băng tính năng cho một con số không trang nào hiển thị. Công thức để làm sau ghi trong tệp bằng chứng.
+
+## Endpoint readiness (04/10/2026)
+
+Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/readiness-endpoint.txt`.
+
+**Hai endpoint, không gộp** — `/health` (liveness) vẫn không chạm gì vì healthcheck container đọc nó: Postgres khởi động lại không được làm một tiến trình đang ổn thành unhealthy. `/health/ready` hỏi CSDL + Redis, dành cho `deploy.sh` và uptime check bên ngoài. Monitor trên host không dùng nó: đã có liveness + danh mục để tách "API chết" khỏi "CSDL chết", thêm readiness chỉ làm một sự cố báo hai tin.
+
+**Mỗi phụ thuộc tối đa 2 giây, chạy song song, kết nối riêng** — probe treo theo một CSDL bị pause thì người gọi hết giờ chờ và đọc thành "cả site chết". CSDL hỏi qua engine `NullPool` riêng thay vì pool của request; trả giá: readiness không thấy pool cạn kết nối.
+
+**503 vẫn đi trong envelope lỗi chung, nói phụ thuộc nào chứ không nói vì sao** — `DomainError` có thêm `extra` để mang `checks`; lỗi gốc (host, cổng, user) chỉ vào log vì endpoint công khai.

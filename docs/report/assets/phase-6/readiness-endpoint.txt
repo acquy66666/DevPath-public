@@ -1,0 +1,110 @@
+ENDPOINT READINESS: CSDL + REDIS
+Ngày: 04/10/2026 · nhánh feature/readiness-endpoint · stack compose dev
+
+Kết quả: `GET /api/v1/health/ready` — 200 `{"status":"ready","checks":{...}}`
+khi CSDL và Redis đều trả lời, 503 `NOT_READY` trong envelope lỗi chung khi
+không. `/api/v1/health` giữ nguyên là liveness và vẫn không chạm gì.
+
+==============================================================================
+1. HAI CÂU HỎI KHÁC NHAU
+==============================================================================
+  /api/v1/health        liveness: tiến trình API còn sống. Healthcheck của
+                        container backend đọc nó, nên nó KHÔNG được đỏ khi
+                        Postgres khởi động lại — tiến trình vẫn ổn, và Docker
+                        không làm gì được với một container unhealthy.
+  /api/v1/health/ready  readiness: API có phục vụ được không — `SELECT 1` trên
+                        CSDL và `PING` Redis, mỗi cái tối đa 2 giây, chạy song
+                        song. Ai hỏi: `deploy.sh` trước khi nói "Deployed", và
+                        uptime check bên ngoài (UptimeRobot, runbook 4b).
+
+Thiết kế (`backend/app/services/readiness.py`):
+  - Bị chặn thời gian: mỗi phụ thuộc 2 s, chạy cùng lúc → luôn có câu trả lời
+    trong ~2 s, dù hỏng cái gì.
+  - Kết nối riêng: CSDL hỏi qua một engine `NullPool` của riêng nó (timeout
+    connect của asyncpg = 2 s), không mượn pool của request — huỷ giữa chừng
+    một lượt lấy kết nối không phải việc nên làm với pool mà mọi request dùng.
+    Đánh đổi: readiness nói "CSDL có trả lời không", không nói "pool còn kết
+    nối rảnh không".
+  - Một chữ cho mỗi phụ thuộc: `ok` / `down` (trả lời bằng lỗi) / `timeout`
+    (không trả lời kịp). Lý do chi tiết chỉ vào log — endpoint công khai, mà
+    lỗi kết nối thì có host, cổng, user.
+  - Lỗi vẫn theo envelope chung `{"detail":{"code","message",...}}`:
+    `DomainError` có thêm trường `extra` (handler gộp vào cạnh code/message,
+    như `retry_after` vốn đã làm).
+
+==============================================================================
+2. DIỄN TẬP TRÊN STACK DEV (curl từ host vào :8000)
+==============================================================================
+Mỗi kịch bản làm hỏng đúng một phụ thuộc, hỏi readiness rồi liveness:
+
+1. all up                         200 0.054345s  {"status":"ready","checks":{"database":"ok","redis":"ok"}}
+   /health (liveness)             200 0.003715s
+2. redis stopped                  503 2.009731s  {"detail":{"code":"NOT_READY","message":"Hệ thống chưa sẵn sàng: Redis không phản hồi.","checks":{"database":"ok","redis":"timeout"}}}
+   /health (liveness)             200 0.003712s
+3. postgres paused                503 2.004993s  {"detail":{"code":"NOT_READY","message":"Hệ thống chưa sẵn sàng: cơ sở dữ liệu không phản hồi.","checks":{"database":"timeout","redis":"ok"}}}
+   /health (liveness)             200 0.003526s
+4. postgres stopped               503 2.005135s  {"detail":{"code":"NOT_READY","message":"Hệ thống chưa sẵn sàng: cơ sở dữ liệu không phản hồi.","checks":{"database":"timeout","redis":"ok"}}}
+   /health (liveness)             200 0.003464s
+5. everything back (after 1s)     200 0.034536s  {"status":"ready","checks":{"database":"ok","redis":"ok"}}
+   /health (liveness)             200 0.003726s
+
+Log backend cùng lúc (lý do chỉ ở đây, không ở phản hồi):
+  readiness: redis did not answer in 2.0s
+  readiness: database did not answer in 2.0s
+  readiness: database did not answer in 2.0s
+
+Đọc ra:
+  - Mọi kịch bản hỏng đều trả lời trong 2,01 s — không có lúc nào treo theo
+    phụ thuộc. Pause là trường hợp xấu nhất (nhận kết nối rồi im lặng).
+  - Container bị DỪNG ra `timeout`, không phải `down` — nhiều khả năng vì tên
+    `redis`/`postgres` của container đã dừng không còn phân giải được trong
+    mạng compose: hỏi một tên không tồn tại (`redis://no-such-redis:6379`) từ
+    container backend cũng ra đúng 2,00 s `TimeoutError: Timeout connecting to
+    server`. `down` là khi có ai đó trả lời bằng lỗi
+    (cổng từ chối, sai mật khẩu) — test `tests/test_readiness.py` dựng đúng
+    trường hợp đó bằng cổng 1 trên 127.0.0.1.
+  - Liveness 200 ở mọi kịch bản, ~3,5 ms.
+  - Dựng lại xong là sẵn sàng sau 1 s. Cả stack về healthy sau diễn tập.
+
+Kiểm thêm (trong container backend): redis-py 6.4 mặc định có tự thử lại khi
+mất kết nối không? Cổng từ chối: mặc định 0,00 s và với `Retry(NoBackoff(),0)`
+cũng 0,00 s; tên không phân giải được: cả hai 2,00 s. Không khác gì, nên
+không cấu hình `retry` riêng.
+
+==============================================================================
+3. AI DÙNG NÓ
+==============================================================================
+  - `infra/scripts/deploy.sh`: sau vòng chờ healthcheck, hỏi readiness từ trong
+    container backend; chưa sẵn sàng thì in `detail` (phụ thuộc nào) và thoát 1.
+    Cần riêng vì healthcheck của backend là liveness: backend không với tới
+    Redis (vd. sửa compose làm rơi mạng) vẫn `healthy` trong khi mọi lượt nộp
+    bài trả 503 `GRADING_UNAVAILABLE`. Thử chính đoạn đó trên stack dev:
+      sẵn sàng → exit=0
+      redis pause → in {"detail":{"code":"NOT_READY",...,"redis":"timeout"}}, exit=1
+    `bash -n` + shellcheck (koalaman/shellcheck:stable, như CI): sạch.
+  - UptimeRobot (runbook 4b): monitor keyword đổi từ `/api/v1/health` +
+    `"status":"ok"` sang `/api/v1/health/ready` + `"status":"ready"`.
+  - Runbook mục 5 (nghiệm thu) và bảng xử lý sự cố: thêm dòng "deploy.sh dừng
+    ở not ready".
+  - Monitor trên host KHÔNG đổi: nó đã tách "tiến trình API chết" (liveness)
+    khỏi "CSDL chết" (danh mục khóa học), còn Redis chết thì healthcheck của
+    chính container `redis` báo. Thêm readiness vào đó chỉ làm một sự cố CSDL
+    báo hai tin.
+
+==============================================================================
+4. TEST
+==============================================================================
+  tests/api/test_health.py (5 ca readiness + 2 ca cũ):
+    - sẵn sàng với CSDL và Redis thật (không override gì; skip ở local nếu
+      thiếu, đỏ trên CI);
+    - phụ thuộc lỗi → 503 NOT_READY, `checks` đúng, phản hồi KHÔNG chứa host
+      hay user của lỗi gốc;
+    - phụ thuộc treo → `timeout`, trả lời dưới 2 s;
+    - hai phụ thuộc cùng treo tốn một lần chờ, không phải hai (song song);
+    - liveness vẫn 200 khi cả hai phụ thuộc hỏng.
+  tests/test_readiness.py: check thật vào cổng không ai nghe → `OSError` /
+    `ConnectionError` dưới 1 s, `probe` ra `down` cho cả hai.
+  tests/api/test_authorization_matrix.py: route mới khai `Public`.
+
+  health + readiness + ma trận phân quyền: 232 passed in 46.75s
+  `ruff check app tests`: All checks passed!

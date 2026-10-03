@@ -35,7 +35,7 @@ Từ đợt rà tồn đọng 18/09 ([don-no-2026-09-18.md](don-no-2026-09-18.md
 
 **Vận hành & frontend:**
 
-- [ ] Endpoint readiness kiểm tra được DB + Redis. `/health` hiện cố ý không chạm DB
+- [x] Endpoint readiness kiểm tra được DB + Redis. `/health` hiện cố ý không chạm DB — xong 04/10: `GET /api/v1/health/ready` (`services/readiness.py`) — `SELECT 1` qua engine `NullPool` riêng + `PING` Redis, mỗi cái tối đa 2 s, chạy song song; 200 `{"status":"ready","checks":{...}}` hoặc 503 `NOT_READY` trong envelope lỗi chung với `checks` = `ok`/`down`/`timeout` — lý do chi tiết chỉ vào log (endpoint công khai). `/health` vẫn là liveness cho healthcheck container. Diễn tập trên stack dev: dừng Redis / pause Postgres / dừng Postgres đều trả 503 trong 2,01 s, liveness 200 suốt, hồi lại sau 1 s. Dùng ở `deploy.sh` (sau vòng chờ healthcheck: chưa sẵn sàng thì in phụ thuộc nào và thoát 1) và UptimeRobot (keyword `"status":"ready"`); monitor trên host giữ nguyên (đã tách API chết / CSDL chết, Redis có healthcheck riêng) — `docs/report/assets/phase-6/readiness-endpoint.txt`
 - [ ] Job dọn object mồ côi trong bucket: URL đã ký mà không ai upload, bài học bị xóa (`backend/README.md`, mục "Trạng thái")
 - [ ] Kiểm luồng SSE của trợ giảng AI chạy **qua nginx** của `docker-compose.prod.yml`: chữ phải tới dần chứ không dồn một cục ở cuối. Backend đã gửi `X-Accel-Buffering: no`, nhưng stack dev không có nginx nên chưa ai thấy tận mắt (`docs/report/assets/phase-4/chat-api.txt` §8)
 - [ ] `metadataBase` lấy từ `NEXT_PUBLIC_SITE_URL`, nhưng compose prod và Dockerfile chưa truyền biến này nên canonical/Open Graph trên production sẽ trỏ `http://localhost:3000`. Cần truyền `https://${DOMAIN}` lúc build image frontend

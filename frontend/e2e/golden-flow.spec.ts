@@ -25,6 +25,14 @@ import {
 
 const VNPAY = /^https:\/\/sandbox\.vnpayment\.vn\//;
 
+/** The fields of a grading event this spec reads (`GradingEvent` in lib/api). */
+interface GradingFrame {
+  type: "snapshot" | "progress";
+  status: string;
+  verdict: string | null;
+  case: object | null;
+}
+
 let course: StagedCourse;
 
 test.beforeAll(async () => {
@@ -118,6 +126,20 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
     // are typed, and the answer has to arrive exactly as written.
     await page.keyboard.insertText("n = int(input())\nprint(2 * n)\n");
 
+    // What the grading socket said. The page reaches the same verdict by
+    // polling when the socket fails, so without these frames a proxy that
+    // refuses the WebSocket upgrade -- or a Redis that publishes nothing --
+    // would pass here unnoticed. Whether that ever happens is what decides
+    // if polling needs per-case progress of its own
+    // (docs/report/assets/phase-6/polling-progress-decision.txt).
+    const frames: GradingFrame[] = [];
+    page.on("websocket", (socket) => {
+      if (!/\/api\/v1\/submissions\/[^/]+\/events$/.test(socket.url())) return;
+      socket.on("framereceived", ({ payload }) => {
+        frames.push(JSON.parse(String(payload)) as GradingFrame);
+      });
+    });
+
     await page.getByRole("button", { name: "Nộp bài" }).click();
     // The overall verdict, not a per-case badge: "Đúng" shows on test 1 while
     // test 2 is still running, and an assertion on that passes too early. A
@@ -126,6 +148,13 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
       page.getByText("Chương trình in ra đúng kết quả mong đợi ở mọi test case."),
     ).toBeVisible({ timeout: 120_000 });
     await expect(page.getByText("100/100").first()).toBeVisible();
+    // Per-case progress published by the worker, and the verdict itself, both
+    // over the socket: the live channel worked end to end.
+    expect(
+      frames.some((frame) => frame.type === "progress" && frame.case !== null),
+      "per-case progress arrived over the WebSocket",
+    ).toBe(true);
+    expect(frames.at(-1)).toMatchObject({ status: "done", verdict: "AC" });
     await snap(page, "06-nop-code-dung");
   });
 

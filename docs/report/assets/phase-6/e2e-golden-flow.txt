@@ -99,3 +99,13 @@ Lượt sau (run 36964368747, 02/10 04:24–04:28 UTC) xanh, job 4 phút:
       ✓  1 [chromium] › e2e/golden-flow.spec.ts:46:5 › đăng ký → mua → học → nộp code →
          nhận chứng chỉ (31.4s)
       1 passed (35.8s)
+
+==============================================================================
+BỔ SUNG 04/10: VERDICT PHẢI TỚI QUA WEBSOCKET
+==============================================================================
+Bước "nộp bài code" giờ nghe các khung của socket `/api/v1/submissions/{id}/events`
+và đòi có tiến độ từng case (`progress` mang `case`) cùng khung cuối `done` + `AC`.
+Trước đó trang tới cùng verdict bằng polling khi socket hỏng, nên một proxy chặn
+WebSocket vẫn để spec xanh. Đã kiểm: chặn riêng socket chấm bài bằng
+`page.routeWebSocket` → trang vẫn hiện 100/100, spec đỏ đúng ở kiểm tra mới.
+Lý do và số đo: `polling-progress-decision.txt`.

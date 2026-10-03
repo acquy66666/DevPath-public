@@ -384,6 +384,49 @@ async def test_a_worker_that_dies_mid_grading_leaves_the_row_saying_running(
     assert submission.status == "running"
 
 
+def _dies_after_two_cases(code, cases, *, on_case=None, **limits):
+    for index in range(2):
+        on_case(CaseProgress(index=index, verdict="AC", run_time_ms=10))
+    raise RuntimeError("worker killed")
+
+
+@pytest.mark.parametrize(
+    "judge",
+    [judging("AC", "AC", "SE"), _dies_after_two_cases],
+    ids=["system-error-at-case-3", "worker-dies-after-case-2"],
+)
+async def test_a_run_that_does_not_finish_writes_no_case(
+    db_session: AsyncSession, judge
+) -> None:
+    """Results go in one commit at the end, and that is a decision, not a gap.
+
+    The runner keeps going after a case comes back SE, so a daemon restarting
+    at case 3 yields AC, AC, SE and an overall SE that will be retried from
+    the start. Committing each case as it finished would put that SE on a row
+    the student can read, and leave rows from a run that is about to be
+    thrown away for the retry and the dead letter to clean up. The live
+    channel already says which case finished; the database says only what a
+    finished run concluded. Revisited in Phase 6 and kept -- see
+    docs/report/assets/phase-6/polling-progress-decision.txt.
+    """
+    exercise = await make_exercise(db_session, weights=(1, 1, 1))
+    submission = await make_submission(db_session, exercise)
+    announce = Recorder()
+
+    try:
+        await run_grading(db_session, submission.id, judge=judge, announce=announce)
+    except RuntimeError:
+        pass
+
+    # The channel heard about the cases that ran...
+    assert len([event for event in announce.events if event.case is not None]) >= 2
+    # ...and the database about none of them.
+    assert await results_of(db_session, submission) == []
+    await db_session.refresh(submission)
+    assert submission.status == "running"
+    assert submission.verdict is None
+
+
 async def test_a_submission_that_no_longer_exists_is_not_an_error(
     db_session: AsyncSession,
 ) -> None:

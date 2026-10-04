@@ -255,6 +255,8 @@ thử hỏi lại sau ít phút nhé."; chi tiết "HTTP 503 …" chỉ nằm tr
   X-Accel-Buffering: no đã được gửi (thấy trong phản hồi), nhưng "production stream được" chỉ
   thật sự được chứng minh khi chạy docker-compose.prod.yml — đã ghi thành checkbox ở mục
   "Nợ hoãn lại" của docs/plan/phase-6-hardening-deploy.md.
+  (04/10/2026: đã đo qua nginx production, HTTP/1.1 và Chrome HTTP/2 — chữ tới dần, cùng
+  nhịp với gọi thẳng; ép nginx buffer thì dồn một cục: phase-6/sse-through-nginx.txt.)
 - Chưa đặt ngưỡng điểm để từ chối không cần gọi model. Số đo gợi ý có khoảng cách (top-1 trong
   phạm vi 0,726–0,796; ngoài phạm vi 0,523–0,531), nhưng: mới 6 câu; model đã tự từ chối đúng
   cả 2 ca; và cách gộp ở mục 5 KÉO ĐIỂM của câu lạc đề sau một câu trong phạm vi lên (phở bò:

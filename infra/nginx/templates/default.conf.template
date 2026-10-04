@@ -112,6 +112,14 @@ server {
         # grading socket: that one sends a snapshot every 10 seconds, well
         # inside this, so an idle watcher is never cut off mid-run.
         proxy_read_timeout 120s;
+
+        # The course assistant answers as server-sent events, and they reach
+        # the browser a piece at a time only because nginx obeys the
+        # `X-Accel-Buffering: no` the backend sends with them. Never add it to
+        # `proxy_ignore_headers`: measured, every answer then lands in one
+        # burst at the end, after seconds of nothing (CI checks for it).
+        # gzip, by contrast, was measured harmless -- it flushes per piece.
+        # docs/report/assets/phase-6/sse-through-nginx.txt
     }
 
     # Next's build output is content-hashed, so it can be cached hard and

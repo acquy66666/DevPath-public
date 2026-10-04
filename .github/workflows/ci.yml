@@ -399,6 +399,13 @@ jobs:
                 -out /etc/letsencrypt/live/devpath.example.com/fullchain.pem \
                 -subj /CN=devpath.example.com 2>/dev/null
               /docker-entrypoint.sh nginx -t
+              # The assistant streams only while nginx obeys the backend
+              # X-Accel-Buffering: no -- ignoring it was measured to turn every
+              # answer into one burst (phase-6/sse-through-nginx.txt).
+              if nginx -T 2>/dev/null | grep -qiE "proxy_ignore_headers[^;]*x-accel-buffering"; then
+                echo "nginx ignores X-Accel-Buffering: the chat answers would stop streaming" >&2
+                exit 1
+              fi
             '
 
       # The real installer on a real systemd: the runner has both, and no

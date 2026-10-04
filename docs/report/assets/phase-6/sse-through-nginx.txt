@@ -1,0 +1,120 @@
+TRỢ GIẢNG AI QUA NGINX PRODUCTION: CHỮ CÓ TỚI DẦN KHÔNG — CÓ
+Ngày: 04/10/2026 · nhánh feature/sse-through-nginx
+Stack: chính infra/docker-compose.prod.yml dựng trên máy dev (project devpath-prodtest,
+.env.prodtest tạm, DOMAIN=localhost, chứng chỉ tự ký có SAN), model thật
+gemini-3.5-flash-lite. Đã `down -v` và xóa .env.prodtest sau khi đo; stack dev
+dừng trong lúc đo rồi bật lại.
+
+Câu hỏi (từ phase-4/chat-api.txt §8): backend gửi `X-Accel-Buffering: no` cùng
+luồng SSE, nhưng stack dev không có nginx nên chưa ai thấy câu trả lời đi qua
+nginx production có tới từng mẩu không, hay nginx gom lại rồi đổ một cục lúc cuối.
+
+Kết luận: tới từng mẩu — qua HTTP/1.1 lẫn qua HTTP/2 của Chrome thật, cùng
+nhịp với lúc gọi thẳng backend. Đối chứng âm (ép nginx buffer) cho thấy phép
+đo bắt được lỗi dồn cục nếu nó có. Một giả thuyết bị số đo bác: gzip trên
+`text/event-stream` KHÔNG làm hỏng stream.
+
+==============================================================================
+1. CÁCH ĐO
+==============================================================================
+Dựng: build image prod → postgres/redis → alembic → seed (mật khẩu seed ngẫu
+nhiên, bỏ đi sau đó) → `scripts.ingest_course --all` (6 chunk, khóa Python
+có 3 bài có chữ: đọc Traceback, ép kiểu, phạm vi biến) → chứng chỉ tự ký vào
+volume letsencrypt → `up -d --wait`: 11 service healthy;
+`https://localhost/api/v1/health/ready` → ready.
+
+Mỗi lượt: một học viên dùng một lần đăng ký QUA NGINX, ghi danh khóa Python
+miễn phí, mở phiên chat mới cho mỗi câu; ba câu hỏi bám đúng ba bài; cách nhau
+4 s (cooldown chat 3 s/người — lượt nháp đầu tiên dính 429 vì hỏi liền nhau).
+
+Đo ở phía client: thời điểm từng sự kiện SSE được ĐỌC KHỎI SOCKET, tính từ lúc
+gửi request — đúng thứ trình đọc `fetch` của trang (lib/chat/sse.ts) nhìn thấy.
+  - `sse_timing.py` (thư viện chuẩn, HTTP/1.1): trên host → https://localhost
+    (qua nginx), và trong container backend → http://localhost:8000 (thẳng
+    uvicorn, không nginx).
+  - `sse-browser-probe.cjs`: Chrome thật (Playwright, channel chrome) mở
+    https://localhost/ rồi `fetch` + `getReader()` y như trang chat; giao thức
+    lấy từ `performance` (`nextHopProtocol`).
+  - `sse_summary.py`: một dòng mỗi lượt.
+Dữ liệu thô + script: sse-through-nginx/ (không chứa token).
+
+Cách đọc bảng: `spread` = delta cuối − delta đầu (ms). Stream thật: xấp xỉ
+thời gian model viết. Bị buffer: ≈ 0, mọi thứ tới cùng một lúc ở cuối.
+`gaps<5ms` = số cặp delta liền nhau tới cách nhau dưới 5 ms.
+
+==============================================================================
+2. KẾT QUẢ
+==============================================================================
+cột: path q status reads deltas chars sources 1st-delta last-delta spread gaps<5ms done
+
+(1) HTTP/1.1, qua nginx vs thẳng backend, xen kẽ:
+  nginx    0  200   7   5  284   508  1907  2425   518   0  2496
+  direct   0  200   7   5  317   480  1949  2398   449   0  2468
+  nginx    1  200  11   9  519   604  1808  2515   707   0  2592
+  direct   1  200  15  13  784   463  1869  3124  1255   1  3208
+  nginx    2  200  11   9  670   488  1721  2675   954   0  2749
+  direct   2  200  13  11  839   451  1837  2989  1152   0  3055
+  Header ở client: qua nginx `Transfer-Encoding: chunked`, KHÔNG còn
+  `X-Accel-Buffering` (nginx đọc và tiêu thụ nó); thẳng backend còn `no`.
+  Không có Content-Encoding (client này không xin gzip).
+
+(2) ĐỐI CHỨNG ÂM — thêm tạm `proxy_ignore_headers X-Accel-Buffering;` vào
+    location /api/ của config đang chạy, `nginx -s reload`:
+  nginx    0  200   7   5  317  2206  2206  2206     0   4  2206
+  nginx    1  200  13  11  755  3018  3018  3018     0  10  3018
+  nginx    2  200  13  11  802  3166  3166  3166     0  10  3166
+  → `sources`, mọi delta và `done` tới CÙNG một mili giây, sau 2,2–3,2 s im
+    lặng: người học nhìn khung trống rồi cả câu trả lời hiện một lúc. Đây là
+    lỗi mà task này phải loại trừ, và phép đo nhìn thấy nó rõ.
+
+(3) Khôi phục (restart container nginx — config dựng lại từ template, dòng
+    tạm đã mất: grep → 0), đo lại:
+  nginx    0  200   6   4  250   532  1827  2096   269   0  2162
+  nginx    1  200  10   8  517   459  1706  2389   683   0  2449
+  nginx    2  200  14  12  917   505  1555  2834  1279   0  2903
+
+(4) Chrome thật, HTTP/2 (nextHopProtocol = h2), qua nginx:
+  chrome-h2 0  200   7   5  305   518  1784  2242   458   0  2300
+  chrome-h2 1  200  11   9  511   477  1350  2051   701   0  2116
+  chrome-h2 2  200  13  11  805   507  1628  2530   902   0  2583
+  → mỗi delta một lần đọc, trải 0,46–0,90 s như HTTP/1.1. Đây là đường trình
+    duyệt của người học thật đi (`http2 on` trong nginx).
+
+(5) Giả thuyết "gzip giữ chữ lại để nén" — thêm tạm `text/event-stream` vào
+    `gzip_types`, Chrome (có gửi Accept-Encoding: gzip):
+  chrome-h2 0  200   7   5  319   459  1647  2132   485   0  2200   gzip
+  chrome-h2 1  200  17  15  933   477  1313  2856  1543   0  2906   gzip
+  chrome-h2 2  200  14  12  904   533  1455  2770  1315   0  2822   gzip
+  → `Content-Encoding: gzip` thật, mà vẫn tới từng mẩu: khi buffer đã tắt bởi
+    X-Accel-Buffering, nginx đẩy dữ liệu nén ra theo từng mẩu. Cấu hình hiện
+    tại không gzip event-stream (không có trong `gzip_types`), nhưng KHÔNG cần
+    cấm điều đó — chỉ cấm thứ đã đo được là hỏng. Khôi phục bằng restart như (3).
+
+Thời điểm `sources` (~0,45–0,6 s) giống nhau ở mọi đường: phần trước nó là
+truy hồi (nhúng câu hỏi + top-k), không liên quan nginx.
+
+==============================================================================
+3. ĐÃ THÊM VÀO REPO
+==============================================================================
+- `infra/nginx/templates/default.conf.template`: chú thích ở location /api/ —
+  streaming dựa vào việc nginx nghe `X-Accel-Buffering: no`, đừng thêm nó vào
+  `proxy_ignore_headers`; gzip đã đo là vô hại.
+- CI (job deploy-config, bước "nginx accepts the rendered config"): sau
+  `nginx -t`, `nginx -T` của config đã render không được có
+  `proxy_ignore_headers … X-Accel-Buffering`. Đã chạy chính bước đó trên máy
+  dev hai chiều:
+    template hiện tại                         → nginx -t ok, exit 0
+    template có `proxy_ignore_headers X-Accel-Expires X-Accel-Buffering;`
+                                              → "nginx ignores X-Accel-Buffering:
+                                                 the chat answers would stop
+                                                 streaming", exit 1
+
+==============================================================================
+4. CÒN LẠI
+==============================================================================
+- Đo trên máy dev (Docker Desktop), không phải VPS; nginx, config và image là
+  bản production. Trên VPS, khác biệt duy nhất trong đường đi là mạng Internet
+  giữa trình duyệt và nginx — không có proxy nào khác nằm giữa (không CDN).
+  Nếu sau này đặt Cloudflare proxy (đám mây cam) trước nginx thì phải đo lại.
+- Không chụp giao diện khung chat: trang chat đọc stream bằng đúng
+  `fetch` + `getReader()` đã đo ở (4) và vẽ lại sau mỗi delta.

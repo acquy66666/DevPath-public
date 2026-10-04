@@ -541,3 +541,11 @@ Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/orph
 **Nhận tệp theo đường dẫn trong URL, không theo base URL hiện tại** — hàng lưu URL tuyệt đối; đổi tên miền bucket không được biến ảnh cũ thành rác. Khớp thừa chỉ giữ lại tệp, không xóa nhầm.
 
 **Không đổi các lần xóa ngay khi thay video/avatar/banner** — đó là thao tác chủ ý của người dùng; đưa chúng qua cách ly là đổi bốn service ngay trước khi đóng băng tính năng.
+
+## SSE của trợ giảng qua nginx (04/10/2026)
+
+Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/sse-through-nginx.txt`.
+
+**Đo ở phía client, kèm đối chứng âm, thay vì đọc cấu hình** — "nginx có buffer không" là câu hỏi về hành vi, nên đo thời điểm từng sự kiện được đọc khỏi socket (HTTP/1.1 và Chrome thật qua HTTP/2), rồi tạm ép nginx buffer để chứng minh phép đo thấy được kiểu hỏng cần loại trừ.
+
+**Chỉ chặn trong CI thứ đã đo là hỏng** — bỏ qua `X-Accel-Buffering` thì dồn cục (đã đo), nên CI đỏ nếu config có nó. Gzip trên event-stream thì đo ra vô hại, nên không cấm, dù nhiều hướng dẫn khuyên tắt.

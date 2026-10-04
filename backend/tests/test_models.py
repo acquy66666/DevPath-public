@@ -113,6 +113,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "reports",
         # Phase 5 -- the homepage banners the admin curates.
         "banners",
+        # Phase 6 -- the orphan sweeper's quarantine list.
+        "orphan_objects",
     }
 
 

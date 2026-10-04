@@ -357,6 +357,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 | 503 ở nút đăng nhập Google | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` còn trống |
 | Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định hoặc quá ngắn, hay `CORS_ORIGINS` không phải origin (có `/` cuối, có đường dẫn, hoặc `*`) |
 | Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |
+| Log worker có `orphan sweep halted` | Job dọn object mồ côi (04:00) dừng vì quá nửa một prefix trông như bị bỏ — chưa xóa và chưa đánh dấu gì. Đọc báo cáo: `exec backend python -m scripts.sweep_orphans`. Vừa `--purge` dữ liệu demo thật thì `... --apply --force`; không thì kiểm CSDL đang dùng có đúng không |
 | `backup` unhealthy | `logs backup`: thiếu nơi lưu (mục 2c), sai key, hoặc bucket không tồn tại. Lỗi một đêm thì service tự thử lại sau 30 phút |
 | Tin ntfy "Service X: …" | `ps` rồi `logs --tail 100 X`. "đã dừng" là chính tiến trình thoát (mã thoát nằm trong tin), "unhealthy" là sống mà healthcheck đỏ — Docker **không** tự dựng lại container unhealthy, phải `up -d X` hoặc sửa nguyên nhân |
 | Tin "Docker tự khởi động lại" | Tiến trình đã chết và Docker dựng lại rồi; tin có ghi nếu vì hết bộ nhớ. Một lần thì đọc log cho biết; lặp lại thì đó là lỗi thật đang bị restart che đi |
@@ -405,6 +406,8 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod exec postgres sh 
 ```
 
 Đã diễn tập thật một lần trên stack dev ngày 02/10/2026 — từng bảng giống hệt từng dòng, E2E luồng vàng xanh trên CSDL đã khôi phục: `docs/report/assets/phase-6/db-backup-restore.txt`.
+
+**Tệp trong bucket không được khôi phục cùng CSDL** — và không cần: job dọn object mồ côi (04:00) chỉ xóa một tệp sau khi nó đã không có chủ **14 ngày**, đúng bằng số bản backup được giữ, nên mọi tệp mà bản khôi phục nhắc tới vẫn còn. Ngoại lệ là tệp người dùng tự thay (video, avatar, banner thay mới): tệp cũ bị xóa ngay lúc thay, như trước giờ.
 
 ## 8. Những thứ cố ý không có ở đây
 

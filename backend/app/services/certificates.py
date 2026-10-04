@@ -373,8 +373,9 @@ async def delete_for_enrollments(session: AsyncSession, enrollment_ids: Select) 
     Only for tearing down what a script built -- the seed scripts' `--purge`,
     the grading benchmark. `certificates.enrollment_id` is RESTRICT so that
     nothing else removes a certificate by accident; this is the deliberate
-    way. The PDFs are left in storage: a dev bucket with a stray file is not
-    worth a script that hangs when MinIO is down.
+    way. The PDFs are left in storage -- a script that hangs when MinIO is
+    down is a worse trade -- and the nightly orphan sweep collects them
+    (`services/orphans.py`).
     """
     result = await session.execute(
         delete(Certificate).where(Certificate.enrollment_id.in_(enrollment_ids))

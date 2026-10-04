@@ -1,0 +1,133 @@
+DỌN OBJECT MỒ CÔI TRONG BUCKET MEDIA
+Ngày: 04/10/2026 · nhánh feature/orphan-objects · migration 551da64fc983
+Stack: compose dev (bucket MinIO `devpath-media`, CSDL dev)
+
+Kết quả: job Celery `app.workers.orphans.sweep_orphans` mỗi đêm 04:00 +
+script `python -m scripts.sweep_orphans [--apply] [--force]`. Đánh dấu trước,
+xóa sau 14 ngày; diễn tập trên bucket dev tìm và xóa đúng 13 PDF chứng chỉ
+không còn chủ, không đụng tệp nào còn chủ.
+
+==============================================================================
+1. OBJECT MỒ CÔI TỪ ĐÂU RA
+==============================================================================
+  - Xóa bài học: xóa hàng `video_assets`, không xóa tệp (phải chạy được cả khi
+    máy chưa cấu hình bucket).
+  - `--purge` của script seed, dọn dữ liệu E2E (`purge_e2e`): xóa hàng
+    `certificates`, để lại PDF.
+  - URL đã ký được dùng nhưng không ai xác nhận: avatar chọn rồi bỏ, banner
+    tải ảnh rồi không lưu; hoặc ký lại video trước khi tải lên lần đầu (URL cũ
+    còn hạn 1 giờ, tải vào prefix đã bị xóa).
+  - Mọi lần `delete_quietly` (thay video/avatar/banner) mà bucket từ chối.
+
+Bucket dev trước khi làm: videos/ 12 · avatars/ 0 · banners/ 3 ·
+certificates/ 249 — trong khi CSDL có 233 hàng `certificates`.
+
+==============================================================================
+2. THIẾT KẾ (`backend/app/services/orphans.py`)
+==============================================================================
+Chỉ xét bốn prefix mà nền tảng tự ghi; mọi thứ khác trong bucket không bao
+giờ được liệt kê:
+  videos/<asset id>/...        có hàng `video_assets` mang id đó (cả prefix)
+  avatars/<user id>/<tệp>      đúng tệp mà một `users.avatar_url` nhắc tới
+  banners/<tệp>                đúng tệp mà một `banners.image_url` nhắc tới
+  certificates/<code>.pdf      có hàng `certificates` mang mã đó
+URL avatar/banner được đọc theo đường dẫn (`/avatars/...`), không theo base
+URL hiện tại: hàng lưu URL tuyệt đối, đổi tên miền bucket không được làm ảnh
+cũ thành "mồ côi". Khớp thừa chỉ có thể giữ lại một tệp, không thể xóa nhầm.
+
+Bốn quy tắc, vì xóa là thứ duy nhất không đảo ngược được (bucket không bật
+versioning; backup đêm chỉ có CSDL):
+  a. Dưới 1 ngày tuổi (`YOUNG`) → để yên: upload còn dở (URL ký sống 1 giờ).
+  b. Lần đầu thấy → CHỈ đánh dấu vào bảng `orphan_objects` (`created_at` =
+     đêm đầu tiên). Xóa khi dấu đủ 14 ngày (`QUARANTINE`) mà vẫn không ai nhận.
+     14 = số bản backup CSDL được giữ (`BACKUP_KEEP`), nên khôi phục bất kỳ
+     bản backup nào cũng còn đủ tệp nó nhắc tới; hàng quay lại thì dấu bị xóa.
+  c. Van an toàn: một đêm mà quá nửa một prefix (≥ 20 object) sắp bị đánh dấu
+     → dừng hẳn, không ghi gì, log lỗi `orphan sweep halted`. Đọc nhầm CSDL
+     hay một phép tra hỏng trông đúng như thế; xét TỪNG prefix vì avatar hỏng
+     tra cứu sẽ bị video còn ổn che mất. `--force` cho người đã đọc báo cáo.
+  d. Xóa bằng đúng danh sách key (`DeleteObjects`, 1000/lượt) và ĐỌC LẠI phản
+     hồi — `DeleteObjects` báo key không xóa được trong body chứ không ném lỗi
+     (`delete_prefix` cũ bỏ qua điều này); key bị từ chối giữ dấu cho đêm sau.
+Lịch 04:00: sau backup CSDL 02:00, để bản backup đêm nay đã nằm trong số bản
+mà thời gian cách ly được tính theo.
+
+==============================================================================
+3. DIỄN TẬP TRÊN BUCKET DEV
+==============================================================================
+Dry run (mặc định của script):
+  scanned 264: claimed 248, young 3
+  marked 13 (0.3 MB), waiting 0, cleared 0
+  would be marked: 13 tệp certificates/<code>.pdf, ngày 29/09 → 02/10
+  (3 "young" là PDF của ba lượt E2E chạy hôm nay — chưa đủ 1 ngày)
+
+Kiểm độc lập trước khi cho xóa: 13 mã đó trong bảng `certificates` → 0 hàng.
+248 có chủ = 233 PDF + 12 transcript (`videos/<asset>/transcript.*`, đủ hàng
+`video_assets`) + 3 banner.
+
+Bốn "đêm" liên tiếp:
+  == before
+    bucket: videos/ 12, avatars/ 0, banners/ 3, certificates/ 249
+    orphan_objects rows: 0
+  == night 1: --apply
+    scanned 264: claimed 248, young 3
+    marked 13 (0.3 MB), waiting 0, cleared 0
+    deleted 0 (0.0 MB), refused 0
+    bucket: videos/ 12, avatars/ 0, banners/ 3, certificates/ 249
+    orphan_objects rows: 13
+  == night 2: --apply (quarantine 14 days, not over)
+    marked 0 (0.0 MB), waiting 13, cleared 0
+    deleted 0 (0.0 MB), refused 0
+  == night 3: --apply --quarantine-days 0 (chỉ cho diễn tập)
+    marked 0 (0.0 MB), waiting 0, cleared 0
+    deleted 13 (0.3 MB), refused 0
+    bucket: videos/ 12, avatars/ 0, banners/ 3, certificates/ 236
+    orphan_objects rows: 0
+  == night 4: dry run
+    scanned 251: claimed 248, young 3
+    marked 0 (0.0 MB), waiting 0, cleared 0
+
+Sau đó một chứng chỉ còn chủ vẫn tải được:
+  GET /api/v1/certificates/K88CLCFKCTF28P5B/pdf → 200 application/pdf 19974 B
+
+Lượt này cũng là lần chạy thật của hai thao tác storage mới
+(`list_objects`, `delete_keys`) với S3 API thật (MinIO), thứ test đơn vị
+không chạm tới.
+
+==============================================================================
+4. TEST
+==============================================================================
+`tests/test_orphans.py` (14): ai nhận key nào (video theo id cả prefix,
+avatar/banner đúng tệp, PDF theo mã, sai đuôi thì không); ownership đọc từ
+mọi bảng, kể cả URL avatar dưới base cũ, bỏ qua ảnh Google; đêm đầu chỉ đánh
+dấu; xóa đúng lúc hết cách ly (13 ngày: chờ, 15 ngày: xóa); có chủ trở lại
+thì tha; dấu của tệp đã mất bị bỏ; dry run không ghi gì; key bị bucket từ
+chối giữ dấu; quá nửa prefix → dừng, `force` thì đi tiếp; ngoài bốn prefix
+(kể cả `videosX/`) không bao giờ bị đụng. Test chạy trên CSDL dev xóa sạch
+dấu trong transaction của nó trước (rollback sau test), để dấu thật của một
+lượt chạy trên máy dev không làm test đỏ ở local mà xanh trên CI.
+
+Test đột biến (sửa tạm code, chạy lại, khôi phục):
+  bỏ thời gian cách ly → test_an_orphan_goes_only_once_its_quarantine_is_over đỏ
+  bỏ van an toàn       → test_most_of_a_family_unclaimed_stops_the_night đỏ
+  bỏ ân hạn 1 ngày     → test_the_first_night_marks_and_deletes_nothing đỏ
+  (mỗi lần: 1 failed, 13 passed)
+
+`tests/workers/test_celery_app.py` (+2): task đăng ký đúng tên, nằm trong
+`include`, beat 04:00, không vào queue chấm bài; máy không có bucket thì job
+trả "storage not configured" chứ không lỗi.
+`tests/test_models.py`: bảng `orphan_objects` trong danh sách bảng.
+Migration: upgrade → downgrade -1 → upgrade sạch; `alembic check`: không lệch.
+
+==============================================================================
+5. CÒN LẠI, NÓI THẲNG
+==============================================================================
+  - Thay video/avatar/banner vẫn xóa tệp cũ NGAY (như trước): khôi phục một
+    bản backup cũ hơn lần thay đó sẽ trỏ tới tệp đã mất. Đưa các lần xóa này
+    qua thời gian cách ly là đổi hành vi của bốn service — không làm lúc này.
+  - Job chỉ log khi bị van chặn; monitor trên host không đọc log worker, nên
+    một đêm bị chặn chỉ thấy khi đọc log (runbook có dòng xử lý).
+  - Hàng `video_assets` ở `uploading` mà URL đã hết hạn và không ai tải lên
+    không tạo object nào, nên không phải việc của job này; giảng viên tải lại
+    là thay hàng đó.
+  - `delete_objects` trên R2 thật chưa chạy (chưa có R2); trên MinIO đã chạy.

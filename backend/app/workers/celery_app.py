@@ -49,6 +49,7 @@ celery_app = Celery(
         "app.workers.content_based",
         "app.workers.leaderboard",
         "app.workers.certificates",
+        "app.workers.orphans",
     ],
 )
 
@@ -104,6 +105,13 @@ celery_app.conf.update(
         "rebuild-leaderboards-nightly": {
             "task": "app.workers.leaderboard.rebuild_leaderboards",
             "schedule": crontab(hour=3, minute=30),
+        },
+        # 04:00: objects in the bucket that no row names. After the 02:00
+        # database backup on purpose -- the quarantine is counted against the
+        # backups that exist, and tonight's is already one of them.
+        "sweep-orphan-objects-nightly": {
+            "task": "app.workers.orphans.sweep_orphans",
+            "schedule": crontab(hour=4, minute=0),
         },
     },
 )

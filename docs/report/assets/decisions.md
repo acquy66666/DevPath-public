@@ -529,3 +529,15 @@ Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/read
 **Mỗi phụ thuộc tối đa 2 giây, chạy song song, kết nối riêng** — probe treo theo một CSDL bị pause thì người gọi hết giờ chờ và đọc thành "cả site chết". CSDL hỏi qua engine `NullPool` riêng thay vì pool của request; trả giá: readiness không thấy pool cạn kết nối.
 
 **503 vẫn đi trong envelope lỗi chung, nói phụ thuộc nào chứ không nói vì sao** — `DomainError` có thêm `extra` để mang `checks`; lỗi gốc (host, cổng, user) chỉ vào log vì endpoint công khai.
+
+## Dọn object mồ côi (04/10/2026)
+
+Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/orphan-sweep.txt`.
+
+**Đánh dấu trước, xóa sau 14 ngày, thay vì xóa ngay khi thấy** — bucket không bật versioning và backup đêm chỉ có CSDL, nên tệp xóa nhầm là mất hẳn. 14 ngày bằng số bản backup được giữ: khôi phục bản nào cũng còn đủ tệp nó nhắc tới. Trả giá một bảng (`orphan_objects`) và tệp rác sống thêm hai tuần — vài xu lưu trữ.
+
+**Van an toàn theo từng prefix** — một đêm mà quá nửa một prefix sắp bị đánh dấu thì dừng, không ghi gì. Xét từng prefix vì phép tra avatar hỏng sẽ bị hàng trăm video còn ổn che mất nếu chỉ nhìn tổng.
+
+**Nhận tệp theo đường dẫn trong URL, không theo base URL hiện tại** — hàng lưu URL tuyệt đối; đổi tên miền bucket không được biến ảnh cũ thành rác. Khớp thừa chỉ giữ lại tệp, không xóa nhầm.
+
+**Không đổi các lần xóa ngay khi thay video/avatar/banner** — đó là thao tác chủ ý của người dùng; đưa chúng qua cách ly là đổi bốn service ngay trước khi đóng băng tính năng.

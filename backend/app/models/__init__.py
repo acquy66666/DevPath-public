@@ -48,6 +48,7 @@ from app.models.order import (
     OrderItem,
     PaymentEvent,
 )
+from app.models.orphan import OrphanObject
 from app.models.progress import LessonProgress
 from app.models.qa import (
     QA_BODY_MAX_LENGTH,
@@ -113,6 +114,7 @@ __all__ = [
     "ORDER_CODE_LENGTH",
     "ORDER_STATUSES",
     "OrderItem",
+    "OrphanObject",
     "PAYMENT_PROVIDERS",
     "PaymentEvent",
     "QA_BODY_MAX_LENGTH",

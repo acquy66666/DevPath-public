@@ -20,7 +20,9 @@ exactly which key.
 import logging
 import mimetypes
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator, Sequence
+from dataclasses import dataclass
+from datetime import datetime
 from functools import lru_cache
 from pathlib import PurePosixPath
 from typing import Protocol
@@ -150,6 +152,19 @@ def banner_key(filename: str) -> str:
     return f"{BANNER_PREFIX}/{uuid.uuid4().hex}{suffix}"
 
 
+#: `DeleteObjects` takes at most this many keys per request.
+DELETE_BATCH = 1000
+
+
+@dataclass(frozen=True)
+class StoredObject:
+    """One object as a bucket listing describes it."""
+
+    key: str
+    size: int
+    last_modified: datetime
+
+
 class ObjectStorage(Protocol):
     """What the rest of the app is allowed to ask of a bucket."""
 
@@ -175,6 +190,14 @@ class ObjectStorage(Protocol):
 
     def delete_prefix(self, prefix: str) -> None:
         """Delete every object under a prefix. Used when a video is replaced."""
+        ...
+
+    def list_objects(self, prefix: str) -> Iterator[StoredObject]:
+        """Every object under a prefix, with its size and last change."""
+        ...
+
+    def delete_keys(self, keys: Sequence[str]) -> list[str]:
+        """Delete exactly these keys. Returns the ones the bucket refused."""
         ...
 
 
@@ -252,6 +275,28 @@ class R2Storage:
             keys = [{"Key": item["Key"]} for item in page.get("Contents", [])]
             if keys:
                 self._client.delete_objects(Bucket=self._bucket, Delete={"Objects": keys})
+
+    def list_objects(self, prefix: str) -> Iterator[StoredObject]:
+        paginator = self._client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=self._bucket, Prefix=prefix):
+            for item in page.get("Contents", []):
+                yield StoredObject(
+                    key=item["Key"], size=item["Size"], last_modified=item["LastModified"]
+                )
+
+    def delete_keys(self, keys: Sequence[str]) -> list[str]:
+        """Unlike `delete_prefix`, reads the answer: `DeleteObjects` reports a
+        key it could not delete in the response body rather than by raising,
+        and the sweeper must not forget an object that is still there."""
+        refused: list[str] = []
+        for start in range(0, len(keys), DELETE_BATCH):
+            batch = keys[start : start + DELETE_BATCH]
+            response = self._client.delete_objects(
+                Bucket=self._bucket,
+                Delete={"Objects": [{"Key": key} for key in batch], "Quiet": True},
+            )
+            refused.extend(error["Key"] for error in response.get("Errors", []))
+        return refused
 
 
 @lru_cache

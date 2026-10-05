@@ -557,3 +557,16 @@ Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/site-url.tx
 **Nướng `https://${DOMAIN}` vào lúc build, không đọc lúc chạy** — `metadataBase` cần URL tuyệt đối, và trang được prerender lúc build sẽ chốt giá trị của lúc build; một biến server-only đọc lúc chạy chỉ đúng với trang render động, sai im lặng với trang tĩnh nào sau này thêm URL tương đối. Cái giá là image mang tên miền ở phía server (bundle trình duyệt vẫn không — nguyên tắc Phase 2 giữ nguyên), nhưng `deploy.sh` vốn build lại mỗi lần chạy nên đổi tên miền chỉ là "sửa `.env.prod`, deploy".
 
 **Build thiếu biến thì hỏng, không rơi về localhost** — lỗi này không làm trang nào hỏng, chỉ crawler và ứng dụng chat thấy, nên mặc định im lặng chính là thứ đã giấu nó từ Phase 2. Kiểm đặt trước `next build` để hỏng sau 0,2 s. CI build image frontend qua chính compose prod thay vì `docker build` trần — bước cũ vốn build một image khác image chạy thật.
+
+## Khoảng ân hạn cho refresh token (05/10/2026)
+
+Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/refresh-leeway.txt`.
+
+**Cấp cho tab đến muộn một phiên riêng, không trả lại token kế nhiệm** — DB chỉ giữ hash nên không có gì để trả lại, và không được thu hồi token kế nhiệm vì trình duyệt giữ câu trả lời nào tới sau cùng làm cookie, mà thứ tự đó không ai quyết định được: cả hai token phải tiếp tục chạy. Một phương án khác là trả "đã bị thay, thử lại" để frontend gửi lại bằng cookie mới. Cách đó an toàn hơn một chút (bản sao dùng trong lúc ân hạn không lấy được gì), nhưng không cứu được trường hợp mất câu trả lời: cookie vẫn còn T0, lần thử lại vẫn mang T0, và khi khoảng ân hạn hết thì người dùng bị đăng xuất.
+
+**Chỉ token bị *xoay* mới được ân hạn, và chỉ khi token kế nhiệm còn sống** — vì thế cần cột `replaced_by_id`, chứ một mình `revoked_at` không phân biệt được "bị xoay" với "đã đăng xuất" hay "bị thu hồi cùng mọi phiên khác". Nếu không có điều kiện token kế nhiệm còn sống, trong 30 giây sau khi đổi mật khẩu thì token cũ lại mở được phiên.
+
+**Khóa dòng khi xoay** — trước khi sửa, hai request đồng thời cùng xoay một token (đo được 10/10 lần). Hậu quả chưa lớn, nhưng ghi chép bị lệch: `revoked_at` là lần xoay sau, và `replaced_by_id` trỏ tới bên nào ghi sau cùng. Test với hai kết nối thật đỏ 5/5 lần khi bỏ khóa.
+
+**30 giây, chỉnh được qua biến môi trường** — đủ cho độ lệch giữa hai tab và cho một lần retry, và là mặc định của Okta cho cùng loại khoảng ân hạn này.
+

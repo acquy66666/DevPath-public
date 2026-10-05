@@ -63,13 +63,15 @@ Ràng buộc & index:
 | `token_hash` | VARCHAR(64) | ✗ | SHA-256 hex của token. **Không lưu token thô** — lộ DB cũng không dùng lại được |
 | `expires_at` | TIMESTAMPTZ | ✗ | |
 | `revoked_at` | TIMESTAMPTZ | ✓ | Khác NULL ⇒ token đã bị thu hồi |
+| `replaced_by_id` | UUID | ✓ | FK → `refresh_tokens` **ON DELETE SET NULL**. Token mà token này được xoay thành; NULL nếu bị thu hồi theo cách khác (đăng xuất, thu hồi toàn bộ) |
 | `user_agent` | VARCHAR(255) | ✓ | Hiển thị "thiết bị đang đăng nhập" |
 | `ip_address` | INET | ✓ | |
 | `created_at` | TIMESTAMPTZ | ✗ | |
 
 - `uq_refresh_tokens_token_hash` UNIQUE (`token_hash`)
 - `ix_refresh_tokens_user_id`
-- **Rotation:** mỗi lần refresh thành công thì `revoked_at` token cũ và cấp token mới. Dùng lại token đã revoke ⇒ nghi ngờ bị đánh cắp, thu hồi toàn bộ phiên của user đó.
+- `ix_refresh_tokens_replaced_by_id` — xóa một dòng (cascade khi xóa user, dọn token hết hạn) phải tìm các dòng trỏ vào nó để đặt NULL; thiếu index là quét cả bảng cho mỗi dòng bị xóa
+- **Rotation:** mỗi lần refresh thành công thì `revoked_at` token cũ, ghi `replaced_by_id` sang token mới và cấp token mới. Dùng lại token đã revoke ⇒ nghi ngờ bị đánh cắp, thu hồi toàn bộ phiên của user đó — **trừ** token bị *xoay* chưa quá 30 giây (`REFRESH_TOKEN_REUSE_LEEWAY_SECONDS`) mà token kế nhiệm còn sống: đó là tab thứ hai dùng chung cookie, được cấp một phiên riêng (thêm 05/10/2026, migration `abb01d258134`).
 - Job dọn dẹp xóa hẳn bản ghi hết hạn > 30 ngày.
 
 ---

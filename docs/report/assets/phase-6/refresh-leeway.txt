@@ -1,0 +1,122 @@
+HAI TAB, MỘT COOKIE: KHOẢNG ÂN HẠN CHO REFRESH TOKEN
+Ngày: 05/10/2026 · nhánh feature/refresh-token-leeway · migration abb01d258134
+Máy: stack dev (Docker Desktop), Postgres 16, backend uvicorn trong container
+
+Kết luận: lỗi thật, đã sửa. Mọi tab dùng chung một cookie refresh. Tab thứ hai
+gửi lại token mà tab đầu vừa xoay thì bị coi là trộm, và người dùng bị đăng
+xuất khỏi **mọi** thiết bị. Một tab retry sau khi mất câu trả lời cũng gặp
+đúng như vậy. Giờ token bị *xoay* chưa quá 30 giây mà token kế nhiệm còn sống
+thì được cấp một phiên riêng. Dùng lại sau 30 giây vẫn bị coi là trộm như cũ.
+
+==============================================================================
+1. CÁCH ĐO — HTTP THẬT, MỖI REQUEST MỘT PHIÊN CSDL
+==============================================================================
+Script: `refresh-leeway/refresh_race.py`, chạy trong container backend, gọi
+`http://localhost:8000/api/v1` (`docker compose exec -T backend python - <
+refresh_race.py`). Mỗi lượt đăng ký một tài khoản `@e2e.devpath.example`
+mới (`scripts.purge_e2e` dọn sau), lấy cookie T0, rồi:
+
+  concurrent  hai POST /auth/refresh cùng mang T0, gửi cùng lúc (asyncio.gather)
+  late        request thứ hai mang T0, gửi 1 giây sau khi request đầu đã trả
+              lời: tab có request rời đi trước khi Set-Cookie của tab kia tới,
+              hoặc retry sau khi mất câu trả lời
+  replay      request thứ hai mang T0, gửi sau 35 giây — quá khoảng ân hạn,
+              phải vẫn là trộm
+
+Sau mỗi lượt: đem mọi token vừa được cấp đi refresh tiếp. Còn ít nhất một
+token chạy được nghĩa là người dùng còn đăng nhập.
+
+==============================================================================
+2. TRƯỚC (origin/main) — refresh-leeway/before.log
+==============================================================================
+== concurrent: 10/10 lượt   A=200  B=200   tokens issued 2, still working 2
+== late
+#1  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT
+#2  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT
+#3  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT
+== replay (35 s)
+#1  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT
+
+Đọc kết quả:
+- late: 3/3 lượt bị đăng xuất sạch. Đây là lỗi frontend/README.md ghi lại từ
+  Phase 2 ("mở hai tab cùng lúc sau khi để lâu").
+- concurrent: 10/10 lượt "ổn", nhưng ổn vì một lỗi khác. Hai request cùng đọc
+  T0 khi T0 chưa bị thu hồi, nên cả hai cùng xoay nó: một token bị tiêu hai lần
+  mà cơ chế phát hiện trộm không thấy. Chỉ cần request thứ hai đọc chậm hơn một
+  chút (sau khi request đầu commit) là rơi vào trường hợp "late" và người dùng
+  bị đăng xuất. Trong trình duyệt thật, hai tab thường lệch nhau chừng ấy.
+
+==============================================================================
+3. SAU — refresh-leeway/after.log
+==============================================================================
+== concurrent: 10/10 lượt   A=200  B=200   tokens issued 2, still working 2
+== late
+#1  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#2  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#3  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+== replay (35 s)
+#1  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT
+
+Cả hai token được cấp đều tiếp tục chạy. Điều này bắt buộc: trình duyệt giữ
+câu trả lời nào tới sau cùng làm cookie, mà thứ tự tới thì không ai chọn được.
+
+==============================================================================
+4. LUẬT
+==============================================================================
+`services/auth.py::rotate_refresh_token`:
+  - Dòng token bị khóa `SELECT … FOR UPDATE`, nên hai request đồng thời xếp
+    hàng nhau thay vì cùng xoay một token.
+  - Xoay token = `revoked_at` + `replaced_by_id` → token mới (cột mới, FK tự
+    trỏ về chính bảng, ON DELETE SET NULL, có index).
+  - Token đã thu hồi quay lại chỉ được ân hạn khi hội đủ ba điều:
+      (a) có `replaced_by_id`, tức là bị xoay chứ không phải bị đăng xuất hay
+          bị thu hồi cùng mọi phiên khác (đổi mật khẩu, admin khóa, phát hiện
+          trộm);
+      (b) bị xoay chưa quá `REFRESH_TOKEN_REUSE_LEEWAY_SECONDS` = 30;
+      (c) token kế nhiệm vẫn còn sống.
+    Khi đó: cấp một phiên mới riêng, không đụng gì tới token kế nhiệm.
+    Thiếu một trong ba: thu hồi toàn bộ phiên như cũ (`REFRESH_TOKEN_REUSED`).
+  - Tài khoản bị khóa hoặc đã bị xóa vẫn bị từ chối ở các bước kiểm sau đó.
+
+Vì sao 30 giây: hai tab lệch nhau cỡ độ trễ một request, retry sau khi mất
+câu trả lời cũng tính bằng giây. 30 giây là mặc định của Okta cho cùng loại
+khoảng ân hạn này. Đổi được qua biến môi trường.
+
+Cái giá, ghi rõ:
+  - Ai cầm bản sao T0 và dùng nó trong 30 giây ngay sau một lần xoay hợp lệ
+    thì cũng lọt. Ngoài khoảng đó, cơ chế phát hiện trộm vẫn như trước.
+  - Trong hai phiên mở ra lúc đó, có một phiên không cookie nào giữ. Nó nằm
+    trong bảng tới khi hết hạn (30 ngày). Không có màn hình nào liệt kê thiết
+    bị, và DAU tính theo người chứ không theo dòng, nên không lộ ra đâu cả.
+
+==============================================================================
+5. TEST
+==============================================================================
+tests/api/test_auth.py (chạy qua HTTP, trong transaction được rollback):
+  test_refresh_records_the_token_that_replaced_it
+  test_a_token_rotated_moments_ago_still_refreshes      (+ không thu hồi gì khác)
+  test_the_other_tab_stays_signed_in
+  test_the_leeway_is_counted_from_the_rotation          (29 giây trước: vẫn được)
+  test_a_signed_out_token_gets_no_leeway                (đăng xuất ≠ xoay)
+  test_no_leeway_once_the_replacement_is_signed_out
+  test_no_leeway_after_every_session_was_closed         (đổi mật khẩu/khóa/trộm)
+  test_reusing_a_rotated_token_is_treated_as_theft      (đẩy lùi 31 giây)
+  test_reuse_closes_every_session_of_that_user          (đẩy lùi 31 giây)
+Theo TDD: viết trước, 4 test hành vi mới đỏ ("assert 401 == 200"). 3 test
+"không được ân hạn" xanh sẵn, vì chúng là lớp rào giữ hành vi cũ.
+
+tests/api/test_auth_concurrency.py (hai kết nối thật, commit rồi tự dọn):
+  test_two_tabs_refreshing_together_queue_on_the_token
+    gọi đồng thời hai lần `rotate_refresh_token` với cùng một token, đếm số
+    lần đi qua nhánh ân hạn: phải là [True] (một lần xoay + một tab được cho
+    vào), không phải [] (cả hai cùng xoay).
+  Có khóa:              5/5 lượt xanh
+  Đối chứng — tạm bỏ `.with_for_update()`: 5/5 lượt đỏ, `assert [] == [True]`
+  (rồi khôi phục).
+
+tests/test_models.py: index + FK SET NULL của `replaced_by_id` khớp đặc tả.
+
+Migration: upgrade → downgrade -1 → upgrade trên CSDL dev, không lỗi. Bảng
+sau khi upgrade có `ix_refresh_tokens_replaced_by_id` và
+`refresh_tokens_replaced_by_id_fkey … ON DELETE SET NULL` (cùng kiểu tên
+với FK `refresh_tokens_user_id_fkey` có sẵn).

@@ -290,7 +290,7 @@ Băm bằng **bcrypt**, không bao giờ lưu bản rõ — `backend/app/core/se
 
 Hai token. **Access token** sống 15 phút, gửi kèm mỗi request trong header `Authorization`. **Refresh token** sống 30 ngày, nằm trong cookie `HttpOnly` nên JavaScript không đọc được.
 
-Vì sao tách đôi: access token không thu hồi được (server chỉ kiểm chữ ký, không tra database), nên phải cho nó sống ngắn. Refresh token thì thu hồi được vì có hẳn bảng `refresh_tokens` — và hệ thống **xoay vòng** nó: mỗi lần làm mới sinh token mới, token cũ bị vô hiệu. Dùng lại token cũ bị coi là dấu hiệu bị đánh cắp và cả chuỗi bị thu hồi.
+Vì sao tách đôi: access token không thu hồi được (server chỉ kiểm chữ ký, không tra database), nên phải cho nó sống ngắn. Refresh token thì thu hồi được vì có hẳn bảng `refresh_tokens` — và hệ thống **xoay vòng** nó: mỗi lần làm mới sinh token mới, token cũ bị vô hiệu. Dùng lại token cũ bị coi là dấu hiệu bị đánh cắp và cả chuỗi bị thu hồi — trừ trong 30 giây ngay sau khi xoay, vì hai tab dùng chung cookie có thể cùng gửi một token (xem `backend/README.md`, mục Auth).
 
 ### "Điểm đánh giá trung bình tính lúc nào?"
 

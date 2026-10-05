@@ -1,0 +1,145 @@
+STORAGE CHO PRODUCTION — QUYẾT ĐỊNH
+Ngày: 05/10/2026 · nhánh feature/storage-decision
+Máy thử: Docker Desktop (Engine 29.7.2), image backend dev (boto3 1.43.98 như
+`backend/requirements.lock`), nginx 1.27-alpine
+
+KẾT LUẬN
+  Media      → RustFS tự host trong compose prod trên chính VPS, phục vụ CÙNG
+               ORIGIN qua nginx tại https://<DOMAIN>/devpath-media/. Không thẻ,
+               không tài khoản ngoài, không CORS. Ghim đúng bản (1.0.1 + digest).
+  Backup CSDL → bucket private trên Backblaze B2 (10 GB miễn phí, không cần
+               thẻ) qua các biến `BACKUP_*` đã có. Backup phải nằm NGOÀI máy
+               chủ, nên không đặt nó vào cùng server với media.
+  R2         → vẫn được hỗ trợ, chỉ cần đổi cấu hình (code không đổi). Đây là
+               lựa chọn tốt nhất nếu có ngày khai thẻ: egress 0 đồng, có CDN.
+  Dự phòng   → SeaweedFS, đã qua cùng bộ thử 20/20. Đổi sang nó chỉ là đổi một
+               khối service trong compose.
+
+==============================================================================
+1. RÀNG BUỘC
+==============================================================================
+- R2 đòi khai thẻ thanh toán ngay cả ở hạn mức miễn phí (Cloudflare Community
+  và hướng dẫn của chính dự án, `docs/huong-dan-cloudflare-r2.md` §1). Từ
+  18/09 `infra/.env` vẫn để trống `R2_*` vì lý do này. Kế hoạch giữ hạ tầng 0đ.
+- MinIO đã ngừng phát hành image bản cộng đồng. Stack dev đang dùng bản
+  Bitnami đóng băng: tạm chấp nhận được khi chỉ bind 127.0.0.1, không chấp
+  nhận được cho thứ nhìn ra internet (`infra/docker-compose.yml`).
+- Thứ app cần ở storage (`app/services/storage.py::R2Storage`):
+    trình duyệt PUT lên URL ký sẵn (ContentType nằm trong chữ ký) · đọc công
+    khai không ký (video HLS, avatar, banner) · upload_file nhiều phần (đầu ra
+    HLS) · download_file (worker chuyển mã) · put/get bytes (transcript) ·
+    ListObjectsV2 + DeleteObjects (job dọn object mồ côi, `delete_prefix`).
+  Thêm hai điều kiện bảo mật: không ai được liệt kê bucket khi chưa ký (PDF
+  chứng chỉ mang tên học viên), và không ai được ghi/xóa khi chưa ký.
+- Máy chủ: Azure for Students hoặc Oracle Always Free, 2 vCPU / 4 GB.
+  Azure miễn phí 100 GB egress/tháng cho mọi khách hàng (azure.microsoft.com/
+  pricing/details/bandwidth, đọc 05/10/2026), vượt mức thì $0,12/GB từ châu Á,
+  trừ vào credit. Oracle Always Free cho 10 TB/tháng. Lưu lượng của một buổi
+  demo khóa luận nằm xa dưới cả hai mức.
+
+==============================================================================
+2. CÁC PHƯƠNG ÁN
+==============================================================================
+Cloudflare R2   10 GB, egress 0đ, CDN. CẦN THẺ → loại, giữ làm đường nâng cấp.
+Backblaze B2    10 GB không cần thẻ, nhưng egress chỉ miễn phí tới 3 lần dung
+                lượng đang lưu (lưu 1 GB → 3 GB/tháng), trừ khi đi qua CDN đối
+                tác (tức phải đưa DNS sang Cloudflare). Phát video từ đó dễ
+                chạm trần → không dùng cho media. Đủ cho backup: vài MB × 14 bản.
+Oracle Object   20 GB + 10 TB egress, nhưng chỉ có nếu VPS là Oracle, và gắn
+Storage         chặt vào nhà cung cấp → không chọn làm mặc định.
+Garage          Không có bucket policy/ACL: muốn đọc công khai phải đi qua một
+                cổng "website" riêng, đặt tên bucket theo tên miền → URL công
+                khai thành một lối khác hẳn. Không thử.
+SeaweedFS 4.48  Thử: 20/20. Trưởng thành (~10 năm), Apache-2.0, đa kiến trúc.
+RustFS 1.0.1    Thử: 20/20. Apache-2.0, đa kiến trúc, mô hình y hệt MinIO.
+                Mới: 1.0 GA ngày 16/09/2026.
+
+==============================================================================
+3. PHÉP THỬ — CODE CỦA APP, QUA NGINX, CÓ TLS
+==============================================================================
+Thư mục `storage-decision/`: `run.sh <seaweedfs|rustfs>` dựng server + một
+nginx giống production (TLS tự ký, chỉ route `= /devpath-media` và
+`/devpath-media/`, `proxy_set_header Host $host` vì SigV4 ký cả host,
+`client_max_body_size 0` + `proxy_request_buffering off`). Sau đó `spike.py`
+chạy trong image backend dev:
+  - phía app: chính `R2Storage`, boto3 đúng bản đã khóa trong lock. Đi qua
+    HTTPS vì trên HTTPS botocore gửi payload kiểu khác (checksum ở trailer).
+    boto3 ≥ 1.36 từng làm hỏng nhiều server S3 tương thích ở đúng chỗ này.
+  - phía trình duyệt: httpx PUT lên URL ký sẵn, GET URL công khai.
+
+Kết quả (log đầy đủ: `seaweedfs.log`, `rustfs.log`):
+
+  kiểm                                              SeaweedFS   RustFS
+  URL ký sẵn path-style, đúng origin của site         PASS       PASS
+  trình duyệt PUT lên URL ký sẵn                       200        200
+  cùng URL, Content-Type khác                          403        403
+  PUT không ký / DELETE không ký                     403/403    403/403
+  GET ẩn danh URL công khai, giữ Content-Type          200        200
+  Range (trình phát video tua)                         206        206
+  liệt kê ẩn danh (?list-type=2 và /)                403/403    403/403
+  key không tồn tại                                    404        404
+  PUT 60 MB video gốc qua nginx                      3,0 s      0,5 s
+  download_file / upload_file 20 MB (multipart)      PASS       PASS
+  .m3u8 trả về application/vnd.apple.mpegurl         PASS       PASS
+  upload_bytes + read_bytes (transcript tiếng Việt)  PASS       PASS
+  list_objects / delete_keys / delete_prefix         PASS       PASS
+  TỔNG                                               20/20      20/20
+
+  RAM: rảnh 62 MiB / 87 MiB; ngay sau lượt thử 449 MiB / 350 MiB.
+
+Đối chứng (`control-no-host-header.log`, RustFS): bỏ dòng `proxy_set_header
+Host` thì trình duyệt PUT lên URL ký sẵn bị 403. Lý do: server kiểm chữ ký
+theo tên của chính nó, khác tên trong URL. Bản cấu hình nginx production phải
+có dòng này.
+
+==============================================================================
+4. VÌ SAO RUSTFS, VÌ SAO CÙNG ORIGIN
+==============================================================================
+RustFS hơn SeaweedFS ở ba điểm cụ thể với dự án này:
+  - cấu hình bằng biến môi trường + bucket policy (`s3:GetObject` cho `*`,
+    không có `s3:ListBucket`), đúng mô hình của MinIO mà stack dev đang dùng.
+    SeaweedFS cần một tệp JSON identity chứa luôn secret, tức phải sinh tệp
+    đó lúc khởi động. Phần cấu hình truy cập ẩn danh của SeaweedFS cũng từng
+    có lỗi (issue #6130 trên GitHub).
+  - dùng được cho cả stack dev, thay bản MinIO Bitnami đóng băng: dev và prod
+    chạy cùng một server.
+  - nhanh hơn 6 lần ở đúng thao tác người dùng thấy (giảng viên tải video lên).
+Rủi ro đã biết: RustFS mới GA 3 tuần. Đỡ bằng ba cách: ghim đúng bản + digest;
+SeaweedFS đã chứng minh thay thế được mà không đổi code; dữ liệu là nội dung
+demo, nạp lại được bằng các script seed.
+
+Cùng origin (https://<DOMAIN>/devpath-media/…) thay vì subdomain:
+  - trình duyệt PUT cùng origin nên không có preflight, không có luật CORS phải
+    giữ khớp với frontend;
+  - không cần thêm bản ghi DNS hay tên trong chứng chỉ Let's Encrypt;
+  - ra internet chỉ có nginx, server S3 không mở cổng nào. nginx chỉ route
+    đúng bucket này: không tạo được bucket, không với tới API quản trị hay
+    console.
+  - backend và worker phải gọi đúng tên đã ký. Cách làm: cho nginx thêm network
+    alias `${DOMAIN}` trong mạng compose, giống mẹo `minio.localhost` ở stack
+    dev ("một tên cho cả hai phía"). Nhờ vậy không phải sửa code.
+
+==============================================================================
+5. CÁI GIÁ, GHI RÕ
+==============================================================================
+- Media nằm trên đĩa VPS và KHÔNG được sao lưu: backup chỉ chứa CSDL. Nếu mất
+  máy thì video giảng viên tự tải lên và avatar mất theo. Nội dung seed thì nạp
+  lại được (video seed là luồng HLS mẫu công khai, transcript và banner sinh
+  bằng script, chứng chỉ vẽ lại được). Chấp nhận cho khóa luận.
+- Video đi qua băng thông của VPS (không có CDN). Với lưu lượng demo thì không
+  đáng kể (mục 1).
+- B2 cho backup chưa thử được vì chưa có tài khoản. Healthcheck của service
+  `backup` (đỏ nếu sau 26 giờ chưa có bản nào) và `infra/scripts/restore-db.sh`
+  sẽ kiểm ở lần deploy đầu.
+
+==============================================================================
+6. VIỆC TIẾP THEO (đã thêm checkbox ở phase-6-hardening-deploy.md)
+==============================================================================
+Đưa RustFS vào compose:
+  - prod: service + volume; bước init tạo bucket và đặt policy; nginx route
+    `/devpath-media` (hai `location` như `nginx.conf` ở đây); alias `${DOMAIN}`;
+    mặc định `R2_ENDPOINT_URL=https://${DOMAIN}`,
+    `R2_PUBLIC_BASE_URL=https://${DOMAIN}/devpath-media`;
+  - dev: thay MinIO Bitnami;
+  - backup: thêm B2 vào runbook.
+Chạy lại `run.sh rustfs` và E2E luồng vàng trên stack mới.

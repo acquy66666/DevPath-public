@@ -1,0 +1,46 @@
+== rustfs: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+PASS  presigned URL is path-style on the site's own origin  (https://spike-front/devpath-media/avatars/aedc9832/a.png)
+FAIL  browser PUT to the presigned URL  (HTTP 403)
+PASS  same URL with another Content-Type is refused  (HTTP 403)
+PASS  unsigned PUT is refused  (HTTP 403)
+PASS  unsigned DELETE is refused  (HTTP 403)
+FAIL  anonymous GET of the public URL  (HTTP 404, application/xml)
+FAIL  Content-Type kept from the signed upload  (application/xml)
+FAIL  Range request (video players seek)  (HTTP 404, 127 B)
+PASS  anonymous listing refused: GET /devpath-media?list-type=2  (HTTP 403)
+PASS  anonymous listing refused: GET /devpath-media/  (HTTP 403)
+PASS  missing key is not a 200  (HTTP 404)
+FAIL  60 MB original video through nginx  (HTTP 403, 0.1 s)
+Traceback (most recent call last):
+  File "/spike/spike.py", line 143, in <module>
+    storage.download_file(f"videos/{run}/original.mp4", original)
+  File "/app/app/services/storage.py", line 246, in download_file
+    self._client.download_file(self._bucket, key, destination)
+  File "/usr/local/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/boto3/s3/inject.py", line 223, in download_file
+    return transfer.download_file(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/boto3/s3/transfer.py", line 484, in download_file
+    future.result()
+  File "/usr/local/lib/python3.12/site-packages/s3transfer/futures.py", line 111, in result
+    return self._coordinator.result()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/s3transfer/futures.py", line 287, in result
+    raise self._exception
+  File "/usr/local/lib/python3.12/site-packages/s3transfer/tasks.py", line 272, in _main
+    self._submit(transfer_future=transfer_future, **kwargs)
+  File "/usr/local/lib/python3.12/site-packages/s3transfer/download.py", line 379, in _submit
+    response = client.head_object(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/botocore/client.py", line 606, in _api_call
+    return self._make_api_call(operation_name, kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/botocore/context.py", line 123, in wrapper
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/site-packages/botocore/client.py", line 1094, in _make_api_call
+    raise error_class(parsed_response, operation_name)
+botocore.exceptions.ClientError: An error occurred (403) when calling the HeadObject operation: Forbidden
+== memory after the run: 98.58MiB / 7.756GiB

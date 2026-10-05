@@ -580,3 +580,15 @@ Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/storage-dec
 
 **Cùng origin thay vì subdomain** — trình duyệt PUT cùng origin nên không có preflight CORS, không cần thêm DNS hay chứng chỉ, và server S3 không mở cổng nào ra ngoài. Đổi lại, nginx phải chuyển nguyên `Host`: đối chứng cho thấy thiếu dòng đó thì mọi URL ký sẵn bị 403.
 
+## RustFS vào compose (05/10/2026)
+
+Thực hiện quyết định storage cùng ngày. Bằng chứng: `docs/report/assets/phase-6/rustfs-compose.txt`.
+
+**API và worker gọi bucket qua chính URL công khai, nhờ alias `${DOMAIN}` của nginx trong mạng compose** — URL ký sẵn chỉ hợp lệ cho đúng host đã ký, nên phía app phải ký cho `https://<DOMAIN>`. Gọi thẳng `storage:9000` thì phải tách hai endpoint trong code, còn đi qua IP công khai thì tùy vào NAT của nhà cung cấp. Alias không cần sửa code, và là cùng mẹo `minio.localhost` mà stack dev dùng từ 18/09. Cái giá: diễn tập không được dùng `DOMAIN=localhost`.
+
+**`sandbox` + `nosniff` trên mọi phản hồi media** — bucket công khai giờ nằm cùng origin với app, nên một tệp bị mở như một trang sẽ chạy với tư cách của site. Loại tệp đã bị giới hạn khi ký, nhưng hai header này không tốn gì và không ảnh hưởng `<img>`/`<video>`/hls.js.
+
+**Một service init thay vì để app tự tạo bucket** — cấu hình bucket là việc của hạ tầng, chạy ở mỗi lần `up`, gọi thẳng server trong mạng compose, nên không phụ thuộc chứng chỉ hay nginx. App vẫn chỉ biết giao thức S3, và đổi sang R2 vẫn chỉ là đổi biến môi trường.
+
+**Dev giữ tên `minio.localhost`** — URL công khai đã nằm trong `users.avatar_url`; đổi tên host thì phải viết migration dữ liệu, mà không được gì.
+

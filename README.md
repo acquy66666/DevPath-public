@@ -36,7 +36,7 @@ Khóa luận tốt nghiệp: nền tảng e-learning kiểu Udemy tích hợp AI
 
 Chỉ cần **Git** và **Docker** (Docker Desktop trên Windows/macOS, Docker Engine + plugin Compose v2 trên Linux). Không cần cài Python hay Node: backend, frontend, CSDL và mọi script đều chạy trong container. Docker nên được cấp **≥ 4 GB RAM** (cả stack dev dùng ~2,4 GB) và cần **~10 GB đĩa trống** (image ~5,5 GB). Các bước dưới đây đã chạy thử trên một bản clone mới tinh ngày 02/10/2026 ([bằng chứng](docs/report/assets/phase-6/fresh-machine.txt)).
 
-**1. Lấy mã nguồn và tạo tệp cấu hình.** Để nguyên giá trị mặc định là chạy được; upload video/ảnh tự dùng MinIO trong stack.
+**1. Lấy mã nguồn và tạo tệp cấu hình.** Để nguyên giá trị mặc định là chạy được; upload video/ảnh tự dùng storage S3 (RustFS) trong stack.
 
 ```bash
 git clone https://github.com/acquy66666/DevPath.git && cd DevPath
@@ -107,7 +107,7 @@ Thứ tự **có nghĩa**: script sau dùng dữ liệu của script trước. M
 
 **Gỡ theo thứ tự ngược lại**, mỗi script thêm `--purge`: `seed_study` → `seed_sales` → `seed_cart` → `seed_coupons` → `seed_interactions`. Đơn hàng là sổ tiền và không bị script nào khác xóa, nên gỡ `seed_interactions` trước `seed_sales` sẽ bị từ chối kèm lời nhắc thứ tự. Gỡ xong còn đúng 4 khóa thật, 3 tài khoản gốc.
 
-Chi tiết từng phần: [infra/README.md](infra/README.md) (stack, cổng, MinIO, sandbox), [backend/README.md](backend/README.md) (chạy backend bằng venv, test, từng script). Ba tài liệu viết cho máy phát triển của dự án:
+Chi tiết từng phần: [infra/README.md](infra/README.md) (stack, cổng, storage, sandbox), [backend/README.md](backend/README.md) (chạy backend bằng venv, test, từng script). Ba tài liệu viết cho máy phát triển của dự án:
 
 - [docs/huong-dan-chay-va-docker.md](docs/huong-dan-chay-va-docker.md) — chạy trang web từng bước, cấu trúc file, và vai trò của Docker trong dự án
 - [docs/huong-dan-du-an.md](docs/huong-dan-du-an.md) — sửa từng phần của giao diện, luồng một request, và những chỗ dễ vấp

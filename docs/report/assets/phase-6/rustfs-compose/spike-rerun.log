@@ -1,0 +1,24 @@
+== rustfs: rustfs/rustfs@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+PASS  presigned URL is path-style on the site's own origin  (https://spike-front/devpath-media/avatars/eb5d0765/a.png)
+PASS  browser PUT to the presigned URL  (HTTP 200)
+PASS  same URL with another Content-Type is refused  (HTTP 403)
+PASS  unsigned PUT is refused  (HTTP 403)
+PASS  unsigned DELETE is refused  (HTTP 403)
+PASS  anonymous GET of the public URL  (HTTP 200, image/png)
+PASS  Content-Type kept from the signed upload  (image/png)
+PASS  Range request (video players seek)  (HTTP 206, 1024 B)
+PASS  anonymous listing refused: GET /devpath-media?list-type=2  (HTTP 403)
+PASS  anonymous listing refused: GET /devpath-media/  (HTTP 403)
+PASS  missing key is not a 200  (HTTP 404)
+PASS  60 MB original video through nginx  (HTTP 200, 0.3 s)
+PASS  download_file (transcode worker)
+PASS  upload_file, 20 MB = multipart (HLS output)
+PASS  playlist served with a playlist type  (application/vnd.apple.mpegurl)
+PASS  segment served whole  (20971520 B)
+PASS  upload_bytes + read_bytes (transcript)
+PASS  list_objects (orphan sweep)  (4 objects)
+PASS  delete_keys = DeleteObjects (orphan sweep)  (refused [], left 0)
+PASS  delete_prefix (avatar replaced)
+
+rustfs: 0 failed
+== memory after the run: 380.2MiB / 7.756GiB

@@ -1,0 +1,12 @@
+PASS  upload URL points at the bucket's public name
+PASS  CORS preflight from the page  (HTTP 200, allow-origin http://localhost:3000)
+PASS  PUT to the presigned URL  (HTTP 200)
+PASS  API accepts the uploaded avatar  (http://minio.localhost:9000/devpath-media/avatars/6e4310b3-9a35-4e90-8b9b-40252c065bbd/c1416db7a5ab41a382a21e8f0abb1e2b.png)
+PASS  anonymous GET of the avatar  (HTTP 200, image/png)
+PASS  anonymous listing refused: ?list-type=2  (HTTP 403)
+PASS  anonymous listing refused: /  (HTTP 403)
+PASS  unsigned PUT refused  (HTTP 403)
+PASS  unsigned DELETE refused  (HTTP 403)
+PASS  CORS preflight from another origin refused  (HTTP 403)
+
+0 failed

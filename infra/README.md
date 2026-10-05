@@ -5,7 +5,7 @@ Toàn bộ hệ thống chạy bằng một lệnh `docker compose up` ở máy 
 ## Cấu trúc
 
 ```
-docker-compose.yml       Máy dev: postgres (pgvector), redis, minio, backend, worker, beat, grading-worker, frontend
+docker-compose.yml       Máy dev: postgres (pgvector), redis, storage (RustFS), backend, worker, beat, grading-worker, frontend
 docker-compose.prod.yml  VPS: thêm nginx + certbot, bỏ cổng DB, bỏ bind mount
 docker-compose.tunnel.yml  Overlay: thêm cloudflared, cho stack production một URL công khai
 .env.prod.example        Mẫu biến môi trường cho VPS
@@ -41,7 +41,7 @@ Lần đầu mất vài phút để build image. Sau đó:
 | http://localhost:8000/docs | Tài liệu API (tự tắt khi `ENV=production`) |
 | localhost:5432 | Postgres — dùng cho Alembic chạy từ venv trên host |
 | localhost:6379 | Redis |
-| http://minio.localhost:9000 | MinIO — storage S3 thay R2 trên máy dev (xem mục bên dưới) |
+| http://minio.localhost:9000 | Storage S3 (RustFS) — cùng server với production (xem mục bên dưới) |
 
 Tám service; bảy cái có healthcheck, nên `docker compose ps` phân biệt được "đang chạy" với "chạy được việc". Riêng `beat` không có, vì nó chỉ phát lịch chứ không nhận việc nên không trả lời `inspect ping` (lý do ghi trong compose). `backend` chỉ khởi động sau khi Postgres và Redis healthy; `frontend` chỉ khởi động sau khi backend trả `/api/v1/health`.
 
@@ -51,7 +51,7 @@ Mã nguồn `backend/` và `frontend/` được bind mount nên sửa file là r
 docker compose -f infra/docker-compose.yml up -d --build
 ```
 
-Xóa sạch dữ liệu (Postgres, Redis, MinIO) để dựng lại từ đầu — script khởi tạo extension chỉ chạy khi volume rỗng:
+Xóa sạch dữ liệu (Postgres, Redis, storage) để dựng lại từ đầu — script khởi tạo extension chỉ chạy khi volume rỗng:
 
 ```bash
 docker compose -f infra/docker-compose.yml down -v
@@ -87,31 +87,38 @@ docker compose -f infra/docker-compose.yml down -v
 docker compose -f infra/docker-compose.yml up -d --build backend worker
 ```
 
-## Object storage trên máy dev: MinIO thay cho R2
+## Object storage: RustFS, ở máy dev lẫn production
 
-Từ 18/09/2026, stack dev có thêm service `minio`: một server S3 chạy ngay trên máy, đứng thay Cloudflare R2. Các biến `R2_*` để trống trong `infra/.env` thì tự trỏ vào nó, nên upload video, avatar và transcript chạy được ngay trên một bản clone mới, không cần tài khoản nào. Code chỉ nói giao thức S3, không biết mình đang nói chuyện với MinIO hay R2. `docker-compose.prod.yml` **không** có MinIO; production vẫn dùng R2.
+Service `storage` là một server S3 (RustFS 1.0.1, ghim cả digest) chạy ngay trong stack. Production dùng **cùng server, cùng phiên bản**: R2 đòi khai thẻ thanh toán, nên quyết định ngày 05/10/2026 là tự host trên VPS. Lựa chọn được đưa ra bằng phép thử chạy chính adapter `R2Storage` của app trên các ứng viên ([docs/report/assets/phase-6/storage-decision.txt](../docs/report/assets/phase-6/storage-decision.txt)). Các biến `R2_*` để trống thì app tự trỏ vào service này, nên upload video, avatar và transcript chạy được ngay trên một bản clone mới, không cần tài khoản nào. Code chỉ nói giao thức S3, không biết mình đang nói chuyện với RustFS hay R2.
 
-| Thứ | Giá trị |
-|---|---|
-| API S3 | `http://minio.localhost:9000`, bucket `devpath-media` (đọc ẩn danh được, ghi phải có chữ ký) |
-| Xem bên trong bucket | Không có console web: bản MinIO cộng đồng bỏ console từ 2025, image vẫn truyền `--console-address :9001` nhưng không gì nghe ở đó (cổng 9001 trong compose từ 18/09 tới 02/10/2026 dẫn vào khoảng không). Dùng `mc` có sẵn trong container — lệnh ngay dưới bảng |
-| Dữ liệu | volume `minio_data`, còn nguyên qua các lần restart |
+Service một lần `storage-init` (`backend/scripts/init_storage.py`) chạy ở mỗi lần `up`. Nó tạo bucket `devpath-media`, cho khách **đọc** object (`s3:GetObject`) nhưng **không cho liệt kê** bucket (PDF chứng chỉ mang tên học viên), và ở máy dev thì mở CORS cho `http://localhost:3000`. Ghi và xóa luôn phải có chữ ký.
+
+| Thứ | Máy dev | Production |
+|---|---|---|
+| Địa chỉ | `http://minio.localhost:9000/devpath-media` | `https://<DOMAIN>/devpath-media` (nginx, cùng origin với site) |
+| Cổng của server | `127.0.0.1:9000` | không publish cổng nào |
+| CORS | mở cho `localhost:3000` | không cần (cùng origin) |
+| Khóa | `STORAGE_ACCESS_KEY` / `STORAGE_SECRET_KEY`, mặc định `devpath` / `devpath-storage` | bắt buộc trong `.env.prod`, sinh bằng `openssl rand -hex` |
+| Dữ liệu | volume `storage_data` | volume `storage_data`, **không** nằm trong backup (backup chỉ chứa CSDL) |
+| Console web | tắt (`RUSTFS_CONSOLE_ENABLE=false`) | tắt |
+
+Xem bên trong bucket bằng chính client của app:
 
 ```bash
-docker compose -f infra/docker-compose.yml exec minio sh -c 'mc alias set dev http://127.0.0.1:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc ls --recursive dev/devpath-media'
+docker compose -f infra/docker-compose.yml exec backend python -c "from app.services.storage import build_storage; [print(o.size, o.key) for o in build_storage().list_objects('')]"
 ```
 
-(Alias `local` có sẵn trong image không có khóa, nên `mc ls local/...` treo im lặng — phải khai alias như trên.)
+**Vì sao vẫn là `minio.localhost`:** URL ký sẵn chỉ hợp lệ cho đúng một host, và cùng một URL được cả trình duyệt lẫn worker dùng. Trình duyệt dùng nó để PUT file và phát video; worker dùng nó để tải bản gốc và đẩy HLS lên. Chrome và Edge tự đưa mọi `*.localhost` về `127.0.0.1`, nơi cổng 9000 được publish; trong mạng compose, cũng cái tên đó là alias của service. Một tên dùng được cho cả hai phía. Tên là của MinIO vì MinIO có trước, và các URL công khai dựng từ nó đã được lưu trong CSDL (`users.avatar_url`): đổi tên thì mọi avatar cũ hỏng. Hệ quả:
 
-**Vì sao là `minio.localhost` chứ không phải `minio`:** URL ký sẵn chỉ hợp lệ cho đúng một host, và cùng một URL được cả trình duyệt lẫn worker dùng. Trình duyệt dùng nó để PUT file và phát video; worker dùng nó để tải bản gốc và đẩy HLS lên. Chrome và Edge tự đưa mọi `*.localhost` về `127.0.0.1`, nơi cổng 9000 được publish; trong mạng compose, cũng cái tên đó là alias của service. Một tên dùng được cho cả hai phía. Hệ quả:
-
-- mở web bằng **Chrome/Edge** qua `http://localhost:3000`. CORS của MinIO chỉ mở cho đúng origin đó;
+- mở web bằng **Chrome/Edge** qua `http://localhost:3000`. CORS chỉ mở cho đúng origin đó;
 - **Trình phân giải của Windows không biết `*.localhost`**, nên script chạy bằng venv trên host không tới được storage. Script nào đụng storage thì chạy trong container: `docker compose exec worker python -m scripts.<tên>`;
-- cổng 9000 cố định, không đổi qua biến được, vì nó nằm trong URL đã ký và URL đã lưu. Cổng chỉ bind vào `127.0.0.1`, vì mật khẩu dev nằm ngay trong file compose.
+- cổng 9000 cố định, không đổi qua biến được, vì nó nằm trong URL đã ký và URL đã lưu. Cổng chỉ bind vào `127.0.0.1`, vì khóa dev nằm ngay trong file compose.
 
-**Image:** `bitnamilegacy/minio:2025.7.23-debian-12-r5`. MinIO đã ngừng phát hành image cho bản cộng đồng: `minio/minio` và `minio/mc` đã bị gỡ khỏi Docker Hub (kiểm tra 18/09/2026), `bitnami/minio` không còn tag nào. Bản Bitnami "legacy" này đông cứng từ tháng 8/2025 và không được cập nhật nữa. Chấp nhận được cho một server thay thế chỉ chạy local trên `127.0.0.1`, không chấp nhận được cho bất cứ chỗ nào khác. Nếu một ngày nó cũng biến mất, chỉ cần thay khối `minio:` trong compose bằng một server S3 khác; app không phải sửa gì.
+**Production đi cùng một đường như vậy, nhưng ở quy mô site.** `R2_ENDPOINT_URL` mặc định là `https://<DOMAIN>`, và trong mạng compose, `<DOMAIN>` là alias của nginx. Nhờ vậy API và worker gọi bucket bằng đúng URL chúng ký cho trình duyệt: qua nginx, qua TLS, rồi tới `storage`. nginx chỉ route `= /devpath-media` và `/devpath-media/` (`nginx/snippets/media.conf`), giữ nguyên header `Host` (đối chứng cho thấy thiếu dòng này thì mọi URL ký sẵn bị 403), cho phép thân request tới 2 GB, và gắn `Content-Security-Policy: sandbox` + `nosniff` lên mọi tệp do người dùng tải lên. Ảnh, video và hls.js không bị ảnh hưởng gì; còn một tệp lỡ bị mở như một trang thì không chạy được như site. CI đỏ nếu mất một trong các dòng đó. `deploy.sh` kết thúc bằng một lần gọi liệt kê bucket từ trong container backend.
 
-**Dùng R2 thật từ stack dev:** điền **đủ** các biến `R2_*`, kể cả `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com`. Để trống biến nào thì biến đó rơi về MinIO chứ không rơi về R2. Xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
+**Chuyển từ MinIO cũ (máy dev chạy stack trước 05/10/2026):** dữ liệu nằm ở volume `devpath_minio_data`, compose giờ không dùng nữa. Chép sang bằng `docs/report/assets/phase-6/rustfs-compose/migrate_dev_bucket.py` **trước khi** `up` bản compose mới (cách chạy ghi ở đầu tệp). Script đi qua API S3 từng object một và so lại từng byte. Xong thì `docker volume rm devpath_minio_data`.
+
+**Dùng R2 thật:** điền **đủ** các biến `R2_*`, kể cả `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com` và `R2_PUBLIC_BASE_URL`. Để trống biến nào thì biến đó rơi về storage cục bộ chứ không rơi về R2. Xem [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
 
 ## Worker chấm bài, và proxy đứng giữa nó với Docker
 
@@ -286,7 +293,7 @@ Một vấn đề phải thấy ở **2 lượt liên tiếp** mới báo (conta
 Service `backup` (`backup/devpath_backup.py`) dump CSDL mỗi đêm lúc `BACKUP_HOUR` giờ Việt Nam lên `BACKUP_BUCKET` và giữ `BACKUP_KEEP` bản mới nhất. Bốn quyết định đáng biết:
 
 - **Image dựng từ chính `pgvector/pgvector:pg16`** của service `postgres`, nên `pg_dump`/`pg_restore` luôn cùng major version với server: `pg_dump` cũ hơn server thì từ chối chạy, mới hơn thì viết ra bản mà server cũ có thể không đọc được — kiểu lỗi chỉ lộ ra vào đêm cần khôi phục. Đổi tag của hai service cùng lúc. Image gốc dừng bằng `SIGINT` (fast shutdown của Postgres); Dockerfile đặt lại `SIGTERM` cho Python.
-- **Bucket riêng, private.** Bucket media cho tải ẩn danh; bản dump chứa email và hash mật khẩu. Service từ chối nếu hai tên trùng nhau. Ở máy dev, `R2_*` trống thì nó ghi vào bucket `devpath-backups` của MinIO, tự tạo private.
+- **Bucket riêng, private.** Bucket media cho tải ẩn danh; bản dump chứa email và hash mật khẩu. Service từ chối nếu hai tên trùng nhau. Ở máy dev, `R2_*` trống thì nó ghi vào bucket `devpath-backups` của storage, tự tạo private. Ở production thì **không bao giờ**: storage nằm cùng máy với CSDL, nên backup phải ra ngoài (Backblaze B2, runbook mục 2c).
 - **Giữ theo số bản, không theo tuổi**: đồng hồ sai hay một tháng không có backup cũng không làm nó xóa bản cuối cùng. Chỉ xóa đúng object do chính nó đặt tên (`postgres/<db>-<giờ UTC>.dump`).
 - **Mỗi bản được đọc lại trước khi tải lên** (`pg_restore --list` phải thấy `alembic_version`) và mang sha256 trong metadata; khôi phục thì kiểm lại sha256.
 

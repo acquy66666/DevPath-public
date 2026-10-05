@@ -60,7 +60,7 @@ docker compose -f infra/docker-compose.yml up -d --wait
 | `-d` | Chạy nền, trả lại con trỏ dòng lệnh. Bỏ `-d` thì Ctrl+C sẽ tắt luôn cả stack |
 | `--wait` | **Chặn cho tới khi mọi healthcheck xanh.** Nhờ nó không phải ngồi gõ `ps` để đoán xem đã lên chưa |
 
-Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` + `minio` → chờ healthy → `backend`, `worker`, `beat`, `grading-worker` → chờ backend healthy → `frontend`.
+Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` + `storage` (rồi `storage-init` tạo bucket) → chờ healthy → `backend`, `worker`, `beat`, `grading-worker` → chờ backend healthy → `frontend`.
 
 ✅ Đạt khi lệnh tự thoát không báo lỗi. Khoảng 20–40 giây.
 
@@ -167,8 +167,8 @@ Câu nói kèm: mỗi test chạy trong một container dùng một lần — kh
 
 | Thứ | Chuyện gì xảy ra | Nói gì nếu bị hỏi |
 |---|---|---|
-| Nút "Chọn video để tải lên" | **Chạy được từ 18/09/2026** — file lên MinIO chạy trong stack dev, worker chuyển mã HLS xong trong vài giây. Mở bằng Chrome/Edge qua `localhost:3000` (không phải `127.0.0.1`) | Phần 6, câu 2 |
-| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Trên stack dev không bao giờ ra 503 `STORAGE_NOT_CONFIGURED` (để trống `R2_*` là rơi về MinIO). Nếu gặp ở production thiếu khóa R2 thì từ 19/09/2026 câu báo lỗi nói về ảnh đại diện, không còn nói về video | Phần 6, câu 3 |
+| Nút "Chọn video để tải lên" | **Chạy được từ 18/09/2026** — file lên storage S3 (RustFS) chạy trong stack, worker chuyển mã HLS xong trong vài giây. Mở bằng Chrome/Edge qua `localhost:3000` (không phải `127.0.0.1`) | Phần 6, câu 2 |
+| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Trên stack dev không bao giờ ra 503 `STORAGE_NOT_CONFIGURED` (để trống `R2_*` là dùng storage của stack). Nếu gặp ở production thiếu khóa R2 thì từ 19/09/2026 câu báo lỗi nói về ảnh đại diện, không còn nói về video | Phần 6, câu 3 |
 | Nút "Mua khóa học" ở khóa 499.000₫ | Nút mờ kèm dòng "Thanh toán đang được hoàn thiện" | **Đây là điểm cộng chứ không phải lỗi** — Phần 6, câu 4 |
 
 Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component tự trả về `null` khi thiếu `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true`. Đó là thiết kế có chủ đích để không mời người dùng bấm vào thứ chắc chắn lỗi — nên ở đây không có bẫy.
@@ -205,7 +205,7 @@ docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes fr
 > Dạ luồng OAuth Google em code xong rồi, có test tự động ở `backend/tests/api/test_google_auth.py`, gồm cả chống CSRF bằng cookie `state`. Trên máy demo em cố ý không bật vì client secret không được nằm trong repo. Hệ thống xử lý đúng: nút bị ẩn đi thay vì để thầy bấm rồi lỗi, còn gọi thẳng API thì trả 503 với mã `GOOGLE_OAUTH_NOT_CONFIGURED` chứ không phải 500.
 
 **2. "Em thử upload một video xem."**
-> Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên object storage nên file hàng trăm MB không đi qua FastAPI. Trên máy này storage là MinIO chạy trong Docker — cùng giao thức S3 với Cloudflare R2 mà bản production dùng, nên code không biết mình đang nói chuyện với bên nào; đổi sang R2 chỉ là đổi biến môi trường. (Em chưa gắn R2 thật vì Cloudflare bắt khai báo thẻ thanh toán.) Chữ ký còn khóa luôn loại file: PUT một file khác kiểu với cái đã khai thì MinIO trả 403.
+> Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên object storage nên file hàng trăm MB không đi qua FastAPI. Storage là RustFS — một server S3 tự host, chạy trong Docker cả ở máy này lẫn trên VPS; trên VPS nó nằm sau nginx, cùng origin với trang. Em chọn nó bằng cách cho chính code lưu trữ của app chạy thử 20 kiểm trên hai ứng viên, vì Cloudflare R2 bắt khai báo thẻ thanh toán. Code chỉ nói giao thức S3, nên đổi sang R2 chỉ là đổi biến môi trường. Chữ ký còn khóa luôn loại file: PUT một file khác kiểu với cái đã khai thì storage trả 403.
 
 **3. "Avatar với video dùng chung luồng upload à?"**
 > Dạ chung luồng presigned URL nên chung mã lỗi từ backend; từ 19/09/2026 mỗi màn hình tự chọn câu thông báo cho mã đó (`AVATAR_UPLOAD_MESSAGES` trong `frontend/lib/api/error-messages.ts`), nên người đổi ảnh không đọc thấy chữ "video" nữa. Về bảo mật thì key upload luôn bị kiểm tra phải nằm trong `avatars/<id-của-chính-mình>` trước khi gắn vào tài khoản, nên không gắn được file của người khác.

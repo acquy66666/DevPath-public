@@ -234,7 +234,7 @@ Kích thước đo ngày 19/09/2026.
 |---|---|---|
 | `postgres` | `pgvector/pgvector:pg16` (621 MB) | Database. Bản pgvector nên có sẵn kiểu vector |
 | `redis` | `redis:7-alpine` (57.8 MB) | Hàng đợi việc cho worker, cache gợi ý, kênh tiến độ chấm bài |
-| `minio` | `bitnamilegacy/minio` (399 MB) | Storage S3 thay Cloudflare R2 trên máy dev: video, ảnh đại diện. Xem `infra/README.md` |
+| `storage` | `rustfs/rustfs:1.0.1` | Storage S3 (RustFS), cùng server với production: video, ảnh đại diện, banner, transcript, PDF chứng chỉ. `storage-init` chạy một lần sau nó để tạo bucket và quyền đọc. Xem `infra/README.md` |
 | `backend` | `devpath-backend:dev` (1.1 GB) | API FastAPI, cổng 8000 |
 | `worker` | **cùng image với backend** | Celery, chạy việc nặng: chuyển mã video, nạp dữ liệu RAG, dựng gợi ý |
 | `beat` | **cùng image với backend** | Đồng hồ của Celery: đẩy job gợi ý lúc 03:00 mỗi đêm, không tự làm việc gì |
@@ -271,7 +271,7 @@ Container bị xóa là mất sạch những gì ghi bên trong nó. Nên dữ l
 ```
 devpath_postgres_data    toàn bộ database
 devpath_redis_data       hàng đợi việc, cache gợi ý
-devpath_minio_data       file đã upload: video gốc, HLS, ảnh đại diện
+devpath_storage_data     file đã upload: video gốc, HLS, ảnh đại diện, banner, transcript, PDF chứng chỉ
 ```
 
 Hệ quả thực tế cần nhớ:
@@ -293,7 +293,7 @@ Nhờ đó `depends_on` mới có nghĩa: backend chỉ khởi động **sau khi
 Thứ tự thực tế lúc `up -d`:
 
 ```
-redis + postgres + minio  →  (chờ healthy)  →  backend + worker + beat + grading-worker  →  (chờ backend healthy)  →  frontend
+redis + postgres + storage (→ storage-init)  →  (chờ healthy)  →  backend + worker + beat + grading-worker  →  (chờ backend healthy)  →  frontend
 ```
 
 ## 3.6 Bind mount — vì sao sửa backend là reload, frontend thì không

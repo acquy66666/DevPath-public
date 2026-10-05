@@ -1,0 +1,170 @@
+RUSTFS VÀO COMPOSE — DEV LẪN PRODUCTION
+Ngày: 05/10/2026 · nhánh feature/rustfs-compose
+Theo quyết định storage-decision.txt (cùng ngày). Máy: Docker Desktop, Engine
+29.7.2, Docker Compose 5.4.0. RustFS 1.0.1, ghim digest
+sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+(image đa kiến trúc amd64 + arm64).
+
+Kết quả gọn:
+  - Stack dev: MinIO Bitnami đóng băng → RustFS. 252 object cũ được chép sang,
+    so từng byte: 0 lệch. Smoke qua API 10/10, E2E luồng vàng xanh.
+  - Production (infra/docker-compose.prod.yml dựng thật trên máy dev):
+    12 service healthy. Smoke trong container 21/21, kiểm từ host qua cổng 443
+    đều đúng, Chrome thật tải 50 MB qua HTTP/2 → 200.
+  - Ba rủi ro mới do tự host, đã xử lý: nội dung người dùng tải lên nằm cùng
+    origin với site (CSP sandbox + nosniff), log của RustFS ghi ra tệp trong
+    container (đổi sang stdout), và tên `localhost` bên trong container.
+    Rủi ro thứ tư tách thành task riêng: URL ký sẵn không giới hạn kích thước.
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/scripts/init_storage.py (+ tests/test_init_storage.py, 11 test)
+  Service một lần `storage-init` chạy script này ở mỗi lần `up`. Nó tạo
+  bucket `devpath-media` và đặt policy chỉ cho phép `s3:GetObject` ẩn danh
+  trên object (không có ListBucket). CORS chỉ bật khi STORAGE_CORS_ORIGINS
+  khác rỗng (dev: localhost:3000); production rỗng thì xóa luật CORS còn lại.
+  Script hỏi `head_bucket` trước rồi mới tạo, vì RustFS trả 200 khi tạo lại
+  một bucket đã có (lần đầu log ghi "created" trên một bucket đang chứa 251
+  object).
+
+infra/docker-compose.yml (dev)
+  Service `storage` (RustFS) thay `minio`. Giữ cổng 127.0.0.1:9000 và alias
+  `minio.localhost`, vì URL công khai đã lưu trong CSDL (users.avatar_url)
+  chứa tên này. Thêm `storage-init`. Khóa đổi từ MINIO_ROOT_* sang
+  STORAGE_ACCESS_KEY / STORAGE_SECRET_KEY (mặc định devpath / devpath-storage).
+  Volume đổi từ minio_data sang storage_data.
+
+infra/docker-compose.prod.yml
+  - `storage`: không publish cổng, có healthcheck `/health/live`, console tắt,
+    log ra stdout.
+  - `storage-init`: không bật CORS.
+  - backend và worker chờ `storage-init` chạy xong.
+  - R2_* mặc định trỏ vào https://${DOMAIN} và https://${DOMAIN}/devpath-media.
+    Khóa STORAGE_* bắt buộc: thiếu thì compose dừng với câu báo lỗi rõ ràng
+    (đã thử).
+  - nginx có thêm network alias ${DOMAIN}, để từ trong mạng compose, gọi
+    https://${DOMAIN} là tới thẳng nginx.
+
+infra/nginx/snippets/media.conf + templates/default.conf.template
+  Thêm hai location: `= /devpath-media` và `/devpath-media/`. Bên trong:
+    include proxy.conf (giữ Host) → storage:9000
+    client_max_body_size 2g, không buffer request
+    Content-Security-Policy "sandbox; default-src 'none'" + security headers
+  Chỉ bucket này được route; không có bucket nào khác, không có API quản trị.
+
+infra/backup/devpath_backup.py (+7 test → 43)
+  - Ở dev, backup dự phòng về `http://storage:9000` (dùng khóa STORAGE_*).
+    Ở production thì không bao giờ: storage nằm cùng máy với CSDL.
+  - Region dùng để ký lấy từ endpoint của B2 (s3.<region>.backblazeb2.com),
+    vì B2 từ chối mọi region khác; mặc định vẫn là "auto".
+
+infra/scripts/deploy.sh
+  Thêm bước cuối: từ trong container backend, liệt kê bucket bằng client của
+  app. Lệnh này đi trọn đường thật: alias → nginx → TLS → storage, ký bằng
+  khóa của app.
+
+CI (deploy-config)
+  - `.env.prod` dựng từ example giờ được điền thêm STORAGE_*.
+  - Bước nginx đỏ nếu media.conf mất include proxy.conf hoặc mất CSP sandbox,
+    nếu proxy.conf thôi chuyển Host, hoặc nếu không còn đúng hai location media.
+    Đối chứng: bỏ sandbox → đỏ; bỏ Host → đỏ.
+
+==============================================================================
+2. STACK DEV
+==============================================================================
+Chép dữ liệu cũ (rustfs-compose/migrate_dev_bucket.py, log migrate.log):
+  devpath-backups: copied 1 objects, 589351 bytes; verified 1 -> 0 mismatches
+  devpath-media: copied 251 objects, 4822702 bytes; verified 251 -> 0 mismatches
+  (so key + kích thước + md5 nội dung + Content-Type của từng object)
+  Volume cũ `devpath_minio_data` VẪN CÒN trên máy. Chưa xóa, để user tự xóa
+  khi đã yên tâm: `docker volume rm devpath_minio_data`.
+
+`docker compose up -d --wait --remove-orphans`: thoát 0. `storage-init` thoát
+(0) không làm `--wait` hỏng (Compose 5.4). Job E2E của CI dùng chính lệnh này.
+
+dev_smoke.py qua API thật (log dev-smoke.log): 10/10
+  - CORS preflight từ localhost:3000 → 200, allow-origin đúng; từ origin lạ
+    → không có allow-origin.
+  - PUT lên URL ký sẵn → 200; API nhận avatar; GET ẩn danh → 200, image/png.
+  - Liệt kê ẩn danh → 403 (cả ?list-type=2 lẫn /); PUT/DELETE không ký → 403.
+
+Dữ liệu cũ phục vụ được qua đúng đường người dùng đi: 3 banner trang chủ trả
+200 image/png; PDF của một chứng chỉ cấp trước đó trả 200 application/pdf qua
+API (20.329 B).
+
+E2E luồng vàng (frontend/e2e/golden-flow.spec.ts, Chrome): 1 passed (30,2 s).
+
+==============================================================================
+3. PRODUCTION — DỰNG THẬT TRÊN MÁY DEV
+==============================================================================
+Project `devpath-prodtest`, .env.prodtest tạm (secret ngẫu nhiên,
+BACKUP_ENABLED=false, DOCKER_GID=0), DOMAIN=devpath.localhost, chứng chỉ tự
+ký vào volume letsencrypt. Một tệp override chỉ dùng cho lần diễn tập này đặt
+AWS_CA_BUNDLE cho backend và worker; trên máy chủ thật, chứng chỉ Let's
+Encrypt không cần bước này. Dỡ bằng `down -v` và đã xóa .env.prodtest.
+
+KHÔNG dùng DOMAIN=localhost như các lần diễn tập trước: trong container,
+`localhost` luôn trỏ về chính container đó (/etc/hosts), nên alias ${DOMAIN}
+→ nginx không bao giờ được dùng. Tên miền thật, hoặc `*.localhost` khác
+`localhost`, thì đi qua Docker DNS.
+
+`up -d --wait`: 12 service healthy; grading-workspace và storage-init thoát 0.
+storage-init: "devpath-media already there; anonymous GetObject only;
+no CORS (same origin)".
+Bước kiểm storage mới của deploy.sh: chạy được từ backend lẫn từ worker.
+
+prod_smoke.py trong container backend (log prod-smoke.log): 21/21
+  - app ký cho đúng origin của site: https://devpath.localhost/devpath-media
+  - đăng ký qua nginx 201; PUT cùng origin lên URL ký sẵn 200; API nhận avatar
+  - GET ẩn danh 200 image/png; có CSP "sandbox; default-src 'none'"; nosniff;
+    HSTS; Range 206
+  - liệt kê ẩn danh 403 / 403; PUT không ký 403; DELETE không ký 403
+  - PUT lên /devpath-backups rơi vào app (404), không tới storage: không
+    bucket nào khác được route
+  - PUT 100 MB qua nginx: 200 (phần còn lại của site giới hạn ở 2m)
+  - download_file, upload_file multipart, upload/read_bytes, list_objects,
+    delete_keys: tất cả qua alias → nginx → TLS
+
+Từ host, qua cổng 443 đã publish (curl --resolve devpath.localhost:443:127.0.0.1):
+  GET object      HTTP 200, Content-Type text/plain; charset=utf-8,
+                  Content-Security-Policy: sandbox; default-src 'none',
+                  X-Content-Type-Options: nosniff, HSTS
+  liệt kê ẩn danh 403        PUT không ký 403
+
+Chrome thật, HTTP/2 (rustfs-compose/browser-upload.cjs, log browser-upload.log):
+  {"put":200,"seconds":"1.0","range":206,"rangeBytes":16,"protocols":["h2"],"page":"h2"}
+  fetch PUT 50 MB lên URL ký sẵn từ ngay trong trang → 200 trong 1,0 s, rồi đọc
+  lại bằng Range → 206.
+
+Log: `docker logs` của storage có 19 dòng JSON; /logs trong container chỉ có
+4 KB. Mặc định của image thì ngược lại (đã đo trước: 3 dòng ở docker logs,
+mọi thứ còn lại vào tệp không xoay vòng).
+
+Chạy lại phép thử chọn server (storage-decision/run.sh rustfs, giờ ghim cùng
+digest với compose; log spike-rerun.log): 20/20.
+
+==============================================================================
+4. RỦI RO MỚI DO TỰ HOST, VÀ CÁCH XỬ LÝ
+==============================================================================
+a) Cùng origin với app. Một tệp người dùng tải lên, nếu bị mở như một trang,
+   sẽ chạy với tư cách của site. API chỉ ký các loại ảnh/video/văn bản/PDF/
+   HLS (SVG bị loại có chủ đích), và Content-Type nằm trong chữ ký; thêm vào
+   đó, nginx gắn `sandbox` + `nosniff` cho mọi phản hồi media. `<img>`,
+   `<video>` và hls.js không bị ảnh hưởng (CSP trên tài nguyên phụ bị bỏ qua).
+   CI giữ hai dòng này.
+b) Log ghi ra tệp trong container: đổi sang stdout (mục 3).
+c) `localhost` trong container: ghi vào runbook diễn tập (mục 3).
+d) URL ký sẵn không giới hạn kích thước. Với R2 thì chỉ tốn tiền; trên VPS
+   thì làm đầy đĩa (và Postgres chết). nginx chặn mỗi request ở 2 GB, nhưng
+   không chặn được nhiều request. Đã tách thành task riêng: ký Content-Length
+   vào URL (cả ba nơi xin URL đều đã khai `size_bytes`). Monitor trên host báo
+   khi đĩa còn dưới 10 %.
+
+==============================================================================
+5. CÒN CHO MÁY CHỦ THẬT
+==============================================================================
+- Backup lên Backblaze B2: cần user tạo tài khoản (không thẻ), bucket private
+  và application key (runbook mục 2c). Lần đầu có B2 sẽ kiểm bằng
+  healthcheck của service backup, rồi `infra/scripts/restore-db.sh`.
+- deploy.sh tự kiểm đường storage ở mỗi lần deploy.

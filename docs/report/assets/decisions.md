@@ -734,3 +734,11 @@ Thực hiện quyết định storage cùng ngày. Bằng chứng: `docs/report/
 
 **Dev giữ tên `minio.localhost`** — URL công khai đã nằm trong `users.avatar_url`; đổi tên host thì phải viết migration dữ liệu, mà không được gì.
 
+
+## Chốt phạm vi trước khi đóng băng (05/10/2026)
+
+User chốt hai câu hỏi mà lượt rà kho bằng chứng còn để ngỏ (`docs/report/assets/README.md` mục 3.4 và 5).
+
+**Phụ đề video bị cắt** (mục cắt giảm số 2 của kế hoạch) — đề cương §5.1 mục 3 có hứa phụ đề, nhưng player chỉ có tiến độ và tốc độ phát. Tệp `.srt`/`.txt` giảng viên tải lên vẫn được lưu cạnh video và vẫn nuôi trợ giảng AI. Thứ bị cắt chỉ là hiển thị nó thành `<track>` trên player. Cái giá: học viên không bật được phụ đề. Chương 6 ghi vào phần hạn chế; nếu làm tiếp thì chỉ cần đổi SRT sang WebVTT và thêm `<track>`.
+
+**Chứng chỉ giữ kiểu Udemy: bài nào cũng tự đánh dấu hoàn thành được, kể cả quiz và bài code** — chứng chỉ xác nhận học viên đã đi hết khóa, không xác nhận đã đạt từng bài kiểm tra. Đã ghi nhận ở lượt `/security-review` 01/10 (`phase-6/security-review-codebase.txt` §5) là mức dưới ngưỡng, chờ chốt. Cái giá: lấy được chứng chỉ mà không cần qua quiz hay được AC, trong khi trang xác thực `/cert/{code}` là công khai. Báo cáo phải nói rõ chứng chỉ chứng nhận điều gì. Tự đánh dấu cũng được +10 XP của bài học và được tính một ngày vào chuỗi, như mọi bài khác. Còn phần thưởng thêm cho quiz đạt (+20) và bài code AC (+30) thì chỉ đến từ làm bài thật.

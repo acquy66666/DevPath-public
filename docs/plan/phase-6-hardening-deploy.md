@@ -61,7 +61,8 @@ Từ đợt rà tồn đọng 18/09 ([don-no-2026-09-18.md](don-no-2026-09-18.md
     - mọi mục của bảng skill đều có tệp, trừ URL demo trên VPS;
     - đã bổ sung: `decisions.md` (thiếu toàn bộ Phase 5 + 5 mục Phase 6), chỉ mục `phase-6/README.md`, `phase-6/schema-final.sql` (41 bảng), `phase-6/test-summary.md` (số test từng bộ trên CI + coverage);
     - phát hiện 65 ảnh giao diện sai font → task mới "Chụp lại bộ ảnh giao diện" ở trên;
-    - phụ đề video (đề cương §5.1 mục 3, mục cắt giảm số 2) chưa làm mà chưa ghi nhận là cắt — cần chốt.
+    - phụ đề video (đề cương §5.1 mục 3, mục cắt giảm số 2) chưa làm mà chưa ghi nhận là cắt → **user chốt cắt** 05/10;
+    - chứng chỉ vẫn cấp khi tự đánh dấu hoàn thành bài quiz/code (treo từ 01/10) → **user chốt giữ kiểu Udemy** 05/10.
 
     Tick sau **lượt cuối**, khi bằng chứng VPS đã có.
 - [ ] Tag git `phase-6-done` — mốc code hoàn chỉnh dùng để viết báo cáo

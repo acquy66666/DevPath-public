@@ -175,6 +175,9 @@ Frontend/hạ tầng:
     chạy với mọi loại bài, kể cả quiz và bài code → nhận chứng chỉ công khai mà
     không cần làm đạt. Nút "Đánh dấu hoàn thành" có cho mọi loại bài nên có vẻ là
     chủ đích kiểu Udemy — CẦN CHỐT: chứng chỉ có nên đòi đạt quiz/AC không.
+    → Chốt 05/10/2026 (user): GIỮ kiểu Udemy, không đổi code. Chứng chỉ xác nhận
+      đã đi hết khóa, không xác nhận đã đạt — decisions.md § Chốt phạm vi trước
+      khi đóng băng.
   - VNPay sandbox trên máy chủ công khai: ai cũng "trả tiền" được bằng thẻ test công
     khai của VNPay → mọi khóa trả phí thực chất miễn phí. Chấp nhận cho demo khóa
     luận; ghi vào lưu ý triển khai.

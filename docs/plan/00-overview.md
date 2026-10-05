@@ -35,4 +35,11 @@
 
 1. MoMo (giữ VNPay) → 2. Phụ đề video → 3. Wishlist → 4. Banner quản trị → 5. Leaderboard (giữ XP + streak) → 6. Upvote Q&A (giữ Q&A cơ bản)
 
+**Đã cắt:**
+
+- Mục 1 — MoMo, cắt 01/10/2026 (ghi ở [phase-5](phase-5-commerce-admin.md)).
+- Mục 2 — phụ đề video, user chốt cắt ngày 05/10/2026. Tệp `.srt` giảng viên tải lên vẫn được giữ và dùng cho trợ giảng AI; player chỉ không hiển thị nó thành phụ đề.
+
+Mục 3–6 đều đã làm.
+
 **Không bao giờ cắt:** 3 điểm nhấn ⭐ (sandbox grading, recommender, RAG chatbot) — đây là giá trị khoa học của khóa luận.

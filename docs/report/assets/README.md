@@ -74,7 +74,7 @@ Giao diện cũng đã đổi sau 02/10 (header, trang chi tiết khóa học, �
 |---|---|---|---|
 | 1 | Đăng ký/đăng nhập, OAuth Google, JWT | `phase-2/luong-hoc-vien-qua-https.txt`, `phase-6/security-*.txt` | `e2e/01` (đăng ký). **Google: chưa có ảnh nào** — chờ tên miền |
 | 2 | Duyệt & tìm kiếm khóa học | `phase-2/luong-gate-qua-tunnel.txt` | `ux/08`, `ux/10` (ảnh ghép) |
-| 3 | Video HLS, tiến độ, tốc độ, **phụ đề** | `phase-2/phase2-04-player-tunnel.png` (312 s), `phase-4/dev-storage-minio.txt` | **không có**. **Phụ đề chưa làm** — xem 3.4 |
+| 3 | Video HLS, tiến độ, tốc độ, **phụ đề** | `phase-2/phase2-04-player-tunnel.png` (312 s), `phase-4/dev-storage-minio.txt` | **không có**. **Phụ đề: cắt** (user chốt 05/10, xem 3.4) |
 | 4 | Nộp code, chấm sandbox realtime ⭐ | `phase-3/*`, `phase-6/e2e-golden-flow.txt` | `e2e/06` |
 | 5 | Quiz có tính giờ | `phase-4/quiz-demo.txt` | không có |
 | 6 | Chatbot RAG ⭐ | `phase-4/chatbot-demo.txt`, `chat-ui.txt` | không có |
@@ -93,7 +93,7 @@ Giao diện cũng đã đổi sau 02/10 (header, trang chi tiết khóa học, �
 | 19 | Dashboard toàn sàn | `phase-5/dashboards.txt`, `admin-dashboard.txt` | không có |
 | 20 | Danh mục, banner, mã giảm giá toàn sàn | `phase-5/admin-dashboard.txt` | không có |
 
-Mọi tính năng (trừ phụ đề) đều có bằng chứng chạy thật. Chỗ thiếu là ảnh: **chỉ 4/20 có ảnh đúng font dùng được ngay**, và **7 màn hình chưa từng được chụp ở bất kỳ phase nào** (ghi chú/bookmark, Q&A cả hai phía, thông báo, XP + bảng xếp hạng, wishlist, trang người dùng/báo cáo của admin).
+Mọi tính năng (trừ phụ đề, đã cắt) đều có bằng chứng chạy thật. Chỗ thiếu là ảnh: **chỉ 4/20 có ảnh đúng font dùng được ngay**, và **7 màn hình chưa từng được chụp ở bất kỳ phase nào** (ghi chú/bookmark, Q&A cả hai phía, thông báo, XP + bảng xếp hạng, wishlist, trang người dùng/báo cáo của admin).
 
 ### 3.3. Đã sửa trong lượt này
 
@@ -106,7 +106,7 @@ Mọi tính năng (trừ phụ đề) đều có bằng chứng chạy thật. C
 
 ### 3.4. Phạm vi: một tính năng của đề cương chưa làm mà chưa được ghi nhận là cắt
 
-Đề cương §5.1 mục 3 hứa "phụ đề". Player có chọn tốc độ phát nhưng **không hiển thị phụ đề** (`frontend/components/learn/video-player.tsx` không có `<track>`). Đây là mục **cắt giảm số 2** trong [`00-overview.md`](../../plan/00-overview.md). Nhưng khác MoMo (mục số 1, ghi rõ "cắt ngày 01/10"), chưa chỗ nào ghi phụ đề là đã cắt, trong khi các mục cắt giảm 3–6 đều đã làm. Cần chốt một trong hai (mục 5).
+Đề cương §5.1 mục 3 hứa "phụ đề". Player có chọn tốc độ phát nhưng **không hiển thị phụ đề** (`frontend/components/learn/video-player.tsx` không có `<track>`). Đây là mục **cắt giảm số 2** trong [`00-overview.md`](../../plan/00-overview.md). Nhưng khác MoMo (mục số 1, ghi rõ "cắt ngày 01/10"), chưa chỗ nào ghi phụ đề là đã cắt, trong khi các mục cắt giảm 3–6 đều đã làm. **User chốt cắt ngày 05/10**: đã ghi vào `00-overview.md` và `decisions.md` § Chốt phạm vi trước khi đóng băng.
 
 ## 4. Thứ tự với task "Gỡ dữ liệu tương tác giả lập"
 
@@ -129,7 +129,7 @@ Gỡ theo đúng thứ tự README là **study → sales → cart → coupons �
 
 **Chờ bên ngoài:** IPN thật của VNPay → bổ sung log đã che vào `phase-5/vnpay-e2e.txt`.
 
-**Cần user chốt** (ảnh hưởng chương 4 và mục hạn chế ở chương 6):
+**Đã chốt 05/10** (ảnh hưởng chương 4 và mục hạn chế ở chương 6; ghi ở `decisions.md` § Chốt phạm vi trước khi đóng băng):
 
-1. **Phụ đề video**: ghi nhận là cắt (mục cắt giảm số 2, như MoMo), hay làm? Tệp `.srt` đã lưu cạnh video từ Phase 4, nên làm thì chủ yếu là đổi sang WebVTT + `<track>` (ước nửa ngày). Phase 6 vẫn còn trước mốc đóng băng.
-2. **Tự đánh dấu hoàn thành bài quiz/code vẫn được cấp chứng chỉ** (`phase-6/security-review-codebase.txt` §5, "CẦN CHỐT" từ 01/10): giữ kiểu Udemy, hay chứng chỉ đòi quiz đạt/AC?
+1. **Phụ đề video: cắt** (mục cắt giảm số 2, như MoMo). Tệp `.srt` vẫn lưu và vẫn nuôi trợ giảng AI, chỉ không hiển thị trên player.
+2. **Chứng chỉ giữ kiểu Udemy**: tự đánh dấu hoàn thành bài quiz/code vẫn được tính (`phase-6/security-review-codebase.txt` §5). Chứng chỉ xác nhận đã đi hết khóa, không xác nhận đã đạt từng bài.

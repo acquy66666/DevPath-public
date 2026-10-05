@@ -549,3 +549,11 @@ Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/sse-through
 **Đo ở phía client, kèm đối chứng âm, thay vì đọc cấu hình** — "nginx có buffer không" là câu hỏi về hành vi, nên đo thời điểm từng sự kiện được đọc khỏi socket (HTTP/1.1 và Chrome thật qua HTTP/2), rồi tạm ép nginx buffer để chứng minh phép đo thấy được kiểu hỏng cần loại trừ.
 
 **Chỉ chặn trong CI thứ đã đo là hỏng** — bỏ qua `X-Accel-Buffering` thì dồn cục (đã đo), nên CI đỏ nếu config có nó. Gzip trên event-stream thì đo ra vô hại, nên không cấm, dù nhiều hướng dẫn khuyên tắt.
+
+## Địa chỉ gốc của site trong image frontend (05/10/2026)
+
+Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/site-url.txt`.
+
+**Nướng `https://${DOMAIN}` vào lúc build, không đọc lúc chạy** — `metadataBase` cần URL tuyệt đối, và trang được prerender lúc build sẽ chốt giá trị của lúc build; một biến server-only đọc lúc chạy chỉ đúng với trang render động, sai im lặng với trang tĩnh nào sau này thêm URL tương đối. Cái giá là image mang tên miền ở phía server (bundle trình duyệt vẫn không — nguyên tắc Phase 2 giữ nguyên), nhưng `deploy.sh` vốn build lại mỗi lần chạy nên đổi tên miền chỉ là "sửa `.env.prod`, deploy".
+
+**Build thiếu biến thì hỏng, không rơi về localhost** — lỗi này không làm trang nào hỏng, chỉ crawler và ứng dụng chat thấy, nên mặc định im lặng chính là thứ đã giấu nó từ Phase 2. Kiểm đặt trước `next build` để hỏng sau 0,2 s. CI build image frontend qua chính compose prod thay vì `docker build` trần — bước cũ vốn build một image khác image chạy thật.

@@ -456,6 +456,86 @@ Task "Hybrid blend + fallback" của Phase 4 tuần 10. Bằng chứng: `docs/re
 
 **`sources` đi tới tận API.** "Cả hai nửa đều gợi ý khóa này" là điều hệ lai tồn tại để nói được; một hệ lai không nói được nửa nào đã lên tiếng thì không ai kiểm được.
 
+## Phase 5 — Commerce, Gamification & Admin
+
+*Bổ sung 05/10/2026 trong lượt rà kho bằng chứng: các quyết định dưới đây đã được ghi khi làm (23/09–30/09), nhưng chỉ trong ghi chú task của [`docs/plan/phase-5-commerce-admin.md`](../../plan/phase-5-commerce-admin.md) và mã nguồn, chưa có trong tệp này. Bằng chứng: `docs/report/assets/phase-5/`.*
+
+### Giỏ hàng, coupon (23/09)
+
+**Giỏ chỉ nhận thứ mua được, wishlist nhận mọi khóa** — giỏ từ chối khóa đã ghi danh (409), khóa mình dạy (409), khóa không trên sàn (404), vì từ giỏ có tiền được trả. Wishlist không dẫn tới thanh toán nên không cần những luật đó.
+
+**`cart_items` không có cột giá** — giỏ luôn hiện giá hiện tại; giá chỉ đóng băng ở `order_items.unit_price` lúc tạo đơn. Khóa rời sàn thì rời giỏ nhờ bộ lọc `published` nằm trong chính câu truy vấn, dòng vẫn còn trong bảng. Cái giá: giỏ không phân trang, nên có trần `MAX_CART_ITEMS = 50`.
+
+**Mọi thao tác giỏ trả về cả cái giỏ** — một cú bấm cập nhật cùng lúc chuông, tổng tiền và nút, không có trạng thái lệch nhau giữa ba chỗ.
+
+**Gõ mã không tiêu lượt; lượt trừ lúc đơn được trả tiền bằng `UPDATE … WHERE used_count < max_uses`** — đọc rồi mới ghi thì hai lần thanh toán cùng đọc được 99 và cùng ghi 100. Điều kiện nằm trong chính câu UPDATE, CHECK `ck_coupons_uses_left` là lớp sàn. Cái giá: chưa biểu diễn được giới hạn theo từng người, vì chưa có bảng redemption.
+
+**Phần trăm được làm tròn tới đồng trên số tiền giảm, không trên tổng** — cổng thanh toán nhận số nguyên, và "tạm tính − giảm giá = tổng" trên màn hình phải cộng khớp.
+
+**Phần giảm được chia cho từng dòng ngay lúc tạo đơn (`order_items.discount`, 24/09)** — coupon giới hạn một khóa không được trừ vào doanh thu của khóa khác trong cùng đơn. Phạm vi coupon sửa được sau khi bán, nên không thể chia lại về sau. Chia theo tỉ lệ giá, làm tròn xuống tới đồng, đồng dư dồn cho dòng có phần dư lớn nhất. Đơn cũ được migration chia lại theo đúng luật ấy; code được chép vào migration chứ không import.
+
+### Thanh toán VNPay (24/09)
+
+**Chỉ IPN được quyền nói là đã trả tiền** — trình duyệt quay về từ ngân hàng mang đúng các tham số ấy, nhưng người dùng sửa được chúng. Trang kết quả chỉ lấy mã đơn rồi hỏi lại API mỗi 3 giây, tối đa 90 giây, vì IPN tới sau cú chuyển trang vài giây.
+
+**Ghi `payment_events` trước khi phán xét, kể cả callback sai chữ ký** — `order_id` nullable để giữ được cả callback không khớp đơn nào. Lúc có tranh chấp, log append-only là thứ duy nhất nói được VNPay đã gửi gì.
+
+**Thứ tự kiểm cố định:** chữ ký → tìm đơn (`01`) → khớp tiền (`04`) → đơn còn `pending` (`02`) → `vnp_ResponseCode` **và** `vnp_TransactionStatus` đều là `00`. Chống trùng bằng `SELECT … FOR UPDATE` cộng partial unique `uq_orders_provider_txn`, vì VNPay gửi lại IPN tới khi nhận được `00`.
+
+**Một transaction cho cả chuỗi:** log → `paid` → ghi danh → trừ lượt coupon → bỏ khóa đã mua khỏi giỏ. Coupon hết lượt giữa chừng thì **vẫn tính đơn**, vì tiền đã chuyển; khi đó `orders.coupon_id` là bản ghi thật về việc mã đã được dùng.
+
+**Chữ ký dựng ở đúng một chỗ (`canonical()`); test ghim chuỗi canonical viết tay từ đặc tả** — test mà dựng chuỗi bằng chính code đang kiểm thì sai cùng với code. Cái giá: đổi đặc tả là phải viết tay lại chuỗi mẫu.
+
+**MoMo bị cắt (01/10)** — đây là mục cắt giảm số 1. MoMo vướng cùng loại chặn từ bên ngoài như VNPay (merchant cộng IPN công khai), mà một cổng đã đủ cho gate.
+
+### Dashboard giảng viên (24/09)
+
+**Không bảng mới, không cache — mọi số là một phép gộp lúc đọc** — ở quy mô này một phép gộp trên `orders`/`enrollments` đủ nhanh, và không có bảng thống kê nào để lệch khỏi dữ liệu gốc. Cái giá: nếu sàn lớn lên thì truy vấn chậm dần theo số đơn. Doanh thu = `unit_price − discount` của đơn `paid`, theo `paid_at`, chưa trừ phí sàn.
+
+**Gom ngày bằng tên vùng `Asia/Ho_Chi_Minh`, không bằng `'+07:00'`** — `AT TIME ZONE '+07:00'` được Postgres đọc theo quy ước POSIX thành UTC−7. Test bắt được cả hai cách sai.
+
+**Biểu đồ cột HTML tự dựng, không thêm thư viện chart** — chỉ cần hai biểu đồ cột. Tự dựng thì có tooltip, điều hướng bằng phím mũi tên và nút "Xem dạng bảng" cho trình đọc màn hình, mà không thêm dependency nào.
+
+### XP, chuỗi ngày học, bảng xếp hạng (28/09)
+
+**`xp_events` là sổ cái append-only và là nguồn chân lý của XP** — "lần đầu" được bảo đảm bằng unique `uq_xp_events_ref` + `ON CONFLICT DO NOTHING`, ghi trong **cùng transaction** với lúc hoàn thành bài/verdict. Làm lại không được cộng hai lần, và rollback thì không còn XP mồ côi. Chỉ người có ghi danh mới được XP, nên giảng viên làm thử khóa mình vẫn được chấm nhưng không có XP.
+
+**Ngày vào chuỗi là ngày Việt Nam có *nộp* một thứ; chuỗi bị cắt lúc đọc, không có job nửa đêm** — xem video không tính, nộp quiz trượt thì có tính. Ngày được cập nhật bằng một câu upsert có `WHERE last_active_date < ngày`. Không có job nửa đêm nên không có gì quên chạy.
+
+**Bảng xếp hạng là *view* của `xp_events` trên Redis sorted set, và tự lành** — điểm chỉ được đẩy sau commit: ghi tạm vào `session.info`, rollback thì bỏ. Bảng được dựng lại khi thiếu marker, mỗi đêm 03:30 và bằng script; dựng vào key tạm rồi `RENAME`. Redis lỗi thì chỉ ghi log, vì XP vẫn nằm đủ trong Postgres.
+
+**Client Redis đồng bộ, gọi qua `asyncio.to_thread`** — API và worker Celery (mỗi job một event loop) dùng chung được một client. Đồng hạng theo kiểu thi đấu (1, 2, 2, 4), tính bằng `ZCOUNT` các điểm lớn hơn hẳn.
+
+### Chứng chỉ PDF (29/09)
+
+**Cấp chứng chỉ trong cùng transaction với lúc khóa học chuyển sang hoàn thành, còn PDF thì vẽ sau commit bằng Celery** — chứng chỉ không thể tồn tại mà khóa học chưa hoàn thành, còn việc vẽ PDF (WeasyPrint, mất vài giây) không giữ transaction. Chưa có PDF thì endpoint tải trả 409 và đẩy lại job. Bỏ tick bài học không thu hồi chứng chỉ.
+
+**Đóng băng tên người học, tựa khóa và tên giảng viên lúc cấp** (thêm 3 cột so với đặc tả) — chứng chỉ là lời xác nhận tại một thời điểm, không được đổi theo khi người học đổi tên hay khóa học bị đổi tựa.
+
+**Mã 16 ký tự từ bảng 32 ký tự không gây nhầm (80 bit), có CHECK định dạng** — mã được gõ lại từ bản in (hiển thị thành 4 nhóm, nhận cả chữ thường và gạch ngang), nên bảng chữ bỏ `I`, `O`, `0`, `1`.
+
+### Hỏi đáp và thông báo (29/09)
+
+**Chỉ upvote: `qa_votes` bỏ cột `value` của đặc tả** — một dòng là một phiếu (unique mỗi người), người hỏi không tự vote. Số phiếu, số trả lời và "có giảng viên trả lời" đều tính lúc đọc bằng subquery, không có cột đếm nào để lệch.
+
+**Huy hiệu "giảng viên trả lời" được quyết lúc viết** (`is_instructor_reply` = người viết là giảng viên của khóa) — admin không mang huy hiệu. Giảng viên không ghi danh được khóa của mình nên trả lời ở hộp thư `/giang-day/hoi-dap`, không ở trang học.
+
+**Thông báo ghi cùng transaction với sự kiện; payload là ảnh chụp** (id + tiêu đề + tên người) — câu chữ và link do frontend dựng từ `type` + `payload`. Thêm một loại thông báo là ba chỗ (danh sách type, migration đổi CHECK, một nhánh `describe()`), còn backend không phải dịch gì.
+
+**Chuông không dùng WebSocket** — hỏi số chưa đọc mỗi 60 giây và khi cửa sổ được focus lại; dropdown chỉ tải danh sách khi mở. Một kênh realtime thứ hai không đáng với một con số thay đổi vài lần mỗi ngày.
+
+### Quản trị (30/09)
+
+**Bỏ hẳn cờ `AUTO_APPROVE_COURSES`; chỉ lúc duyệt mới xếp ingest RAG + nhúng khóa học, sau commit** — kho chatbot và recommender chỉ được chứa khóa đã công khai. Gate xác nhận 14 bề mặt công khai đều 404 hoặc không liệt kê khóa đang chờ duyệt.
+
+**Quyết định của admin đóng mọi báo cáo đang chờ trên cùng nội dung; "gỡ nội dung" chạy cùng transaction** — khóa học bị đưa về `draft` chứ không xóa mềm, nên giảng viên sửa rồi gửi duyệt lại được. Đánh giá bị gỡ thì rating được tính lại.
+
+**Khóa tài khoản = `locked_at` + thu hồi mọi refresh token ngay lúc khóa** — kiểm access token vốn đã đọc `locked_at` (từ Phase 2), nên khóa có hiệu lực ngay ở request kế tiếp chứ không đợi token hết hạn. Khóa người dùng không gỡ nội dung của họ, và admin không khóa được admin.
+
+**DAU suy từ dấu vết ở các bảng vốn đã ghi, không thêm bảng hay ghi gì mỗi request** — gồm `refresh_tokens` (đăng nhập và mỗi lần mở lại phiên), tiến độ, XP, quiz, nộp code, chat, Q&A, ghi chú, đơn hàng, ghi danh. Cái giá: người chỉ đọc mà không mở phiên mới trong ngày thì không được tính.
+
+**Mã giảm giá toàn sàn bất biến ở phần mã; kết thúc sớm = `valid_to = now`; mã đã dùng không xóa được** — đơn cũ phải giữ được bản ghi của mã đã áp vào nó.
+
 ## Rà soát bảo mật (01/10/2026)
 
 Task 1 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/security-review.txt`.
@@ -505,6 +585,68 @@ Task 4 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/load-test.md`.
 **Thư mục workspace chấm bài được chown bởi một service compose chạy một lần, không phải một bước trong runbook** — lỗi chỉ lộ trên máy trắng, nên bước tay là bước sẽ bị quên đúng lần nó quan trọng. Một container root chạy `chown` rồi thoát, chỉ mount đúng thư mục đó; worker vẫn uid 10001.
 
 **Mỗi lượt đo kèm một mốc hiệu chuẩn trước và sau** — lượt đầu chậm gấp năm vì Docker Desktop đang bận (sau build, và vì chính vòng `docker stats` đang ghi CPU); không có mốc thì đã kết luận sai rằng frontend bão hòa ở 25 người. Thay vòng `docker stats` liên tục bằng một ảnh giữa mỗi mức.
+
+## Sửa bug UX tồn đọng (02/10/2026)
+
+Task 5 của Phase 6. Bằng chứng: `docs/report/assets/phase-6/ux-polish.txt` + `ux/`. *(Mục này và bốn mục 02/10 kế tiếp được bổ sung 05/10, trong lượt rà kho bằng chứng.)*
+
+**Đo tràn ngang thay vì nhìn ước** — một script Playwright mở 47 trang × 2 bề rộng dưới 5 vai và so `scrollWidth` với `clientWidth`: trước sửa 14/94 lượt xem bị tràn, sau sửa 0/94. Header được đo từng phần tới khi vừa máy 360 px; lần sửa đầu chỉ ước lượng nên vẫn rộng 379 px.
+
+**Trang chi tiết khóa học là lưới 3 phần tử (đầu trang | thẻ giá | phần còn lại)** — trên điện thoại thẻ giá lên ngay dưới tên giảng viên (trước đó ở y ≈ 1.700 px), trên màn rộng vẫn là cột phải dính. Một component ở một chỗ trong DOM, không phải hai bản ẩn/hiện theo bề rộng.
+
+**Ảnh bìa dự phòng là gradient nhạt, mỗi khóa một màu cố định (băm id)** — trình soạn chưa có chỗ tải ảnh bìa, mà thêm chỗ tải là tính năng mới, trái với đóng băng. Tô theo danh mục thì 9 khóa cùng danh mục thành một hàng y hệt nhau, nên đổi sang tô theo khóa.
+
+## Proxy cho Docker socket (02/10/2026)
+
+Task nợ sandbox của Phase 6. Bằng chứng: `docs/report/assets/phase-6/docker-socket-proxy.txt`.
+
+**Tự viết proxy đọc body, không dùng proxy có sẵn** — các proxy có sẵn lọc theo endpoint. Runner cần `POST /containers/create`, mà mở endpoint đó là mở luôn create có `Privileged` + bind `/`. Nguy hiểm nằm trong body nên phải đọc body: Python thư viện chuẩn, ~600 dòng, đủ nhỏ để đọc hết.
+
+**Danh sách cho phép chép từ lưu lượng thật của CLI; mọi trường khác phải ở giá trị zero** — trường Docker thêm về sau bị chặn tới khi có người quyết nó vô hại. Cái giá: đổi một cờ trong `runner/sandbox.py` mà quên `proxy/policy.py` thì mọi bài nộp thành SE. Điều này đã ghi vào skill `sandbox-grading`.
+
+**Quyền sở hữu container xét bằng nhãn do daemon xác nhận, không bằng tên** — sau khi inspect, CLI đổi sang ID 64 hex nên tên không đủ. Proxy tự inspect trước mỗi thao tác, và đó là phần lớn chi phí đo được (~4 %/lượt chấm).
+
+**Proxy là container duy nhất cầm socket, trên mạng internal chỉ chung với worker** — CI đỏ nếu service khác mount socket. Worker bị chiếm giờ chỉ tạo được đúng loại sandbox mà học viên nào cũng tạo được bằng cách nộp bài.
+
+## Backup CSDL tự động (02/10/2026)
+
+Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/db-backup-restore.txt`.
+
+**Service compose, không crontab trên host** — nằm trong repo, `up` là có, VPS reboot là tự lên; không có bước tay nào trên máy chủ để quên.
+
+**Image dựng từ chính image của Postgres** — `pg_dump` luôn cùng major version với server. Lệch version là loại lỗi chỉ lộ vào đúng đêm cần khôi phục; Debian bookworm/trixie chỉ có client 15/17.
+
+**Bucket riêng, private; service từ chối nếu trùng bucket media** — bucket media cho đọc ẩn danh, còn bản dump chứa email và hash mật khẩu của mọi người dùng.
+
+**Giữ 14 bản theo số, không theo tuổi** — đồng hồ sai hay một tháng không chạy cũng không làm nó xóa bản cuối cùng.
+
+**Khôi phục vào CSDL phụ rồi đổi tên, không ghi đè CSDL đang chạy** — site vẫn chạy trong lúc khôi phục; app chỉ dừng ~20 giây lúc đổi tên, và bản cũ được cất lại để quay lui.
+
+**Production không có nơi lưu thì service unhealthy và `deploy.sh` dừng** — muốn chạy không backup phải ghi rõ `BACKUP_ENABLED=false`. Im lặng không backup là lỗi không ai thấy cho tới lúc cần.
+
+## Giám sát tối thiểu (02/10/2026)
+
+Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/monitoring.txt`.
+
+**Log là json-file xoay vòng (5 × 10 MB, nén) cho mọi service; không dựng Loki/ELK** — mặc định của Docker là giữ log không giới hạn, mà với một VPS thì `docker compose logs` là đủ. CI đỏ nếu service mới quên gắn anchor. Cái giá: container bị thay khi deploy mang log theo, nên phải đọc log trước khi deploy lại.
+
+**Monitor chạy trên host bằng systemd timer, không trong container** — đọc health của container là nói chuyện với Docker daemon, mà compose giữ cam kết chỉ một container cầm socket.
+
+**Kiểm cả danh mục khóa học qua nginx, không chỉ `/health`** — `/health` cố ý không chạm CSDL, nên tắt Postgres mà trang chủ và `/health` vẫn 200 (đã diễn tập). Hỏi qua `127.0.0.1:443` với SNI thật để TLS và định tuyến nằm trong đường đi.
+
+**Báo qua ntfy, sau 2 lượt liên tiếp, có tin "đã ổn lại", nhắc mỗi 6 giờ** — không cần tài khoản. Container bị thay lúc deploy không phải là sự cố. Uptime nhìn từ bên ngoài (cả máy chết) là UptimeRobot, không phải cron của GitHub Actions: 5 phút một lần tốn gấp ~3 lần hạn mức phút của gói Pro.
+
+**nginx tự reload mỗi 6 giờ** — certbot gia hạn tệp chứng chỉ, nhưng không có gì bảo nginx đọc lại. Không deploy trong 90 ngày thì site sẽ phục vụ chứng chỉ hết hạn. Lỗi tìm ra lúc thiết kế monitor.
+
+## Chạy trên máy trắng (02/10/2026)
+
+Task vận hành của Phase 6. Bằng chứng: `docs/report/assets/phase-6/fresh-machine.txt`.
+
+**README chỉ đòi Git + Docker; mọi lệnh migrate/seed chạy trong container** — README cũ hỏng ở bước thứ ba trên máy trắng (không có `.venv`, thiếu bước migrate).
+
+**Đối chiếu biến môi trường bằng script trong CI, không bằng đọc** — `check_env_examples.py` so ba tệp compose/example/`Settings` và bắt được một lỗi production thật: compose prod không truyền `VNPAY_*`, nên thanh toán trên VPS sẽ luôn 503.
+
+**Gỡ dữ liệu demo sai thứ tự thì dừng kèm hướng dẫn, không xóa gì** — đơn hàng không bao giờ bị script xóa, nên `seed_interactions --purge` khi còn đơn của `seed_sales` sẽ từ chối và in thứ tự đúng.
 
 ## Tiến độ chấm khi không có WebSocket (04/10/2026)
 

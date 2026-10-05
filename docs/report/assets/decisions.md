@@ -570,3 +570,13 @@ Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/refresh-lee
 
 **30 giây, chỉnh được qua biến môi trường** — đủ cho độ lệch giữa hai tab và cho một lần retry, và là mặc định của Okta cho cùng loại khoảng ân hạn này.
 
+## Storage cho production (05/10/2026)
+
+Task nợ của Phase 6. Bằng chứng: `docs/report/assets/phase-6/storage-decision.txt`.
+
+**Tự host media, backup ra ngoài máy** — R2 đòi thẻ, mà kế hoạch giữ hạ tầng 0đ. Hai thứ có yêu cầu ngược nhau. Media cần phát video với egress không giới hạn chặt: VPS đáp ứng được (Azure miễn phí 100 GB/tháng, Oracle 10 TB), còn B2 chỉ miễn phí egress tới 3 lần dung lượng lưu. Backup thì phải nằm *ngoài* máy chủ: B2 đủ (10 GB không cần thẻ, chỉ cần chứa vài MB × 14 bản).
+
+**Chọn server bằng code của chính app** — 20 kiểm chạy bằng `R2Storage` + boto3 đúng bản đã khóa, qua nginx có TLS. boto3 ≥ 1.36 từng làm hỏng nhiều server S3 tương thích ở phần checksum, và thứ đó không đọc ra được từ tài liệu. RustFS và SeaweedFS đều 20/20. Chọn RustFS vì nó cấu hình bằng biến môi trường + bucket policy, đúng mô hình MinIO mà stack dev đang dùng, và nhanh hơn 6 lần khi tải video. SeaweedFS giữ làm dự phòng đã chứng minh.
+
+**Cùng origin thay vì subdomain** — trình duyệt PUT cùng origin nên không có preflight CORS, không cần thêm DNS hay chứng chỉ, và server S3 không mở cổng nào ra ngoài. Đổi lại, nginx phải chuyển nguyên `Host`: đối chứng cho thấy thiếu dòng đó thì mọi URL ký sẵn bị 403.
+

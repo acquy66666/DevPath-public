@@ -4,6 +4,8 @@ Cần cho task **upload video** (Phase 2) và dùng lại cho avatar, phụ đ�
 
 Toàn bộ phần này bạn phải tự làm: nó liên quan tới tài khoản và khóa bí mật, tôi không tạo hộ được. Xong bước 6 thì dán giá trị vào `infra/.env` (bước 7) là chạy được — code phía server đã xong và đã kiểm thử.
 
+> **Cập nhật 05/10/2026 — production mặc định không dùng R2.** Quyết định storage của Phase 6 là tự host RustFS trên VPS, cùng origin qua nginx, vì R2 đòi thẻ (`docs/report/assets/phase-6/storage-decision.txt`). Hướng dẫn này giữ lại cho trường hợp có ngày khai thẻ: R2 vẫn chạy được mà chỉ cần đổi cấu hình, và là lựa chọn tốt hơn khi có thẻ (egress 0 đồng, có CDN).
+
 > **Cập nhật 18/09/2026 — máy dev không cần R2 nữa.** Stack dev có sẵn MinIO: để trống mọi `R2_*` là upload chạy được ngay, xem mục "Object storage trên máy dev" trong [infra/README.md](../infra/README.md). Hướng dẫn này giờ dành cho production (Phase 6), hoặc khi muốn thử R2 thật từ stack dev. Trường hợp sau thì phải điền **cả** `R2_ENDPOINT_URL=https://<account id>.r2.cloudflarestorage.com`, vì để trống thì nó rơi về MinIO.
 
 ---

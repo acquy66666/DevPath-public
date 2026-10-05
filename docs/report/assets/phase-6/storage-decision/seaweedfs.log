@@ -1,0 +1,24 @@
+== seaweedfs: chrislusf/seaweedfs@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+PASS  presigned URL is path-style on the site's own origin  (https://spike-front/devpath-media/avatars/055587c5/a.png)
+PASS  browser PUT to the presigned URL  (HTTP 200)
+PASS  same URL with another Content-Type is refused  (HTTP 403)
+PASS  unsigned PUT is refused  (HTTP 403)
+PASS  unsigned DELETE is refused  (HTTP 403)
+PASS  anonymous GET of the public URL  (HTTP 200, image/png)
+PASS  Content-Type kept from the signed upload  (image/png)
+PASS  Range request (video players seek)  (HTTP 206, 1024 B)
+PASS  anonymous listing refused: GET /devpath-media?list-type=2  (HTTP 403)
+PASS  anonymous listing refused: GET /devpath-media/  (HTTP 403)
+PASS  missing key is not a 200  (HTTP 404)
+PASS  60 MB original video through nginx  (HTTP 200, 3.0 s)
+PASS  download_file (transcode worker)
+PASS  upload_file, 20 MB = multipart (HLS output)
+PASS  playlist served with a playlist type  (application/vnd.apple.mpegurl)
+PASS  segment served whole  (20971520 B)
+PASS  upload_bytes + read_bytes (transcript)
+PASS  list_objects (orphan sweep)  (4 objects)
+PASS  delete_keys = DeleteObjects (orphan sweep)  (refused [], left 0)
+PASS  delete_prefix (avatar replaced)
+
+seaweedfs: 0 failed
+== memory after the run: 448.9MiB / 7.756GiB

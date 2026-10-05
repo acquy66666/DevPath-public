@@ -41,8 +41,23 @@ ENV NODE_ENV=production
 # for a deployment where the API lives somewhere else.
 ARG NEXT_PUBLIC_API_BASE_URL=
 ARG NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=false
+
+# The site's own address cannot be left to the page's origin the same way: it
+# is metadataBase in app/layout.tsx, which turns every relative canonical and
+# Open Graph URL into the absolute one a crawler or a chat app reads out of
+# <head>. Only server code reads it, so the browser bundle still names no
+# domain -- but the server bundle does, and deploy.sh rebuilds on every run, so
+# a new DOMAIN takes effect on the next deploy. No default, and no building
+# without it: the fallback in layout.tsx is localhost, and an image that falls
+# back to it advertises http://localhost:3000 on every page it serves.
+ARG NEXT_PUBLIC_SITE_URL=
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL \
-    NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=$NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED
+    NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=$NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL
+RUN case "$NEXT_PUBLIC_SITE_URL" in \
+      http://?*|https://?*) ;; \
+      *) echo "NEXT_PUBLIC_SITE_URL must be the site's absolute address (https://<domain>), got '$NEXT_PUBLIC_SITE_URL'. docker-compose.prod.yml passes it from DOMAIN." >&2; exit 1 ;; \
+    esac
 
 COPY . .
 RUN npm run build

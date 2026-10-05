@@ -183,7 +183,7 @@ Ba chi tiết trong luồng này đáng nhớ vì chúng là **quyết định t
 
 Frontend gọi backend bằng **hai địa chỉ khác nhau**: Server Component gọi `http://backend:8000` (tên service trong mạng Docker), còn trình duyệt gọi `http://localhost:8000`. Trình duyệt không phân giải được tên `backend`. Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía đó; [`frontend/lib/api/client.ts`](../frontend/lib/api/client.ts) chọn theo `typeof window`.
 
-Trên VPS thì trình duyệt bỏ hẳn địa chỉ: `NEXT_PUBLIC_API_BASE_URL` để rỗng, nghĩa là "cùng origin với trang", và nginx định tuyến `/api` về backend. Điều này quan trọng hơn vẻ ngoài của nó — biến `NEXT_PUBLIC_*` bị nướng vào bundle lúc build, nên nếu để tên miền ở đó thì đổi tên miền là phải build lại image. Để rỗng thì một bản build chạy trên mọi URL.
+Trên VPS thì trình duyệt bỏ hẳn địa chỉ: `NEXT_PUBLIC_API_BASE_URL` để rỗng, nghĩa là "cùng origin với trang", và nginx định tuyến `/api` về backend. Điều này quan trọng hơn vẻ ngoài của nó — biến `NEXT_PUBLIC_*` bị nướng vào bundle lúc build, nên nếu để tên miền ở đó thì đổi tên miền là phải build lại image. Để rỗng thì một bản build chạy trên mọi URL. Thứ duy nhất phải nướng tên miền là phía server: `NEXT_PUBLIC_SITE_URL` (`metadataBase` trong `app/layout.tsx`) để canonical và thẻ Open Graph là URL tuyệt đối — compose prod truyền `https://${DOMAIN}`, thiếu thì Dockerfile từ chối build.
 
 ---
 

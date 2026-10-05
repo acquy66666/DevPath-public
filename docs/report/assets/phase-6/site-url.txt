@@ -1,0 +1,118 @@
+ĐỊA CHỈ GỐC CỦA SITE TRONG IMAGE FRONTEND PRODUCTION (metadataBase)
+Ngày: 05/10/2026 · nhánh feature/site-url
+Máy: Docker Desktop, Engine 29.7.2, image build bằng chính `infra/docker-compose.prod.yml`
+
+Kết luận: lỗi thật, đã sửa. Trước 05/10 image production in
+`http://localhost:3000/...` vào `<link rel="canonical">` và `og:url` của mọi
+trang có URL tương đối trong metadata, vì `metadataBase` (`frontend/app/layout.tsx`)
+đọc `NEXT_PUBLIC_SITE_URL` mà compose prod lẫn Dockerfile đều không truyền.
+Giờ compose prod truyền `https://${DOMAIN}` làm build arg, và Dockerfile **từ
+chối build** production nếu biến đó rỗng hoặc không phải URL tuyệt đối — vì
+mặc định localhost là kiểu hỏng không ai thấy (trang vẫn chạy, chỉ crawler và
+ứng dụng chat đọc thẻ head mới thấy).
+
+==============================================================================
+1. CÁCH ĐO
+==============================================================================
+Hai image, cùng Dockerfile tầng deps, khác đúng bản sửa:
+
+  trước  `git archive origin/main:frontend | docker build --target production -`
+         (y như bước CI cũ: `docker build --target production frontend`, không arg)
+  sau    `docker compose -f docker-compose.prod.yml --env-file <.env.prod.example
+         điền secret giả> build frontend` — DOMAIN=devpath.example.com, đúng
+         cách `deploy.sh` và bước CI mới build
+
+Mỗi image chạy trong mạng compose dev (`--network devpath_default`,
+`API_BASE_URL_INTERNAL=http://backend:8000`) để Server Component lấy được
+khóa học thật, rồi `curl` ba trang và lọc thẻ head có URL tuyệt đối. Cuối cùng
+grep cây `.next/` bên trong container: `static/` là thứ trình duyệt tải về,
+`server/` là thứ chỉ Node đọc.
+
+==============================================================================
+2. TRƯỚC — image từ origin/main
+==============================================================================
+## GET /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+<link rel="canonical" href="http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau"/>
+<meta property="og:site_name" content="DevPath"/>
+<meta property="og:url" content="http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau"/>
+## GET /khoa-hoc
+<link rel="canonical" href="http://localhost:3000/khoa-hoc"/>
+## GET /khoa-hoc?q=python
+<link rel="canonical" href="http://localhost:3000/khoa-hoc?q=python"/>
+## client bundle (.next/static) naming a domain:
+0
+## server bundle (.next/server) files with each address:
+localhost:3000  1
+devpath.example.com  0
+
+→ Một trang khóa học chia sẻ lên Facebook/Zalo sẽ trỏ về localhost:3000 của
+  người bấm; Google sẽ coi URL thật là bản sao của một URL không tồn tại.
+
+==============================================================================
+3. SAU — image build qua compose prod
+==============================================================================
+## GET /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+<link rel="canonical" href="https://devpath.example.com/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau"/>
+<meta property="og:site_name" content="DevPath"/>
+<meta property="og:url" content="https://devpath.example.com/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau"/>
+## GET /khoa-hoc
+<link rel="canonical" href="https://devpath.example.com/khoa-hoc"/>
+## GET /khoa-hoc?q=python
+<link rel="canonical" href="https://devpath.example.com/khoa-hoc?q=python"/>
+## client bundle (.next/static) naming a domain:
+0
+## server bundle (.next/server) files with each address:
+localhost:3000  0
+devpath.example.com  1
+
+→ Tên miền nằm trong đúng một tệp phía server (chunk của root layout), không
+  có trong bundle trình duyệt. Nguyên tắc Phase 2 "bundle trình duyệt không
+  mang tên miền" (`phase-2/bundle-khong-ten-mien.txt`) vẫn giữ: `/api` vẫn gọi
+  tương đối cùng origin. Cái giá: image mang tên miền ở phía server, nên đổi
+  DOMAIN phải build lại — `deploy.sh` vốn build lại mỗi lần chạy, nên thực tế
+  là "đổi `.env.prod`, chạy deploy".
+
+==============================================================================
+4. BUILD THIẾU BIẾN BỊ TỪ CHỐI
+==============================================================================
+$ docker build --target production frontend                  → exit 1
+  NEXT_PUBLIC_SITE_URL must be the site's absolute address (https://<domain>),
+  got ''. docker-compose.prod.yml passes it from DOMAIN.
+
+$ docker build --target production --build-arg NEXT_PUBLIC_SITE_URL=devpath.me frontend
+                                                              → exit 1
+  ... got 'devpath.me'. ...      (tên miền trần, thiếu scheme: `new URL()` sẽ
+                                  ném lỗi lúc build, hoặc tệ hơn, hiểu sai)
+
+Kiểm nằm **trước** `COPY . .` và `next build`, nên build hỏng sau ~0,2 s chứ
+không phải sau vài phút. Image `development` (stack dev) không đi qua tầng
+`build` nên không bị ảnh hưởng; `npm run build` trần (job frontend của CI)
+vẫn rơi về localhost như cũ — đó là build kiểm lỗi, không phải image chạy thật.
+
+==============================================================================
+5. CI GIỜ CHẶN CẢ BA KIỂU HỎNG
+==============================================================================
+Job deploy-config, bước "Frontend production image builds" đổi từ
+`docker build --target production frontend` (không arg nào — tức là đã build
+một image khác image production) sang `docker compose -f docker-compose.prod.yml
+--env-file .env.prod build frontend`. Bước mới "Frontend image carries the
+site URL, server side only":
+
+  1. `https://<DOMAIN của .env.prod>` phải có trong `.next/server` của image
+  2. và không có trong `.next/static`
+  3. `docker build --target production` không arg phải hỏng, đúng câu báo lỗi
+
+Chạy thử đoạn shell đó trên máy dev:
+  CI step logic: pass (https://devpath.example.com)
+  control: before-image fails the check, as it should
+(đối chứng âm: image "trước" trượt đúng kiểm 1.)
+
+`infra/scripts/check_env_examples.py` (đếm cả build arg) vẫn xanh:
+  ✓ env examples match the code (10 dev, 12 production services)
+
+==============================================================================
+6. CÒN LẠI CHO MÁY CHỦ THẬT
+==============================================================================
+Kiểm lần nữa trên tên miền thật khi deploy lần đầu: `curl -s https://<DOMAIN>/khoa-hoc
+| grep canonical` phải ra `https://<DOMAIN>/khoa-hoc`. Không có gì khác để làm
+— giá trị đến thẳng từ `DOMAIN`, thứ nginx và chứng chỉ cũng dùng.

@@ -126,13 +126,13 @@ Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại c�
 
 | Biến | Cách lấy |
 |---|---|
-| `DOMAIN` | Tên miền trần, không `https://`, không dấu `/` cuối |
+| `DOMAIN` | Tên miền trần, không `https://`, không dấu `/` cuối. Ngoài nginx/backend, nó còn được nướng vào image frontend lúc build thành `https://<DOMAIN>` — địa chỉ gốc của canonical và thẻ Open Graph |
 | `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
 | `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev hoặc ngắn hơn 32 ký tự |
 | `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. `docker-proxy` chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker (worker chấm bài không cầm socket, nó đi qua proxy) |
 
-`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Riêng địa chỉ API thì không: trình duyệt gọi `/api` cùng origin với trang, nên image không mang tên miền nào và đổi tên miền không cần build lại.
+`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Địa chỉ API thì không nướng vào đâu cả: trình duyệt gọi `/api` cùng origin với trang. Còn `DOMAIN` thì có — phía server của image frontend cần nó để in canonical/Open Graph tuyệt đối — nhưng `deploy.sh` luôn build lại, nên đổi `DOMAIN` rồi deploy là đủ.
 
 Redirect URI đăng ký ở Google Cloud Console phải khớp từng ký tự:
 
@@ -321,7 +321,8 @@ Kiểm bằng mắt, theo đúng thứ tự của gate Phase 2:
 3. `/khoa-hoc` hiện 4 khóa học đã seed
 4. Đăng ký một tài khoản → enroll một khóa miễn phí → xem video vài giây → **tải lại trang** → player quay về đúng chỗ đang dở
 5. `https://<DOMAIN>/api/docs` trả **404** — tài liệu API tự tắt khi `ENV=production`
-6. `systemctl list-timers devpath-monitor.timer` có lượt kế tiếp trong vòng một phút, `python3 monitor/devpath_monitor.py status` báo "Không có vấn đề nào", và tin `test-alert` đã tới điện thoại (mục 4b)
+6. `curl -s https://<DOMAIN>/khoa-hoc | grep -o '<link rel="canonical"[^>]*>'` ra `https://<DOMAIN>/khoa-hoc` — không phải `localhost:3000` (`docs/report/assets/phase-6/site-url.txt`)
+7. `systemctl list-timers devpath-monitor.timer` có lượt kế tiếp trong vòng một phút, `python3 monitor/devpath_monitor.py status` báo "Không có vấn đề nào", và tin `test-alert` đã tới điện thoại (mục 4b)
 
 Chụp màn hình các bước trên vào `docs/report/assets/phase-2/`; đó là bằng chứng cho chương 4 và chương 5 của báo cáo.
 

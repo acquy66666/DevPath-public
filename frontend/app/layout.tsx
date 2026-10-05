@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   // Every relative canonical and Open Graph URL below is resolved against this,
   // so a page never has to know the site's own address. Set explicitly rather
   // than left to Next's localhost guess, which it warns about at build time.
+  // Inlined by `next build`; the production image refuses to build without it
+  // (frontend/Dockerfile), so the localhost fallback is for development only.
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
   ),

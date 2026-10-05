@@ -53,7 +53,7 @@ Cùng stack production ấy, thêm một service `cloudflared` (`infra/docker-co
 
 ### Một chỗ chưa đúng, đã biết
 
-`frontend/app/layout.tsx` đặt `metadataBase` từ `NEXT_PUBLIC_SITE_URL`, mặc định `http://localhost:3000`. Trên tunnel thì canonical và thẻ Open Graph trỏ về localhost. Chỉ ảnh hưởng metadata SEO, không ảnh hưởng chức năng; sửa khi có tên miền thật ở Phase 6.
+`frontend/app/layout.tsx` đặt `metadataBase` từ `NEXT_PUBLIC_SITE_URL`, mặc định `http://localhost:3000`. Trên tunnel thì canonical và thẻ Open Graph trỏ về localhost. Chỉ ảnh hưởng metadata SEO, không ảnh hưởng chức năng; sửa khi có tên miền thật ở Phase 6. → **Đã sửa 05/10/2026**: compose prod truyền `https://${DOMAIN}` lúc build, Dockerfile từ chối build nếu thiếu (`docs/report/assets/phase-6/site-url.txt`).
 
 ### Lỗi phát hiện được nhờ buổi tổng duyệt
 

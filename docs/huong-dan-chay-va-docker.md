@@ -262,7 +262,7 @@ Vì vậy chuỗi kết nối trong `docker-compose.yml` viết là `@postgres:5
 
 Hai biến `API_BASE_URL_INTERNAL` và `NEXT_PUBLIC_API_BASE_URL` tách đúng hai phía đó; `frontend/lib/api/client.ts` chọn theo `typeof window`.
 
-Trên máy chủ thì **trình duyệt không cần địa chỉ nào cả**: nginx định tuyến `/api` về backend ngay trên origin của trang, nên `NEXT_PUBLIC_API_BASE_URL` để rỗng và client gọi đường dẫn tương đối. Nhờ vậy image frontend không mang tên miền nào — cùng một bản build chạy được trên URL tunnel, tên miền thật, hay một địa chỉ IP trần.
+Trên máy chủ thì **trình duyệt không cần địa chỉ nào cả**: nginx định tuyến `/api` về backend ngay trên origin của trang, nên `NEXT_PUBLIC_API_BASE_URL` để rỗng và client gọi đường dẫn tương đối. Nhờ vậy bundle trình duyệt không mang tên miền nào — cùng một bản build chạy được trên URL tunnel, tên miền thật, hay một địa chỉ IP trần. Phía server thì có một địa chỉ: `NEXT_PUBLIC_SITE_URL` = `https://${DOMAIN}`, gốc để in canonical và thẻ Open Graph tuyệt đối (thiếu nó image production từ chối build, vì mặc định là `localhost:3000`). Chạy trên URL khác thì canonical vẫn trỏ về tên miền thật — đúng ý nghĩa của canonical.
 
 ## 3.4 Dữ liệu sống ở đâu
 

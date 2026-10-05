@@ -407,12 +407,15 @@ services:
         # No API URL on purpose: empty means "same origin as the page", and
         # nginx routes /api to the backend on that origin. So the browser never
         # makes a cross-site request, the refresh cookie is not third-party,
-        # and -- because NEXT_PUBLIC_* is inlined at build time -- the image
-        # carries no domain and need not be rebuilt when the domain changes.
+        # and -- because NEXT_PUBLIC_* is inlined at build time -- the browser
+        # bundle carries no domain.
         #
-        # This one does have to be right at build time, and a rebuild is the
-        # only way to change it.
+        # These two do have to be right at build time, and a rebuild is the
+        # only way to change them (deploy.sh rebuilds on every run). The site
+        # URL is what canonical and Open Graph URLs are resolved against; the
+        # image refuses to build without it rather than fall back to localhost.
         NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED: ${GOOGLE_LOGIN_ENABLED:-false}
+        NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
     image: devpath-frontend:prod
     restart: unless-stopped
     logging: *logging

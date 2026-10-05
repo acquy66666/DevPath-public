@@ -34,7 +34,7 @@ Tệp này ghi **lượt rà soát kho** theo gate cuối Phase 6 ("mở `docs/r
 
 | Mục chương 5 | Tệp | Ghi chú |
 |---|---|---|
-| Test coverage, tổng hợp test | `phase-6/test-summary.md` | số test từng bộ trên CI 05/10 + coverage backend đo một lần |
+| Test coverage, tổng hợp test | `phase-6/test-summary.md`, `phase-6/coverage-backend.txt` | 2.239 ca tự động trên CI 05/10, 0 đỏ; coverage backend 94,5 % (dòng 95,4 %, nhánh 88,8 %) |
 | Benchmark chấm bài | `phase-3/benchmark.md`, `phase-6/load-test.md` (lớp 20 người), `phase-6/docker-socket-proxy.txt` (chi phí proxy ~4 %) | số trên VPS 2 vCPU: chờ |
 | Bảo mật sandbox | `phase-3/attack-tests.txt`, `sandbox-image.txt`, `runner-core.txt`, `oom-classification.txt`, `phase-6/docker-socket-proxy.txt` | |
 | Bảo mật ứng dụng | `phase-6/security-review.txt`, `security-review-codebase.txt`, `refresh-leeway.txt` | |

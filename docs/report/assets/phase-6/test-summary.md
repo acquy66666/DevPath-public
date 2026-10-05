@@ -63,7 +63,34 @@ Ngoài pytest, CI còn **kiểm cấu hình** — các bước đỏ nếu đi�
 
 ## 4. Coverage backend (đo một lần, 05/10/2026)
 
-*(điền sau khi lượt đo chạy xong)*
+**94,5 %** (dòng + nhánh gộp) trên `backend/app/`: 95,4 % dòng (8.587/9.006), 88,8 % nhánh (1.248/1.406). Đo bằng coverage.py 7.13.5 (`--branch`), chạy cả bộ backend trong container dev, trên CSDL + Redis dev, commit `5ac1c3c` (mã `app/` giống `0bae373` của CI). Báo cáo đầy đủ từng tệp kèm số dòng chưa chạy: `coverage-backend.txt`.
+
+| Gói | Câu lệnh | Dòng | Nhánh | Gộp |
+|---|---|---|---|---|
+| `app/services` (business logic) | 5.268 | 96,1 % | 89,8 % | 94,9 % |
+| `app/api` (router) | 1.081 | 97,2 % | 78,9 % | 96,6 % |
+| `app/schemas` | 1.326 | 99,1 % | 85,7 % | 98,3 % |
+| `app/models` | 662 | 93,5 % | — | 93,5 % |
+| `app/core` | 279 | 93,2 % | 86,4 % | 92,3 % |
+| `app/workers` (Celery) | 376 | 70,7 % | 78,3 % | 71,6 % |
+| **Tổng** | **9.006** | **95,4 %** | **88,8 %** | **94,5 %** |
+
+**Lần đo đầu ra 83,4 % và đó là con số sai.** Coverage.py mặc định chỉ theo dõi luồng thường. SQLAlchemy async thì chạy phần đồng bộ bên trong greenlet, nên tracer mất dấu khung hàm sau mỗi `await session.…`. Ví dụ: `list_tree` trong `services/categories.py` có test gọi qua `GET /categories`, nhưng các dòng 78–83 ngay sau `await session.scalars(…)` bị báo là chưa chạy, và cả tệp chỉ được 53 %. Đo lại với `--concurrency=greenlet,thread` thì tệp đó lên 98 %, tổng lên 94,5 %. Ai đo lại coverage cho dự án này **phải bật cờ đó**.
+
+Chỗ coverage thấp nhất, và phần đó được kiểm ở đâu khác:
+
+| Tệp | Gộp | Phần chưa chạy | Được kiểm ở |
+|---|---|---|---|
+| `workers/rag.py`, `workers/content_based.py`, `workers/orphans.py` | 42–55 % | lớp vỏ task Celery (`asyncio.run` + mở session) | service bên trong có test riêng (`test_ingest.py`, `test_content_based.py`, `test_orphans.py`); vỏ chạy thật trong worker ở các buổi diễn tập (`phase-4/rag-ingest.txt`, `phase-6/orphan-sweep.txt`) |
+| `services/storage.py` | 69 % | các phương thức gọi boto3 thật của `R2Storage` | test dùng storage giả; S3 thật được kiểm bằng smoke 21/21 (prod) và 10/10 (dev) ở `phase-6/rustfs-compose/`, cộng 20 kiểm ở `phase-6/storage-decision/` |
+| `api/v1/grading.py` | 71 % | thân endpoint WebSocket `/submissions/{id}/events` (dòng 351–390) | pytest chỉ chạm phần từ chối của ma trận phân quyền; nhánh chạy thật được **E2E** kiểm — spec đỏ nếu tiến độ từng case và verdict không tới qua WebSocket (`phase-6/polling-progress-decision.txt`) |
+
+Trong container dev, lượt đo có **3 ca đỏ, không phải lỗi mã** (trên CI cả ba đều xanh):
+
+- 2 ca `test_storage_that_was_never_configured_answers_503`: trong container, storage tự rơi về bucket dev nên không bao giờ "chưa cấu hình".
+- `test_deploy_passes_the_seed_passwords_into_the_container`: test đọc `infra/scripts/deploy.sh`, mà container backend chỉ mount `backend/`.
+
+Phần còn lại: 1.851 passed, 2 skipped, mất 16 phút 21 s. Coverage không phải một bước của CI và không có ngưỡng chặn merge: đây là số đo một lần cho báo cáo, không phải chỉ tiêu.
 
 ## 5. Cách tái tạo
 
@@ -77,6 +104,12 @@ Grader (image backend có sẵn pytest; chỉ thu thập, không chạy):
 
 ```bash
 docker run --rm -v "$PWD/grader:/g" -w /g devpath-backend:dev python -m pytest --collect-only -q -p no:cacheprovider
+```
+
+Coverage backend. `coverage` không nằm trong lock (chỉ đo một lần), nên cài tạm vào container dev; mất cùng lần dựng lại container. Thiếu `--concurrency=greenlet,thread` thì số đo sai (mục 4):
+
+```bash
+docker compose -f infra/docker-compose.yml exec -T backend sh -c 'pip install -q "coverage==7.13.*" && COVERAGE_FILE=/tmp/devpath.coverage python -m coverage run --branch --concurrency=greenlet,thread --source=app -m pytest -q -p no:cacheprovider; COVERAGE_FILE=/tmp/devpath.coverage python -m coverage report -m --skip-empty'
 ```
 
 Kết quả CI của một commit:

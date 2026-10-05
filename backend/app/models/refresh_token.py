@@ -30,6 +30,13 @@ class RefreshToken(Base, UUIDPrimaryKeyMixin):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     # Set on rotation, sign-out, or when a stolen token is detected.
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # The token this one was rotated into; NULL when it was revoked any other
+    # way. Only a rotated token whose replacement is still live may come back
+    # within the reuse leeway (services/auth.py::rotate_refresh_token).
+    replaced_by_id: Mapped[UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("refresh_tokens.id", ondelete="SET NULL"),
+    )
 
     # Both purely informational -- they drive the "devices signed in" screen.
     user_agent: Mapped[str | None] = mapped_column(String(255))
@@ -45,6 +52,10 @@ class RefreshToken(Base, UUIDPrimaryKeyMixin):
         Index("uq_refresh_tokens_token_hash", "token_hash", unique=True),
         # Revoking every session of one user is a single indexed delete.
         Index("ix_refresh_tokens_user_id", "user_id"),
+        # Deleting a row (a user's cascade, an expiry sweep) has to find the
+        # rows that point at it to null them; without this that is a scan per
+        # deleted row.
+        Index("ix_refresh_tokens_replaced_by_id", "replaced_by_id"),
     )
 
     def __repr__(self) -> str:

@@ -204,20 +204,32 @@ async def _issue_tokens(
     session: AsyncSession,
     user: User,
     client: ClientInfo,
+    *,
+    replacing: RefreshToken | None = None,
 ) -> IssuedTokens:
-    """Mint an access token and open a new session row. Does not commit."""
+    """Mint an access token and open a new session row. Does not commit.
+
+    `replacing` is the token being rotated: it is revoked and pointed at the
+    new row, which is what may let it back in within the reuse leeway.
+    """
     settings = get_settings()
     raw_refresh = generate_refresh_token()
 
-    session.add(
-        RefreshToken(
-            user_id=user.id,
-            token_hash=hash_refresh_token(raw_refresh),
-            expires_at=datetime.now(tz=UTC) + timedelta(days=settings.refresh_token_ttl_days),
-            user_agent=client.user_agent,
-            ip_address=client.ip_address,
-        )
+    row = RefreshToken(
+        user_id=user.id,
+        token_hash=hash_refresh_token(raw_refresh),
+        expires_at=datetime.now(tz=UTC) + timedelta(days=settings.refresh_token_ttl_days),
+        user_agent=client.user_agent,
+        ip_address=client.ip_address,
     )
+    session.add(row)
+
+    if replacing is not None:
+        # Flushed first: the old row points at the new one, and the foreign
+        # key is checked when the UPDATE runs, not at commit.
+        await session.flush()
+        replacing.revoked_at = datetime.now(tz=UTC)
+        replacing.replaced_by_id = row.id
 
     return IssuedTokens(
         user=user,
@@ -342,15 +354,30 @@ async def rotate_refresh_token(
     """Exchange a refresh token for a new pair, revoking the one presented.
 
     Rotation is what makes theft detectable: the honest client always holds the
-    newest token, so a *revoked* one coming back means someone kept a copy.
+    newest token, so a *revoked* one coming back means someone kept a copy --
+    with one exception. Every tab shares the one cookie, so two tabs that
+    refresh together send the same token twice and the second arrives already
+    rotated; so does a retry whose first answer was lost. A token rotated
+    within `refresh_token_reuse_leeway_seconds` whose replacement is still live
+    is that, not a thief: it gets a session of its own, and the replacement is
+    left alone, because whichever answer the browser stores last becomes the
+    cookie and both have to keep working. The price is the leeway itself -- a
+    copy replayed inside it passes too -- and the session one of the two
+    answers opened and no cookie kept, which lives until it expires.
+
+    The row lock makes two simultaneous refreshes queue instead of both reading
+    the token as unrotated and rotating it twice: the leeway then counts from
+    the first rotation, and the second request goes through the check below.
     """
     row = await session.scalar(
-        select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(raw_token))
+        select(RefreshToken)
+        .where(RefreshToken.token_hash == hash_refresh_token(raw_token))
+        .with_for_update()
     )
     if row is None:
         raise InvalidRefreshTokenError("Phiên đăng nhập không hợp lệ")
 
-    if row.revoked_at is not None:
+    if row.revoked_at is not None and not await _rotated_moments_ago(session, row):
         # Either a stolen copy or a replay. We cannot tell which side is the
         # thief, so every session of this user goes.
         await revoke_all_sessions(session, row.user_id)
@@ -368,10 +395,35 @@ async def rotate_refresh_token(
     if user.locked_at is not None:
         raise AccountLockedError("Tài khoản đã bị khóa, liên hệ quản trị viên")
 
-    row.revoked_at = datetime.now(tz=UTC)
-    tokens = await _issue_tokens(session, user, client or ClientInfo())
+    # A token let in by the leeway is already rotated; it stays pointed at the
+    # replacement the first tab holds.
+    tokens = await _issue_tokens(
+        session,
+        user,
+        client or ClientInfo(),
+        replacing=row if row.revoked_at is None else None,
+    )
     await session.commit()
     return tokens
+
+
+async def _rotated_moments_ago(session: AsyncSession, row: RefreshToken) -> bool:
+    """Whether a revoked token is the second request of a pair, not a copy.
+
+    Only rotation counts: a token given up at sign-out, or revoked along with
+    every other session (password change, account lock, theft detected), has
+    no replacement. And only while the replacement is live -- signed out of it
+    or swept up with the rest, the old token must not reopen anything.
+    """
+    if row.replaced_by_id is None or row.revoked_at is None:
+        return False
+
+    leeway = timedelta(seconds=get_settings().refresh_token_reuse_leeway_seconds)
+    if datetime.now(tz=UTC) - row.revoked_at > leeway:
+        return False
+
+    replacement = await session.get(RefreshToken, row.replaced_by_id)
+    return replacement is not None and replacement.revoked_at is None
 
 
 async def revoke_session(session: AsyncSession, *, raw_token: str | None) -> None:

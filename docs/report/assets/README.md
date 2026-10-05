@@ -93,6 +93,8 @@ Giao diện cũng đã đổi sau 02/10 (header, trang chi tiết khóa học, �
 | 19 | Dashboard toàn sàn | `phase-5/dashboards.txt`, `admin-dashboard.txt` | không có |
 | 20 | Danh mục, banner, mã giảm giá toàn sàn | `phase-5/admin-dashboard.txt` | không có |
 
+> **Cập nhật cùng ngày (05/10):** bộ ảnh `phase-6/ui/` (42 ảnh, `phase-6/ui-screenshots.txt` §5) phủ **19/20** tính năng bằng ảnh đúng font, kể cả 7 màn chưa từng có ảnh. Còn thiếu đúng đăng nhập Google — chờ tên miền thật.
+
 Mọi tính năng (trừ phụ đề, đã cắt) đều có bằng chứng chạy thật. Chỗ thiếu là ảnh: **chỉ 4/20 có ảnh đúng font dùng được ngay**, và **7 màn hình chưa từng được chụp ở bất kỳ phase nào** (ghi chú/bookmark, Q&A cả hai phía, thông báo, XP + bảng xếp hạng, wishlist, trang người dùng/báo cáo của admin).
 
 ### 3.3. Đã sửa trong lượt này
@@ -118,7 +120,7 @@ Gỡ theo đúng thứ tự README là **study → sales → cart → coupons �
 
 ## 5. Còn thiếu — phân loại
 
-**Làm được ngay trên máy dev → task mới trong `docs/plan/phase-6-hardening-deploy.md`:**
+**Làm được ngay trên máy dev → task mới trong `docs/plan/phase-6-hardening-deploy.md`** — **xong 05/10** (`phase-6/ui-screenshots.txt`):
 
 - Chụp lại bộ ảnh giao diện cho chương 4: font đúng, giao diện sau UX polish, mỗi tính năng ở mục 3.2 ít nhất một ảnh 1440 px, cộng vài ảnh 375 px. Gồm cả 7 màn chưa từng có ảnh.
   - Cần dữ liệu demo cho Q&A, thông báo, ghi chú/bookmark, lịch sử nộp bài (CSDL dev đang 0 dòng ở các bảng này).

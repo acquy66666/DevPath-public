@@ -169,7 +169,9 @@ Hai loại token đi hai đường khác nhau:
 - **Access token** — JWT HS256, sống 15 phút, trả trong body JSON. Frontend giữ trong bộ nhớ và gửi qua header `Authorization`. Không thu hồi được, nên thời hạn phải ngắn.
 - **Refresh token** — chuỗi ngẫu nhiên 48 byte, sống 30 ngày, chỉ đi trong cookie `HttpOnly` giới hạn path `/api/v1/auth`. DB chỉ lưu SHA-256 của nó (bảng `refresh_tokens`), lộ DB cũng không đăng nhập lại được.
 
-**Xoay vòng (rotation):** mỗi lần refresh thành công thì token cũ bị thu hồi và cấp token mới. Token đã thu hồi mà quay lại ⇒ coi như bị đánh cắp: thu hồi **toàn bộ** phiên của user đó, trả `REFRESH_TOKEN_REUSED`.
+**Xoay vòng (rotation):** mỗi lần refresh thành công thì token cũ bị thu hồi, trỏ sang token mới (`replaced_by_id`), và cấp token mới. Token đã thu hồi mà quay lại ⇒ coi như bị đánh cắp: thu hồi **toàn bộ** phiên của user đó, trả `REFRESH_TOKEN_REUSED`.
+
+**Khoảng ân hạn (từ 05/10/2026):** mọi tab dùng chung một cookie, nên hai tab cùng refresh gửi cùng một token hai lần — request thứ hai tới khi token đã bị xoay (một lần retry sau khi câu trả lời bị mất cũng vậy). Token bị **xoay** chưa quá `REFRESH_TOKEN_REUSE_LEEWAY_SECONDS` (30 s) mà token kế nhiệm còn sống thì được cấp một phiên riêng, không đụng gì tới token kế nhiệm. Token bị thu hồi kiểu khác (đăng xuất, đổi mật khẩu, khóa tài khoản, phát hiện trộm) không có `replaced_by_id` nên không bao giờ được ân hạn; token kế nhiệm đã chết thì cũng không. Dòng token bị khóa `FOR UPDATE` trong lúc xoay, để hai request đồng thời xếp hàng thay vì cùng xoay một token. Cái giá: bản sao bị dùng lại **trong** 30 s cũng lọt, và một trong hai phiên mở ra lúc đó không cookie nào giữ, nằm đó tới khi hết hạn. Bằng chứng: `docs/report/assets/phase-6/refresh-leeway.txt`.
 
 Mã lỗi: `EMAIL_ALREADY_REGISTERED` (409), `INVALID_CREDENTIALS` (401), `ACCOUNT_LOCKED` (403), `REFRESH_TOKEN_MISSING` / `INVALID_REFRESH_TOKEN` / `REFRESH_TOKEN_REUSED` / `NOT_AUTHENTICATED` (401).
 
@@ -620,7 +622,7 @@ Frontend: chuông trên header (badge đỏ, `9+` khi quá 9; dropdown 8 thông 
 
 Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
-Migration là một chuỗi thẳng 23 revision, một head (`alembic heads` để kiểm):
+Migration là một chuỗi thẳng 28 revision, một head (`alembic heads` để kiểm):
 
 | Revision | Nội dung |
 |---|---|
@@ -647,6 +649,11 @@ Migration là một chuỗi thẳng 23 revision, một head (`alembic heads` đ�
 | `b6fc99d6b6af` | `certificates` (chứng chỉ hoàn thành, tên/khóa/giảng viên đóng băng lúc cấp) |
 | `8f1cea268f50` | `qa_threads`, `qa_replies`, `qa_votes` (hỏi đáp theo bài học, chỉ upvote), `notifications` |
 | `c7c21bbd1a9b` | `ix_notifications_user_created` (trang thông báo) + loại thông báo `qa_question` |
+| `6e27fe4795b3` | `reports` (báo cáo vi phạm) + ba loại thông báo duyệt khóa học |
+| `5b10213a072e` | `banners` (banner trang chủ) |
+| `503c1217538c` | bỏ `submissions.peak_memory_mb` (Docker không cho mức đỉnh) |
+| `551da64fc983` | `orphan_objects` (danh sách cách ly của job dọn object mồ côi) |
+| `abb01d258134` | `refresh_tokens.replaced_by_id` (token kế nhiệm, cho khoảng ân hạn khi hai tab cùng refresh) |
 
 Chạy migration cần Postgres — dựng bằng `docker compose` rồi chạy từ venv trên host:
 

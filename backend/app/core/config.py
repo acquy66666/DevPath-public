@@ -38,6 +38,10 @@ class Settings(BaseSettings):
     jwt_secret: str = DEV_JWT_SECRET
     access_token_ttl_minutes: int = 15
     refresh_token_ttl_days: int = 30
+    # How long a token just rotated may come back without counting as stolen:
+    # every tab shares the one cookie, and two that refresh together send the
+    # same token twice (services/auth.py::rotate_refresh_token).
+    refresh_token_reuse_leeway_seconds: int = 30
     refresh_cookie_name: str = "devpath_refresh"
 
     # Google OAuth. Empty until someone registers an OAuth client in Google

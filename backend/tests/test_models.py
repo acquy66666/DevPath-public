@@ -213,9 +213,20 @@ def test_courses_is_the_only_soft_deleted_table() -> None:
 
 
 def test_refresh_tokens_indexes_match_the_spec() -> None:
-    assert {"uq_refresh_tokens_token_hash", "ix_refresh_tokens_user_id"} == index_names(
-        RefreshToken
-    )
+    assert {
+        "uq_refresh_tokens_token_hash",
+        "ix_refresh_tokens_user_id",
+        "ix_refresh_tokens_replaced_by_id",
+    } == index_names(RefreshToken)
+
+
+def test_a_rotated_token_points_at_its_replacement() -> None:
+    """Deleting the replacement only forgets the link: the old row is already
+    revoked, and losing the link only takes its reuse leeway away."""
+    fk = next(iter(RefreshToken.__table__.c.replaced_by_id.foreign_keys))
+    assert fk.column.table.name == "refresh_tokens"
+    assert fk.ondelete == "SET NULL"
+    assert RefreshToken.__table__.c.replaced_by_id.nullable
 
 
 def test_refresh_token_hash_column_fits_sha256_hex() -> None:

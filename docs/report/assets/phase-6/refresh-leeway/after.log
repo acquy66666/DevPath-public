@@ -1,0 +1,21 @@
+API http://localhost:8000/api/v1
+
+== concurrent: two refreshes with one cookie at once, 10 trials
+#1  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#2  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#3  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#4  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#5  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#6  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#7  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#8  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#9  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#10 A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+
+== late: the old cookie again 1 s after the first answer, 3 trials
+#1  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#2  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+#3  A=200  B=200                             tokens issued 2, still working 2 -> still signed in
+
+== replay: the old cookie again 35 s after the first answer
+#1  A=200  B=401 REFRESH_TOKEN_REUSED        tokens issued 1, still working 0 -> SIGNED OUT

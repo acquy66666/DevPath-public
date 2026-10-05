@@ -4,6 +4,7 @@ Everything here goes through real HTTP against a real database inside a
 transaction that is rolled back afterwards -- see tests/conftest.py.
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -14,8 +15,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.security import generate_refresh_token, hash_password, hash_refresh_token
 from app.models import RefreshToken, User
+from app.services import auth as auth_service
 
 COOKIE = get_settings().refresh_cookie_name
+LEEWAY = get_settings().refresh_token_reuse_leeway_seconds
 
 VALID = {
     "email": "hoc.vien@example.com",
@@ -42,6 +45,21 @@ async def sessions_of(session: AsyncSession, user_id: str) -> list[RefreshToken]
         select(RefreshToken).where(RefreshToken.user_id == user_id)
     )
     return list(rows)
+
+
+async def live_sessions_of(session: AsyncSession, user_id: str) -> list[RefreshToken]:
+    return [row for row in await sessions_of(session, user_id) if row.revoked_at is None]
+
+
+async def rotated_seconds_ago(session: AsyncSession, raw: str, seconds: float) -> None:
+    """Move a token's rotation into the past -- a replay that arrives long
+    after the honest tabs have moved on, without a test that sleeps."""
+    row = await session.scalar(
+        select(RefreshToken).where(RefreshToken.token_hash == hash_refresh_token(raw))
+    )
+    assert row is not None and row.revoked_at is not None
+    row.revoked_at = datetime.now(tz=UTC) - timedelta(seconds=seconds)
+    await session.flush()
 
 
 # --- Register --------------------------------------------------------------
@@ -364,12 +382,30 @@ async def test_expired_refresh_token_is_rejected(
     assert error_code(response) == "INVALID_REFRESH_TOKEN"
 
 
-async def test_reusing_a_rotated_token_is_treated_as_theft(
-    api_client: AsyncClient,
+async def test_refresh_records_the_token_that_replaced_it(
+    api_client: AsyncClient, db_session: AsyncSession
 ) -> None:
-    """A rotated token only leaves the client's cookie jar by being stolen."""
+    """What tells a rotated token from a signed-out one, and what the leeway
+    below checks is still in use."""
+    response = await register(api_client)
+    user_id = response.json()["user"]["id"]
+    old_hash = hash_refresh_token(response.cookies[COOKIE])
+
+    new_cookie = (await api_client.post("/api/v1/auth/refresh")).cookies[COOKIE]
+
+    rows = {row.token_hash: row for row in await sessions_of(db_session, user_id)}
+    assert rows[old_hash].replaced_by_id == rows[hash_refresh_token(new_cookie)].id
+    assert rows[hash_refresh_token(new_cookie)].replaced_by_id is None
+
+
+async def test_reusing_a_rotated_token_is_treated_as_theft(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Past the leeway, a rotated token only leaves the client's cookie jar by
+    being stolen."""
     stolen = (await register(api_client)).cookies[COOKIE]
     await api_client.post("/api/v1/auth/refresh")
+    await rotated_seconds_ago(db_session, stolen, LEEWAY + 1)
 
     api_client.cookies.set(COOKIE, stolen)
     response = await api_client.post("/api/v1/auth/refresh")
@@ -386,6 +422,7 @@ async def test_reuse_closes_every_session_of_that_user(
     user_id = response.json()["user"]["id"]
     stolen = response.cookies[COOKIE]
     await api_client.post("/api/v1/auth/refresh")
+    await rotated_seconds_ago(db_session, stolen, LEEWAY + 1)
 
     api_client.cookies.set(COOKIE, stolen)
     await api_client.post("/api/v1/auth/refresh")
@@ -393,6 +430,117 @@ async def test_reuse_closes_every_session_of_that_user(
     rows = await sessions_of(db_session, user_id)
     assert rows
     assert all(row.revoked_at is not None for row in rows)
+
+
+# --- Refresh: two tabs, one cookie -----------------------------------------
+#
+# Every tab of a browser shares one refresh cookie. Two tabs that wake up
+# together both refresh, and the second request can leave carrying the token
+# the first has just rotated -- the honest client, not a thief. Treating that
+# as theft signed the person out of everything (docs/report/assets/phase-6/
+# refresh-leeway.txt). The same happens to a single tab whose answer was lost
+# on the way back and that asks again.
+
+
+async def test_a_token_rotated_moments_ago_still_refreshes(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    response = await register(api_client)
+    user_id = response.json()["user"]["id"]
+    first = response.cookies[COOKIE]
+    other_tab = (await api_client.post("/api/v1/auth/refresh")).cookies[COOKIE]
+
+    api_client.cookies.set(COOKIE, first)
+    late = await api_client.post("/api/v1/auth/refresh")
+
+    assert late.status_code == 200
+    assert late.json()["access_token"]
+    assert late.cookies[COOKIE] not in {first, other_tab}
+    # Nothing was revoked on its account: the other tab's token and the late
+    # tab's new one are both live.
+    live = {row.token_hash for row in await live_sessions_of(db_session, user_id)}
+    assert live == {hash_refresh_token(other_tab), hash_refresh_token(late.cookies[COOKIE])}
+
+
+async def test_the_other_tab_stays_signed_in(api_client: AsyncClient) -> None:
+    first = (await register(api_client)).cookies[COOKIE]
+    other_tab = (await api_client.post("/api/v1/auth/refresh")).cookies[COOKIE]
+    api_client.cookies.set(COOKIE, first)
+    await api_client.post("/api/v1/auth/refresh")
+
+    api_client.cookies.set(COOKIE, other_tab)
+    response = await api_client.post("/api/v1/auth/refresh")
+
+    assert response.status_code == 200
+
+
+async def test_the_leeway_is_counted_from_the_rotation(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    first = (await register(api_client)).cookies[COOKIE]
+    await api_client.post("/api/v1/auth/refresh")
+    await rotated_seconds_ago(db_session, first, LEEWAY - 2)
+
+    api_client.cookies.set(COOKIE, first)
+    response = await api_client.post("/api/v1/auth/refresh")
+
+    assert response.status_code == 200
+
+
+async def test_a_signed_out_token_gets_no_leeway(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """Signing out gives a token up rather than replacing it, so it coming
+    back -- however soon -- is a copy."""
+    response = await register(api_client)
+    user_id = response.json()["user"]["id"]
+    raw = response.cookies[COOKIE]
+    await api_client.post("/api/v1/auth/logout")
+
+    api_client.cookies.set(COOKIE, raw)
+    refreshed = await api_client.post("/api/v1/auth/refresh")
+
+    assert refreshed.status_code == 401
+    assert error_code(refreshed) == "REFRESH_TOKEN_REUSED"
+    assert await live_sessions_of(db_session, user_id) == []
+
+
+async def test_no_leeway_once_the_replacement_is_signed_out(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """The leeway covers a token whose replacement is still in use. Sign out
+    of the replacement and the old token must not open a session again."""
+    response = await register(api_client)
+    user_id = response.json()["user"]["id"]
+    first = response.cookies[COOKIE]
+    await api_client.post("/api/v1/auth/refresh")
+    await api_client.post("/api/v1/auth/logout")
+
+    api_client.cookies.set(COOKIE, first)
+    refreshed = await api_client.post("/api/v1/auth/refresh")
+
+    assert refreshed.status_code == 401
+    assert error_code(refreshed) == "REFRESH_TOKEN_REUSED"
+    assert await live_sessions_of(db_session, user_id) == []
+
+
+async def test_no_leeway_after_every_session_was_closed(
+    api_client: AsyncClient, db_session: AsyncSession
+) -> None:
+    """A password change, an admin lock and theft detection all close every
+    session at once; a token rotated a moment before must not reopen one."""
+    response = await register(api_client)
+    user_id = response.json()["user"]["id"]
+    first = response.cookies[COOKIE]
+    await api_client.post("/api/v1/auth/refresh")
+    await auth_service.revoke_all_sessions(db_session, uuid.UUID(user_id))
+    await db_session.flush()
+
+    api_client.cookies.set(COOKIE, first)
+    refreshed = await api_client.post("/api/v1/auth/refresh")
+
+    assert refreshed.status_code == 401
+    assert await live_sessions_of(db_session, user_id) == []
 
 
 # --- Logout ----------------------------------------------------------------

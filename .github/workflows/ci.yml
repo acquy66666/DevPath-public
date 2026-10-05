@@ -444,17 +444,41 @@ jobs:
             exit 1
           fi
 
-      # No API URL argument: the production image is served behind nginx and
-      # calls /api on its own origin, so it is built without a domain.
-      # Building it the way production does is the point of this step.
+      # Through compose, with the build arguments production gets: no API URL
+      # (the page calls /api on its own origin), and the site URL made from
+      # DOMAIN. Building it the way production does is the point of this step.
       - name: Frontend production image builds
-        run: docker build --target production -t devpath-frontend:ci frontend
+        working-directory: infra
+        run: docker compose -f docker-compose.prod.yml --env-file .env.prod build frontend
+
+      # The site URL is metadataBase, which canonical and Open Graph URLs are
+      # resolved against. Before 05/10 nothing passed it, and every production
+      # page advertised http://localhost:3000 (docs/report/assets/phase-6/
+      # site-url.txt). So: the domain must be in the server bundle, it must not
+      # be in the browser's, and a build that forgets it must be refused.
+      - name: Frontend image carries the site URL, server side only
+        working-directory: infra
+        run: |
+          site="https://$(sed -n 's/^DOMAIN=//p' .env.prod)"
+          if ! docker run --rm devpath-frontend:prod grep -rqF "$site" .next/server; then
+            echo "$site is not in the server bundle: metadataBase fell back to localhost." >&2
+            exit 1
+          fi
+          if docker run --rm devpath-frontend:prod grep -rlF "$site" .next/static; then
+            echo "$site leaked into the browser bundle." >&2
+            exit 1
+          fi
+          if docker build --target production ../frontend > refused.log 2>&1; then
+            echo "A production frontend built without NEXT_PUBLIC_SITE_URL." >&2
+            exit 1
+          fi
+          grep -q "NEXT_PUBLIC_SITE_URL must be" refused.log || { cat refused.log >&2; exit 1; }
 
       # The standalone server has to be in the image and has to start. It
       # cannot render a page without the API, so answering at all is the test.
       - name: Frontend image starts and serves
         run: |
-          docker run -d --name devpath-fe -p 3000:3000 devpath-frontend:ci
+          docker run -d --name devpath-fe -p 3000:3000 devpath-frontend:prod
           for _ in $(seq 1 30); do
             if curl -fsS -o /dev/null http://localhost:3000/dang-nhap; then
               echo "Next is serving."

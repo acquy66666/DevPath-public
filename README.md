@@ -102,10 +102,13 @@ Thứ tự **có nghĩa**: script sau dùng dữ liệu của script trước. M
 | 5 | `seed_cart` | Giỏ hàng + yêu thích của `hocvien01/13/25` | bước 3 |
 | 6 | `seed_sales` | 77 đơn hàng của 40 người mua trong 12 tháng — dashboard giảng viên và admin | |
 | 7 | `seed_study` | 40 người mua học trong 70 ngày — XP, chuỗi ngày, bảng xếp hạng | bước 6 |
-| 8 | `issue_certificates` | Cấp và vẽ PDF chứng chỉ cho mọi lượt đã học xong | |
-| 9 | `rebuild_recommendations` | Tính ngay gợi ý (job hằng đêm 03:00 cũng làm) | có `GEMINI_API_KEY` thì chạy `rebuild_course_embeddings` trước, không thì chỉ có nửa collaborative |
+| 8 | `seed_community` | Một tuần hỏi đáp ở khóa Python (5 câu hỏi, trả lời của giảng viên, bình chọn), thông báo đi kèm, ghi chú + đánh dấu của `hocvien07`, 2 báo cáo vi phạm chờ xử lý | bước 3 |
+| 9 | `issue_certificates` | Cấp và vẽ PDF chứng chỉ cho mọi lượt đã học xong | |
+| 10 | `rebuild_recommendations` | Tính ngay gợi ý (job hằng đêm 03:00 cũng làm) | có `GEMINI_API_KEY` thì chạy `rebuild_course_embeddings` trước, không thì chỉ có nửa collaborative |
 
-**Gỡ theo thứ tự ngược lại**, mỗi script thêm `--purge`: `seed_study` → `seed_sales` → `seed_cart` → `seed_coupons` → `seed_interactions`. Đơn hàng là sổ tiền và không bị script nào khác xóa, nên gỡ `seed_interactions` trước `seed_sales` sẽ bị từ chối kèm lời nhắc thứ tự. Gỡ xong còn đúng 4 khóa thật, 3 tài khoản gốc.
+**Gỡ theo thứ tự ngược lại**, mỗi script thêm `--purge`: `seed_community` → `seed_study` → `seed_sales` → `seed_cart` → `seed_coupons` → `seed_interactions`. Đơn hàng là sổ tiền và không bị script nào khác xóa, nên gỡ `seed_interactions` trước `seed_sales` sẽ bị từ chối kèm lời nhắc thứ tự. `seed_community` phải gỡ trước `seed_interactions`: gỡ học viên trước thì câu hỏi của họ mất theo, nhưng chuông của giảng viên vẫn trỏ vào câu hỏi không còn nữa. Gỡ xong còn đúng 4 khóa thật, 3 tài khoản gốc.
+
+**Ngày tháng tính theo lúc chạy, nên dữ liệu "già" đi.** Chuỗi ngày học bị cắt lúc đọc, và bảng xếp hạng tuần/tháng chỉ đếm tuần/tháng hiện tại. Nạp `seed_sales` + `seed_study` từ hơn một ngày trước thì mọi chuỗi về 0 và bảng tuần trống. Trước buổi demo hay trước khi chụp ảnh: gỡ `seed_study` rồi `seed_sales`, nạp lại `seed_sales` rồi `seed_study`, rồi `rebuild_leaderboard` (đã làm 05/10/2026 trước lượt chụp ảnh giao diện).
 
 Chi tiết từng phần: [infra/README.md](infra/README.md) (stack, cổng, storage, sandbox), [backend/README.md](backend/README.md) (chạy backend bằng venv, test, từng script). Ba tài liệu viết cho máy phát triển của dự án:
 

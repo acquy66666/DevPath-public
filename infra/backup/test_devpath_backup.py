@@ -168,12 +168,36 @@ def test_backup_credentials_of_their_own_take_precedence() -> None:
     )
 
 
-def test_development_falls_back_to_the_minio_of_the_dev_stack() -> None:
-    storage = b.storage_from_env({"MINIO_ROOT_USER": "u", "MINIO_ROOT_PASSWORD": "p"})
-    assert storage == b.Storage("http://minio:9000", "u", "p", "devpath-backups")
+def test_development_falls_back_to_the_storage_of_the_dev_stack() -> None:
+    storage = b.storage_from_env({"STORAGE_ACCESS_KEY": "u", "STORAGE_SECRET_KEY": "p"})
+    assert storage == b.Storage("http://storage:9000", "u", "p", "devpath-backups")
 
 
-def test_production_without_storage_is_an_error_not_a_minio_that_is_not_there() -> None:
+def test_development_fallback_has_the_dev_stack_defaults() -> None:
+    storage = b.storage_from_env({})
+    assert storage == b.Storage(
+        "http://storage:9000", "devpath", "devpath-storage", "devpath-backups"
+    )
+
+
+@pytest.mark.parametrize(
+    ("endpoint", "region"),
+    [
+        # B2 refuses a signature made for any region but the endpoint's own.
+        ("https://s3.us-west-004.backblazeb2.com", "us-west-004"),
+        ("https://s3.eu-central-003.backblazeb2.com/", "eu-central-003"),
+        ("HTTPS://S3.US-EAST-005.BACKBLAZEB2.COM", "us-east-005"),
+        ("https://0123456789abcdef.r2.cloudflarestorage.com", "auto"),
+        ("http://storage:9000", "auto"),
+        # Only the endpoint's host decides, not a lookalike path.
+        ("https://evil.example/s3.us-west-004.backblazeb2.com", "auto"),
+    ],
+)
+def test_signing_region_follows_a_b2_endpoint(endpoint: str, region: str) -> None:
+    assert b.signing_region(endpoint) == region
+
+
+def test_production_without_storage_is_an_error_not_the_dev_storage() -> None:
     with pytest.raises(b.ConfigError):
         b.storage_from_env({"ENV": "production"})
 

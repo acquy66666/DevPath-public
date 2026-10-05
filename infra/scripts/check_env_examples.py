@@ -42,10 +42,10 @@ DEV_ONLY = {
     # Empty in production on purpose: the browser calls /api on its own
     # origin and nginx routes it (docker-compose.prod.yml, frontend build).
     "NEXT_PUBLIC_API_BASE_URL": "same-origin /api behind nginx",
-    # The backup service's fallback to the dev stack's MinIO. There is no
-    # MinIO in production, and there the service refuses to guess a bucket.
-    "MINIO_ROOT_USER": "no MinIO in production",
-    "MINIO_ROOT_PASSWORD": "no MinIO in production",
+    # The backup service's fallback to the dev stack's storage. Production
+    # backups go off the machine, and there the service refuses to guess.
+    "STORAGE_ACCESS_KEY": "backup falls back to the dev storage only",
+    "STORAGE_SECRET_KEY": "backup falls back to the dev storage only",
 }
 
 #: Read by something other than compose: nginx's own entrypoint script.

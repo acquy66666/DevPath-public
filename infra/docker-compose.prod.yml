@@ -36,12 +36,25 @@ x-backend-env: &backend-env
   # row is written or a job queued; see backend/app/services/rate_limit.py.
   SUBMISSION_COOLDOWN_SECONDS: ${SUBMISSION_COOLDOWN_SECONDS:-10}
   SUBMISSION_HOURLY_LIMIT: ${SUBMISSION_HOURLY_LIMIT:-40}
+  # Object storage. By default the `storage` service below (RustFS), reached
+  # as https://${DOMAIN}/devpath-media through nginx -- the address the
+  # browser uses too, so a presigned URL is signed for the host it is used on.
+  # Inside this network ${DOMAIN} is an alias of nginx (see nginx below), so
+  # the API and the workers take the same path with no extra name and no code
+  # that knows. Decision and measurements:
+  # docs/report/assets/phase-6/storage-decision.txt.
+  #
+  # Cloudflare R2 instead: set every R2_* in .env.prod, endpoint and public URL
+  # included (docs/huong-dan-cloudflare-r2.md). The storage service then sits
+  # idle; nothing else changes.
   R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:-}
-  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
-  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-${STORAGE_ACCESS_KEY:?set STORAGE_ACCESS_KEY in .env.prod}}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-${STORAGE_SECRET_KEY:?set STORAGE_SECRET_KEY in .env.prod}}
+  # The self-hosted bucket is always devpath-media: nginx routes that path and
+  # no other. R2_BUCKET is for an R2 bucket of another name.
   R2_BUCKET: ${R2_BUCKET:-devpath-media}
-  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-}
-  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-}
+  R2_PUBLIC_BASE_URL: ${R2_PUBLIC_BASE_URL:-https://${DOMAIN}/devpath-media}
+  R2_ENDPOINT_URL: ${R2_ENDPOINT_URL:-https://${DOMAIN}}
   # Gemini. Empty by default: the ingest job and the chat endpoints say
   # "chưa cấu hình" rather than failing. Put a real key in infra/.env.prod --
   # this file runs with --env-file .env.prod, so infra/.env is never read.
@@ -159,6 +172,61 @@ services:
       start_period: 10m
       start_interval: 10s
 
+  # Media: videos, avatars, banners, transcripts, certificate PDFs. RustFS,
+  # an S3 server, on this machine -- R2 wants a payment card and the plan
+  # stays at zero cost. No ports: the internet reaches it only through nginx,
+  # which routes /devpath-media and nothing else of its API.
+  #
+  # Not backed up: the backup service dumps the database, off this machine.
+  # Seed content can be loaded again; uploads made on the server cannot.
+  #
+  # A version and a digest, not :latest -- RustFS reached 1.0 on 16/09/2026
+  # and releases often. SeaweedFS passed the same tests and is the fallback
+  # (docs/report/assets/phase-6/storage-decision.txt).
+  storage:
+    image: rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
+    restart: unless-stopped
+    logging: *logging
+    environment:
+      RUSTFS_ACCESS_KEY: ${STORAGE_ACCESS_KEY:?set STORAGE_ACCESS_KEY in .env.prod}
+      RUSTFS_SECRET_KEY: ${STORAGE_SECRET_KEY:?set STORAGE_SECRET_KEY in .env.prod}
+      RUSTFS_CONSOLE_ENABLE: "false"
+      # To stdout, where the rotation above applies. The image's default is
+      # files under /logs inside the container, which nothing rotates.
+      RUSTFS_OBS_LOG_STDOUT_ENABLED: "true"
+      RUSTFS_OBS_USE_STDOUT: "true"
+      RUSTFS_OBS_LOG_DIRECTORY: ""
+    volumes:
+      - storage_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Creates the media bucket and lets anonymous visitors read its objects --
+  # not list them, not write -- then exits. On every `up`, so a changed rule
+  # takes effect on the next deploy. No CORS: the page and the bucket share an
+  # origin. backend/scripts/init_storage.py.
+  storage-init:
+    build:
+      context: ../backend
+      target: production
+    image: devpath-backend:prod
+    command: ["python", "-m", "scripts.init_storage"]
+    restart: "no"
+    logging: *logging
+    environment:
+      STORAGE_ENDPOINT: http://storage:9000
+      STORAGE_ACCESS_KEY: ${STORAGE_ACCESS_KEY}
+      STORAGE_SECRET_KEY: ${STORAGE_SECRET_KEY}
+      STORAGE_BUCKET: devpath-media
+      STORAGE_CORS_ORIGINS: ""
+    depends_on:
+      storage:
+        condition: service_healthy
+
   backend:
     build:
       context: ../backend
@@ -191,6 +259,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      storage-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         - CMD
@@ -228,6 +298,9 @@ services:
         condition: service_healthy
       postgres:
         condition: service_healthy
+      # Transcoding reads the original from the bucket and writes HLS back.
+      storage-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "celery", "-A", "app.workers.celery_app", "inspect", "ping"]
       interval: 60s
@@ -471,6 +544,15 @@ services:
       - ./nginx/snippets:/etc/nginx/snippets:ro
       - letsencrypt:/etc/letsencrypt:ro
       - certbot_webroot:/var/www/certbot:ro
+    networks:
+      default:
+        aliases:
+          # So that, inside this network, https://${DOMAIN} is this nginx: the
+          # API and the workers reach the bucket by the very URL they sign
+          # for the browser (R2_ENDPOINT_URL above). Without it the name
+          # resolves to the server's public address, and whether a container
+          # can reach its own host that way depends on the cloud's NAT.
+          - ${DOMAIN}
     # No depends_on: the upstreams are resolved per request, not at config
     # load, so nginx comes up on its own and answers 502 until they arrive.
     # That is what lets scripts/init-tls.sh get a certificate on a fresh
@@ -511,5 +593,6 @@ networks:
 volumes:
   postgres_data:
   redis_data:
+  storage_data:
   letsencrypt:
   certbot_webroot:

@@ -18,7 +18,7 @@ Each goes through `services.transcripts.put_transcript`, the function behind
 `PUT /lessons/{id}/transcript`, as the course's own instructor: read and
 refused exactly as an upload from the UI would be, and kept in the bucket as
 the original file. Run it inside a container on the dev stack, like
-`ingest_course`: Windows cannot resolve the MinIO host name.
+`ingest_course`: Windows cannot resolve the storage's host name.
 
 A published course is then queued for ingest once, for the Celery worker, as
 an upload from the UI would have it -- once per course, not once per file. A

@@ -94,6 +94,20 @@ except urllib.error.HTTPError as exc:
     exit 1
 fi
 
+echo "==> Checking the API reaches its storage"
+# The app's own storage client, the way an upload or a transcode uses it:
+# https://${DOMAIN} -> nginx (a network alias inside compose) -> TLS -> the
+# storage service, signed with the app's key. A missing alias, a certificate
+# the container does not trust or a key the server refuses would otherwise
+# show only when an instructor's video upload fails.
+if ! "${COMPOSE[@]}" exec -T backend python -c '
+from app.services.storage import build_storage
+next(iter(build_storage().list_objects("deploy-check/")), None)
+'; then
+    echo "The API cannot list its media bucket (above: the error from the S3 client)." >&2
+    exit 1
+fi
+
 echo "==> Cleaning up images the new build replaced"
 docker image prune -f >/dev/null
 

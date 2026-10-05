@@ -56,9 +56,9 @@ class Settings(BaseSettings):
     r2_access_key_id: str = ""
     r2_secret_access_key: str = ""
     r2_bucket: str = "devpath-media"
-    # Override for anything else that speaks S3 -- a local MinIO while
-    # developing, or a self-hosted bucket later. Empty means "derive the R2
-    # endpoint from the account id", which is the normal case.
+    # Override for anything else that speaks S3 -- the stack's own RustFS,
+    # which is what both compose files point it at (https://${DOMAIN} in
+    # production). Empty means "derive the R2 endpoint from the account id".
     r2_endpoint_url: str = ""
     # Where the browser reads finished files from: the bucket's r2.dev
     # subdomain in development, a custom domain once there is one. Kept

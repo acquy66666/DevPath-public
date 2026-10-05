@@ -308,6 +308,8 @@ jobs:
         run: |
           sed -e 's/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=ci-not-a-real-password/' \
               -e 's/^JWT_SECRET=$/JWT_SECRET=ci-not-a-real-secret-only-long-enough-for-hs256/' \
+              -e 's/^STORAGE_ACCESS_KEY=$/STORAGE_ACCESS_KEY=ci-not-a-real-access-key/' \
+              -e 's/^STORAGE_SECRET_KEY=$/STORAGE_SECRET_KEY=ci-not-a-real-storage-secret/' \
               .env.prod.example > .env.prod
 
       - name: Compose file is valid
@@ -406,6 +408,21 @@ jobs:
                 echo "nginx ignores X-Accel-Buffering: the chat answers would stop streaming" >&2
                 exit 1
               fi
+              # The media bucket is served on this origin. Without Host passed
+              # through, every presigned upload is a 403 (measured); without
+              # the sandbox policy, an uploaded file opened as a page would run
+              # as the site (phase-6/rustfs-compose.txt).
+              media="$(cat /etc/nginx/snippets/media.conf)"
+              for needed in "include /etc/nginx/snippets/proxy.conf;" "Content-Security-Policy \"sandbox"; do
+                case "$media" in
+                  *"$needed"*) ;;
+                  *) echo "media.conf lost: $needed" >&2; exit 1 ;;
+                esac
+              done
+              grep -q "proxy_set_header Host \$host;" /etc/nginx/snippets/proxy.conf \
+                || { echo "proxy.conf no longer passes Host through" >&2; exit 1; }
+              [ "$(nginx -T 2>/dev/null | grep -c "include /etc/nginx/snippets/media.conf;")" -eq 2 ] \
+                || { echo "expected the two /devpath-media locations" >&2; exit 1; }
             '
 
       # The real installer on a real systemd: the runner has both, and no

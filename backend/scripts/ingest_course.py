@@ -40,7 +40,7 @@ from app.services.storage import StorageNotConfiguredError, build_storage
 def _storage():
     """The bucket transcripts are read from, or None if there is none. Run the
     script inside a container on the dev stack: Windows cannot resolve the
-    MinIO host name (see infra/README.md)."""
+    storage's host name, minio.localhost (see infra/README.md)."""
     try:
         return build_storage()
     except StorageNotConfiguredError:

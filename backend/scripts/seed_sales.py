@@ -7,8 +7,11 @@ The dashboard reads paid orders and enrolments by *when* they happened, and
 nothing else on a development machine happens on more than one day: every
 seeded enrolment is stamped with the morning `scripts.seed_interactions` ran,
 and a payment is something a person does by hand, once. So the chart would be
-one spike and a flat line. This writes 77 orders (139 courses sold) spread over
-the past twelve months, more of them recently, by forty buyers of its own.
+one spike and a flat line. This writes orders spread over the past twelve
+months, more of them recently, by forty buyers of its own -- out of whatever
+paid courses are on sale: 77 orders (139 courses sold) with the synthetic
+courses of `scripts.seed_interactions`, 40 orders of the one paid course once
+those are purged, as they are for the defence.
 
 **Every purchase goes through the real checkout.** Courses go into a cart via
 `commerce.add_to_cart`, the cart becomes an order via `orders.create_from_cart`
@@ -217,8 +220,7 @@ async def seed_sales(
     }
     if not courses:
         raise SystemExit(
-            "Chưa có khóa học có phí nào đang bán. Chạy `python -m scripts.seed` và "
-            "`python -m scripts.seed_interactions` trước."
+            "Chưa có khóa học có phí nào đang bán. Chạy `python -m scripts.seed` trước."
         )
 
     buyers = await _buyers(session)

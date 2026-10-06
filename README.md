@@ -98,15 +98,17 @@ Thứ tự **có nghĩa**: script sau dùng dữ liệu của script trước. M
 | 1 | `seed_transcripts` | Lời giảng cho 12 bài video khóa Python — kho ngữ liệu của trợ giảng AI | `GEMINI_API_KEY` để nạp vào RAG |
 | 2 | `seed_banners` | 3 banner ở trang chủ | |
 | 3 | `seed_interactions` | 20 khóa giả lập + 48 học viên, để **đo** hệ gợi ý — catalog thành 24 khóa | |
-| 4 | `seed_coupons` | 6 mã giảm giá (`CHAOMUNG50`, `PYTHON30`…) | bước 3 |
+| 4 | `seed_coupons` | 6 mã giảm giá (`CHAOMUNG50`, `PYTHON30`…) | không có bước 3 thì `PYTHON30` chỉ phủ một khóa |
 | 5 | `seed_cart` | Giỏ hàng + yêu thích của `hocvien01/13/25` | bước 3 |
-| 6 | `seed_sales` | 77 đơn hàng của 40 người mua trong 12 tháng — dashboard giảng viên và admin | |
+| 6 | `seed_sales` | Đơn hàng của 40 người mua trong 12 tháng — dashboard giảng viên và admin (77 đơn trên 24 khóa, 40 đơn khi chỉ có 4 khóa thật) | |
 | 7 | `seed_study` | 40 người mua học trong 70 ngày — XP, chuỗi ngày, bảng xếp hạng | bước 6 |
 | 8 | `seed_community` | Một tuần hỏi đáp ở khóa Python (5 câu hỏi, trả lời của giảng viên, bình chọn), thông báo đi kèm, ghi chú + đánh dấu của `hocvien07`, 2 báo cáo vi phạm chờ xử lý | bước 3 |
 | 9 | `issue_certificates` | Cấp và vẽ PDF chứng chỉ cho mọi lượt đã học xong | |
 | 10 | `rebuild_recommendations` | Tính ngay gợi ý (job hằng đêm 03:00 cũng làm) | có `GEMINI_API_KEY` thì chạy `rebuild_course_embeddings` trước, không thì chỉ có nửa collaborative |
 
 **Gỡ theo thứ tự ngược lại**, mỗi script thêm `--purge`: `seed_community` → `seed_study` → `seed_sales` → `seed_cart` → `seed_coupons` → `seed_interactions`. Đơn hàng là sổ tiền và không bị script nào khác xóa, nên gỡ `seed_interactions` trước `seed_sales` sẽ bị từ chối kèm lời nhắc thứ tự. `seed_community` phải gỡ trước `seed_interactions`: gỡ học viên trước thì câu hỏi của họ mất theo, nhưng chuông của giảng viên vẫn trỏ vào câu hỏi không còn nữa. Gỡ xong còn đúng 4 khóa thật, 3 tài khoản gốc.
+
+**Trước buổi bảo vệ** (đã làm trên máy dev 06/10/2026): gỡ cả sáu như trên để catalog về 4 khóa, rồi nạp lại phần demo cần — `seed_sales` → `seed_study` → `seed_coupons` → `rebuild_leaderboard` → `issue_certificates` → `rebuild_recommendations`. Dashboard, bảng xếp hạng, gợi ý và mã của banner trang chủ (`CHAOMUNG50`) chạy được trên 4 khóa thật; hỏi đáp/ghi chú/báo cáo mẫu (`seed_community`) và giỏ mẫu (`seed_cart`) thì không, vì chúng dựa vào học viên của bước 3. Kết quả từng bước: [docs/report/assets/phase-6/purge-demo-data.txt](docs/report/assets/phase-6/purge-demo-data.txt).
 
 **Ngày tháng tính theo lúc chạy, nên dữ liệu "già" đi.** Chuỗi ngày học bị cắt lúc đọc, và bảng xếp hạng tuần/tháng chỉ đếm tuần/tháng hiện tại. Nạp `seed_sales` + `seed_study` từ hơn một ngày trước thì mọi chuỗi về 0 và bảng tuần trống. Trước buổi demo hay trước khi chụp ảnh: gỡ `seed_study` rồi `seed_sales`, nạp lại `seed_sales` rồi `seed_study`, rồi `rebuild_leaderboard` (đã làm 05/10/2026 trước lượt chụp ảnh giao diện).
 

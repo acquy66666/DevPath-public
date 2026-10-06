@@ -1,0 +1,183 @@
+GỠ DỮ LIỆU TƯƠNG TÁC GIẢ LẬP TRƯỚC BUỔI BẢO VỆ — VÀ NẠP LẠI PHẦN DEMO CẦN
+Ngày: 06/10/2026 · nhánh feature/purge-demo-data · CSDL dev (stack infra/docker-compose.yml)
+
+Kết luận: catalog về đúng 4 khóa thật (API `/courses` → `"total":4`, trang
+/khoa-hoc liệt kê đúng 4 link). 20 khóa + 48 học viên của `seed_interactions`
+đã gỡ. Gỡ xong thì dashboard, bảng xếp hạng và gợi ý trống trơn, nên nạp lại
+`seed_sales` + `seed_study` + `seed_coupons` **chỉ trên 4 khóa thật** (user
+chốt phương án này 06/10): dashboard giảng viên/admin có số, bảng xếp hạng
+tuần/tháng/mọi lúc 7/13/40 người, banner `CHAOMUNG50` ở trang chủ vẫn đúng.
+
+Một sửa code đi kèm: `seed_coupons` từng từ chối chạy khi thiếu khóa
+`python-nang-cao-…` (một khóa giả) → giờ mã theo khóa chỉ gắn những khóa còn
+tồn tại (TDD, 2 test mới).
+
+Số đo precision@k của recommender đã thu từ 21/09
+(`phase-4/recommender-eval.md`), chạy lại cần nạp lại `seed_interactions`
+(hạt giống cố định → ra đúng số cũ).
+
+==============================================================================
+1. TRƯỚC KHI GỠ — SAO LƯU
+==============================================================================
+`pg_dump -Fc` CSDL dev ra ngoài repo (617 KB, `pg_restore -l` đọc được 42
+mục TABLE DATA = 41 bảng + alembic_version). Không cần dùng tới.
+
+Catalog lúc đó: 24 khóa published (10 có phí), 4 thật + 20 giả lập. Ghi chú:
+plan gọi chúng là "khóa `cum-*`" nhưng slug thật là tên khóa bình thường
+(`redis-cache-hang-doi-…`, `quy-hoach-dong-qua-20-bai-toan`…) — nhận ra bằng
+danh sách `SYNTHETIC_COURSES` trong `seed_interactions.py`, không bằng tiền tố.
+
+Tài khoản: 1 admin, 2 giảng viên, 48 học viên `@seed.devpath.example`
+(seed_interactions), 40 người mua `@sales.devpath.example` (seed_sales), và
+1 tài khoản `thu-vnpay@devpath.example` (thử VNPay sandbox 23/09, 1 đơn
+`pending` DP260924SEPXYB trên khóa thật 499.000 ₫) — không thuộc script nào,
+để nguyên.
+
+==============================================================================
+2. GỠ — ĐÚNG THỨ TỰ NGƯỢC LÚC NẠP
+==============================================================================
+$ python -m scripts.seed_community --purge
+Đã xóa 5 câu hỏi (kèm trả lời và bình chọn), 10 thông báo, 2 báo cáo, 3 ghi chú, 2 đánh dấu.
+$ python -m scripts.seed_study --purge
+Đã gỡ 693 lần cộng XP cùng tiến độ học của người mua mẫu.
+$ python -m scripts.seed_sales --purge
+Đã gỡ 40 người mua và 77 đơn hàng.
+$ python -m scripts.seed_cart --purge
+Đã xóa 7 dòng giỏ hàng và 6 dòng yêu thích.
+$ python -m scripts.seed_coupons --purge
+Đã xóa 6 mã giảm giá.
+$ python -m scripts.seed_interactions --purge
+Đã xóa 20 khóa học giả lập và 48 học viên giả lập.
+
+Cả 6 lệnh thoát 0 (chạy bằng `docker compose -f infra/docker-compose.yml
+exec backend python -m scripts.<tên> --purge`).
+
+Sau khi gỡ: 4 khóa (1 có phí: cau-truc-du-lieu-va-giai-thuat-voi-python,
+499.000 ₫, khoa.tran), 4 tài khoản (admin, 2 giảng viên, thu-vnpay), mọi
+`students_count`/`rating_*` của 4 khóa về 0. Kho RAG của 4 khóa thật còn
+nguyên: `doc_chunks` 43 → 23 (20 chunk của khóa giả đi theo CASCADE),
+`course_embeddings` 24 → 4.
+
+==============================================================================
+3. NẠP LẠI PHẦN DEMO CẦN — CHỈ TRÊN 4 KHÓA THẬT
+==============================================================================
+$ python -m scripts.seed_sales
+Đã nạp 40 đơn hàng (40 lượt bán) của 40 người mua, tổng 19.161.600 ₫, trải trong 365 ngày gần nhất.
+$ python -m scripts.seed_study
+Đã cho người mua mẫu học 743 bài, làm 24 bài trắc nghiệm đạt và 9 lần trượt, tham gia thêm 49 khóa miễn phí, trong 70 ngày gần nhất.
+  Dẫn đầu tuần này: Người mua 18 60 XP, Người mua 08 60 XP, Người mua 02 40 XP
+  Dẫn đầu mọi thời gian: Người mua 20 430 XP, Người mua 06 420 XP, Người mua 04 410 XP
+  Chuỗi dài nhất từng có: Người mua 06 16 ngày
+  Chuỗi đang giữ dài nhất: Người mua 06 16 ngày
+$ python -m scripts.seed_coupons
+mã tạo mới     : 6
+khóa học gắn mã: 1
+khóa không có trên sàn, bỏ khỏi mã: python-nang-cao-decorator-generator-context-manager (chạy `python -m scripts.seed_interactions` nếu cần)
+$ python -m scripts.rebuild_leaderboard
+Bảng tuần này       lb:xp:week:2026-W41      7 người
+Bảng tháng này      lb:xp:month:2026-10      13 người
+Bảng mọi thời gian  lb:xp:all                40 người
+$ python -m scripts.issue_certificates
+Đã cấp 0 chứng chỉ.
+Mọi chứng chỉ đã có PDF.
+$ python -m scripts.rebuild_recommendations
+Đã ghi gợi ý cho 40 người dùng (top 20 mỗi người), trộn collaborative + content-based.
+
+Chỉ một khóa có phí nên mỗi người mua đúng một đơn một khóa (trên 24 khóa là
+77 đơn / 139 lượt bán). 36 chứng chỉ do `seed_study` cấp đã được worker vẽ PDF
+(36/36 có `pdf_key`).
+
+==============================================================================
+4. SỐ DÒNG — TRƯỚC | SAU KHI GỠ | SAU KHI NẠP LẠI
+==============================================================================
+  bảng                  trước   gỡ   nạp lại
+  enrollments             378    0       89   (free 239→49, purchase 139→40)
+  lesson_progress         676    0      767
+  quiz_attempts            37    0       33
+  submissions               7    0        0
+  xp_events               697    0      791
+  streaks                  41    0       40
+  certificates            230    0       36
+  reviews                  97    0        0
+  orders                   78    1       41   (paid 77→40; còn 1 pending của thu-vnpay)
+  order_items             140    1       41
+  payment_events           81    4       44
+  coupons                   7    0        7   (6 mã demo + BANHANG20 của seed_sales)
+  cart_items                9    1        1   (giỏ của thu-vnpay)
+  wishlists                 7    0        0
+  qa_threads / qa_replies 5/6  0/0      0/0
+  notifications            10    0        0
+  notes / bookmarks       3/2  0/0      0/0
+  reports                   2    0        0
+  chat_sessions             4    0        0
+  course_embeddings        24    4        4
+  doc_chunks               43   23       23
+  banners                   3    3        3
+  Doanh thu (đơn paid)  59.768.600 ₫ → 0 → 19.161.600 ₫ (29/12/2025 – 29/09/2026)
+
+==============================================================================
+5. MÀN HÌNH DEMO ĐỌC RA GÌ (QUA API, ĐĂNG NHẬP TÀI KHOẢN SEED, ĐĂNG XUẤT SAU ĐÓ)
+==============================================================================
+Giảng viên khoa.tran (2 khóa, có khóa có phí), kỳ mặc định 30 ngày:
+  doanh thu 3.692.600 ₫ (kỳ trước 2.894.200), 8 lượt bán, 16 lượt ghi danh,
+  8 học viên mới; mọi lúc 19.161.600 ₫, 40 học viên, hoàn thành 33,9 %.
+  Kỳ 7 ngày: 399.200 ₫ / 1 lượt bán (kỳ trước 1.397.200 / 3).
+Giảng viên mai.anh (2 khóa miễn phí): doanh thu 0 ₫ (đúng — không có khóa có
+  phí), 30 ngày: 13 ghi danh, 9 học viên mới; mọi lúc 27 học viên, hoàn thành 51,5 %.
+Admin, 30 ngày: doanh thu 3.692.600 ₫, 8 đơn, 29 ghi danh, 29 người hoạt động
+  (TB 5,7/ngày, hôm nay 9); mọi lúc 44 người dùng, 4 khóa, 89 ghi danh.
+Bảng xếp hạng: tuần 7 người, tháng 13, mọi lúc 40 (dẫn đầu 430 / 420 / 410 XP).
+Người mua 06: 420 XP, chuỗi 16 ngày (giữ tới hôm qua), gợi ý còn 1 khóa
+  (javascript-hien-dai-es6-va-dom, cả collaborative lẫn content) — đã học 3/4.
+Công khai: `/courses` total 4; 3 banner còn nguyên.
+Mã giảm giá, trên giỏ của một tài khoản dùng một lần `@e2e.devpath.example`
+  (khóa 499.000 ₫; gỡ bằng `scripts.purge_e2e` ngay sau đó — "Đã gỡ 1 tài khoản"):
+    CHAOMUNG50 200  giảm 249.500 → còn 249.500 ₫   (mã banner 1 quảng cáo)
+    PYTHON30   200  giảm 149.700 → còn 349.300 ₫
+    HETHAN     409  COUPON_EXPIRED     "…đã hết hạn ngày 06/09/2026"
+    SAPCHAY    409  COUPON_NOT_STARTED "…chỉ có hiệu lực từ ngày 13/10/2026"
+    HETLUOT    409  COUPON_EXHAUSTED   "…đã hết lượt sử dụng"
+
+==============================================================================
+6. NHỮNG GÌ KHÔNG CÒN SAU KHI GỠ — BIẾT TRƯỚC, KHÔNG NẠP LẠI
+==============================================================================
+  - Đánh giá: cả 97 đánh giá là của học viên giả → 4 khóa hiện "chưa có đánh
+    giá". Kịch bản demo vẫn có chặng học viên tự viết một đánh giá.
+  - Hỏi đáp, thông báo, ghi chú/đánh dấu, báo cáo vi phạm (`seed_community`):
+    script dựa vào hocvien07 và các học viên seed nên không nạp lại được trên
+    4 khóa thật. Ảnh chương 4 đã chụp xong trước khi gỡ (`ui-screenshots.txt`).
+  - Giỏ hàng + yêu thích mẫu (`seed_cart`): dựa vào hocvien01/13/25.
+  - Mã `PYTHON30` chỉ còn phủ một khóa (khóa Python nâng cao là khóa giả).
+  - `rec:v2:user:*` của 88 học viên đã xóa còn trong Redis tới hết TTL 48 giờ
+    — không ai đọc được (người dùng không còn), tự hết.
+  - Chạy lại `ui/capture.cjs` (bộ ảnh chương 4) trên máy dev giờ cần nạp lại
+    đủ bảng README trước — script đăng nhập hocvien07/hocvien25 và dựa vào
+    `seed_community` (đã ghi ở `ui-screenshots.txt`) — rồi gỡ lại theo mục 8.
+
+Ghi nhận thêm, có từ trước (không do lần gỡ này): người mua của `seed_sales`
+được tạo với `created_at` = lúc chạy script, nên dashboard admin đếm 40 "người
+dùng mới" trong 7 ngày gần nhất dù đơn đầu tiên của họ từ 12 tháng trước.
+
+==============================================================================
+7. KIỂM THỬ
+==============================================================================
+`tests/test_seed_coupons.py`: 2 test mới (mã theo khóa giữ lại khóa còn tồn
+tại; mã theo khóa không còn khóa nào thì không ghi) — đỏ trên code cũ đúng lý
+do (`SystemExit: Chưa có các khóa học: …`), xanh sau sửa: 15 passed.
+Toàn bộ test backend chạy lại trong container trên CSDL dev mới (4 khóa):
+  3 failed, 1861 passed, 2 skipped in 1816.32s (0:30:16)
+Ba ca đỏ là ba ca cố định khi chạy trong container, có từ trước, CI không có:
+  test_avatar.py / test_video_upload.py ::test_storage_that_was_never_configured_answers_503
+    (storage dev tự rơi về RustFS của stack nên không bao giờ "chưa cấu hình")
+  test_seed_data.py::test_deploy_passes_the_seed_passwords_into_the_container
+    (container backend không mount `infra/`)
+Không ca nào đỏ vì catalog chỉ còn 4 khóa hay vì mất học viên seed.
+
+==============================================================================
+8. CÁCH CHẠY LẠI (TRƯỚC BUỔI BẢO VỆ, HOẶC SAU KHI DỮ LIỆU "GIÀ" ĐI)
+==============================================================================
+Gỡ (bỏ qua script nào chưa từng nạp — `--purge` trên bảng trống vẫn thoát 0):
+  seed_community → seed_study → seed_sales → seed_cart → seed_coupons → seed_interactions
+Nạp lại phần demo:
+  seed_sales → seed_study → seed_coupons → rebuild_leaderboard → issue_certificates → rebuild_recommendations
+Kiểm: `curl -s "http://localhost:8000/api/v1/courses?page_size=1"` → `"total":4`.

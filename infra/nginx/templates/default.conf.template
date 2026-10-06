@@ -74,9 +74,8 @@ server {
 
     include /etc/nginx/snippets/security-headers.conf;
 
-    # Uploads do not come through here. A video or an avatar goes from the
-    # browser straight to R2 with a presigned URL, so the largest body nginx
-    # ever carries is a JSON form.
+    # The application's own bodies are JSON forms. Uploads are the exception
+    # and have a location of their own below, with their own limit.
     client_max_body_size 2m;
 
     gzip on;
@@ -134,6 +133,19 @@ server {
         # of the server's -- so without this line every script and stylesheet
         # went out with no nosniff, no HSTS, nothing.
         include /etc/nginx/snippets/security-headers.conf;
+    }
+
+    # The media bucket, same origin as the page: a browser upload is a
+    # same-origin PUT to a presigned URL (no CORS to keep in step), and the
+    # storage server has no port of its own on the internet. Only this
+    # bucket's paths -- `= /devpath-media` too, because bucket-level calls
+    # (the app's ListObjectsV2 and DeleteObjects) have no trailing slash. No
+    # other bucket, no bucket creation by anyone without the key, no admin API.
+    location = /devpath-media {
+        include /etc/nginx/snippets/media.conf;
+    }
+    location /devpath-media/ {
+        include /etc/nginx/snippets/media.conf;
     }
 
     location / {

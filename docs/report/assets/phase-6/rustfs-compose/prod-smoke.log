@@ -1,0 +1,24 @@
+site https://devpath.localhost, bucket https://devpath.localhost/devpath-media, endpoint https://devpath.localhost
+PASS  the app signs for the site's own origin
+PASS  sign-up through nginx  (HTTP 201)
+PASS  upload URL is on the site's origin
+PASS  same-origin PUT to the presigned URL  (HTTP 200)
+PASS  API accepts the avatar  (https://devpath.localhost/devpath-media/avatars/1d55555b-8e5d-408c-8e6b-391ffd3b35e8/cdc7e04e8490480e83add777f615974e.png)
+PASS  anonymous GET of the avatar  (HTTP 200, image/png)
+PASS  uploaded content is sandboxed  (sandbox; default-src 'none' | frame-ancestors 'none')
+PASS  nosniff on uploaded content
+PASS  HSTS on uploaded content
+PASS  Range request  (HTTP 206)
+PASS  anonymous listing refused: ?list-type=2  (HTTP 403)
+PASS  anonymous listing refused: /  (HTTP 403)
+PASS  unsigned PUT refused  (HTTP 403)
+PASS  unsigned DELETE refused  (HTTP 403)
+PASS  no other bucket is routed (create attempt lands on the app)  (HTTP 404)
+PASS  100 MB PUT through nginx  (HTTP 200)
+PASS  download_file
+PASS  upload_file, multipart
+PASS  upload_bytes + read_bytes
+PASS  list_objects  (3 objects)
+PASS  delete_keys
+
+0 failed

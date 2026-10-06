@@ -122,7 +122,7 @@ Deploy chạy **đúng commit đang checkout**, không phải `origin/main` — 
 cp .env.prod.example .env.prod && chmod 600 .env.prod
 ```
 
-Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại có mặc định dùng được:
+Mở `.env.prod` và điền. Bảy giá trị bắt buộc, phần còn lại có mặc định dùng được:
 
 | Biến | Cách lấy |
 |---|---|
@@ -130,9 +130,10 @@ Mở `.env.prod` và điền. Năm giá trị bắt buộc, phần còn lại c�
 | `ACME_EMAIL` | Email nhận cảnh báo khi gia hạn chứng chỉ hỏng |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32` — sinh ra, đừng tự nghĩ |
 | `JWT_SECRET` | `openssl rand -hex 32`. Backend từ chối khởi động ở production nếu còn giá trị mặc định của máy dev hoặc ngắn hơn 32 ký tự |
+| `STORAGE_ACCESS_KEY` / `STORAGE_SECRET_KEY` | `openssl rand -hex 16` / `openssl rand -hex 32`. Khóa của storage tự host (RustFS, service `storage`): video, avatar, banner, transcript, PDF chứng chỉ nằm ở đó, phục vụ tại `https://<DOMAIN>/devpath-media/`. App ký bằng chính cặp khóa này. Giữ nguyên sau lần đầu |
 | `DOCKER_GID` | `getent group docker \| cut -d: -f3` trên chính máy chủ. `docker-proxy` chạy uid 10001 nên phải ở trong nhóm này mới mở được socket Docker (worker chấm bài không cầm socket, nó đi qua proxy) |
 
-`GOOGLE_*` và `R2_*` để trống được: đăng nhập Google và upload video sẽ trả 503, phần còn lại của trang chạy bình thường. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Địa chỉ API thì không nướng vào đâu cả: trình duyệt gọi `/api` cùng origin với trang. Còn `DOMAIN` thì có — phía server của image frontend cần nó để in canonical/Open Graph tuyệt đối — nhưng `deploy.sh` luôn build lại, nên đổi `DOMAIN` rồi deploy là đủ.
+`GOOGLE_*` để trống được: đăng nhập Google sẽ trả 503, phần còn lại của trang chạy bình thường. `R2_*` **nên** để trống: trống thì app dùng storage tự host ở trên. Chỉ điền khi muốn chuyển sang Cloudflare R2 (cần khai thẻ, [huong-dan-cloudflare-r2.md](huong-dan-cloudflare-r2.md)), và khi đó điền đủ cả endpoint lẫn URL công khai. Điền sau rồi deploy lại lúc nào cũng được — nhưng lưu ý `GOOGLE_LOGIN_ENABLED` **nướng vào bundle lúc build**, nên đổi nó là phải build lại image frontend, không phải chỉ restart. Địa chỉ API thì không nướng vào đâu cả: trình duyệt gọi `/api` cùng origin với trang. Còn `DOMAIN` thì có — phía server của image frontend cần nó để in canonical/Open Graph tuyệt đối — nhưng `deploy.sh` luôn build lại, nên đổi `DOMAIN` rồi deploy là đủ.
 
 Redirect URI đăng ký ở Google Cloud Console phải khớp từng ký tự:
 
@@ -172,10 +173,15 @@ không phải chấm bài, `/version` cũng vậy.
 
 Service `backup` dump CSDL mỗi đêm lúc `BACKUP_HOUR` (mặc định 02:00 giờ Việt Nam) lên một bucket S3 và giữ `BACKUP_KEEP` bản mới nhất (mặc định 14). Nó cần một bucket **riêng, private** — không phải bucket media, vì bucket media cho tải ẩn danh để player lấy video, còn bản dump chứa email và hash mật khẩu của mọi người dùng (service từ chối nếu hai tên trùng nhau).
 
-Trên Cloudflare R2:
+Và bucket đó phải nằm **ngoài máy chủ**. Storage tự host (`STORAGE_*`) dùng chung đĩa với CSDL: mất máy là mất cả hai, nên không đặt backup ở đó. Service cũng không tự rơi về storage đó ở production.
 
-1. Tạo bucket `devpath-backups`. **Không** bật public access, **không** bật URL `r2.dev`.
-2. Tạo API token loại *Object Read & Write*, giới hạn đúng bucket này. Điền vào `BACKUP_ACCESS_KEY_ID` / `BACKUP_SECRET_ACCESS_KEY`. Có thể bỏ trống để dùng chung `R2_*` của app, nhưng token riêng tốt hơn: lộ key của app thì không xóa được backup.
+**Backblaze B2** (mặc định của dự án: 10 GB miễn phí, không cần thẻ — quyết định ở `docs/report/assets/phase-6/storage-decision.txt`):
+
+1. Đăng ký tại backblaze.com (email, không thẻ). **Buckets → Create a Bucket**: tên `devpath-backups` (tên bucket B2 là duy nhất toàn cầu — trùng thì đặt tên khác và ghi vào `BACKUP_BUCKET`), **Files in Bucket: Private**.
+2. Trang bucket ghi **Endpoint**, dạng `s3.us-west-004.backblazeb2.com`. Điền `BACKUP_ENDPOINT_URL=https://s3.us-west-004.backblazeb2.com`. Region dùng để ký được lấy từ chính endpoint này (B2 từ chối mọi region khác, kể cả `auto` mà R2 dùng).
+3. **Application Keys → Add a New Application Key**: chỉ cho bucket này, *Read and Write*. `keyID` → `BACKUP_ACCESS_KEY_ID`, `applicationKey` (chỉ hiện một lần) → `BACKUP_SECRET_ACCESS_KEY`.
+
+Hoặc một bucket R2 private, nếu `R2_*` đã được điền: tạo `devpath-backups` **không** bật public access, **không** bật URL `r2.dev`, kèm một API token *Object Read & Write* riêng cho đúng bucket này. Bỏ trống `BACKUP_*` thì service dùng chung `R2_*` của app, nhưng token riêng tốt hơn: lộ key của app thì không xóa được backup.
 
 Chưa chốt nơi lưu thì phải **nói rõ** điều đó: `BACKUP_ENABLED=false`. Thiếu cả `BACKUP_*` lẫn `R2_*` mà không có dòng này, service `backup` đứng yên ở trạng thái unhealthy và `deploy.sh` dừng lại — chạy production không có backup là một quyết định, không phải một thứ bị quên.
 
@@ -354,7 +360,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod logs -f backend
 |---|---|
 | Trang trả 502 | `backend` hoặc `frontend` chưa healthy — `ps` rồi `logs` của đúng service đó. nginx cố ý vẫn sống và trả 502 thay vì chết theo |
 | Cảnh báo chứng chỉ | `init-tls.sh` dừng giữa chừng, chứng chỉ đang là bản tự ký. Kiểm tra DNS rồi chạy lại |
-| 503 khi upload video | `R2_*` còn trống trong `.env.prod` |
+| Upload video/avatar hỏng (403 ở PUT, hoặc `deploy.sh` dừng ở "cannot list its media bucket") | `logs storage` và `logs storage-init`. 403 ở PUT gần như luôn là nginx không chuyển `Host` (`nginx/snippets/media.conf` phải `include` `proxy.conf`); lỗi TLS từ trong container là chứng chỉ chưa phải của Let's Encrypt (`init-tls.sh` chưa xong); `SignatureDoesNotMatch` khi đã đổi `STORAGE_*` là backend chưa được tạo lại (`up -d`) |
 | 503 ở nút đăng nhập Google | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` còn trống |
 | Backend không khởi động | Xem log dòng đầu: thường là `JWT_SECRET` còn giá trị mặc định hoặc quá ngắn, hay `CORS_ORIGINS` không phải origin (có `/` cuối, có đường dẫn, hoặc `*`) |
 | Nút Google không hiện | `GOOGLE_LOGIN_ENABLED` nướng vào bundle lúc build — phải build lại frontend, restart không đủ |

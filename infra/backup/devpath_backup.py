@@ -169,8 +169,11 @@ def _r2_endpoint(env: Mapping[str, str]) -> str:
 
 def storage_from_env(env: Mapping[str, str]) -> Storage:
     """Where backups go: BACKUP_* if set, else the R2 credentials the app uses,
-    else -- outside production -- the MinIO of the dev stack, the same fallback
-    the backend makes (backend/app/core/config.py).
+    else -- outside production -- the storage service of the dev stack, the
+    same fallback the backend makes (infra/docker-compose.yml). Never that in
+    production: there it runs on the same machine as the database, and a
+    backup that dies with the server is not one (Backblaze B2 instead,
+    docs/huong-dan-deploy-vps.md).
 
     The bucket is never the media one. That bucket answers anonymous GETs so
     the player can fetch video, and a dump holds every email and password hash
@@ -202,11 +205,23 @@ def storage_from_env(env: Mapping[str, str]) -> Storage:
             "hoặc BACKUP_ENABLED=false nếu cố ý chạy không có backup"
         )
     return Storage(
-        "http://minio:9000",
-        env.get("MINIO_ROOT_USER") or "devpath",
-        env.get("MINIO_ROOT_PASSWORD") or "devpath-minio",
+        "http://storage:9000",
+        env.get("STORAGE_ACCESS_KEY") or "devpath",
+        env.get("STORAGE_SECRET_KEY") or "devpath-storage",
         bucket,
     )
+
+
+#: Backblaze B2's S3 endpoints name their region, and B2 checks the region in
+#: the signature against it -- "auto", which is what R2 wants, is refused.
+B2_ENDPOINT = re.compile(r"^https?://s3\.([a-z0-9-]+)\.backblazeb2\.com/?$")
+
+
+def signing_region(endpoint_url: str) -> str:
+    """The region to sign with: the one in a B2 endpoint, else "auto" (R2's;
+    the self-hosted RustFS accepts it too)."""
+    match = B2_ENDPOINT.match(endpoint_url.strip().lower())
+    return match.group(1) if match else "auto"
 
 
 def list_keys(s3, bucket: str) -> Iterator[str]:
@@ -275,17 +290,16 @@ def s3_client(storage: Storage):
         endpoint_url=storage.endpoint_url,
         aws_access_key_id=storage.access_key,
         aws_secret_access_key=storage.secret_key,
-        # R2 wants "auto"; MinIO accepts it. Same as backend/app/services/storage.py.
-        region_name="auto",
+        region_name=signing_region(storage.endpoint_url),
         config=Config(signature_version="s3v4", retries={"max_attempts": 5, "mode": "standard"}),
     )
 
 
 def ensure_bucket(s3, bucket: str) -> None:
     """Create the bucket if it is missing and the credentials may -- the dev
-    MinIO. On R2 the bucket is made by hand (the runbook), private, and a
-    token scoped to it may not even be allowed to ask; then the upload is
-    what reports a problem."""
+    storage, where a new bucket is private until given a policy. On B2 or R2
+    the bucket is made by hand (the runbook), private, and a key scoped to it
+    may not even be allowed to ask; then the upload is what reports a problem."""
     from botocore.exceptions import ClientError
 
     try:

@@ -156,7 +156,7 @@ Vòng đời: `uploading → processing → ready`, nhánh hỏng là `failed` k
 
 **Chưa cấu hình bucket thì trả 503 `STORAGE_NOT_CONFIGURED`**, giống hệt Google OAuth: phần còn lại của hệ thống chạy bình thường, test vẫn xanh, chỉ ba endpoint này ngừng. Cách tạo bucket + khóa: [docs/huong-dan-cloudflare-r2.md](../docs/huong-dan-cloudflare-r2.md).
 
-**`services/storage.py` là Protocol, không phải boto3 rải khắp nơi.** Router không biết boto3 tồn tại, test không chạm Cloudflare — cùng khuôn với `google_oauth.py`. `R2_ENDPOINT_URL` cho phép trỏ sang bất kỳ server nào nói giao thức S3 (MinIO chẳng hạn), để trống thì endpoint suy ra từ `R2_ACCOUNT_ID`.
+**`services/storage.py` là Protocol, không phải boto3 rải khắp nơi.** Router không biết boto3 tồn tại, test không chạm Cloudflare — cùng khuôn với `google_oauth.py`. `R2_ENDPOINT_URL` cho phép trỏ sang bất kỳ server nào nói giao thức S3 (RustFS của stack, ở cả dev lẫn production — `infra/README.md`), để trống thì endpoint suy ra từ `R2_ACCOUNT_ID`.
 
 **Tải lên lần nữa là thay hẳn video cũ:** hàng cũ bị xóa và toàn bộ object dưới prefix của nó bị dọn. Giữ lại thì bài học phát một video trong khi bucket trả tiền cho hai. Xóa bài học cũng xóa hàng `video_assets` của nó — bài học là đường duy nhất tới một video, giữ hàng lại là giữ thứ không ai chạm tới được nữa. Tệp của nó thì để job dọn object mồ côi lo (xóa bài học phải chạy được cả trên máy chưa cấu hình bucket).
 
@@ -553,7 +553,7 @@ Kết quả ngày 28/09/2026: 648 bài học, 21 lượt quiz đạt, 3 lượt 
 | Endpoint | Mô tả |
 |---|---|
 | `GET /certificates/{code}` | **Công khai.** Trả đúng những gì in trên tờ chứng chỉ: tên, khóa, giảng viên, ngày, mã; kèm `course_slug` (khi khóa còn trên sàn) và `pdf_ready`. Không có email hay id người dùng. Mã sai định dạng và mã không tồn tại cùng trả 404 `CERTIFICATE_NOT_FOUND`; mã gõ thường hoặc có gạch vẫn nhận |
-| `GET /certificates/{code}/pdf` | **Công khai.** Trả tệp PDF (đọc từ storage qua API, nên không phụ thuộc host MinIO/R2 có phân giải được từ trình duyệt hay không). PDF chưa vẽ thì trả 409 `CERTIFICATE_NOT_READY` **và đẩy lại job** |
+| `GET /certificates/{code}/pdf` | **Công khai.** Trả tệp PDF (đọc từ storage qua API, nên không phụ thuộc host của storage có phân giải được từ trình duyệt hay không). PDF chưa vẽ thì trả 409 `CERTIFICATE_NOT_READY` **và đẩy lại job** |
 
 Người học thấy mã chứng chỉ ở `certificate_code` của `GET /enrollments/me` và `GET /courses/{id}/progress`. Frontend có nút "Chứng chỉ" ở `/khoa-hoc-cua-toi`, link "Xem chứng chỉ" trong trang học, và trang xác thực công khai `/cert/{code}` (render phía server, trả 404 thật khi mã sai, `noindex`).
 
@@ -726,7 +726,7 @@ docker compose exec backend python -m scripts.ingest_course --all
 docker compose exec backend python -m scripts.ingest_course <slug-hoặc-id>
 ```
 
-**Lời giảng cho khóa seed** (từ 20/09/2026). Video seed là luồng HLS mẫu không có tiếng, nên nếu chỉ có vài bài viết thì chatbot gần như không có gì để tìm. `scripts/seed_transcripts.py` gắn lời giảng viết sẵn (`scripts/seed_data/transcripts/<slug>/<chương>-<bài>.srt|txt`) cho video của khóa Python, qua đúng `put_transcript` với tư cách giảng viên chủ khóa. Chạy sau `scripts.seed`, **trong container** (cần MinIO). Khóa đang xuất bản thì được xếp một job ingest cho cả khóa:
+**Lời giảng cho khóa seed** (từ 20/09/2026). Video seed là luồng HLS mẫu không có tiếng, nên nếu chỉ có vài bài viết thì chatbot gần như không có gì để tìm. `scripts/seed_transcripts.py` gắn lời giảng viết sẵn (`scripts/seed_data/transcripts/<slug>/<chương>-<bài>.srt|txt`) cho video của khóa Python, qua đúng `put_transcript` với tư cách giảng viên chủ khóa. Chạy sau `scripts.seed`, **trong container** (cần storage). Khóa đang xuất bản thì được xếp một job ingest cho cả khóa:
 
 ```bash
 docker compose exec backend python -m scripts.seed_transcripts
@@ -752,7 +752,7 @@ Lý do chọn model và cách đo: [docs/report/assets/phase-4/embedding-model.t
 
 Tệp **gốc** được lưu cạnh video (`videos/<asset>/transcript.srt`), ghi vào `video_assets.transcript_key`. Ingest đọc lại tệp đó từ bucket và bóc chữ bằng đúng hàm đã kiểm lúc upload: bỏ số thứ tự, dòng thời gian, thẻ `<i>`/`{\an8}`, và gộp câu lặp của phụ đề cuộn. Khóa đang xuất bản thì upload/gỡ/thay video đều xếp hàng nạp lại ngay. Khóa nháp thì nạp khi xuất bản.
 
-**Transcript đọc không được thì giữ nguyên chunk cũ**, và bài đó được đếm là `unreadable` chứ không phải "hết chữ". Tình huống này xảy ra khi bucket chớp nháy, hoặc worker thiếu khóa lưu trữ. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota lần nữa. Script `ingest_course` đọc transcript từ MinIO nên phải chạy **trong container** (`docker compose exec worker ...`), vì Windows không phân giải được `minio.localhost`. Bằng chứng: [transcript-ingest.txt](../docs/report/assets/phase-4/transcript-ingest.txt).
+**Transcript đọc không được thì giữ nguyên chunk cũ**, và bài đó được đếm là `unreadable` chứ không phải "hết chữ". Tình huống này xảy ra khi bucket chớp nháy, hoặc worker thiếu khóa lưu trữ. Coi là rỗng thì chỉ một lần mạng chập chờn cũng xóa sạch trí nhớ của chatbot về mọi video, và nạp lại tốn quota lần nữa. Script `ingest_course` đọc transcript từ storage nên phải chạy **trong container** (`docker compose exec worker ...`), vì Windows không phân giải được `minio.localhost`. Bằng chứng: [transcript-ingest.txt](../docs/report/assets/phase-4/transcript-ingest.txt).
 
 ### Trợ giảng AI (chat RAG)
 

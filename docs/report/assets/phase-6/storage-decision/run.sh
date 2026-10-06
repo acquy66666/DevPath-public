@@ -38,7 +38,8 @@ case "${candidate}" in
         port=8333
         ;;
     rustfs)
-        image=rustfs/rustfs:latest
+        # The version and digest the compose files run (since 05/10/2026).
+        image=rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c
         docker run -d --name spike-s3 --network "${net}" \
             -e RUSTFS_ACCESS_KEY=spikeaccess \
             -e RUSTFS_SECRET_KEY=spike-secret-0123456789 \

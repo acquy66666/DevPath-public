@@ -215,7 +215,7 @@ ra 742 bài, 23 lần đạt + 9 lần trượt, bảng tuần/tháng/mọi lúc
 chuỗi đang giữ dài nhất là nguoimua08 (9 ngày, 390 XP). Bán hàng giữ nguyên
 (40 đơn, 19.161.600 ₫ — kế hoạch mua không đổi).
 
-Vì sao `seed_study` không ra đúng số cũ (lỗi có từ trước, tách task riêng):
+Vì sao `seed_study` không ra đúng số cũ (lỗi có từ trước — đã sửa tối cùng ngày, mục 10):
 nó duyệt lượt ghi danh theo `ORDER BY created_at`, mà giờ tham gia khóa miễn
 phí chỉ tròn tới giờ — lần này có đúng một cặp trùng (nguoimua38 và nguoimua19,
 2026-09-27 02:00 UTC). Thứ tự hai dòng trùng là tùy Postgres, đảo một lần là
@@ -224,3 +224,60 @@ rút thêm số tùy giờ chạy (`_moment`).
 
 Test: `tests/test_seed_sales.py` 9 passed (2 đỏ trước khi sửa: ImportError
 `backdate_sign_ups`); cùng `test_seed_study.py` + `test_seed_coupons.py`: 31 passed.
+
+==============================================================================
+10. TỐI 06/10: NẠP LẠI RA ĐÚNG SỐ CŨ (nhánh feature/seed-study-deterministic)
+==============================================================================
+Ba nguồn làm hai lượt nạp cho ra số khác nhau, đều có từ trước:
+  a) `seed_sales`: ngày mua = khoảnh khắc chạy − `ago`, nên ngày lịch của
+     đơn trôi theo giờ chạy. Đo trên kế hoạch thật của máy dev (1 khóa có
+     phí): chạy 07:10 so với 22:00 cùng ngày → 28/40 đơn đổi ngày; ngày bắt
+     đầu học của người mua trôi theo.
+  b) `seed_study`: một bộ sinh số ngẫu nhiên dùng chung cho mọi người mua —
+     kế hoạch của mỗi người phụ thuộc mọi kế hoạch rút trước nó. Đo trên code
+     cũ: đảo thứ tự 40 người → 40/40 kế hoạch khác. Hai lượt ghi danh trùng
+     giây (lần này: nguoimua38 và nguoimua19) thì Postgres trả về thứ tự tùy ý.
+  c) `seed_study._moment` rút thêm số tùy giờ chạy, và buổi học hôm nay bị cắt
+     ở `now`. Đo trên code cũ, người mua bắt đầu 3 ngày trước: 07:10 so với
+     22:00 → 13/30 kế hoạch khác bài học / đạt-trượt.
+
+Sửa (TDD — 5 test mới, đỏ trên code cũ: ImportError, và đúng các phép đo trên):
+  - `seed_sales.purchased_at`: lùi `ago` từ 23:00 của ngày lịch Việt Nam →
+    ngày của đơn không phụ thuộc giờ chạy (cách mới: 0/40 đổi ngày).
+  - `seed_sales.fit_to_now`: những gì rơi vào hôm nay được nén vào phần hôm
+    nay đã qua (giữ thứ tự); 5 phút đầu sau nửa đêm thì phần hôm nay bị bỏ.
+  - `seed_study.study_rng(người mua, khóa)`: mỗi cặp một bộ sinh riêng; kế
+    hoạch rút theo ngày lịch, không rút gì theo giờ chạy; hành động chạy theo
+    thứ tự (thời điểm, người mua, khóa); báo cáo in ra phá hòa theo tên.
+
+Đo trên CSDL dev — gỡ rồi nạp lại hai lượt liên tiếp (`seed_study --purge`,
+`seed_sales --purge`, `seed_sales`, `seed_study`), lấy "dấu vân tay" mọi thứ
+hai script ghi, khóa theo email + slug (id ngẫu nhiên mỗi lượt): tài khoản,
+đơn, ghi danh, từng bài học xong, lượt quiz, XP, chuỗi ngày.
+  - Lượt 2 và 3 (code mới, chưa sửa báo cáo): 1.564 dòng, 28 dòng lệch — cả
+    28 đều là giờ:phút của hôm nay, lệch 1 phút (hai lượt cách nhau 25 s, phần
+    hôm nay được nén theo giờ chạy). Bỏ giờ:phút của hôm nay → giống hệt.
+  - Lượt A 21:17:34 và B 21:18:00 (code cuối, giờ:phút hôm nay ghi là
+    "(hôm nay)"):
+      dòng 1564 · md5 26142f8b05936bc98c467af46252f9a3 · bài 659 · quiz 22 · đơn 40 · ghi danh 89
+      dòng 1564 · md5 26142f8b05936bc98c467af46252f9a3 · bài 659 · quiz 22 · đơn 40 · ghi danh 89
+    Phần script in ra giống nhau từng chữ:
+      Đã nạp 40 đơn hàng (40 lượt bán) của 40 người mua, tổng 19.161.600 ₫
+      Đã cho người mua mẫu học 644 bài, làm 15 bài trắc nghiệm đạt và 7 lần trượt, tham gia thêm 49 khóa miễn phí
+      Dẫn đầu tuần này: Người mua 31 60 XP, Người mua 06 50 XP, Người mua 03 40 XP
+      Dẫn đầu mọi thời gian: Người mua 06 420 XP, Người mua 09 420 XP, Người mua 08 350 XP
+      Chuỗi dài nhất từng có: Người mua 04 12 ngày
+      Chuỗi đang giữ dài nhất: Người mua 08 7 ngày
+    (Trước khi sửa báo cáo, dòng "mọi thời gian" in Người mua 08 hoặc 20 —
+    cùng 350 XP, truy vấn không phá hòa.)
+  - Sau đó: rebuild_leaderboard (tuần/tháng/mọi lúc 8/12/40 người),
+    issue_certificates (mọi chứng chỉ đã có PDF), rebuild_recommendations.
+
+Khác ngày thì tổng (bài, XP, chuỗi) giữ nguyên theo cách dựng — mọi ngày đều
+tính lùi từ ngày lịch — còn bảng tuần/tháng đổi theo lịch. Phần này chưa đo
+trên hai ngày thật.
+
+Test: tests/test_seed_*.py trong container → 101 passed, 1 failed (ca cố định
+`deploy.sh` không mount, CI xanh).
+Tài khoản demo: nguoimua08@sales.devpath.example / devpath-buyer — 350 XP,
+chuỗi 7 ngày đang giữ (dài nhất 9).

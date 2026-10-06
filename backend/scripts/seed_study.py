@@ -30,8 +30,11 @@ the seeded learners -- `scripts.seed_interactions` and its tests pin exactly
 what those study. Run **after `scripts.seed_sales`**. The free enrolments feed
 the recommender like any other, so **`--purge` before `scripts.eval_recommender`**.
 
-Dates are relative to when it runs, and the plan is seeded, so every machine
-gets the same studying counted back from its own today. Idempotent: if the
+Dates are relative to when it runs, and the plan is seeded -- one generator
+per buyer and course, drawn by calendar day -- so every machine gets the same
+studying counted back from its own today, at whatever hour it runs: only
+today's sittings are squeezed into the part of today that has passed (and in
+the first five minutes after midnight, left out). Idempotent: if the
 buyers have studied anything, it writes nothing. `--purge` removes every
 completion, attempt, award, streak and free enrolment of the buyers, recounts
 the students of the free courses and rebuilds the leaderboard -- the account
@@ -43,7 +46,7 @@ import asyncio
 import random
 import uuid
 from collections import defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 
 from sqlalchemy import delete, func, select, update
@@ -68,7 +71,7 @@ from app.services import certificates, course_stats, gamification, leaderboard
 from app.services import enrollments as enrollments_service
 from app.services import progress as progress_service
 from app.services import quiz as quiz_service
-from scripts.seed_sales import backdate_sign_ups, buyer_emails
+from scripts.seed_sales import backdate_sign_ups, buyer_emails, fit_to_now
 
 STUDY_DAYS = 70
 #: Fixed, so every machine gets the same studying.
@@ -125,6 +128,16 @@ def plan_joins(rng: random.Random, keenness: dict[str, float], today: date) -> l
     return joins
 
 
+def study_rng(buyer: str, course: str) -> random.Random:
+    """The generator one buyer's plan for one course is drawn from.
+
+    One per pair, never shared: with a single generator every plan depends on
+    every plan drawn before it, so two enrolments made in the same second --
+    which Postgres returns in either order -- reshuffled the whole run.
+    """
+    return random.Random(f"{RANDOM_SEED}:{buyer}:{course}")
+
+
 def plan_study(
     rng: random.Random,
     keen: float,
@@ -140,6 +153,11 @@ def plan_study(
     day more often than not; the rest leave gaps of up to a week, and every
     buyer may drop the course between two study days. A quiz is failed now
     and then and retried on the next study day.
+
+    The plan is drawn by calendar day up to today, and the hour the script
+    runs draws nothing: today's sittings are fitted into the part of today
+    that has happened (`fit_to_now`), so the same lessons are studied on the
+    same days whenever it runs.
     """
     today = now.astimezone(VIETNAM).date()
     actions: list[Action] = []
@@ -150,14 +168,12 @@ def plan_study(
     while position < len(steps) and day <= today:
         # One sitting: a start time, then each lesson a little after the last,
         # so the day's lessons happen in the order they were studied.
-        at = _moment(rng, day, now)
+        at = start_of_day(day) + timedelta(hours=rng.randint(7, 22), minutes=rng.randint(0, 59))
         for sitting in range(rng.randint(1, 3)):
-            if sitting > 0 and at is not None:
-                at += timedelta(minutes=rng.randint(8, 30))
-                if at >= now - timedelta(minutes=5):
-                    at = None
-            if position >= len(steps) or at is None:
+            if position >= len(steps):
                 break
+            if sitting > 0:
+                at += timedelta(minutes=rng.randint(8, 30))
             step = steps[position]
             passes = (
                 step.quiz_id is None
@@ -174,19 +190,14 @@ def plan_study(
         if rng.random() > 0.55 + 0.45 * keen:
             break  # dropped the course
         day += timedelta(days=1 if rng.random() < 0.3 + 0.65 * keen else rng.randint(2, 6))
-    return actions
 
-
-def _moment(rng: random.Random, day: date, now: datetime) -> datetime | None:
-    """A time of day to study on `day` -- earlier than `now`, or None."""
-    at = start_of_day(day) + timedelta(hours=rng.randint(7, 22), minutes=rng.randint(0, 59))
-    if at < now - timedelta(minutes=5):
-        return at
-    # Today, and the planned hour has not come yet: study a little earlier.
-    floor = start_of_day(day)
-    if now - timedelta(minutes=5) <= floor:
-        return None
-    return floor + (now - timedelta(minutes=5) - floor) * rng.random()
+    fitted = []
+    for action in actions:
+        at = fit_to_now(action.at, now)
+        if at is None:
+            break  # just after midnight: the rest is today, and none of it has happened
+        fitted.append(replace(action, at=at))
+    return fitted
 
 
 # --- Reading what there is to study ------------------------------------------
@@ -302,12 +313,20 @@ async def seed_study(session: AsyncSession, *, now: datetime | None = None) -> W
         email = emails[enrollment.user_id]
         start = enrollment.created_at.astimezone(VIETNAM).date()
         actions += plan_study(
-            rng, keenness[email], email, slug, steps[enrollment.course_id], start, now
+            study_rng(email, slug),
+            keenness[email],
+            email,
+            slug,
+            steps[enrollment.course_id],
+            start,
+            now,
         )
 
     days: dict[str, set[date]] = defaultdict(set)
     answers: dict[uuid.UUID, tuple[list[int], list[int]]] = {}
-    for action in sorted(actions, key=lambda a: a.at):
+    # Ties broken by name, so two sittings in the same minute run in the same
+    # order every time.
+    for action in sorted(actions, key=lambda a: (a.at, a.buyer, a.course)):
         user = buyers[action.buyer]
         if action.step.quiz_id is None:
             await progress_service.save_position(
@@ -423,7 +442,7 @@ async def _report(session: AsyncSession) -> None:
             select(User.full_name, func.sum(XpEvent.amount).label("xp"))
             .join(User, User.id == XpEvent.user_id)
             .group_by(User.full_name)
-            .order_by(func.sum(XpEvent.amount).desc())
+            .order_by(func.sum(XpEvent.amount).desc(), User.full_name)
             .limit(3)
         )
         if period.start is not None:
@@ -435,9 +454,10 @@ async def _report(session: AsyncSession) -> None:
     # Read through the service, which breaks a streak whose last day was before
     # yesterday: the stored `current_streak` is only true as of that last day.
     buyers = await _buyers(session)
+    # By name, so a tie names the same buyer every run.
     summaries = {
         user.full_name: await gamification.get_summary(session, user.id, today=today)
-        for user in buyers.values()
+        for user in sorted(buyers.values(), key=lambda user: user.full_name)
     }
     longest = max(summaries.items(), key=lambda item: item[1].longest_streak)
     current = max(summaries.items(), key=lambda item: item[1].current_streak)

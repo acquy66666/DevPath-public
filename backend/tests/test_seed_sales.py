@@ -23,6 +23,7 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import VIETNAM
 from app.models import Coupon, Course, Enrollment, Order, OrderItem, User
 from scripts.seed import seed_categories
 from scripts.seed_courses import seed_courses
@@ -34,6 +35,7 @@ from scripts.seed_sales import (
     backdate_sign_ups,
     build_plan,
     buyer_emails,
+    purchased_at,
     purge,
     seed_sales,
     signed_up,
@@ -65,6 +67,34 @@ def test_sales_grow_towards_today() -> None:
     recent = sum(1 for p in plan if p.ago < timedelta(days=HISTORY_DAYS / 2))
 
     assert recent > len(plan) - recent
+
+
+def test_a_purchase_lands_on_the_same_day_whatever_time_it_runs() -> None:
+    """Counted back from the calendar day, not the moment: run at 07:10 or at
+    22:00, every purchase is on the same day -- so the dashboard's days, and
+    the studying `scripts.seed_study` starts from them, do not move."""
+    early = datetime(2026, 9, 28, 0, 10, tzinfo=UTC)  # 07:10 in Hà Nội
+    late = datetime(2026, 9, 28, 15, 0, tzinfo=UTC)  # 22:00
+    today = early.astimezone(VIETNAM).date()
+
+    for purchase in build_plan(SLUGS):
+        a, b = purchased_at(purchase, early), purchased_at(purchase, late)
+        assert a.astimezone(VIETNAM).date() == b.astimezone(VIETNAM).date()
+        assert a.astimezone(VIETNAM).date() == today - timedelta(days=purchase.ago.days)
+        if purchase.ago.days > 0:
+            assert a == b
+
+
+def test_nobody_buys_in_the_future() -> None:
+    for now in (
+        datetime(2026, 9, 28, 0, 10, tzinfo=UTC),  # 07:10
+        datetime(2026, 9, 28, 15, 0, tzinfo=UTC),  # 22:00
+        datetime(2026, 9, 27, 17, 2, tzinfo=UTC),  # 00:02 -- nothing of today has happened
+    ):
+        moments = [purchased_at(purchase, now) for purchase in build_plan(SLUGS)]
+        assert all(at < now for at in moments)
+        # Still in the order the plan has them.
+        assert moments == sorted(moments)
 
 
 def test_the_plan_is_the_same_every_time() -> None:

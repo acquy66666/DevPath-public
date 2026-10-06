@@ -1,0 +1,94 @@
+FONT TỰ HOST — BỎ next/font/google SAU KHI E2E TRÊN main ĐỎ NGẪU NHIÊN
+Ngày: 06/10/2026 · nhánh feature/self-host-fonts
+
+Kết luận: font (Geist, Geist Mono, Noto Serif) giờ nằm trong frontend/public/fonts,
+khai báo ở frontend/app/fonts.css. Build production và dev server không còn gọi
+ra Google. Build không có mạng: trước sửa hỏng, sau sửa xanh. E2E luồng vàng xanh.
+
+==============================================================================
+1. TRIỆU CHỨNG
+==============================================================================
+CI trên main sau khi merge PR #88 (run 37476379118): job "E2E — golden flow"
+đỏ, mọi job khác xanh. Chính nội dung đó đã xanh ở CI của PR #88.
+  - Lần 1: đi hết luồng tới trang /cert/{code}, rồi
+      expect(getByText('Chứng chỉ hợp lệ')).toBeVisible() — element(s) not found
+  - Lần chạy lại: hết giờ 240 s ngay ở bước điền form đăng ký.
+Log frontend (bước "Stack logs"):
+  Error: Module not found: Can't resolve '@vercel/turbopack-next/internal/font/google/font'
+  > 158 | src: url(@vercel/turbopack-next/internal/font/google/font?{"url":"https://fonts.g...
+  next/font/google queries have exactly one entry
+  Import trace: [next]/internal/font/google/noto_serif_….module.css ← ./app/(marketing)/cert/[code]/page.tsx
+  GET / 500
+Lỗi font của trang chứng chỉ làm hỏng module graph của `next dev`. Sau đó
+mọi trang, kể cả trang chủ, trả 500. Vì vậy lần chạy lại không qua nổi
+bước đăng ký.
+Lượt CI trên main ngay sau (merge PR #89, chỉ đổi script seed, frontend
+y nguyên) thì xanh: lỗi ngẫu nhiên, đúng như issue mô tả.
+
+==============================================================================
+2. NGUYÊN NHÂN GỐC
+==============================================================================
+Đây là lỗi đã biết của Next: vercel/next.js#99114 (mở 23/09/2026, chưa đóng).
+next/font/google tải CSS từ Google mỗi lần build/dev. Khoảng 1/60 lần, Google trả
+URL font dạng `fonts.gstatic.com/l/font?kit=…&skey=…&v=…`. Turbopack đưa
+options qua một trình phân tích query string, nên dấu `&` tách chúng thành
+nhiều mục và gây lỗi "exactly one entry". Webpack thì hỏng bằng TypeError khi
+đọc đuôi tệp. Hai PR đang mở (#99132, #99308) chỉ sửa đường webpack. Phía
+Turbopack, bản canary 16.4.0-canary.59 vẫn chưa sửa (theo bình luận trong
+issue). Repo đang ở Next 16.3.1.
+Từ máy dev lúc 21 giờ, 3 lần tải CSS Noto Serif đều trả URL `/s/…` bình
+thường. Lỗi ngẫu nhiên và thay đổi theo thời gian, như issue mô tả.
+
+Rủi ro không chỉ ở CI: `deploy.sh` build image frontend production ở mỗi lần
+deploy, và `next build` gặp đúng lỗi này. Deploy trên VPS sẽ hỏng ngẫu nhiên.
+
+==============================================================================
+3. SỬA
+==============================================================================
+- 14 tệp .woff2 (385 KB) chép từ chính dev server, tức đúng các tệp Google đã trả
+  cho next/font: Geist 5 subset, Geist Mono 6 subset, Noto Serif chỉ giữ latin,
+  latin-ext, vietnamese (bỏ cyrillic, greek, math — 223 KB; chỉ dùng cho tiêu
+  đề và tên trên chứng chỉ). Tên tệp `<font>-<subset>.woff2`.
+- app/fonts.css: các khối @font-face giữ nguyên `unicode-range` Next đã
+  sinh, nên trình duyệt vẫn chỉ tải subset mà trang dùng. Ba mặt `… Fallback`
+  giữ nguyên size-adjust/ascent-override của next/font (chữ không nhảy khi font
+  tới). Biến --font-geist-sans/--font-geist-mono ở :root; class
+  `.font-certificate` cho trang chứng chỉ.
+- Preload: render thẳng <link rel="preload" as="font"> trong JSX; React đẩy
+  chúng lên <head>. Mọi trang preload geist-latin + geist-vietnamese (đúng
+  hai subset next/font từng preload), trang chứng chỉ thêm noto-serif-latin +
+  noto-serif-vietnamese. ReactDOM.preload() từ server component đã thử: chỉ
+  vào RSC payload (`:HL[...]`), không thành thẻ trong HTML.
+- ESLint `no-restricted-imports` chặn `next/font/google`. Kiểm: một tệp thử
+  có import đó bị báo lỗi kèm câu giải thích.
+- Giấy phép: SIL OFL 1.1, đọc từ bảng `name` của chính các tệp
+  (openfontlicense.org). public/fonts/OFL.txt giữ copyright + nguyên văn
+  giấy phép. public/fonts/README.md ghi nguồn, phiên bản và cách lấy lại.
+
+==============================================================================
+4. KIỂM
+==============================================================================
+a) Build production KHÔNG CÓ MẠNG
+   (frontend/scripts/build-offline.sh, `docker run --network none`):
+   - Code cũ: exit 1 —
+       Failed to fetch Geist from Google Fonts.
+       Failed to fetch Geist Mono from Google Fonts.
+       Failed to fetch Noto Serif from Google Fonts.
+   - Code mới: exit 0. Biên dịch, TypeScript, 26 trang, không cảnh báo nào,
+     không request nào tới fonts.g*.
+   Hai chỗ chỉnh trong phép thử (NODE_ENV=production, bỏ e2e/ vì image dev
+   không có @playwright/test) chỉ tác động tới các bước sau bước biên dịch,
+   mà code cũ hỏng ngay ở bước biên dịch.
+b) Dev server (đã restart): `/`, `/khoa-hoc`, `/cert/{code}` → 200. Trang
+   chứng chỉ có "Chứng chỉ hợp lệ". /fonts/*.woff2 → 200 font/woff2 đúng kích
+   thước. CSS trỏ 14 lần tới /fonts/. Thẻ preload font nằm trong <head>
+   (2 ở mọi trang, 4 ở trang chứng chỉ).
+c) Chrome thật (Playwright, channel chrome, hồ sơ mới):
+   / → body "Geist, Geist Fallback"; tải geist-latin, geist-vietnamese,
+       geist-latin-ext; document.fonts.check('16px "Geist"', "Luồng ễ ậ") = true
+   /cert/{code} → tiêu đề "Noto Serif, Noto Serif Fallback, serif"; font đã
+       nạp: Geist, Geist Mono, Noto Serif 600 700; check Noto + "Luồng ễ ậ" = true;
+       mỗi tệp Noto tải đúng một lần (preload được dùng lại), không cảnh
+       báo preload.
+d) E2E luồng vàng trên stack dev: 1 passed (21,4 s), gồm bước "Chứng chỉ hợp lệ".
+e) npm run lint sạch; npm test 4/4.

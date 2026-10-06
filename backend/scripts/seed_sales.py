@@ -40,7 +40,10 @@ before measuring it** with `scripts.eval_recommender`.
 
 Dates are **relative to when it runs** -- the plan is a fixed list of "N days
 ago", like `scripts.seed_coupons` -- so the dashboard never ages into an empty
-last month. Idempotent: if the buyers exist, it writes nothing. `--purge`
+last month. They count back from the calendar day in Vietnam, not from the
+moment: run at seven in the morning or at ten at night, every purchase falls
+on the same day, and only today's are fitted into the part of today that has
+happened. Idempotent: if the buyers exist, it writes nothing. `--purge`
 removes the buyers, their orders and enrolments and its coupon, and recounts
 the students of every course they had joined.
 """
@@ -56,6 +59,7 @@ from decimal import Decimal
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import start_of_day, today_in_vietnam
 from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.security import hash_password
@@ -88,7 +92,8 @@ LOCAL_SECRET = "seed-sales-local-secret"
 class Purchase:
     email: str
     slugs: tuple[str, ...]
-    #: How long before the run it happened.
+    #: How long before 23:00 on the day of the run it happened: whole days
+    #: back, then up to fifteen waking hours earlier that day. See `purchased_at`.
     ago: timedelta
     coupon: bool
 
@@ -120,8 +125,8 @@ def build_plan(slugs: list[str]) -> list[Purchase]:
             owned.update(picked)
 
             days = HISTORY_DAYS * (1 - math.sqrt(rng.random()))
-            # Waking hours in Vietnam, give or take: the day part of `ago` is
-            # what the chart buckets on, the rest just spreads the minutes.
+            # The day part of `ago` is what the chart buckets on; the rest
+            # spreads the purchases over 08:00-23:00 that day.
             ago = timedelta(days=int(days), hours=rng.randint(0, 14), minutes=rng.randint(0, 59))
             plan.append(
                 Purchase(
@@ -135,6 +140,35 @@ def build_plan(slugs: list[str]) -> list[Purchase]:
     # Oldest first, as they would have happened.
     plan.sort(key=lambda purchase: purchase.ago, reverse=True)
     return plan
+
+
+#: Today's moments stop this far before the script runs.
+NOW_MARGIN = timedelta(minutes=5)
+
+
+def fit_to_now(at: datetime, now: datetime) -> datetime | None:
+    """`at` if it is before today; a moment today is scaled into the part of
+    today that has happened by `now`, keeping today's moments in order; None
+    in the first minutes after midnight, when none of today has.
+
+    Only today's moments ever depend on the time the script runs, so a plan
+    counted back from the calendar day comes out the same at any hour.
+    """
+    floor = start_of_day(today_in_vietnam(now))
+    if at < floor:
+        return at
+    latest = now - NOW_MARGIN
+    if latest <= floor:
+        return None
+    return floor + (at - floor) * min(1.0, (latest - floor) / timedelta(days=1))
+
+
+def purchased_at(purchase: Purchase, now: datetime) -> datetime:
+    """When `purchase` happened, for a run at `now`: `ago` back from 23:00 on
+    the day of the run, so its calendar day does not depend on the hour."""
+    planned = start_of_day(today_in_vietnam(now)) + timedelta(hours=23) - purchase.ago
+    # Just after midnight nothing of today has happened: buy a moment before.
+    return fit_to_now(planned, now) or now - NOW_MARGIN
 
 
 def signed_up(email: str, first_enrolment: datetime) -> datetime:
@@ -279,7 +313,7 @@ async def seed_sales(
     plan = build_plan(list(courses))[:limit]
     for number, purchase in enumerate(plan, start=1):
         buyer = buyers[purchase.email]
-        at = now - purchase.ago
+        at = purchased_at(purchase, now)
         bought = [courses[slug].id for slug in purchase.slugs]
 
         for course_id in bought:

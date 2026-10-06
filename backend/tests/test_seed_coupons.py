@@ -23,7 +23,7 @@ from app.models import Coupon, CouponCourse, Course, User
 from app.services import commerce as commerce_service
 from app.services import coupons as coupons_service
 from scripts.seed import seed_categories
-from scripts.seed_coupons import DEMO_COUPONS, purge, seed_coupons
+from scripts.seed_coupons import DEMO_COUPONS, CouponPlan, purge, seed_coupons
 from scripts.seed_courses import COURSES, seed_courses
 from scripts.seed_interactions import (
     SYNTHETIC_COURSES,
@@ -153,6 +153,72 @@ async def test_the_seed_plants_every_code_once(
         "python-nang-cao-decorator-generator-context-manager",
         PAID_PYTHON_SLUG,
     }
+
+
+@pytest.fixture
+async def real_catalogue(db_session: AsyncSession) -> None:
+    """The four courses of `scripts.seed`, without the synthetic twenty -- the
+    catalogue after `seed_interactions --purge`, which the defence runs on."""
+    await seed_categories(db_session)
+    await seed_courses(db_session)
+
+
+async def test_a_scoped_code_keeps_the_courses_that_exist(
+    db_session: AsyncSession, real_catalogue: None
+) -> None:
+    """`PYTHON30` names a synthetic course. Once those are purged the code
+    still covers the real one, instead of the whole seed refusing to run --
+    and taking `CHAOMUNG50`, which the home-page banner advertises, with it."""
+    plan = CouponPlan(
+        code="THUPHAMVI",
+        discount_type="percent",
+        value=Decimal("10"),
+        shows="",
+        scope="courses",
+        course_slugs=("khoa-khong-con-tren-san", PAID_PYTHON_SLUG),
+    )
+
+    written = await seed_coupons(db_session, [plan])
+
+    assert written.coupons == 1
+    assert written.course_links == 1
+    assert written.missing == ("khoa-khong-con-tren-san",)
+    links = await db_session.scalars(
+        select(Course.slug)
+        .join(CouponCourse, CouponCourse.course_id == Course.id)
+        .join(Coupon, Coupon.id == CouponCourse.coupon_id)
+        .where(Coupon.code == "THUPHAMVI")
+    )
+    assert set(links) == {PAID_PYTHON_SLUG}
+
+
+async def test_a_scoped_code_with_no_course_left_is_not_written(
+    db_session: AsyncSession, real_catalogue: None
+) -> None:
+    """A course-scoped code covering nothing would be accepted by the table and
+    refused by every cart -- a fourth kind of refusal nobody planted."""
+    site = CouponPlan(
+        code="THUTOANSAN", discount_type="fixed", value=Decimal("1000"), shows=""
+    )
+    orphan = CouponPlan(
+        code="THUMOCOI",
+        discount_type="percent",
+        value=Decimal("10"),
+        shows="",
+        scope="courses",
+        course_slugs=("khoa-khong-con-tren-san",),
+    )
+
+    written = await seed_coupons(db_session, [site, orphan])
+
+    assert written.coupons == 1
+    assert written.missing == ("khoa-khong-con-tren-san",)
+    stored = set(
+        await db_session.scalars(
+            select(Coupon.code).where(Coupon.code.in_(["THUTOANSAN", "THUMOCOI"]))
+        )
+    )
+    assert stored == {"THUTOANSAN"}
 
 
 async def test_running_it_twice_writes_nothing_the_second_time(

@@ -388,7 +388,7 @@ docker compose exec backend python -m scripts.seed_coupons --purge
 | `SAPCHAY` | 25% | 409 `COUPON_NOT_STARTED` kèm ngày mở |
 | `HETLUOT` | 50.000 ₫ | 409 `COUPON_EXHAUSTED` (10/10 lượt) |
 
-**Ngày tính tương đối với lúc chạy script**, không bao giờ là ngày tuyệt đối: seed viết ngày cứng là cái demo chạy được cho tới một buổi sáng nào đó thì lặng lẽ thôi chạy, trước mặt người đang xem. Chạy sau `scripts.seed` và `scripts.seed_interactions` (`PYTHON30` gọi tên hai khóa Python thật, mỗi script tạo một khóa). Script này **ghi thẳng bảng**, khác `seed_cart.py` đi qua service: coupon chưa có service tạo (màn hình quản trị thuộc task admin), và luật ở đây nằm trong chính bảng — mỗi dòng sai dừng script bằng một vi phạm CHECK gọi đúng tên nó.
+**Ngày tính tương đối với lúc chạy script**, không bao giờ là ngày tuyệt đối: seed viết ngày cứng là cái demo chạy được cho tới một buổi sáng nào đó thì lặng lẽ thôi chạy, trước mặt người đang xem. Chạy sau `scripts.seed`. `PYTHON30` gọi tên hai khóa Python có phí, `scripts.seed` và `scripts.seed_interactions` mỗi script tạo một khóa; khóa nào không có trên sàn thì bị bỏ khỏi mã (script in tên nó ra), nên sau `seed_interactions --purge` mã chỉ còn phủ khóa `cau-truc-du-lieu-va-giai-thuat-voi-python` — mã theo khóa mà không còn khóa nào thì không được ghi. Script này **ghi thẳng bảng**, khác `seed_cart.py` đi qua service: coupon chưa có service tạo (màn hình quản trị thuộc task admin), và luật ở đây nằm trong chính bảng — mỗi dòng sai dừng script bằng một vi phạm CHECK gọi đúng tên nó.
 
 ## Thanh toán VNPay (Phase 5)
 
@@ -460,14 +460,14 @@ Chỉ `instructor` (khớp đúng vai trò, admin cũng 403), và không path n�
 
 ### Dữ liệu demo
 
-Mọi lượt ghi danh seed rơi vào đúng ngày chạy seed, và thanh toán là việc người ta làm tay từng lần — biểu đồ sẽ là một cột và một đường phẳng. `scripts/seed_sales.py` nạp **77 đơn (139 lượt bán) của 40 người mua riêng** trải trong 12 tháng, tăng dần về hiện tại:
+Mọi lượt ghi danh seed rơi vào đúng ngày chạy seed, và thanh toán là việc người ta làm tay từng lần — biểu đồ sẽ là một cột và một đường phẳng. `scripts/seed_sales.py` nạp đơn hàng **của 40 người mua riêng** trải trong 12 tháng, tăng dần về hiện tại, trên mọi khóa có phí đang bán: **77 đơn (139 lượt bán)** khi còn 20 khóa giả lập của `seed_interactions`, **40 đơn** của khóa có phí duy nhất khi chỉ còn 4 khóa thật (trạng thái trước buổi bảo vệ, từ 06/10):
 
 ```bash
 docker compose exec backend python -m scripts.seed_sales
 docker compose exec backend python -m scripts.seed_sales --purge
 ```
 
-Mỗi lần mua **đi qua đúng đường thật** — `add_to_cart` → `create_from_cart` (một phần tư có mã `BANHANG20`) → callback VNPay có chữ ký vào `handle_vnpay_ipn`, handler ghi danh, trừ lượt coupon và ghi `payment_events`. Thứ duy nhất ghi thẳng bảng là **đồng hồ**: sau đó đơn, lượt ghi danh và sự kiện thanh toán được lùi về thời điểm trong kế hoạch. Callback ký bằng một secret cục bộ đưa vào bản sao của settings, nên chạy được ở máy chưa có tài khoản merchant và không chạm vào secret thật. Người mua là `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`), **không phải** học viên seed — `seed_interactions` và test của nó ghim chính xác ai học khóa nào. Các lượt ghi danh này có đi vào recommender như mọi lượt khác, nên **`--purge` trước khi chạy `scripts.eval_recommender`**. Chạy sau `scripts.seed` và `scripts.seed_interactions`; ngày tính tương đối với lúc chạy.
+Mỗi lần mua **đi qua đúng đường thật** — `add_to_cart` → `create_from_cart` (một phần tư có mã `BANHANG20`) → callback VNPay có chữ ký vào `handle_vnpay_ipn`, handler ghi danh, trừ lượt coupon và ghi `payment_events`. Thứ duy nhất ghi thẳng bảng là **đồng hồ**: sau đó đơn, lượt ghi danh và sự kiện thanh toán được lùi về thời điểm trong kế hoạch. Callback ký bằng một secret cục bộ đưa vào bản sao của settings, nên chạy được ở máy chưa có tài khoản merchant và không chạm vào secret thật. Người mua là `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`), **không phải** học viên seed — `seed_interactions` và test của nó ghim chính xác ai học khóa nào. Các lượt ghi danh này có đi vào recommender như mọi lượt khác, nên **`--purge` trước khi chạy `scripts.eval_recommender`**. Chạy sau `scripts.seed` (có `scripts.seed_interactions` thì mua cả khóa giả lập); ngày tính tương đối với lúc chạy.
 
 Đăng nhập `mai.anh@devpath.example` hoặc `khoa.tran@devpath.example` (mật khẩu giảng viên seed) rồi mở `/giang-day/thong-ke`.
 

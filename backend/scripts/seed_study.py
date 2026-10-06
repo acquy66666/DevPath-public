@@ -20,7 +20,8 @@ a student can move on without solving one.
 
 **The one thing written directly is the clock.** The services stamp rows with
 `now()`; afterwards each completion, attempt, award and enrolment is moved back
-to the moment in the plan. The streak is then replayed day by day through
+to the moment in the plan, and an account is moved before a free course joined
+ahead of its first purchase. The streak is then replayed day by day through
 `gamification.record_active_day`, because the services counted every action as
 today. Last, the leaderboard is rebuilt from the ledger.
 
@@ -33,7 +34,8 @@ Dates are relative to when it runs, and the plan is seeded, so every machine
 gets the same studying counted back from its own today. Idempotent: if the
 buyers have studied anything, it writes nothing. `--purge` removes every
 completion, attempt, award, streak and free enrolment of the buyers, recounts
-the students of the free courses and rebuilds the leaderboard.
+the students of the free courses and rebuilds the leaderboard -- the account
+dates stay where they are, still before every purchase.
 """
 
 import argparse
@@ -66,7 +68,7 @@ from app.services import certificates, course_stats, gamification, leaderboard
 from app.services import enrollments as enrollments_service
 from app.services import progress as progress_service
 from app.services import quiz as quiz_service
-from scripts.seed_sales import buyer_emails
+from scripts.seed_sales import backdate_sign_ups, buyer_emails
 
 STUDY_DAYS = 70
 #: Fixed, so every machine gets the same studying.
@@ -278,6 +280,10 @@ async def seed_study(session: AsyncSession, *, now: datetime | None = None) -> W
             enrollment.created_at = start_of_day(join.day) + timedelta(hours=rng.randint(7, 22))
             await session.commit()
             written.joined += 1
+    # Some of those joins come before the buyer's first purchase, so the
+    # account `scripts.seed_sales` dated before that purchase moves back again.
+    await backdate_sign_ups(session, list(buyers))
+    await session.commit()
 
     enrollments = (
         await session.execute(

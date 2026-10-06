@@ -24,7 +24,9 @@ could have made.
 **The one thing written directly is the clock.** The services stamp rows with
 `now()`; afterwards the order, its enrolments and its payment event are moved
 back to the moment the plan says the purchase happened. `paid_at` needs no
-moving -- the callback is handed that moment.
+moving -- the callback is handed that moment. So is each buyer's account: one
+made the morning the script ran would be forty sign-ups in the admin's last
+week, so it is dated one to thirty days before the buyer's first enrolment.
 
 The callback is signed with a **local secret**, not the merchant's: the
 settings object given to the handler is a copy carrying it, so this runs on a
@@ -74,6 +76,9 @@ HISTORY_DAYS = 365
 #: Fixed, so every machine gets the same purchases -- only the dates they are
 #: counted back from differ.
 RANDOM_SEED = 20260924
+
+#: How long before their first enrolment a buyer made their account.
+SIGN_UP_LEAD_DAYS = (1, 30)
 
 LOCAL_TMN_CODE = "SEEDSALE"
 LOCAL_SECRET = "seed-sales-local-secret"
@@ -130,6 +135,44 @@ def build_plan(slugs: list[str]) -> list[Purchase]:
     # Oldest first, as they would have happened.
     plan.sort(key=lambda purchase: purchase.ago, reverse=True)
     return plan
+
+
+def signed_up(email: str, first_enrolment: datetime) -> datetime:
+    """When the buyer `email` made their account, given their first enrolment.
+
+    Pure, and drawn from a generator seeded with the email rather than the
+    plan's: the same answer every run, and the purchases stay what they were.
+    """
+    rng = random.Random(f"{RANDOM_SEED}:{email}")
+    return first_enrolment - timedelta(
+        days=rng.randint(*SIGN_UP_LEAD_DAYS),
+        hours=rng.randint(0, 23),
+        minutes=rng.randint(0, 59),
+    )
+
+
+async def backdate_sign_ups(session: AsyncSession, emails: list[str]) -> int:
+    """Date each account before its earliest enrolment. Returns how many moved.
+
+    Only ever earlier: `scripts.seed_study` asks again after joining buyers to
+    free courses, some of them before their first purchase. An account with no
+    enrolment keeps its date.
+    """
+    rows = await session.execute(
+        select(User.id, User.email, User.created_at, func.min(Enrollment.created_at))
+        .join(Enrollment, Enrollment.user_id == User.id)
+        .where(User.email.in_(emails))
+        .group_by(User.id)
+    )
+    moved = 0
+    for user_id, email, created_at, first in rows.all():
+        joined = signed_up(email, first)
+        if joined < created_at:
+            await session.execute(
+                update(User).where(User.id == user_id).values(created_at=joined, updated_at=joined)
+            )
+            moved += 1
+    return moved
 
 
 @dataclass(frozen=True, slots=True)
@@ -272,6 +315,8 @@ async def seed_sales(
         lines += len(bought)
         revenue += total
 
+    await backdate_sign_ups(session, buyer_emails())
+    await session.commit()
     return Written(buyers=len(buyers), orders=orders, lines=lines, revenue=revenue)
 
 

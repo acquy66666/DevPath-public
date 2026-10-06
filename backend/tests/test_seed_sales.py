@@ -10,8 +10,13 @@ then reads back what the dashboard reads: paid orders dated in the past, an
 enrolment for every line bought, dated with it, and line discounts that add up.
 It purges first, inside the test transaction, so a developer machine that has
 already run the script tests the same thing a blank CI database does.
+
+A buyer's account is dated before the first thing they did, too: an account
+made the morning the script ran would be forty sign-ups in the admin's last
+week, from people whose first order is a year old.
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -26,11 +31,14 @@ from scripts.seed_sales import (
     BUYER_COUNT,
     COUPON_CODE,
     HISTORY_DAYS,
+    backdate_sign_ups,
     build_plan,
     buyer_emails,
     purge,
     seed_sales,
+    signed_up,
 )
+from tests.api.test_commerce import make_user
 
 SLUGS = [f"khoa-{n:02d}" for n in range(24)]
 
@@ -61,6 +69,18 @@ def test_sales_grow_towards_today() -> None:
 
 def test_the_plan_is_the_same_every_time() -> None:
     assert build_plan(SLUGS) == build_plan(list(reversed(SLUGS)))
+
+
+def test_a_buyer_signs_up_before_the_first_thing_they_do() -> None:
+    first = datetime(2026, 3, 1, 9, 0, tzinfo=UTC)
+    joined = {email: signed_up(email, first) for email in buyer_emails()}
+
+    for email, at in joined.items():
+        assert first - timedelta(days=31) < at <= first - timedelta(days=1)
+        # Seeded with the email, not drawn from the plan: the same every run.
+        assert signed_up(email, first) == at
+    # Spread out, not forty accounts made in the same minute.
+    assert len(set(joined.values())) == BUYER_COUNT
 
 
 def test_some_purchases_use_the_coupon_and_most_do_not() -> None:
@@ -105,6 +125,16 @@ async def test_the_purchases_are_what_the_dashboard_reads(db_session: AsyncSessi
             assert enrolment.source == "purchase"
             assert enrolment.created_at == order.paid_at
 
+    first_paid: dict[uuid.UUID, datetime] = {}
+    for order in orders:
+        first_paid[order.user_id] = min(first_paid.get(order.user_id, order.paid_at), order.paid_at)
+    accounts = await db_session.execute(
+        select(User.id, User.email, User.created_at).where(User.id.in_(first_paid))
+    )
+    for user_id, email, created_at in accounts:
+        assert created_at == signed_up(email, first_paid[user_id])
+        assert created_at <= first_paid[user_id] - timedelta(days=1)
+
 
 async def test_a_second_run_writes_nothing_and_purge_takes_it_all_back(
     db_session: AsyncSession,
@@ -143,3 +173,40 @@ async def test_a_second_run_writes_nothing_and_purge_takes_it_all_back(
         .having(func.count(Enrollment.id) != Course.students_count)
     )
     assert drift.all() == []
+
+
+async def test_a_free_course_joined_before_the_first_purchase_moves_the_sign_up_back(
+    db_session: AsyncSession,
+) -> None:
+    """`scripts.seed_study` joins buyers to free courses up to ten weeks back,
+    which can be before their first purchase -- so it asks again, and the
+    account moves to before the earliest enrolment. Never later."""
+    await seed_categories(db_session)
+    await seed_courses(db_session)
+    slugs = ["python-co-ban-cho-nguoi-moi-bat-dau", "cau-truc-du-lieu-va-giai-thuat-voi-python"]
+    free, paid = list(
+        await db_session.scalars(
+            select(Course).where(Course.slug.in_(slugs)).order_by(Course.price)
+        )
+    )
+    user = await make_user(db_session)
+    now = datetime.now(UTC)
+    joined_free = now - timedelta(days=50)
+    bought = now - timedelta(days=5)
+    db_session.add_all(
+        [
+            Enrollment(user_id=user.id, course_id=free.id, source="free", created_at=joined_free),
+            Enrollment(user_id=user.id, course_id=paid.id, source="purchase", created_at=bought),
+        ]
+    )
+    await db_session.flush()
+
+    assert await backdate_sign_ups(db_session, [user.email]) == 1
+    created_at = await db_session.scalar(select(User.created_at).where(User.id == user.id))
+    assert created_at == signed_up(user.email, joined_free)
+
+    # Asked again, nothing is earlier than that: nothing moves.
+    assert await backdate_sign_ups(db_session, [user.email]) == 0
+    # And somebody with no enrolment at all is left alone.
+    loner = await make_user(db_session)
+    assert await backdate_sign_ups(db_session, [loner.email]) == 0

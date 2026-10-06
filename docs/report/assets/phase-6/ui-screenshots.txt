@@ -1,0 +1,144 @@
+CHỤP LẠI BỘ ẢNH GIAO DIỆN CHO CHƯƠNG 4 — ĐÚNG FONT, ĐÚNG GIAO DIỆN CUỐI
+Ngày: 05/10/2026 · nhánh feature/ui-screenshots (chồng lên feature/evidence-audit)
+Stack: compose dev (infra/docker-compose.yml), Chrome 1440×900 @1x và 375×812 @2x, headless
+Phase 6, task "Chụp lại bộ ảnh giao diện cho chương 4" (thêm từ lượt rà kho 05/10)
+
+Ảnh: ui/*.png — 42 tệp, 5,5 MB · nhật ký lượt chạy: ui/capture-log.json (42/42 ok)
+Script: ui/capture.cjs · dữ liệu hỏi đáp/ghi chú/báo cáo: backend/scripts/seed_community.py
+
+==============================================================================
+1. VÌ SAO CHỤP LẠI
+==============================================================================
+Lượt rà kho 05/10 (../README.md mục 3.1) tìm ra 65 ảnh giao diện của Phase 1–5 hiển
+thị bằng font dự phòng có chân (lỗi `--font-sans` tự tham chiếu, sửa 02/10), và giao
+diện đã đổi sau đợt UX 02/10. Trong 20 tính năng của đề cương chỉ 4 tính năng có ảnh
+dùng được. 7 màn hình chưa từng được chụp: ghi chú/đánh dấu, hỏi đáp (cả hai phía),
+thông báo, XP + bảng xếp hạng, wishlist, người dùng và báo cáo của admin.
+
+Ảnh cũ giữ nguyên: chúng là bằng chứng tính năng chạy vào đúng ngày đó. Bộ này là
+ảnh minh họa cho chương 4.
+
+==============================================================================
+2. CÁCH LÀM
+==============================================================================
+  NODE_PATH=frontend/node_modules node docs/report/assets/phase-6/ui/capture.cjs
+
+- Playwright có sẵn trong frontend/node_modules, Chrome cài trên máy. Không thêm gói.
+- Mỗi vai đăng nhập đúng một lần bằng form thật. Chụp xong vai nào thì thu hồi phiên
+  của vai đó (POST /auth/logout bằng cookie của context). Đã kiểm sau lượt chạy: 0
+  phiên còn sống của 5 tài khoản đã dùng.
+- Nút công cụ của `next dev` được ẩn bằng CSS chèn trước khi trang chạy.
+- ONLY=<regex> để chụp lại một phần; nhật ký gộp với lượt trước.
+- Mật khẩu đọc từ SEED_*_PASSWORD (mặc định của stack dev), nên script chạy được trên
+  VPS: BASE_URL=API_URL=https://<DOMAIN>, COMPOSE_FILE trỏ compose của VPS.
+
+Tài khoản (đều là tài khoản seed, không tạo tài khoản thật nào):
+  hocvien07 (Phan Chi)    học viên: gợi ý cá nhân, chủ phiên trợ giảng demo gate 22/09,
+                          người hỏi một câu được giảng viên trả lời
+  hocvien25               giỏ hàng có khóa áp được mã PYTHON30, danh sách yêu thích
+  nguoimua31              lịch sử học 70 ngày (seed_study): XP, chuỗi 7 ngày, chứng chỉ
+  khoa.tran               giảng viên khóa Python
+  admin                   quản trị
+  1 giảng viên dùng một lần @e2e.devpath.example ("Lê Hoàng Nam"), xóa bằng purge_e2e
+
+==============================================================================
+3. DỮ LIỆU CHUẨN BỊ TRƯỚC KHI CHỤP
+==============================================================================
+a) seed_community (script mới, 8 test). 5 câu hỏi, 6 trả lời, 7 bình chọn, 2 báo
+   cáo, 3 ghi chú, 2 đánh dấu, cùng 10 thông báo do service tự gửi. Chạy hai lần thì
+   lần hai ghi 0. --purge xóa đúng những thứ đó, kể cả thông báo của giảng viên.
+b) Nạp lại seed_sales + seed_study. Ngày trong hai script tính theo lúc chạy, còn
+   chuỗi ngày học bị cắt lúc đọc. Dữ liệu nạp 28/09 nên hôm nay mọi chuỗi đều ra
+   "0 ngày" và bảng tuần trống. Gỡ rồi nạp lại theo thứ tự README, rồi
+   rebuild_leaderboard: tuần này 5 người, tháng này 9, mọi thời gian 40. Đã ghi
+   thành lưu ý trong README gốc: phải làm trước mỗi buổi demo.
+c) hocvien07 đang mang vai "instructor" trong CSDL dev, trong khi seed_interactions
+   tạo nó là "student". Lộ ra ở ảnh hàng đợi báo cáo: người báo cáo "Phan Chi ·
+   Giảng viên". Không có khóa học nào của tài khoản này. Không truy được phiên nào
+   đã đổi vai: không có nhật ký đổi vai, còn updated_at bị lần đăng nhập ghi đè.
+   Đã trả về "student" (một câu UPDATE có điều kiện "không sở hữu khóa nào"). Các
+   tài khoản @seed.devpath.example khác đều đúng vai.
+
+==============================================================================
+4. GHI DỮ LIỆU TRONG LÚC CHỤP — VÀ DỌN
+==============================================================================
+- hocvien07 làm quiz "Kiểm tra: ép kiểu": cố ý đúng 4/5 để ảnh kết quả có lời giải
+  thích của câu sai. Khớp đáp án theo chữ, vì trang làm bài xáo thứ tự phương án:
+  lần đầu khớp theo vị trí và sai gần hết.
+- Quiz seed không đặt giờ, mà ảnh cần thấy đồng hồ. Trong lúc chụp, giảng viên đặt
+  tạm 600 s qua PATCH /quizzes/{id}, rồi trả về giá trị cũ trong finally. Đã kiểm
+  sau lượt chạy: cả hai quiz đều không giới hạn giờ.
+- hocvien07 nộp bài "đếm số chẵn" hai lần, sai rồi đúng, có chờ hết cooldown 10 s
+  (SUBMISSION_COOLDOWN_SECONDS). Lần đầu không chờ thì lần nộp thứ hai không ra
+  verdict.
+- Khóa tạm "Git cho người mới bắt đầu" của giảng viên dùng một lần:
+  · Gemini sinh 5/5 câu từ bài đọc (gemini-3.5-flash-lite, ~3 s) → chụp câu nháp
+    "AI soạn · chờ duyệt".
+  · Duyệt hết, xuất bản quiz, gửi duyệt khóa → chụp hàng đợi và trang duyệt của admin.
+  · Cuối lượt, scripts.purge_e2e gỡ 1 tài khoản và 1 khóa. Đã kiểm: 0 tài khoản e2e,
+    0 khóa "Git…".
+- Mọi thứ hocvien07 ghi thêm (lượt quiz, bài nộp, XP) thuộc tài khoản seed_interactions,
+  nên đi theo khi gỡ dữ liệu demo trước buổi bảo vệ.
+
+==============================================================================
+5. 42 ẢNH ↔ 20 TÍNH NĂNG CỦA ĐỀ CƯƠNG (§5)
+==============================================================================
+ #  Tính năng                                   Ảnh (ui/…)
+ 1  Đăng ký/đăng nhập, phân quyền JWT            05-khach-dang-nhap (Google: chờ tên miền thật)
+ 2  Duyệt & tìm kiếm khóa học                     01, 02-khach-tim-kiem-khoa-hoc, 03, 04, 06, 07, 08 (375 px)
+ 3  Video HLS, tiến độ, tốc độ phát               11-hoc-vien-video-ghi-chu (tua tới 1:25), 21 (375 px)
+                                                  — phụ đề: đã cắt (mục cắt giảm số 2)
+ 4  Nộp code, chấm sandbox realtime ⭐            18 "Đang chấm test 1/6" qua WebSocket, 19 WA 50/100, 20 AC 100/100 + lịch sử
+ 5  Quiz có tính giờ                              16 (đồng hồ 9:59), 17 (80 % — Đạt, có lời giải thích)
+ 6  Chatbot RAG trợ giảng ⭐                       13 (2 câu trả lời trích nguồn [1] [2]), 13b (2 câu bị từ chối)
+ 7  Gợi ý cá nhân hóa ⭐                           10-hoc-vien-goi-y-cho-ban ("Vì bạn đã học …")
+ 8  Ghi chú theo mốc video, đánh dấu bài          11b (01:25, 03:12), dấu đánh dấu ở mục lục
+ 9  Hỏi đáp theo bài học, upvote                  12 (huy hiệu "Giảng viên", 2 phiếu)
+10  Chứng chỉ PDF + QR                            24-khach-xac-thuc-chung-chi
+11  Chuỗi ngày, XP, bảng xếp hạng                 22 (7 ngày, 310 XP), 23 (tuần này, "Bạn" hạng 6)
+12  Giỏ, thanh toán, mã giảm giá, wishlist        25 (PYTHON30: 898.000 → 748.300 ₫), 26
+13  Tạo khóa học, curriculum kéo-thả              30, 31
+14  Bài tập code: đề, test, giới hạn              32
+15  Sinh quiz bằng AI ⭐                          36 (5 câu nháp chờ duyệt)
+16  Dashboard giảng viên                          33 (30 ngày)
+17  Trả lời Q&A, thông báo                        34 (hộp thư "chưa trả lời"), 35 (chuông), 14–15 (phía học viên)
+18  Duyệt khóa, người dùng, báo cáo               40, 41, 43 (2 báo cáo cùng nội dung), 44
+19  Dashboard toàn sàn                            42 (doanh thu, DAU, người dùng hoạt động)
+20  Danh mục, banner, mã giảm giá toàn sàn        45, 46, 47
+
+So với lượt rà 05/10: tính năng có ảnh đúng font tăng từ 4/20 lên 19/20. Còn thiếu
+đăng nhập Google: redirect URI chỉ cố định được trên tên miền thật, đã có task riêng.
+Thanh toán qua trang VNPay không chụp lại: e2e/03–04 đã có và đúng font.
+
+==============================================================================
+6. NHỮNG GÌ TÌM RA KHI CHỤP
+==============================================================================
+- Dữ liệu demo "già" đi (mục 3b). Ảnh hay buổi demo mà dùng seed_sales/seed_study đã
+  nạp hơn một ngày sẽ ra chuỗi 0 ngày, bảng tuần trống. Đã ghi lưu ý vào README.
+- Vai của hocvien07 bị lệch (mục 3c).
+- Form đăng nhập trên `next dev`: bấm trước khi React gắn sự kiện thì trình duyệt tự
+  gửi form kiểu GET và trang tải lại. Script chờ form được hydrate rồi mới điền.
+  ĐÃ KIỂM có làm lộ mật khẩu không: chặn các chunk JS để trang không bao giờ hydrate,
+  gõ email + mật khẩu giả rồi Enter, trên /dang-nhap và /dang-ky. Kết quả là
+  "GET /dang-nhap?" với 0 tham số, vì các ô nhập không có thuộc tính `name`. Mật khẩu
+  không lên URL hay log; hệ quả duy nhất là mất chữ đã gõ khi trang tải lại.
+- Một lần, sau lỗi hydration, `next dev` để hai bản form cùng nằm trong DOM. Script
+  chờ tới khi còn đúng một form.
+- Ghi chú là chữ thường, không render Markdown. Lần đầu seed viết ghi chú có `…` và
+  **…** nên hiện nguyên ký tự. Đoạn trích câu hỏi ở hộp thư giảng viên cũng hiện
+  nguyên *…*. Đã sửa nội dung seed, không đổi giao diện: đó là hành vi có chủ đích.
+- Hai quiz của khóa Python không có trong seed: giảng viên soạn tay ở gate Phase 4.
+  Trên CSDL mới hay trên VPS, ảnh 16–17 sẽ báo hỏng (không có bài "Kiểm tra: ép
+  kiểu") nhưng các ảnh khác vẫn chụp. Muốn có thì soạn quiz bằng chính tính năng
+  sinh quiz AI.
+
+==============================================================================
+7. CHẠY LẠI TRÊN VPS (gate "luồng vàng trên tên miền thật — chụp lại screenshot")
+==============================================================================
+  BASE_URL=https://<DOMAIN> API_URL=https://<DOMAIN> \
+  SEED_ADMIN_PASSWORD=… SEED_INSTRUCTOR_PASSWORD=… SEED_LEARNER_PASSWORD=… \
+  COMPOSE_FILE=<compose của VPS> NODE_PATH=frontend/node_modules \
+  node docs/report/assets/phase-6/ui/capture.cjs
+Cần đủ dữ liệu demo theo bảng README (kể cả seed_community) trên CSDL của VPS. Bỏ
+SKIP_STAGE nếu muốn có ảnh sinh quiz AI + hàng đợi duyệt: cần GEMINI_API_KEY và
+`docker compose` tới được stack để dọn.

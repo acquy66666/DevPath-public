@@ -235,7 +235,13 @@ async def test_the_instructor_asking_in_their_own_course_notifies_nobody(
 ) -> None:
     _, lesson = course_and_lesson
 
-    await ask(api_client, lesson, await sign_in(api_client, owner), title="Thông báo lịch học")
+    thread = await ask(
+        api_client, lesson, await sign_in(api_client, owner), title="Thông báo lịch học"
+    )
 
-    rows = list(await db_session.scalars(select(Notification)))
+    rows = list(
+        await db_session.scalars(
+            select(Notification).where(Notification.payload["thread_id"].astext == thread["id"])
+        )
+    )
     assert rows == []

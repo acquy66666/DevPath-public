@@ -330,7 +330,9 @@ async def test_voting_twice_is_voting_once_and_it_can_be_taken_back(
 
     assert (await api_client.put(url, headers=headers)).status_code == 204
     assert (await api_client.put(url, headers=headers)).status_code == 204
-    votes = await db_session.scalar(select(func.count()).select_from(QaVote))
+    votes = await db_session.scalar(
+        select(func.count()).select_from(QaVote).where(QaVote.thread_id == uuid.UUID(thread["id"]))
+    )
     assert votes == 1
 
     assert (await api_client.delete(url, headers=headers)).status_code == 204
@@ -494,7 +496,12 @@ async def test_answering_your_own_question_tells_nobody(
     # Asking told the instructor (`qa_question`); answering it yourself tells
     # nobody anything more.
     count = await db_session.scalar(
-        select(func.count()).select_from(Notification).where(Notification.type == "qa_reply")
+        select(func.count())
+        .select_from(Notification)
+        .where(
+            Notification.type == "qa_reply",
+            Notification.payload["thread_id"].astext == thread["id"],
+        )
     )
     assert count == 0
 
@@ -591,8 +598,13 @@ async def test_deleting_a_question_takes_its_answers_and_votes(
 
     assert by_classmate.status_code == 403
     assert by_owner.status_code == 204
-    for model in (QaThread, QaReply, QaVote):
-        assert await db_session.scalar(select(func.count()).select_from(model)) == 0
+    thread_id = uuid.UUID(thread["id"])
+    assert await db_session.get(QaThread, thread_id) is None
+    for model in (QaReply, QaVote):
+        left = await db_session.scalar(
+            select(func.count()).select_from(model).where(model.thread_id == thread_id)
+        )
+        assert left == 0
 
 
 async def test_a_reply_is_removed_by_its_author_or_the_staff(

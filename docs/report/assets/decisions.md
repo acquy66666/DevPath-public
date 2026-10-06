@@ -735,6 +735,16 @@ Thực hiện quyết định storage cùng ngày. Bằng chứng: `docs/report/
 **Dev giữ tên `minio.localhost`** — URL công khai đã nằm trong `users.avatar_url`; đổi tên host thì phải viết migration dữ liệu, mà không được gì.
 
 
+## Bộ ảnh giao diện cho chương 4 (05/10/2026)
+
+Task thêm từ lượt rà kho bằng chứng. Bằng chứng: `docs/report/assets/phase-6/ui-screenshots.txt`.
+
+**Một script chụp lưu trong repo, không chụp tay.** Gate cuối phase còn đòi chụp lại trên tên miền thật, nên lần chụp thứ hai phải là một lệnh chứ không phải một buổi chiều. Mỗi vai đăng nhập một lần bằng form thật, rồi thu hồi phiên. Cái giá: phải chờ trang dev hydrate xong và chịu cooldown nộp bài, nên script có vài bước chờ.
+
+**Dữ liệu cho các màn trống được nạp qua service, giống mọi script seed khác** (`seed_community`). Ghi thẳng bảng sẽ dựng được trạng thái mà API từ chối tạo. Thứ duy nhất ghi thẳng là đồng hồ, để một tuần hỏi đáp không hiện "vừa xong" ở mọi dòng.
+
+**Những gì chỉ có thể làm thật thì làm thật ngay lúc chụp:** quiz, nộp code, sinh quiz bằng Gemini, gửi duyệt. Phần ghi của học viên đi theo tài khoản seed khi gỡ dữ liệu demo; khóa tạm thuộc một giảng viên `@e2e` nên `purge_e2e` dọn. Quiz seed không tính giờ, nên giới hạn giờ được đặt tạm rồi trả về giá trị cũ, thay vì sửa hẳn dữ liệu của khóa thật.
+
 ## Chốt phạm vi trước khi đóng băng (05/10/2026)
 
 User chốt hai câu hỏi mà lượt rà kho bằng chứng còn để ngỏ (`docs/report/assets/README.md` mục 3.4 và 5).

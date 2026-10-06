@@ -548,6 +548,22 @@ Thứ tự chạy: `scripts.seed_sales` trước, rồi đến script này. Kế
 
 Kết quả ngày 28/09/2026: 648 bài học, 21 lượt quiz đạt, 3 lượt trượt, 49 lượt tham gia khóa miễn phí. Bảng tuần có 4 người (hôm đó là thứ Hai), bảng tháng 27 người, mọi thời gian 40 người. Đăng nhập `nguoimuaNN@sales.devpath.example` (mật khẩu `devpath-buyer`) rồi mở `/bang-xep-hang`.
 
+### Hỏi đáp, ghi chú, báo cáo mẫu (`seed_community`, 05/10/2026)
+
+Hỏi đáp, chuông thông báo, ghi chú/đánh dấu và hàng đợi báo cáo vi phạm đều trống trên CSDL mới, và không màn nào điền được bằng một cú bấm trước hội đồng. `scripts/seed_community.py` viết một tuần hoạt động quanh khóa "Python cơ bản cho người mới bắt đầu":
+- 5 câu hỏi của học viên seed. 3 câu có trả lời của giảng viên (`khoa.tran`, huy hiệu "Giảng viên"), 1 câu chỉ có học viên khác trả lời, 1 câu chỉ có một trả lời spam. Hộp thư `/giang-day/hoi-dap` vì vậy có mục "chưa trả lời".
+- Bình chọn; một câu được người hỏi đánh dấu đã giải quyết.
+- Thông báo `qa_question`/`qa_reply` do chính service gửi.
+- 3 ghi chú theo mốc video và 2 đánh dấu của `hocvien07`.
+- 2 báo cáo spam đang chờ trên trả lời rác.
+
+```bash
+docker compose exec backend python -m scripts.seed_community
+docker compose exec backend python -m scripts.seed_community --purge
+```
+
+Ghi qua `services/qa.py`, `study.py`, `reports.py` — dòng nào phạm luật thì script dừng với đúng lỗi nút bấm sẽ báo. Chỉ **đồng hồ** ghi thẳng bảng: câu hỏi, trả lời và thông báo của chúng được lùi về giờ trong kế hoạch, để chuông không ghi "vừa xong" dưới một câu hỏi ba ngày trước. Chạy sau `seed_interactions`. `--purge` xóa câu hỏi (trả lời và phiếu đi theo), mọi thông báo trỏ vào chúng — kể cả của giảng viên, người còn lại sau khi gỡ học viên seed — báo cáo về chúng, cùng ghi chú và đánh dấu trong kế hoạch; **gỡ trước `seed_interactions --purge`**. Ghi chú là chữ thường (trang học không render Markdown cho ghi chú). Test: `tests/test_seed_community.py` (kế hoạch khớp danh sách học viên mà `seed_interactions` sinh ra; đọc lại qua service; chạy hai lần; gỡ).
+
 ## Chứng chỉ hoàn thành (Phase 5)
 
 | Endpoint | Mô tả |

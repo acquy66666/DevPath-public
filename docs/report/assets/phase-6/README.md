@@ -35,6 +35,7 @@ Chỉ mục dựng ngày 05/10/2026 trong lượt rà kho bằng chứng (lượ
 | `storage-decision.txt` + `storage-decision/` | Chọn storage production bằng phép thử 20 kiểm: RustFS 20/20, SeaweedFS 20/20; media tự host, backup CSDL lên B2 | 4 — Triển khai |
 | `rustfs-compose.txt` + `rustfs-compose/` | RustFS vào cả hai stack: chép 252 object dev (0 lệch), prod dựng thật trên máy dev 21/21 kiểm, Chrome PUT 50 MB qua HTTP/2 | 4 — Triển khai |
 | `test-summary.md` + `coverage-backend.txt` | **Bảng tổng hợp test** (thêm 05/10): 2.239 ca tự động trên CI 05/10, 0 đỏ, phân theo phân hệ; **coverage backend 94,5 %** (95,4 % dòng, 88,8 % nhánh). Lần đo đầu ra 83,4 % là sai: phải bật `--concurrency=greenlet,thread` vì SQLAlchemy async chạy trong greenlet | 5 — Kiểm thử & đánh giá |
+| `ui-screenshots.txt` + `ui/` (42 ảnh, `capture.cjs`, `capture-log.json`) | **Bộ ảnh giao diện cho chương 4** (05/10): đúng font, đúng giao diện cuối, 19/20 tính năng của đề cương (thiếu Google — chờ tên miền), kể cả 7 màn chưa từng được chụp; script chụp chạy lại được trên VPS. Dữ liệu hỏi đáp/ghi chú/báo cáo từ `scripts.seed_community` (mới). Tìm ra: dữ liệu demo "già" đi (chuỗi ngày về 0 sau một ngày), hocvien07 lệch vai instructor | 4 — Xây dựng hệ thống |
 | `schema-final.sql` | **Schema CSDL ở head `abb01d258134`** (thêm 05/10): 41 bảng + `alembic_version`, 58 khóa ngoại, 78 CHECK — nguồn để vẽ ERD ở Phase 7. Dump lại nếu có migration mới trước khi tag | 3 — Phân tích & thiết kế |
 
 ## Cách tái tạo hai tệp thêm ngày 05/10

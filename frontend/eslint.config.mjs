@@ -19,6 +19,22 @@ const eslintConfig = defineConfig([
     // code and none of them are ours.
     "public/monaco/**",
   ]),
+  {
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "next/font/google",
+              message:
+                "Fonts are self-hosted in public/fonts (app/fonts.css): next/font/google fetches from Google on every build and breaks at random (vercel/next.js#99114). See public/fonts/README.md.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
 
 export default eslintConfig;

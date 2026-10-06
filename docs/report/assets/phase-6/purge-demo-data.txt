@@ -157,6 +157,7 @@ Mã giảm giá, trên giỏ của một tài khoản dùng một lần `@e2e.de
 Ghi nhận thêm, có từ trước (không do lần gỡ này): người mua của `seed_sales`
 được tạo với `created_at` = lúc chạy script, nên dashboard admin đếm 40 "người
 dùng mới" trong 7 ngày gần nhất dù đơn đầu tiên của họ từ 12 tháng trước.
+→ Đã sửa chiều cùng ngày, xem mục 9.
 
 ==============================================================================
 7. KIỂM THỬ
@@ -181,3 +182,45 @@ Gỡ (bỏ qua script nào chưa từng nạp — `--purge` trên bảng trống
 Nạp lại phần demo:
   seed_sales → seed_study → seed_coupons → rebuild_leaderboard → issue_certificates → rebuild_recommendations
 Kiểm: `curl -s "http://localhost:8000/api/v1/courses?page_size=1"` → `"total":4`.
+
+==============================================================================
+9. CHIỀU 06/10: NGÀY TẠO TÀI KHOẢN CỦA NGƯỜI MUA (nhánh feature/seed-sales-signup-dates)
+==============================================================================
+Lỗi ở mục 6: dashboard admin đọc "người dùng mới" từ `users.created_at`, mà
+40 người mua được tạo đúng lúc chạy script. Đo trước khi sửa (đăng nhập admin):
+  7d : người dùng mới 40 (kỳ trước 1)
+  30d: người dùng mới 44 (kỳ trước 0)
+  12m theo tháng: 2025-11…2026-08 = 0, 2026-09 = 4, 2026-10 = 40
+  người mua: 40, tạo từ 2026-10-06 đến 2026-10-06
+
+Sửa (TDD, 2 test mới + 1 assertion thêm vào test đọc lại đơn hàng):
+`seed_sales.signed_up(email, lần_ghi_danh_đầu)` lùi 1–30 ngày (+ giờ, phút) từ
+bộ sinh ngẫu nhiên gieo bằng email, nên kế hoạch mua hàng không đổi;
+`backdate_sign_ups` đặt `created_at`/`updated_at` của tài khoản về trước lượt
+ghi danh sớm nhất và chỉ bao giờ lùi. `seed_sales` gọi nó sau khi mua;
+`seed_study` gọi lại sau khi người mua tham gia khóa miễn phí, vì có lượt
+tham gia (tới 70 ngày trước) sớm hơn cả đơn đầu tiên.
+
+Nạp lại (`seed_study --purge`, `seed_sales --purge`, `seed_sales`,
+`seed_study`, `rebuild_leaderboard`, `issue_certificates`,
+`rebuild_recommendations` — mọi lệnh thoát 0), đo lại:
+  7d : người dùng mới 0 (kỳ trước 1)
+  30d: người dùng mới 6 (kỳ trước 4)
+  12m theo tháng: 2025-12=3, 01=1, 02=2, 03=2, 04=1, 05=6, 06=6, 07=10, 08=6, 09=7, 10=0
+  40/40 người mua tạo trước lượt ghi danh đầu và trước đơn đầu; sớm hơn lượt
+  ghi danh đầu 1,2–30,0 ngày; tạo từ 2025-12-13 đến 2026-09-10.
+
+Dữ liệu học trên máy dev vì thế khác chút so với mục 3/5: `seed_study` lần này
+ra 742 bài, 23 lần đạt + 9 lần trượt, bảng tuần/tháng/mọi lúc 8/13/40 người;
+chuỗi đang giữ dài nhất là nguoimua08 (9 ngày, 390 XP). Bán hàng giữ nguyên
+(40 đơn, 19.161.600 ₫ — kế hoạch mua không đổi).
+
+Vì sao `seed_study` không ra đúng số cũ (lỗi có từ trước, tách task riêng):
+nó duyệt lượt ghi danh theo `ORDER BY created_at`, mà giờ tham gia khóa miễn
+phí chỉ tròn tới giờ — lần này có đúng một cặp trùng (nguoimua38 và nguoimua19,
+2026-09-27 02:00 UTC). Thứ tự hai dòng trùng là tùy Postgres, đảo một lần là
+mọi lượt rút số ngẫu nhiên phía sau lệch theo. Buổi học rơi vào hôm nay cũng
+rút thêm số tùy giờ chạy (`_moment`).
+
+Test: `tests/test_seed_sales.py` 9 passed (2 đỏ trước khi sửa: ImportError
+`backdate_sign_ups`); cùng `test_seed_study.py` + `test_seed_coupons.py`: 31 passed.

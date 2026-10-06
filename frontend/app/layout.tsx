@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import "./fonts.css";
 import "./globals.css";
 import { Providers } from "./providers";
 
-// "vietnamese" as well as "latin": without it every letter with a stacked mark
-// (ồ, ễ, ậ) comes from a fallback font, mid-word.
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin", "vietnamese"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin", "vietnamese"],
-});
+// Self-hosted, not next/font/google: see app/fonts.css. Every page shows
+// Vietnamese, so both of these are wanted before first paint -- without the
+// vietnamese subset each letter with a stacked mark (ồ, ễ, ậ) would come
+// from the fallback font, mid-word.
+const PRELOADED_FONTS = ["/fonts/geist-latin.woff2", "/fonts/geist-vietnamese.woff2"];
 
 export const metadata: Metadata = {
   // Every relative canonical and Open Graph URL below is resolved against this,
@@ -31,11 +25,20 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="vi"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="vi" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
+        {/* React hoists these into <head>. ReactDOM.preload() from a server
+            component only reached the RSC payload, not the HTML. */}
+        {PRELOADED_FONTS.map((href) => (
+          <link
+            key={href}
+            rel="preload"
+            href={href}
+            as="font"
+            type="font/woff2"
+            crossOrigin="anonymous"
+          />
+        ))}
         <Providers>{children}</Providers>
       </body>
     </html>

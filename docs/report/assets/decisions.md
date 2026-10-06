@@ -752,3 +752,11 @@ User chốt hai câu hỏi mà lượt rà kho bằng chứng còn để ngỏ (
 **Phụ đề video bị cắt** (mục cắt giảm số 2 của kế hoạch) — đề cương §5.1 mục 3 có hứa phụ đề, nhưng player chỉ có tiến độ và tốc độ phát. Tệp `.srt`/`.txt` giảng viên tải lên vẫn được lưu cạnh video và vẫn nuôi trợ giảng AI. Thứ bị cắt chỉ là hiển thị nó thành `<track>` trên player. Cái giá: học viên không bật được phụ đề. Chương 6 ghi vào phần hạn chế; nếu làm tiếp thì chỉ cần đổi SRT sang WebVTT và thêm `<track>`.
 
 **Chứng chỉ giữ kiểu Udemy: bài nào cũng tự đánh dấu hoàn thành được, kể cả quiz và bài code** — chứng chỉ xác nhận học viên đã đi hết khóa, không xác nhận đã đạt từng bài kiểm tra. Đã ghi nhận ở lượt `/security-review` 01/10 (`phase-6/security-review-codebase.txt` §5) là mức dưới ngưỡng, chờ chốt. Cái giá: lấy được chứng chỉ mà không cần qua quiz hay được AC, trong khi trang xác thực `/cert/{code}` là công khai. Báo cáo phải nói rõ chứng chỉ chứng nhận điều gì. Tự đánh dấu cũng được +10 XP của bài học và được tính một ngày vào chuỗi, như mọi bài khác. Còn phần thưởng thêm cho quiz đạt (+20) và bài code AC (+30) thì chỉ đến từ làm bài thật.
+
+## Font tự host thay cho next/font/google (06/10/2026)
+
+E2E trên `main` đỏ sau khi merge PR #88, dù chính nội dung đó đã xanh ở CI của PR. Bằng chứng: `docs/report/assets/phase-6/self-hosted-fonts.txt`.
+
+**Tự host 14 tệp font thay vì chờ Next sửa** — `next/font/google` tải từ Google ở mỗi lần build. Khoảng 1/60 lần Google trả URL `/l/font?kit=…&skey=…` mà Next không phân tích được (vercel/next.js#99114, Turbopack chưa có bản sửa). Build production của `deploy.sh` cũng gặp lỗi này. Tự host thì build không cần mạng, và kiểm được bằng một build `--network none`. Cái giá: cập nhật phiên bản font giờ làm tay (công thức ở `frontend/public/fonts/README.md`), và repo nặng thêm 385 KB.
+
+**`@font-face` thuần, không dùng `next/font/local`** — `next/font/local` không gắn được `unicode-range` cho từng tệp. Muốn giữ cách chia subset của Google (trình duyệt chỉ tải subset trang dùng) thì phải viết CSS tay. Phần next/font còn làm hộ được viết lại bằng tay: mặt Fallback chép nguyên số đo, preload bằng thẻ `<link>`.

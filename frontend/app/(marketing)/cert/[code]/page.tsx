@@ -1,6 +1,5 @@
 import { BadgeCheck, Download, Hourglass } from "lucide-react";
 import type { Metadata } from "next";
-import { Noto_Serif } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
@@ -18,13 +17,13 @@ import { formatDate } from "@/lib/format";
 // Vietnamese names stack two marks on one letter (ồ, ễ, ậ). `font-serif` falls
 // back to Georgia on Windows, which has no such glyphs: Chrome then splits the
 // letter into its base and a combining mark Georgia cannot place, and "Luồng"
-// prints as "Luô`ng". A serif with a Vietnamese subset, loaded on this page
-// only, since nothing else on the site is set in serif.
-const certificateSerif = Noto_Serif({
-  subsets: ["latin", "vietnamese"],
-  weight: ["600", "700"],
-  display: "swap",
-});
+// prints as "Luô`ng". Noto Serif, which has the Vietnamese subset: declared in
+// app/fonts.css as `.font-certificate`, and fetched on this page only, since
+// nothing else on the site is set in serif.
+const CERTIFICATE_FONTS = [
+  "/fonts/noto-serif-latin.woff2",
+  "/fonts/noto-serif-vietnamese.woff2",
+];
 
 /**
  * The public page a certificate's QR code points at.
@@ -74,6 +73,16 @@ export default async function CertificatePage({
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
+      {CERTIFICATE_FONTS.map((href) => (
+        <link
+          key={href}
+          rel="preload"
+          href={href}
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      ))}
       <div className="flex items-start gap-3 rounded-xl border border-emerald-600/30 bg-emerald-50 p-4 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
         <BadgeCheck className="mt-0.5 size-5 shrink-0" aria-hidden />
         <div>
@@ -94,13 +103,13 @@ export default async function CertificatePage({
           CERTIFICATE OF COMPLETION
         </p>
         <h1
-          className={`mt-2 ${certificateSerif.className} text-3xl font-semibold text-primary sm:text-4xl`}
+          className="mt-2 font-certificate text-3xl font-semibold text-primary sm:text-4xl"
         >
           Chứng nhận hoàn thành
         </h1>
         <p className="mt-8 text-sm text-muted-foreground">Trao cho</p>
         <p
-          className={`mt-1 break-words ${certificateSerif.className} text-3xl font-bold sm:text-4xl`}
+          className="mt-1 break-words font-certificate text-3xl font-bold sm:text-4xl"
         >
           {certificate.recipient_name}
         </p>

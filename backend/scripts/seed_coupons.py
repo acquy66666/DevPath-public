@@ -24,10 +24,12 @@ the campaign allows -- each one is a CHECK, so a wrong line below stops with a
 constraint violation naming it rather than storing something the API would
 never have accepted.
 
-**Runs after `scripts.seed` and `scripts.seed_interactions`**: the
-course-scoped coupon names two real Python courses, one of which is written by
-each. Idempotent by code, like the rest of the seed; `--purge` removes exactly
-these six.
+**Runs after `scripts.seed`**: the course-scoped coupon names two paid Python
+courses, one written by `scripts.seed` and one by `scripts.seed_interactions`.
+A named course that is not there is left out of the code, so it also runs on
+the four real courses once the synthetic ones are purged -- the catalogue of
+the defence, whose home-page banner advertises `CHAOMUNG50`. Idempotent by
+code, like the rest of the seed; `--purge` removes exactly these six.
 """
 
 import argparse
@@ -85,7 +87,7 @@ DEMO_COUPONS: list[CouponPlan] = [
         code="PYTHON30",
         discount_type="percent",
         value=Decimal("30"),
-        shows="chỉ áp cho 2 khóa Python — phần còn lại của giỏ giữ nguyên giá",
+        shows="chỉ áp cho khóa Python có phí — phần còn lại của giỏ giữ nguyên giá",
         scope="courses",
         max_uses=50,
         course_slugs=(
@@ -124,36 +126,33 @@ DEMO_COUPONS: list[CouponPlan] = [
 class Written:
     coupons: int
     course_links: int
+    #: Courses a scoped code names that are not in the catalogue, left out.
+    missing: tuple[str, ...] = ()
 
 
-async def _course_ids(session: AsyncSession, slugs: set[str]) -> dict[str, Course]:
+async def _courses(session: AsyncSession, slugs: set[str]) -> dict[str, Course]:
     if not slugs:
         return {}
-
-    courses = {
+    return {
         course.slug: course
         for course in await session.scalars(
             select(Course).where(Course.slug.in_(slugs))
         )
     }
-    missing = sorted(slugs - set(courses))
-    if missing:
-        raise SystemExit(
-            "Chưa có các khóa học: "
-            + ", ".join(missing)
-            + ". Chạy `python -m scripts.seed` và "
-            "`python -m scripts.seed_interactions` trước."
-        )
-    return courses
 
 
 async def seed_coupons(
     session: AsyncSession, plans: list[CouponPlan] = DEMO_COUPONS
 ) -> Written:
-    """Write the codes that are missing. A code already there is left alone."""
+    """Write the codes that are missing. A code already there is left alone.
+
+    A scoped code covers the courses it names that exist; one that would cover
+    none is not written, since every cart would refuse it.
+    """
     now = datetime.now(UTC)
     wanted = {slug for plan in plans for slug in plan.course_slugs}
-    courses = await _course_ids(session, wanted)
+    courses = await _courses(session, wanted)
+    missing = tuple(sorted(wanted - set(courses)))
 
     existing = set(
         await session.scalars(
@@ -165,6 +164,9 @@ async def seed_coupons(
     links = 0
     for plan in plans:
         if plan.code in existing:
+            continue
+        covered = [slug for slug in plan.course_slugs if slug in courses]
+        if plan.course_slugs and not covered:
             continue
 
         coupon = Coupon(
@@ -185,14 +187,14 @@ async def seed_coupons(
         await session.flush()
         written += 1
 
-        for slug in plan.course_slugs:
+        for slug in covered:
             session.add(
                 CouponCourse(coupon_id=coupon.id, course_id=courses[slug].id)
             )
             links += 1
 
     await session.flush()
-    return Written(coupons=written, course_links=links)
+    return Written(coupons=written, course_links=links, missing=missing)
 
 
 async def purge(session: AsyncSession, plans: list[CouponPlan] = DEMO_COUPONS) -> int:
@@ -231,6 +233,12 @@ async def main() -> None:
 
     print(f"mã tạo mới     : {written.coupons}")
     print(f"khóa học gắn mã: {written.course_links}")
+    if written.missing:
+        print(
+            "khóa không có trên sàn, bỏ khỏi mã: "
+            + ", ".join(written.missing)
+            + " (chạy `python -m scripts.seed_interactions` nếu cần)"
+        )
     print()
     for plan in DEMO_COUPONS:
         print("  " + _describe(plan))

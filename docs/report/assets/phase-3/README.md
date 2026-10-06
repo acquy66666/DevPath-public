@@ -25,6 +25,7 @@ Image mà mã nguồn của người lạ sẽ chạy trong đó: `grader/images
 | `runner-core.txt` | Giới hạn đọc từ **bên trong** container; hai lớp timeout đo bằng số thật; **phát hiện PID 1 nuốt tín hiệu**; OOM / crash / cắt output / SE; kiểm tra rò container; chi phí một lần chấm | 4 — Xây dựng hệ thống, và 6 — Bảo mật |
 | `attack-tests.txt` | **7 ca tấn công thật, 43 lần bị chặn, 0 ca thoát**; báo cáo do chính chương trình tấn công in ra từ bên trong container; 4 lớp phòng thủ độc lập | 6 — Bảo mật (chương chính) |
 | `verdicts.txt` | **Log demo đủ 7 verdict** sinh từ 10 bài nộp thật; thứ tự ưu tiên; thông báo lỗi cú pháp và lỗi hệ thống nguyên văn; kết quả ruff + 30 test | 4 — Xây dựng hệ thống |
+| `oom-classification.txt` | *(thêm 18/09, sau khi phase đã đóng; chỉ mục bổ sung 05/10)* **MLE bị chấm thành TLE khi Docker quên cờ `OOMKilled`**: truy gốc lỗi đỏ chập chờn trên CI, sửa bằng thời gian sống của container (exit 137 trước điểm giữa giới hạn CPU mềm/cứng → MLE); mục 8 ghi một kiểu kẹt tới hết wall chỉ thấy trên Docker Desktop (3/80 lần), chờ chạy lại trên VPS | 4 — Xây dựng hệ thống, và 5 — Kiểm thử & đánh giá |
 | `output-comparison.txt` | **Bảng đối chứng so sánh thô ↔ so sánh có chuẩn hóa** trên 14 ca; lý do không dùng `splitlines()`; luật output bị cắt không bao giờ AC; kết quả ruff + 18 test | 4 — Xây dựng hệ thống |
 
 ### Đã chứng minh được

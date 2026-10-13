@@ -1,10 +1,12 @@
 """The transcode step, without Celery and mostly without ffmpeg.
 
 `transcode()` takes a session and a storage, so the orchestration -- download,
-convert, upload, record -- is testable on its own. One test at the bottom does
-run the real ffmpeg, and skips itself where there is none.
+convert, upload, record -- is testable on its own. Two tests at the bottom do
+run the real ffmpeg. They skip on a machine without it, and fail in CI, where
+the job installs it -- the same rule as the database and Redis tests.
 """
 
+import os
 import shutil
 import subprocess
 import uuid
@@ -18,6 +20,11 @@ from app.workers import video as worker
 from app.workers.video import TranscodeError, transcode
 
 HAS_FFMPEG = shutil.which("ffmpeg") is not None and shutil.which("ffprobe") is not None
+
+needs_ffmpeg = pytest.mark.skipif(
+    not HAS_FFMPEG and not os.getenv("CI"),
+    reason="ffmpeg/ffprobe không có trên máy này (`docker compose exec backend pytest`).",
+)
 
 
 class FakeStorage:
@@ -226,7 +233,7 @@ async def test_the_workspace_is_cleaned_up(
 # --- The real thing --------------------------------------------------------
 
 
-@pytest.mark.skipif(not HAS_FFMPEG, reason="ffmpeg/ffprobe không có trên máy này")
+@needs_ffmpeg
 def test_ffmpeg_really_produces_a_playable_manifest(tmp_path: Path) -> None:
     """Proves the actual command line works -- the flags are easy to get wrong
     and a fake would happily agree with a broken one."""
@@ -268,7 +275,7 @@ def test_ffmpeg_really_produces_a_playable_manifest(tmp_path: Path) -> None:
     assert max(durations) <= worker.SEGMENT_SECONDS + 1
 
 
-@pytest.mark.skipif(not HAS_FFMPEG, reason="ffmpeg/ffprobe không có trên máy này")
+@needs_ffmpeg
 def test_a_file_that_is_not_a_video_is_reported_not_crashed(tmp_path: Path) -> None:
     source = tmp_path / "khong-phai-video.mp4"
     source.write_bytes(b"day khong phai la video")

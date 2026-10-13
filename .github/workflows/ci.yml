@@ -85,14 +85,16 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]" -c requirements.lock
 
-      # What WeasyPrint draws certificates with -- the same packages the
-      # backend image installs. The PDF tests skip on a machine without them
-      # but fail here, so a missing library cannot turn into a green run.
-      - name: System libraries for certificate PDFs
+      # What WeasyPrint draws certificates with, and the ffmpeg the video
+      # worker shells out to -- the same packages the backend image installs.
+      # The PDF and transcode tests skip on a machine without them but fail
+      # here, so a missing tool cannot turn into a green run.
+      - name: System libraries for certificate PDFs and video transcoding
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core
+            libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz-subset0 fonts-dejavu-core \
+            ffmpeg
 
       - name: Ruff
         run: |
@@ -117,8 +119,10 @@ jobs:
       - name: Migrate the test database
         run: alembic upgrade head
 
+      # -rs prints why anything skipped. Every conditional skip in this suite
+      # turns into a failure under CI, so the expected line here is "0 skipped".
       - name: Pytest
-        run: pytest -q
+        run: pytest -q -rs
 
   frontend:
     name: Frontend — lint & build
@@ -258,8 +262,10 @@ jobs:
       - name: Ruff
         run: ruff check .
 
+      # Expected: the 17 attacks on the Docker proxy skip here (no proxy yet)
+      # and run in the next step; -rs prints that reason for each of them.
       - name: Pytest
-        run: pytest -q
+        run: pytest -q -rs
 
       # The verdict and sandbox-attack suites again, this time through the
       # Docker proxy the worker uses in every stack (grader/proxy) -- so "the

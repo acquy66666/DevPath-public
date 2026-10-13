@@ -55,7 +55,7 @@ Từ đợt rà tồn đọng 18/09 ([don-no-2026-09-18.md](don-no-2026-09-18.md
 
 - [ ] URL demo công khai chạy ổn định trên **tên miền thật**, tự khởi động lại sau khi reboot VPS (chứng chỉ Let's Encrypt và lần reboot đầu tiên là hai thứ chỉ máy chủ thật mới chứng minh được)
 - [ ] Luồng vàng chạy lại đủ trên tên miền thật, lần này **có đăng nhập Google** — chụp lại screenshot cho báo cáo
-- [ ] Toàn bộ test (unit + E2E + test bảo mật sandbox) xanh trong CI
+- [x] Toàn bộ test (unit + E2E + test bảo mật sandbox) xanh trong CI — xong 13/10 (PR #91, run 38420744606, 6/6 job): backend **1.873 passed, 0 skipped**, grader 266 + 17 skipped (tấn công proxy, chạy ở lượt qua proxy: 59/59), backup 43, monitor 52, frontend 4, E2E 1 — 2.256 ca, 0 đỏ. Rà ba cách CI xanh mà test không chạy: 8/9 chỗ skip có điều kiện vốn đã thành fail trên CI; chỗ thứ 9 là **2 ca ffmpeg thật chưa từng chạy trên CI** → job cài ffmpeg, skip thành fail, `pytest -rs` in lý do mọi skip (kiểm ba trường hợp trong container: có ffmpeg 11 passed / thiếu 2 skipped / thiếu + `CI=1` 2 failed); E2E có `retries: 1` nên tiêu chí là "1 passed" chứ không "flaky" — trên `8072ae4` 4/4 lần qua ngay lần đầu. **Kiểm lại trên commit được tag `phase-6-done`** — `docs/report/assets/phase-6/test-summary.md` mục 1 + 5
 - [ ] **Kiểm tra kho bằng chứng:** mở `docs/report/assets/` đối chiếu với bảng bằng chứng trong skill `thesis-report` — thiếu gì đo/chụp lại ngay tuần này, sang Phase 7 là quá muộn
   - **Lượt 1 xong 05/10** (máy dev, chưa có VPS) — [`docs/report/assets/README.md`](../report/assets/README.md):
     - mọi mục của bảng skill đều có tệp, trừ URL demo trên VPS;

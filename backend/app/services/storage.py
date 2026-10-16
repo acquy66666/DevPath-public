@@ -168,8 +168,11 @@ class StoredObject:
 class ObjectStorage(Protocol):
     """What the rest of the app is allowed to ask of a bucket."""
 
-    def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
-        """A URL the browser may PUT exactly one object to, for a limited time."""
+    def presigned_put_url(
+        self, key: str, content_type: str, expires_in: int, *, size_bytes: int
+    ) -> str:
+        """A URL the browser may PUT exactly one object to, of exactly this
+        type and size, for a limited time."""
         ...
 
     def public_url(self, key: str) -> str:
@@ -226,16 +229,32 @@ class R2Storage:
             config=Config(signature_version="s3v4"),
         )
 
-    def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
+    def presigned_put_url(
+        self, key: str, content_type: str, expires_in: int, *, size_bytes: int
+    ) -> str:
         """Sign a PUT for one key.
 
         `ContentType` is part of what gets signed, so the browser has to send
         back the same value -- a signed URL cannot be reused to upload
         something of a different kind under the same name.
+
+        So is `ContentLength`, which is what turns the size the browser
+        declared from a courtesy into a limit. Unsigned, a ticket for a 200 KB
+        avatar took any body nginx let through (2 GB), and on a VPS where the
+        bucket shares a disk with Postgres that is a way to stop the site. The
+        browser cannot choose the header -- it sends the file's real length --
+        so a file that is not the declared size, or a body sent chunked with no
+        length at all, is refused with 403 before anything is stored
+        (`docs/report/assets/phase-6/signed-upload-length.txt`).
         """
         return self._client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": self._bucket, "Key": key, "ContentType": content_type},
+            Params={
+                "Bucket": self._bucket,
+                "Key": key,
+                "ContentType": content_type,
+                "ContentLength": size_bytes,
+            },
             ExpiresIn=expires_in,
         )
 

@@ -100,7 +100,9 @@ with httpx.Client(verify=CA, timeout=120) as http:
     key = f"videos/smoke-{uuid.uuid4().hex[:8]}/original.mp4"
     big = os.urandom(100 * MB)
     r = http.put(
-        storage.presigned_put_url(key, "video/mp4", 600), content=big, headers={"Content-Type": "video/mp4"}
+        storage.presigned_put_url(key, "video/mp4", 600, size_bytes=len(big)),
+        content=big,
+        headers={"Content-Type": "video/mp4"},
     )
     check("100 MB PUT through nginx", r.status_code == 200, f"HTTP {r.status_code}")
 

@@ -1,0 +1,8 @@
+PASS  file picked                          15806 B PNG
+PASS  ticket asked for the file's size     size_bytes=15806
+PASS  ticket signs the length              content-length;content-type;host
+PASS  Chrome PUT straight to the bucket    HTTP 200 minio.localhost:9000, content-length 15806
+PASS  profile saved the picture            HTTP 200
+PASS  bucket serves exactly that file      HTTP 200, 15806 B
+6/6  (account upload-1792161025069@e2e.devpath.example -- run purge_e2e)
+Đã gỡ 1 tài khoản, 0 khóa học, 0 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại.

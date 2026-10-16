@@ -129,10 +129,31 @@ async def test_the_signed_content_type_matches_what_the_browser_will_send(
         headers=headers,
     )
 
-    key, content_type, expires_in = storage.signed[-1]
+    key, content_type, expires_in, _ = storage.signed[-1]
     assert content_type == response.json()["content_type"] == "video/webm"
     assert key.endswith(".webm")
     assert expires_in == get_settings().upload_url_ttl_seconds
+
+
+async def test_the_declared_size_is_signed_in(
+    api_client: AsyncClient, db_session: AsyncSession, storage: FakeStorage
+) -> None:
+    """The size used to be a courtesy check only; signed, the bucket holds the
+    upload to it, so the object that lands is the size that was approved."""
+    owner = await make_user(db_session, "instructor")
+    lesson = await make_lesson(db_session, owner)
+    headers = await sign_in(api_client, owner)
+
+    response = await api_client.post(
+        f"/api/v1/lessons/{lesson.id}/video",
+        json=upload_body(size_bytes=314_159_265),
+        headers=headers,
+    )
+
+    assert response.status_code == 201
+    signed = storage.signed[-1]
+    assert signed.key == response.json()["storage_key"]
+    assert signed.size_bytes == 314_159_265
 
 
 async def test_the_asset_starts_as_uploading_and_is_attached_to_the_lesson(

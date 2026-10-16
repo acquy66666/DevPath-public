@@ -38,7 +38,9 @@ from app.workers.video import TranscodeError, transcode
 
 
 class FakeStorage:
-    def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
+    def presigned_put_url(
+        self, key: str, content_type: str, expires_in: int, *, size_bytes: int
+    ) -> str:
         return f"https://bucket.example/{key}"
 
     def download_file(self, key: str, destination: str) -> None:

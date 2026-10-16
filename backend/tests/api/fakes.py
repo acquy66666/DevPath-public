@@ -6,22 +6,35 @@ Videos, avatars and transcripts all go through it, so it lives here rather
 than in any one test module.
 """
 
+from typing import NamedTuple
+
 from app.services.storage import StorageError
+
+
+class SignedPut(NamedTuple):
+    """One upload URL as it was asked for."""
+
+    key: str
+    content_type: str
+    expires_in: int
+    size_bytes: int
 
 
 class FakeStorage:
     """Records what was signed, deleted, and moved. Reaches no network."""
 
     def __init__(self) -> None:
-        self.signed: list[tuple[str, str, int]] = []
+        self.signed: list[SignedPut] = []
         self.deleted_prefixes: list[str] = []
         self.uploaded: list[tuple[str, str]] = []
         self.downloaded: list[str] = []
         # Small objects the API writes itself (transcripts): key -> (bytes, type).
         self.objects: dict[str, tuple[bytes, str]] = {}
 
-    def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
-        self.signed.append((key, content_type, expires_in))
+    def presigned_put_url(
+        self, key: str, content_type: str, expires_in: int, *, size_bytes: int
+    ) -> str:
+        self.signed.append(SignedPut(key, content_type, expires_in, size_bytes))
         return f"https://bucket.example/{key}?signature=fake"
 
     def public_url(self, key: str) -> str:

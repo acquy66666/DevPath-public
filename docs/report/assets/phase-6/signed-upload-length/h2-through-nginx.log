@@ -1,0 +1,22 @@
+== nginx 1.27.5, media.conf from infra/nginx/snippets
+== Chrome, XHR PUT as frontend/lib/api/storage.ts does it
+PASS  exact size, 1 MB                   signed 1048576   body   1048576 B -> HTTP 200 over h2 (0.05 s)
+PASS  one byte more than signed          signed 1048576   body   1048577 B -> HTTP 403 over h2 (0.01 s)
+PASS  one byte less than signed          signed 1048576   body   1048575 B -> HTTP 403 over h2 (0.01 s)
+PASS  50 MB on a 1 MB ticket             signed 1048576   body  52428800 B -> HTTP 403 over h2 (0.04 s)
+PASS  exact size, 50 MB                  signed 52428800  body  52428800 B -> HTTP 200 over h2 (1.30 s)
+PASS  control: old unsigned URL, 50 MB   unsigned         body  52428800 B -> HTTP 200 over h2 (1.18 s)
+== what the bucket holds afterwards (then deleted)
+PASS  bucket holds for 'exact size, 1 MB': 1048576
+PASS  bucket holds for 'one byte more than signed': nothing
+PASS  bucket holds for 'one byte less than signed': nothing
+PASS  bucket holds for '50 MB on a 1 MB ticket': nothing
+PASS  bucket holds for 'exact size, 50 MB': 52428800
+PASS  bucket holds for 'control: old unsigned URL, 50 MB': 52428800
+== what nginx received from Chrome (access log, query string left out)
+PUT /devpath-media/videos/upload-probe-1792160790/00.mp4 HTTP/2.0 content_length=1048576 transfer_encoding=- request_length=1048897 status=200
+PUT /devpath-media/videos/upload-probe-1792160790/01.mp4 HTTP/2.0 content_length=1048577 transfer_encoding=- request_length=65809 status=403
+PUT /devpath-media/videos/upload-probe-1792160790/02.mp4 HTTP/2.0 content_length=1048575 transfer_encoding=- request_length=65810 status=403
+PUT /devpath-media/videos/upload-probe-1792160790/03.mp4 HTTP/2.0 content_length=52428800 transfer_encoding=- request_length=65809 status=403
+PUT /devpath-media/videos/upload-probe-1792160790/04.mp4 HTTP/2.0 content_length=52428800 transfer_encoding=- request_length=52429067 status=200
+PUT /devpath-media/videos/upload-probe-1792160790/05.mp4 HTTP/2.0 content_length=52428800 transfer_encoding=- request_length=52429056 status=200

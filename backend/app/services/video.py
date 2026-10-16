@@ -163,7 +163,9 @@ async def create_upload_ticket(
     ttl = get_settings().upload_url_ttl_seconds
     return VideoUploadTicket(
         video_asset_id=asset.id,
-        upload_url=storage.presigned_put_url(asset.storage_key, data.content_type, ttl),
+        upload_url=storage.presigned_put_url(
+            asset.storage_key, data.content_type, ttl, size_bytes=data.size_bytes
+        ),
         storage_key=asset.storage_key,
         expires_in=ttl,
         content_type=data.content_type,

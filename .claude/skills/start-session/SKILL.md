@@ -53,6 +53,8 @@ In xong thì **dừng lại chờ chốt**, chưa động vào code.
 
 Lấy **task chưa tick đầu tiên** của phase, không nhảy cóc. Ngoại lệ duy nhất: task bị chặn bởi yếu tố bên ngoài (chưa có API key Gemini, chưa đăng ký VNPay sandbox, chưa có VPS) → lấy task kế tiếp và nói rõ lý do bỏ qua.
 
+Nếu **mọi** task còn lại của phase đều bị chặn từ bên ngoài, đọc mục "Ưu tiên hiện tại" của `docs/plan/00-overview.md`: nó nói khi nào được sang phase kế (ví dụ Phase 6 → 7 khi "Mốc trình bày GVHD" đã tick) — và khi đó "phase hiện tại" trong báo cáo mở phiên là phase kế, kèm một dòng nói phase trước còn những task nào chờ.
+
 Một phiên = **một task**. Xong sớm thì mở phiên mới, không gộp nhiều task vào một phiên.
 
 ## Trước khi kết thúc phiên

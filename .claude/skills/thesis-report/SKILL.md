@@ -7,11 +7,11 @@ description: Use when writing, updating, or planning the thesis report (báo cá
 
 ## Nguyên tắc quan trọng nhất
 
-**Viết báo cáo ở Phase 7, sau khi sản phẩm hoàn chỉnh và đóng băng tính năng.** Trong Phase 1–6 không viết chương nào, không vẽ sơ đồ nào — nhưng **bắt buộc thu bằng chứng** ở gate mỗi phase, lưu vào `docs/report/assets/phase-N/`.
+**Viết báo cáo ở Phase 8, sau khi sản phẩm hoàn chỉnh và đóng băng (nghiệp vụ ở Phase 6, giao diện ở Phase 7).** Trong Phase 1–7 không viết chương nào, không vẽ sơ đồ nào — nhưng **bắt buộc thu bằng chứng** ở gate mỗi phase, lưu vào `docs/report/assets/phase-N/`.
 
 Ranh giới rõ ràng:
 
-| Làm ngay trong lúc code (Phase 1–6) | Để đến Phase 7 |
+| Làm ngay trong lúc code (Phase 1–7) | Để đến Phase 8 |
 |---|---|
 | Screenshot màn hình lúc tính năng vừa chạy | Viết chương, đặt caption, trích dẫn |
 | Chạy script đo và lưu output (benchmark, precision@k, load test) | Vẽ use case, ERD, sơ đồ kiến trúc, sơ đồ luồng |
@@ -39,7 +39,8 @@ Lý do chia thế này: câu chữ và hình vẽ làm cuối thì khớp sản 
 | 4 | Precision@k / recall@k trên tập dữ liệu seed; ví dụ hội thoại chatbot có trích nguồn + 1 ca từ chối ngoài phạm vi; ví dụ quiz sinh tự động kèm đánh giá chất lượng |
 | 5 | Screenshot luồng thanh toán sandbox end-to-end; log IPN đã che dữ liệu nhạy cảm; chứng chỉ PDF mẫu; dashboard instructor + admin |
 | 6 | Kết quả load test nhẹ (k6/locust); URL demo chạy trên VPS; bảng tổng hợp test; **rà soát lần cuối toàn bộ kho bằng chứng trước khi đóng băng** |
-| 7 | Không thu nữa — đây là phase tiêu thụ bằng chứng: vẽ sơ đồ, viết 6 chương, làm slide |
+| 7 | Nâng cấp UI/UX: ảnh trước/sau từng nhóm màn (1440 + 375 px); export design system Claude Design; model sheet + bộ biểu cảm nhân vật; GIF ngắn các phản ứng; số đo Lighthouse/axe/dung lượng JS trước và sau; chạy lại `phase-6/ui/capture.cjs` để có bộ ảnh chương 4 theo giao diện mới |
+| 8 | Không thu nữa — đây là phase tiêu thụ bằng chứng: vẽ sơ đồ, viết 6 chương, làm slide |
 
 ## Văn phong
 

@@ -1,6 +1,6 @@
 # Nhật ký quyết định kỹ thuật
 
-Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 7 viết chương 4 (Xây dựng hệ thống) không phải nhớ lại. Chỉ ghi quyết định **có đánh đổi**; những thứ chỉ có một cách làm thì không cần.
+Ghi ngay khi quyết định, 1–2 dòng mỗi mục, để Phase 8 viết chương 4 (Xây dựng hệ thống) không phải nhớ lại. Chỉ ghi quyết định **có đánh đổi**; những thứ chỉ có một cách làm thì không cần.
 
 Định dạng: **Quyết định** — bối cảnh → lựa chọn → lý do / cái phải trả giá.
 

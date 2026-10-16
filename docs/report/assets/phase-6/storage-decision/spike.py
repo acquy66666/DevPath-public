@@ -96,14 +96,17 @@ run = uuid.uuid4().hex[:8]
 
 avatar_key = f"avatars/{run}/a.png"
 avatar = os.urandom(200_000)
-url = storage.presigned_put_url(avatar_key, "image/png", 600)
+url = storage.presigned_put_url(avatar_key, "image/png", 600, size_bytes=len(avatar))
 check("presigned URL is path-style on the site's own origin", url.startswith(f"{FRONT}/{BUCKET}/"), url.split("?")[0])
 
 r = browser.put(url, content=avatar, headers={"Content-Type": "image/png"})
 check("browser PUT to the presigned URL", r.status_code == 200, f"HTTP {r.status_code}")
 
-r = browser.put(url, content=b"<html>", headers={"Content-Type": "text/html"})
+r = browser.put(url, content=avatar, headers={"Content-Type": "text/html"})
 check("same URL with another Content-Type is refused", r.status_code == 403, f"HTTP {r.status_code}")
+
+r = browser.put(url, content=avatar + b"x", headers={"Content-Type": "image/png"})
+check("same URL with one byte more is refused", r.status_code == 403, f"HTTP {r.status_code}")
 
 r = browser.put(f"{FRONT}/{BUCKET}/avatars/{run}/forged.png", content=b"x", headers={"Content-Type": "image/png"})
 check("unsigned PUT is refused", r.status_code == 403, f"HTTP {r.status_code}")
@@ -131,7 +134,7 @@ r = browser.get(storage.public_url(f"avatars/{run}/missing.png"))
 check("missing key is not a 200", r.status_code in (403, 404), f"HTTP {r.status_code}")
 
 big = os.urandom(60 * MB)
-url = storage.presigned_put_url(f"videos/{run}/original.mp4", "video/mp4", 600)
+url = storage.presigned_put_url(f"videos/{run}/original.mp4", "video/mp4", 600, size_bytes=len(big))
 started = time.perf_counter()
 r = browser.put(url, content=big, headers={"Content-Type": "video/mp4"})
 check("60 MB original video through nginx", r.status_code == 200, f"HTTP {r.status_code}, {time.perf_counter() - started:.1f} s")

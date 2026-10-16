@@ -1,0 +1,194 @@
+KÝ CONTENT-LENGTH VÀO URL TẢI LÊN — CHẶN LÀM ĐẦY ĐĨA QUA URL KÝ SẴN
+Ngày: 16/10/2026 · nhánh feature/signed-upload-length
+Tách từ rustfs-compose.txt mục 4d (05/10). Máy: Docker Desktop, Engine 29.7.2,
+Compose 5.4.0. RustFS 1.0.1 (cùng digest với compose:
+sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c),
+boto3/botocore 1.43.98 (đúng bản đã khóa), nginx 1.27.5 (image nginx:1.27-alpine
+của compose prod), Chrome 155.
+
+Kết quả gọn:
+  - Lỗ có thật: URL ký sẵn chỉ ký Content-Type, không ký kích thước. Đo trên
+    RustFS dev: một vé khai 1 KB nhận một thân 20 MB → 200, bucket giữ 20 MB.
+    Trên VPS, bucket nằm chung đĩa với Postgres. Trước bản sửa, mọi tài khoản
+    học viên đã đăng nhập xin được vé ảnh đại diện (khai ≤ 5 MB) rồi PUT tới
+    2 GB, vì giới hạn duy nhất là nginx.
+  - Sửa: `R2Storage.presigned_put_url` ký thêm `ContentLength` = `size_bytes`
+    mà trình duyệt đã khai (cả ba nơi xin URL vốn đã khai). Tham số là
+    keyword bắt buộc, nên chỗ gọi nào quên thì TypeError chứ không lặng lẽ
+    ký thiếu. Không đổi API công khai, không đổi frontend (chỉ chú thích),
+    không migration.
+  - RustFS giữ đúng chữ ký: lệch 1 byte (thừa hay thiếu), gửi chunked không
+    có độ dài, hay gửi 20 MB / 500 MB vào vé 1 KB → 403 SignatureDoesNotMatch,
+    bucket không giữ gì. 500 MB bị từ chối sau 0,17 s, tức là server không
+    đọc hết thân mới từ chối.
+  - Đường production thật (Chrome → nginx TLS + HTTP/2 với nguyên
+    snippets/media.conf → RustFS): Chrome gửi Content-Length qua HTTP/2,
+    nginx chuyển nguyên cho upstream (không đổi sang chunked). Tải đúng kích
+    thước 1 MB và 50 MB → 200; lệch kích thước → 403, nginx dừng đọc ở
+    ~65 KB. 12/12.
+  - Luồng UI thật trên stack dev (form ảnh đại diện ở /ho-so, tài khoản dùng
+    một lần): vé ký `content-length;content-type;host`, Chrome PUT 200,
+    hồ sơ lưu ảnh, bucket trả đúng 15.806 B. 6/6.
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/app/services/storage.py
+  `ObjectStorage.presigned_put_url(key, content_type, expires_in, *, size_bytes)`
+  — Protocol và `R2Storage` đều đổi; `R2Storage` đưa `ContentLength` vào
+  Params của `generate_presigned_url("put_object")`. botocore đặt nó thành
+  header `Content-Length` của request được ký nên nó vào `X-Amz-SignedHeaders`
+  (`content-length;content-type;host`). Trình duyệt không chọn được header
+  này: XHR/fetch luôn gửi độ dài thật của Blob/File.
+
+backend/app/services/video.py, users.py, banners.py (+ api/v1/admin.py)
+  Ba nơi xin URL truyền `size_bytes` đã khai (video ≤ 2 GB cho giảng viên chủ
+  khóa, ảnh đại diện ≤ 5 MB cho mọi tài khoản, banner ≤ 8 MB cho admin).
+  `size_bytes` vốn đã bắt buộc và đã kiểm trần trong schema.
+
+backend/app/schemas/video.py, users.py
+  Docstring cũ nói kích thước khai báo là "a courtesy check -- not a limit.
+  The limit that holds is the one configured on the bucket". Bucket chưa từng
+  được cấu hình giới hạn nào. Giờ docstring nói đúng: kích thước được ký vào
+  URL nên kiểm ở đây chính là giới hạn.
+
+frontend/lib/api/storage.ts
+  Chỉ chú thích: tệp gửi đi phải đúng là `File` đã khai `.size`, và không đặt
+  Content-Length bằng tay. Cả ba component (video-upload, avatar-form,
+  admin-banners) vốn đã khai `file.size` và gửi đúng `file` đó.
+
+Script diễn tập cũ, gọi thẳng `presigned_put_url`, sửa theo chữ ký mới:
+  storage-decision/spike.py — ca "đổi Content-Type → 403" giờ gửi đúng kích
+  thước (gửi `<html>` 6 byte thì 403 vì sai độ dài, không chứng minh được gì
+  về Content-Type), thêm ca "thừa một byte → 403". rustfs-compose/prod_smoke.py.
+
+==============================================================================
+2. TEST (TDD)
+==============================================================================
+Viết trước, chạy đỏ trước khi sửa code:
+  tests/test_storage.py (ký offline, boto3 không gọi mạng khi presign)
+    - SignedHeaders đúng `content-length;content-type;host`
+    - đồng hồ ký cố định (`botocore.auth.get_current_datetime`): cùng kích
+      thước → cùng chữ ký, khác 1 byte → khác chữ ký. Tức là đúng con số đã
+      khai được ký, không chỉ là "có ký một độ dài".
+  tests/api/test_avatar.py, test_video_upload.py, test_banners.py
+    - mỗi nơi: vé ký đúng `size_bytes` đã khai (FakeStorage ghi lại
+      `SignedPut(key, content_type, expires_in, size_bytes)`)
+  Fake trong test_course_stats.py và workers/test_transcode.py theo chữ ký mới.
+
+Nhóm test upload (6 tệp, 91 ca) trong container backend:
+  trước khi sửa: 42 failed (TypeError: thiếu size_bytes), 49 passed
+  sau khi sửa:   89 passed, 2 failed — hai ca
+                 `test_storage_that_was_never_configured_answers_503` (avatar,
+                 video) luôn đỏ trong container vì storage tự rơi về MinIO
+                 dev; trên CI hai ca này xanh. Không liên quan bản sửa.
+ruff check (như CI): sạch.
+Toàn bộ backend: xem mục 6.
+
+==============================================================================
+3. RUSTFS CÓ GIỮ ĐỘ DÀI ĐÃ KÝ KHÔNG — HỎI THẲNG SERVER
+==============================================================================
+signed-upload-length/probe.py, chạy trong container backend (client boto3 của
+app, endpoint http://minio.localhost:9000). Mỗi ca PUT vào một key mới rồi
+HEAD bằng khóa của app; cuối cùng xóa hết. Log: signed-upload-length/probe.log
+
+  Đối chứng (ký như app trước 16/10, không có độ dài):
+    vé khai 1 KB, gửi 20 MB             → 200, bucket giữ 20.971.520 B
+  Ký kèm độ dài 1.024 B:
+    gửi đúng 1.024 B                    → 200, bucket giữ 1.024 B
+    gửi 1.025 B / 1.023 B               → 403 SignatureDoesNotMatch, không giữ gì
+    gửi 20 MB                           → 403, không giữ gì
+    chunked không Content-Length, 1 KB  → 403, không giữ gì
+    chunked không Content-Length, 20 MB → 403, không giữ gì
+    đúng kích thước, sai Content-Type   → 403, không giữ gì
+    500 MB                              → 403 sau 0,17 s, không giữ gì
+  9/9, dọn 9 key, còn 0.
+
+Ca chunked quan trọng: nếu server bỏ qua header đã ký khi request không mang
+header đó, kẻ tấn công chỉ cần gửi chunked là vượt. RustFS coi thiếu là sai.
+
+==============================================================================
+4. ĐƯỜNG PRODUCTION: CHROME → NGINX HTTP/2 → RUSTFS
+==============================================================================
+Rủi ro riêng của bản sửa: nếu nginx nhận một upload HTTP/2 không có
+content-length rồi chuyển lên upstream bằng chunked (nginx làm vậy khi
+`proxy_request_buffering off` và không biết trước độ dài), thì mọi lượt tải
+lên trên VPS sẽ thành 403. Stack dev không có nginx nên E2E không thấy được.
+
+signed-upload-length/run.sh: một nginx 1.27.5 dùng nguyên
+infra/nginx/snippets/media.conf (mount RO) sau TLS + `http2 on`, tên
+devpath.localhost, đặt trước `storage` của stack dev. Vé ký bằng `R2Storage`
+của app cho https://devpath.localhost (tickets.py). Chrome thật PUT bằng XHR
+như frontend/lib/api/storage.ts (h2-upload.cjs). Log nginx in Content-Length
+và Transfer-Encoding mà Chrome gửi. Log: signed-upload-length/h2-through-nginx.log
+
+  Chrome (XHR PUT, cùng origin)            HTTP  giao thức  bucket giữ
+  đúng kích thước, 1 MB                    200   h2         1.048.576 B
+  thừa 1 byte                              403   h2         không
+  thiếu 1 byte                             403   h2         không
+  50 MB vào vé 1 MB                        403   h2         không
+  đúng kích thước, 50 MB                   200   h2         52.428.800 B (1,30 s)
+  đối chứng: URL cũ không ký độ dài, 50 MB 200   h2         52.428.800 B
+
+  nginx nhận từ Chrome (access log, bỏ query string):
+    content_length=1048576  transfer_encoding=-  request_length=1048897   200
+    content_length=1048577  transfer_encoding=-  request_length=65809     403
+    content_length=1048575  transfer_encoding=-  request_length=65810     403
+    content_length=52428800 transfer_encoding=-  request_length=65809     403
+    content_length=52428800 transfer_encoding=-  request_length=52429067  200
+  12/12.
+
+Đọc: Chrome 155 gửi content-length qua HTTP/2 cho XHR PUT một Blob, đúng
+cách frontend tải lên, nên đường VPS không bị bản sửa làm hỏng. Ở các ca 403, nginx chỉ đọc ~65 KB thân rồi dừng: RustFS từ
+chối ngay sau phần đầu, không đợi hết 50 MB.
+
+Phép thử chọn server cũ chạy lại với chữ ký mới (storage-decision/run.sh
+rustfs, nginx + TLS của phép thử ấy, log signed-upload-length/spike-rerun.log):
+21/21, gồm ca mới "thừa một byte → 403".
+
+==============================================================================
+5. LUỒNG THẬT TRÊN UI (STACK DEV)
+==============================================================================
+signed-upload-length/avatar-ui.cjs: tài khoản @e2e.devpath.example đăng ký qua
+API, đăng nhập bằng form thật, chọn một PNG 180×180 thật (15.806 B) ở /ho-so.
+Đường đi: API (backend dev đang chạy, code mới) → Chrome PUT thẳng lên
+minio.localhost:9000 (HTTP/1.1, CORS) → POST /users/me/avatar/complete.
+Log: signed-upload-length/avatar-ui.log
+
+  PASS  vé xin đúng kích thước tệp       size_bytes=15806
+  PASS  vé ký độ dài                     content-length;content-type;host
+  PASS  Chrome PUT thẳng lên bucket      HTTP 200, content-length 15806
+  PASS  hồ sơ lưu ảnh                    HTTP 200
+  PASS  bucket trả đúng tệp đó           HTTP 200, 15806 B
+  6/6 · phiên đã thu hồi, `purge_e2e` gỡ 1 tài khoản.
+
+==============================================================================
+6. TOÀN BỘ BỘ TEST BACKEND
+==============================================================================
+`docker compose exec backend python -m pytest -q -rs` trên stack dev, 14 phút 36 s:
+  3 failed, 1873 passed, 2 skipped — tổng 1.878 (CI 13/10: 1.873, cộng 5 test mới).
+  Ba ca đỏ là ba ca luôn đỏ trong container, không liên quan bản sửa:
+    - test_avatar / test_video_upload ::test_storage_that_was_never_configured_answers_503
+      (storage tự rơi về MinIO dev nên không bao giờ "chưa cấu hình")
+    - test_deploy_passes_the_seed_passwords_into_the_container
+      (FileNotFoundError: /infra/scripts/deploy.sh — container chỉ mount backend/)
+  Hai skip: tests/workers/test_grading_queue.py:80, :136 — `grader/runner` không
+  có trong container. Trên CI hai ca này chạy (skip thành fail khi có `CI`).
+CI của PR là phép đo chính thức: backend phải ra 1.878 passed, 0 skipped.
+
+==============================================================================
+7. CÒN LẠI — KHÔNG THUỘC TASK NÀY
+==============================================================================
+Ký độ dài chặn được một vé dùng cho một tệp to hơn vé. Nó không chặn số vé.
+Mỗi vé ảnh đại diện là một key mới (`avatars/<id>/<uuid>.png`), và endpoint xin
+vé chưa có rate limit. Một tài khoản học viên viết script vẫn đổ được
+5 MB × số vé xin được. Object không ai nhận chỉ bị job dọn mồ côi xóa sau
+1 ngày + 14 ngày cách ly (orphan-sweep.txt), quá chậm để chặn việc làm đầy
+đĩa. Trần trước bản sửa là 2 GB mỗi request, giờ là 5 MB mỗi vé. Hai hướng
+cho task sau: rate limit xin vé theo tài khoản (đã có `get_rate_limiter` của
+auth), hoặc giới hạn số object đang chờ nhận theo tài khoản. Lưới cuối vẫn là
+monitor trên host, báo khi đĩa còn dưới 10 % (monitoring.txt).
+
+R2 (đường nâng cấp chỉ đổi cấu hình): chưa kiểm R2 có giữ header đã ký như
+RustFS không, vì chưa có tài khoản. Nếu có ngày chuyển sang R2 thì chạy lại
+probe.py trên đó trước khi tin bản sửa này.

@@ -1,0 +1,19 @@
+bucket devpath-media via http://minio.localhost:9000, run 0f4eceb8
+
+Control -- the URL the app signs today, without the length:
+PASS  declares 1 KB, sends 20 MB                   unsigned       body  20,971,520 B  -> HTTP 200                           stored: 20971520  (0.14 s)
+
+With Content-Length in the signature:
+PASS  sends exactly what was signed                signed 1024 B  body       1,024 B  -> HTTP 200                           stored: 1024  (0.02 s)
+PASS  one byte more                                signed 1024 B  body       1,025 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.01 s)
+PASS  one byte less                                signed 1024 B  body       1,023 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.01 s)
+PASS  20 MB                                        signed 1024 B  body  20,971,520 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.01 s)
+PASS  chunked, no Content-Length, right size       signed 1024 B  body       1,024 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.01 s)
+PASS  chunked, no Content-Length, 20 MB            signed 1024 B  body  20,971,520 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.03 s)
+PASS  right size, other Content-Type               signed 1024 B  body       1,024 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.01 s)
+
+Does the bucket read the whole body before refusing? (500 MB against a 1 KB ticket)
+PASS  500 MB                                       signed 1024 B  body 524,288,000 B  -> HTTP 403 SignatureDoesNotMatch     stored: nothing  (0.17 s)
+
+cleanup: 9 keys deleted, 0 left
+9/9 as expected

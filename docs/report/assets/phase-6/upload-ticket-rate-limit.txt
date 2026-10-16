@@ -1,0 +1,227 @@
+GIỚI HẠN SỐ VÉ XIN URL TẢI LÊN THEO TÀI KHOẢN
+Ngày: 16/10/2026 · nhánh feature/upload-ticket-rate-limit (cắt từ main sau PR #93)
+Tách từ signed-upload-length.txt mục 7. Máy: Docker Desktop, stack dev (Postgres,
+Redis, RustFS dev). Code chạy trong container riêng `devpath-wt-api` dựng từ
+image devpath-backend:dev, mount backend/ của worktree này, cùng mạng compose
+(container backend chung đang chạy nhánh khác của một phiên song song).
+
+Kết quả gọn:
+  - Lỗ: từ 16/10 một vé chỉ nhận đúng số byte đã khai, nhưng số vé không giới
+    hạn. Một tài khoản viết script xin được vé nhanh tới mức thứ chặn duy nhất
+    là băng thông tải lên (đo trong lần thử: 60 vé video trong 1,7 s, ~35
+    vé/s): 5 MB × số vé ảnh đại diện, hay 2 GB × số vé video — và ai cũng tự
+    nâng mình lên giảng viên được. Vé không ai xác nhận chỉ bị job dọn mồ côi
+    xóa sau 1 + 14 ngày. Đĩa VPS 40–50 GB, chung với Postgres.
+  - Sửa: đếm vé trong Redis bằng `get_rate_limiter` có sẵn, theo tài khoản,
+    **trước** khi ký URL. Ảnh đại diện 20 vé/24 giờ. Video 60 vé/giờ **và**
+    10 GB dung lượng khai/24 giờ. Banner của admin cố ý không giới hạn. Từ
+    chối: 429 `UPLOAD_RATE_LIMITED` trong envelope chung, kèm `Retry-After`.
+  - Limiter có thêm `amount` (INCRBY): cùng một bộ đếm thành ngân sách byte.
+    Lần xin bị từ chối được trả lại (DECRBY), nên "2 GB không vừa" không ăn
+    mất phần còn lại của ngày — tệp 300 MB vẫn qua.
+  - TDD: 9 test API + 4 test limiter (+ mở rộng 2 test cũ), đỏ trước khi sửa;
+    3 đột biến (bỏ trả lại, kiểm sau khi ghi, bỏ giới hạn avatar) → mỗi cái
+    làm đúng các test của nó đỏ.
+  - Thử thật qua HTTP: 10/10 — 20 vé ảnh rồi 429, xóa khóa Redis thì xin lại
+    được; 60 vé video rồi 429, rút TTL bộ đếm còn 3 s thì cửa sổ tự hết và
+    xin lại được; 5 × 1,9 GB rồi 429, 0,4 GB vẫn vừa; 25 vé banner đều 200.
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/app/services/rate_limit.py
+  `RateLimiter.count(key, limit, window_seconds, amount=1)`. Redis:
+  `INCRBY key amount`; lần đầu của cửa sổ là khi kết quả bằng đúng `amount`
+  (không còn là 1) thì gắn TTL; vượt `limit` thì `DECRBY key amount` rồi trả
+  thời gian chờ. Với `amount=1` không có gì khác thấy được (cửa sổ vẫn hết
+  như cũ); với ngân sách byte, nó là khác biệt giữa "lần xin này không vừa"
+  và "lần xin này tiêu hết phần còn lại". Hai request chạy đua có thể cùng
+  thấy amount của nhau trong chốc lát và cùng bị từ chối — sai về phía an
+  toàn. Redis sập thì vẫn mở cửa như trước (`_fail_open`).
+
+backend/app/services/upload_limits.py (mới)
+  `UploadRateLimitedError` (429, `UPLOAD_RATE_LIMITED`, `retry_after`),
+  `enforce_avatar_ticket_limit`, `enforce_video_ticket_limits`. Khóa Redis:
+    upload:avatar:user:<id>        đếm vé, cửa sổ 24 giờ
+    upload:video:user:<id>         đếm vé, cửa sổ 1 giờ
+    upload:video-bytes:user:<id>   cộng size_bytes đã khai, cửa sổ 24 giờ
+  Video: đếm vé trước, ngân sách byte sau — vé bị từ chối vì quá số lần thì
+  không bị trừ byte.
+
+backend/app/services/users.py, video.py + api/v1/users.py, video.py
+  Route nhận `limiter` qua `Depends(get_rate_limiter)`, service gọi enforce.
+  Ảnh đại diện: dòng đầu tiên của service, trước khi ký. Video: sau khi hỏi
+  quyền với bài học và loại bài (403/404/400 vẫn là 403/404/400, và người lạ
+  bị từ chối không tiêu lượt), **trước** khi ghi gì — xin vé video là thay
+  video cũ của bài, nên 429 phải đến trước bước đó. `limiter` là tham số
+  keyword bắt buộc của `video.create_upload_ticket`: chỗ gọi nào quên là
+  TypeError chứ không lặng lẽ bỏ giới hạn.
+
+backend/app/core/config.py
+  `avatar_upload_tickets_per_user` 20, `video_upload_tickets_per_user` 60,
+  `video_upload_bytes_per_user` 10 GiB, kèm chú thích lý do (mục 2). Như các
+  giới hạn đăng nhập, compose không truyền ba biến này: muốn đổi trên VPS
+  thì thêm vào `docker-compose.prod.yml` (CI `check_env_examples.py` sẽ đòi
+  ghi vào `.env.prod.example`).
+
+frontend/lib/api/error-messages.ts
+  Chỉ chú thích: `UPLOAD_RATE_LIMITED` cố ý không có câu chung, câu của
+  backend (hạn mức nào, đợi bao lâu) tới thẳng người dùng qua
+  `apiErrorMessage` — cùng cách với `AUTH_RATE_LIMITED`, `CHAT_RATE_LIMITED`.
+  Không kiểm trên UI lần này (frontend dev gọi container backend chung, đang
+  chạy nhánh khác); đường hiển thị là đường đã dùng cho mọi 429 khác.
+
+Không migration, không đổi API công khai ngoài mã lỗi mới.
+`test_authorization_matrix.py` không phải sửa: không có route mới, và ma trận
+chạy với `AllowAllRateLimiter` của `api_client`.
+
+==============================================================================
+2. CHỌN CON SỐ — ĐO BẰNG CÁI ĐĨA
+==============================================================================
+Thước đo: một tài khoản viết script không được đổ đầy đĩa 40–50 GB trước khi
+monitor trên host (báo khi đĩa còn < 10 %) và admin (khóa tài khoản) kịp làm
+gì. Trần byte mỗi tài khoản = số vé × kích thước tối đa mỗi vé.
+
+  route                     ai xin            trần/vé  giới hạn            trần byte/tài khoản
+  POST /users/me/avatar     mọi tài khoản     5 MB     20 vé / 24 giờ      100 MB/ngày
+  POST /lessons/{id}/video  GV chủ khóa       2 GB     60 vé / giờ         —
+                            (ai cũng tự lên            10 GB khai / 24 giờ 10 GB/ngày
+                            giảng viên được)
+  POST /admin/banners/...   admin             8 MB     không               —
+
+Ảnh đại diện — vì sao 24 giờ chứ không 1 giờ (gợi ý ban đầu là ~20/giờ):
+  20/giờ = 100 MB/giờ = 2,4 GB/ngày; vé không xác nhận sống 15 ngày trước khi
+  bị dọn → tới ~36 GB từ một tài khoản, tức là cả cái đĩa. 20/24 giờ → tối đa
+  ~1,5 GB ở trạng thái ổn định. Người thật đổi ảnh 20 lần trong một ngày
+  (kể cả vài lần tải hỏng phải xin vé lại) đã là nhiều.
+
+Video — vì sao phải có ngân sách byte:
+  Đếm vé một mình không bảo vệ được đĩa khi mỗi vé tới 2 GB: 60 vé/giờ là
+  120 GB/giờ, hơn cả máy. Byte đã khai là trần chính xác của thứ được ghi
+  (URL ký đúng độ dài từ 16/10), nên đó là thứ để đếm. 10 GB là vài giờ bài
+  giảng ở bitrate quay màn hình thông thường (OBS 1080p mặc định ~1 GB/giờ)
+  — đủ một buổi soạn khóa thật — mà một ngày ở mức trần vẫn để chuông báo đĩa
+  kịp reo. 60 vé/giờ giữ lại cho phần còn lại: mỗi vé video ghi/xóa một dòng
+  `video_assets`, gọi bucket xóa prefix cũ, tính lại thời lượng khóa — một
+  vòng lặp vé 1 byte không tốn đĩa nhưng tốn CSDL.
+
+Banner — vì sao không giới hạn:
+  Admin là người chuông báo đĩa đánh thức. Ai cầm được phiên admin thì đã gỡ
+  được mọi khóa học và khóa được mọi tài khoản; giới hạn vé banner là khóa
+  một cửa sổ của căn nhà đã mở cửa chính. Có test chốt quyết định này (mục 3).
+
+Theo tài khoản chứ không theo IP: phải đăng nhập mới xin được vé, và một
+phòng máy sau một IP NAT là bốn mươi người cùng đổi ảnh.
+
+==============================================================================
+3. TEST (TDD)
+==============================================================================
+Viết trước, chạy trong container dựng từ worktree:
+  tests/test_rate_limit.py (FakeRedis có `incr(key, amount)`, `decr`)
+    + test_a_weighted_count_spends_a_budget
+    + test_a_refused_amount_is_not_spent
+    + test_a_weighted_window_still_gets_its_lifetime
+    + test_a_weighted_window_starts_over
+    ~ test_a_dead_redis_does_not_stop_anyone_from_submitting (thêm ca amount)
+    ~ test_the_real_client_understands_the_same_commands (Redis thật: INCRBY,
+      DECRBY, TTL)
+  tests/api/test_upload_limits.py (mới; MemoryRateLimiter có đồng hồ tự chỉnh,
+  giới hạn thu nhỏ 2 vé ảnh / 3 vé video / 100 MB):
+    test_avatar_tickets_stop_at_the_limit_and_nothing_more_is_signed
+    test_an_avatar_ticket_can_be_asked_for_again_once_the_window_is_over
+    test_one_accounts_avatar_limit_is_not_anyone_elses
+    test_video_tickets_stop_at_the_hourly_count
+    test_video_tickets_stop_when_the_declared_bytes_would_pass_the_budget
+    test_video_tickets_can_be_asked_for_again_once_each_window_is_over
+    test_a_refused_video_ticket_leaves_the_current_video_alone
+    test_asking_for_someone_elses_lesson_does_not_spend_the_quota
+    test_banner_tickets_are_not_counted
+  Fake trong tests/api/fakes.py theo chữ ký mới (MemoryRateLimiter trả lại
+  phần bị từ chối như Redis); test_course_stats.py truyền `limiter=`.
+
+  Trước khi sửa: test_rate_limit 6 failed / 9 passed (TypeError: `amount`);
+  test_upload_limits không import được (`app.services.upload_limits` chưa có).
+  Sau khi sửa: 38 passed (hai tệp trên + test_course_stats).
+
+Đột biến (sửa tạm code rồi chạy lại, xong trả về nguyên bản):
+  bỏ DECRBY (Redis + fake)       → 3 đỏ: refused_amount_is_not_spent,
+                                   real_client (Redis thật), video bytes API
+  kiểm video sau khi đã ghi      → 1 đỏ: refused_video_ticket_leaves_the_
+                                   current_video_alone
+  bỏ giới hạn ảnh đại diện       → 3 đỏ: ba test avatar
+
+Nhóm test upload + phân quyền + rate limit cũ (11 tệp, 367 ca):
+  365 passed, 2 failed — đúng hai ca
+  `test_storage_that_was_never_configured_answers_503` (avatar, video) luôn
+  đỏ trong container vì storage tự rơi về RustFS dev; CI xanh.
+ruff check (như CI): sạch.
+
+==============================================================================
+4. THỬ THẬT QUA API
+==============================================================================
+upload-ticket-rate-limit/ticket_drill.py, chạy trong `devpath-wt-api` (uvicorn,
+code của worktree) gọi HTTP vào chính nó, đọc cùng Redis. Một tài khoản
+`@e2e.devpath.example` tự đăng ký, tự lên giảng viên, một khóa nháp một bài
+video. Không tải byte nào lên: vé chỉ là chữ ký. Log: upload-ticket-rate-limit/
+drill.log
+
+  [avatar] 200 KB PNG
+    20 × 201, rồi 429 UPLOAD_RATE_LIMITED, Retry-After 86400
+    "Bạn đã xin tải ảnh đại diện lên 20 lần trong 24 giờ. Thử lại sau khoảng
+     24 giờ."
+    redis upload:avatar:user:<id> = 20, TTL 86400 s
+    xin thêm lần nữa → 429; DEL khóa → 201
+  [video] 1 MB, giới hạn số vé
+    60 × 201 trong 1,7 s, rồi 429, Retry-After 3598
+    "Bạn đã xin tải video lên 60 lần trong một giờ — quá nhiều so với bình
+     thường. Thử lại sau khoảng 60 phút."
+    ngân sách byte = 62.914.560 = đúng 60 × 1 MB (vé thứ 61 không bị trừ)
+    EXPIRE bộ đếm 3 s, ngủ 4 s → khóa tự biến mất → 201 (cửa sổ hết thật,
+    chỉ là hết sớm)
+  [video] 1,9 GB, ngân sách 10 GB/24 giờ
+    5 × 201, rồi 429, Retry-After 86394
+    "Tệp này vượt hạn mức tải video của bạn: tối đa 10 GB trong 24 giờ. Chọn
+     tệp nhỏ hơn, hoặc thử lại sau khoảng 24 giờ."
+    ngân sách sau lần bị từ chối: 10.264.510.461 B (9,56 GiB — lần xin 1,9 GB
+    bị từ chối không bị trừ)
+    0,4 GB → 201, ngân sách 10.694.007.190 B (≤ 10 GiB)
+  [banner] admin seed, 8 MB × 25 → 25 × 200; đăng xuất
+  10/10
+
+Dọn: DELETE bài học (kéo theo dòng `video_assets`), `purge_e2e` gỡ 1 tài khoản
++ 1 khóa; kiểm lại: 0 tài khoản thử, 0 phiên admin còn sống từ lần thử, 0
+`video_assets` đang `uploading`, 0 khóa `upload:*` trong Redis, 0 object dưới
+`avatars/<id>/`.
+
+==============================================================================
+5. TOÀN BỘ BỘ TEST BACKEND
+==============================================================================
+`python -m pytest -q -rs` trong container dựng từ worktree (cùng image, env và
+mạng với `devpath-backend-1`; mount thêm infra/ ở /infra), 18 phút 15 s:
+  2 failed, 1887 passed, 2 skipped — tổng 1.891 (1.878 của PR #93 + 13 test mới).
+  Hai ca đỏ là hai ca luôn đỏ trong container, không liên quan bản sửa:
+    - test_avatar.py:373 / test_video_upload.py:579
+      ::test_storage_that_was_never_configured_answers_503
+      (storage tự rơi về RustFS dev nên không bao giờ "chưa cấu hình")
+  Ca thứ ba hay đỏ trong container (`test_deploy_passes_the_seed_passwords_
+  into_the_container`) xanh ở lần này vì infra/ được mount.
+  Hai skip: tests/workers/test_grading_queue.py:80, :136 — `grader/runner` không
+  có trong container. Trên CI hai ca này chạy (skip thành fail khi có `CI`).
+CI của PR là phép đo chính thức: backend phải ra 1.891 passed, 0 skipped.
+
+==============================================================================
+6. CÒN LẠI — KHÔNG THUỘC TASK NÀY
+==============================================================================
+- Giới hạn này là **tốc độ**, không phải **tổng**. Video đã xác nhận có chủ
+  (mỗi bài một video, giảng viên tạo được bao nhiêu bài cũng được) không bao
+  giờ bị dọn, nên một tài khoản giảng viên vẫn đổ được 10 GB/ngày ngày này qua
+  ngày khác — giờ là vài ngày chứ không còn vài phút, và chuông báo đĩa reo
+  trước. Câu trả lời trọn vẹn là hạn mức dung lượng **đang lưu** theo giảng
+  viên (cần biết kích thước từng video — `video_assets` chưa có cột đó).
+- Theo tài khoản nên nhân lên theo số tài khoản: đăng ký giới hạn 50/giờ/IP,
+  tức là một IP có thể có 50 tài khoản × 100 MB ảnh/ngày. Lưới cuối vẫn là
+  monitor đĩa + khóa tài khoản của admin.
+- Redis sập thì limiter mở cửa (quyết định cũ, `rate_limit._fail_open`):
+  lúc đó vé lại không giới hạn. Với chấm bài điều này vô hại vì Celery cũng
+  cần Redis; với vé tải lên thì không có lớp nào phía sau. Chấp nhận: Redis
+  có healthcheck và monitor báo khi nó chết.

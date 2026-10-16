@@ -1,0 +1,12 @@
+student nul-11b76b9d@e2e.devpath.example, exercise 6061fd40-623e-4e10-8380-d8682449279c
+code containing a NUL byte -> HTTP 422
+program printing a NUL -> status done, verdict WA, score 0, after 5.3 s
+  message: None
+  case 0: WA, stdout shown to the student: '3␀\n'
+  case 1: WA, stdout shown to the student: '3␀\n'
+  case 2: WA, hidden
+  case 3: WA, hidden
+  case 4: WA, hidden
+  case 5: WA, hidden
+  rows in submission_results: 6
+422 {"detail":{"code":"VALIDATION_ERROR","message":"Dữ liệu gửi lên không hợp lệ","errors":[{"type":"value_error","loc":["body","code"],"msg":"Value error, Không được chứa ký tự NUL (\\0)","input":"print(1)\u0000","ctx":{"error":{}}}]}}

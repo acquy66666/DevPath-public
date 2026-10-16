@@ -56,6 +56,19 @@ from app.workers.celery_app import celery_app
 # the first screenful is one nobody reads and everybody backs up.
 STORED_OUTPUT_LIMIT = 2000
 
+# What a NUL byte becomes on its way into the database. A program may print
+# `\0` and Python passes it through, but a Postgres text column refuses it --
+# and a row that cannot be written turns a wrong answer into a job retried
+# twice (the stranger's code run twice more) and then parked as our failure.
+# U+2400 SYMBOL FOR NULL is one character for one, so the cap below still
+# means what it says, and it shows the student what their program printed.
+NUL_STAND_IN = "␀"
+
+
+def storable(text: str) -> str:
+    """Text from the sandbox, made safe for a text column."""
+    return text.replace("\x00", NUL_STAND_IN)
+
 # Only a system error is retried, so the ceiling is low: two more attempts
 # cover a daemon restarting or a host briefly out of memory, and anything that
 # survives them is a broken deployment that a third attempt will not fix.
@@ -402,7 +415,9 @@ def _record(
                 # The whole rule, in one conditional: a hidden case's output is
                 # not stored, so no endpoint can return it by accident.
                 stdout_trunc=(
-                    None if case.is_hidden else result.stdout[:STORED_OUTPUT_LIMIT]
+                    None
+                    if case.is_hidden
+                    else storable(result.stdout[:STORED_OUTPUT_LIMIT])
                 ),
             )
         )
@@ -416,7 +431,7 @@ def _record(
     # Capped like the per-case output, and for the same reason: the compiler's
     # words arrive through the sandbox's 1 MB ceiling, and this column is read
     # back in every page of a student's submission history.
-    submission.message = outcome.message[:STORED_OUTPUT_LIMIT] or None
+    submission.message = storable(outcome.message[:STORED_OUTPUT_LIMIT]) or None
 
 
 async def park_submission(
@@ -445,7 +460,9 @@ async def park_submission(
 
     submission.status = "error"
     submission.verdict = None
-    submission.message = reason
+    # The one write that must not fail: a park that raises leaves the row
+    # saying `running` for good.
+    submission.message = storable(reason)
     await session.commit()
     # Terminal, so a page that is watching stops waiting now rather than in
     # five minutes. What went wrong is on the row; the event only says that

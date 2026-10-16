@@ -113,6 +113,13 @@ Banner — vì sao không giới hạn:
 Theo tài khoản chứ không theo IP: phải đăng nhập mới xin được vé, và một
 phòng máy sau một IP NAT là bốn mươi người cùng đổi ảnh.
 
+Giả định đã dùng khi chọn số, ghi rõ: vai giảng viên **không được duyệt**.
+`POST /users/me/instructor` cho mọi tài khoản đã đăng nhập tự lên giảng viên
+("Requires sign-in, nothing else"), nên giới hạn video thực chất là giới hạn
+cho **mọi tài khoản**, không chỉ cho người đã được tin. Con số 60 vé/giờ và
+10 GB/24 giờ chọn với giả định đó: chúng chặn **một tài khoản** viết script
+(mục tiêu của task), không chặn **một người có nhiều tài khoản** — xem mục 6.
+
 ==============================================================================
 3. TEST (TDD)
 ==============================================================================
@@ -218,9 +225,26 @@ CI của PR là phép đo chính thức: backend phải ra 1.891 passed, 0 skipp
   ngày khác — giờ là vài ngày chứ không còn vài phút, và chuông báo đĩa reo
   trước. Câu trả lời trọn vẹn là hạn mức dung lượng **đang lưu** theo giảng
   viên (cần biết kích thước từng video — `video_assets` chưa có cột đó).
-- Theo tài khoản nên nhân lên theo số tài khoản: đăng ký giới hạn 50/giờ/IP,
-  tức là một IP có thể có 50 tài khoản × 100 MB ảnh/ngày. Lưới cuối vẫn là
-  monitor đĩa + khóa tài khoản của admin.
+- Theo tài khoản nên nhân lên theo số tài khoản. Đăng ký cho 50 tài khoản/
+  giờ/IP, và tài khoản nào cũng tự lên giảng viên được ngay (không duyệt):
+    ảnh đại diện  50 tài khoản × 100 MB/ngày = 5 GB/ngày từ một IP mỗi giờ
+                  đăng ký
+    video         50 tài khoản × 10 GB/ngày = 500 GB/ngày — gấp mười lần cái
+                  đĩa. Thứ chặn thật lúc đó là băng thông tải lên của VPS,
+                  không phải giới hạn này.
+  Tức là với video, giới hạn theo tài khoản chỉ đóng được đường "một tài
+  khoản viết script"; một người chịu khó đăng ký nhiều tài khoản thì vẫn làm
+  đầy đĩa trong vài giờ. Ba hướng đóng nốt, chưa làm vì mỗi hướng có cái giá
+  cần chốt:
+    (a) ngân sách byte video **toàn sàn** mỗi ngày (cùng limiter, một khóa
+        chung) — chặn được mọi số tài khoản, nhưng ai làm cạn nó là chặn mọi
+        giảng viên thật tới hết ngày;
+    (b) hạn mức dung lượng **đang lưu** theo giảng viên (gạch đầu dòng trên)
+        — vẫn nhân theo số tài khoản;
+    (c) duyệt vai giảng viên, hoặc chỉ cấp vé video cho giảng viên đã có
+        khóa được duyệt — đổi luồng tự phục vụ hiện tại, quyết định nghiệp vụ.
+  Lưới cuối vẫn là monitor đĩa (báo khi còn < 10 %) + khóa tài khoản của
+  admin.
 - Redis sập thì limiter mở cửa (quyết định cũ, `rate_limit._fail_open`):
   lúc đó vé lại không giới hạn. Với chấm bài điều này vô hại vì Celery cũng
   cần Redis; với vé tải lên thì không có lớp nào phía sau. Chấp nhận: Redis

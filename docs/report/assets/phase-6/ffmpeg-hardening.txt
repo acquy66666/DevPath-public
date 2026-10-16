@@ -1,0 +1,136 @@
+GIA CỐ FFMPEG: CHỈ MỞ TỆP CỤC BỘ, CHỈ HAI DEMUXER, CHỈ ĐUÔI TỆP VIDEO
+Ngày: 16/10/2026 · nhánh feature/ffmpeg-hardening
+Tách từ security-review-codebase.txt (01/10): "ffmpeg chưa có -protocol_whitelist
+và đuôi tệp video chưa được kiểm (gia cố, ffmpeg hiện đại đã chặn mặc định)".
+Máy: Docker Desktop, stack dev. ffmpeg trong image backend/worker: 7.1.5-0+deb13u1.
+CI cài ffmpeg 6.1.1 của Ubuntu.
+
+Kết quả gọn:
+  - Đo trước khi sửa: ffmpeg 7.1.5 chặn hai đường tấn công kinh điển của một
+    playlist HLS đội lốt video. Đọc tệp không có đuôi media thì bị chặn
+    ("not in allowed_segment_extensions"); segment qua http thì bị chặn
+    ("Protocol 'http' not on whitelist 'file,crypto,data'").
+  - Nhưng còn một khe có thật: playlist trỏ tới một tệp `.ts` trên ổ của worker
+    thì ffmpeg **đọc** nó, và tệp đó thành bài giảng được xuất bản (lệnh cũ:
+    exit 0, 1 segment). Kèm điều kiện mở khe: đuôi tệp người tải đặt (`.m3u8`)
+    được giữ trong storage key, và ffmpeg chọn demuxer HLS theo đuôi đó.
+  - "Người tải video" là bất kỳ ai: `POST /users/me/instructor` cho mọi tài
+    khoản đã đăng nhập tự lên vai giảng viên.
+  - Sửa ba lớp:
+      (1) ffmpeg + ffprobe chạy với `-protocol_whitelist file -format_whitelist
+          mov,matroska`, đặt trước `-i`;
+      (2) vé tải video chỉ nhận đuôi .mp4/.m4v/.mov/.mkv/.webm (422 nếu khác);
+      (3) test ràng buộc: thêm đuôi mới thì phải thêm clip thử chạy qua đúng
+          bộ cờ đó.
+  - Sau sửa: playlist bị từ chối ngay ở bước mở tệp, clip thật cả 5 đuôi vẫn
+    transcode được. Luồng thật qua API: `bai-giang.m3u8` → 422; mp4 14 s →
+    ready sau 2,1 s, 3 segment.
+
+==============================================================================
+1. ĐO TRƯỚC KHI SỬA — FFMPEG 7.1.5 TRONG CONTAINER WORKER
+==============================================================================
+Bốn tệp thử, mỗi tệp một ý. Dòng lệnh là `ffmpeg -i <tệp> -f null -` (như
+worker, nhưng không mã hóa):
+  a) playlist tên original.mp4 → /etc/hostname
+       → mov demuxer "moov atom not found": ffmpeg 7.1 chỉ dò HLS theo đuôi
+  b) cùng playlist tên original.m3u8 → /etc/hostname
+       → "URL /etc/hostname is not in allowed_segment_extensions"   (chặn)
+  c) playlist original.m3u8 → http://backend:8000/drill-ssrf-from-ffmpeg.ts
+       → "Protocol 'http' not on whitelist 'file,crypto,data'!"     (chặn;
+         log backend: 0 request tới đường dẫn đó)
+  d) playlist original.m3u8 → một tệp .ts cục bộ có thật
+       → exit 0, đọc được                                            (KHE)
+  Ghi chú d): playlist phải có `#EXT-X-MEDIA-SEQUENCE`; thiếu dòng đó thì
+  ffmpeg không nhận là HLS ("Invalid data found"). Test dưới đây dùng đúng
+  dạng ffmpeg làm theo, kẻo ca đối chứng không chứng minh được gì (lần viết
+  đầu dính đúng lỗi này).
+
+Khe d) hẹp: kẻ tấn công phải đoán được đường dẫn một tệp media có sẵn trên
+worker, ví dụ segment của một video khác đang transcode trong /tmp. Nhưng nó là
+đọc tệp tùy ý trong phạm vi đó, và kết quả được xuất bản công khai.
+
+==============================================================================
+2. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/app/workers/video.py
+  INPUT_GUARDS = ("-protocol_whitelist", "file", "-format_whitelist", "mov,matroska")
+  Chèn vào `run_ffmpeg` (trước `-i`) và `probe_duration_seconds` (trước tệp).
+  Đây là tùy chọn đầu vào nên phải đứng trước đầu vào, và test kiểm thứ tự đó.
+  - protocol_whitelist file: không http/tcp/tls/crypto/data, chỉ tệp cục bộ.
+  - format_whitelist mov,matroska: chỉ hai demuxer mà 5 đuôi hợp lệ cần.
+    HLS, concat, image2 và mọi demuxer khác bị từ chối trước khi đọc nội dung.
+    Đây là lớp đóng khe d); chỉ protocol_whitelist thì `file` vẫn đọc được .ts.
+
+backend/app/services/storage.py + schemas/video.py
+  ALLOWED_VIDEO_EXTENSIONS = (".mp4", ".m4v", ".mov", ".mkv", ".webm"). Validator
+  `only_video_extensions` trên VideoUploadRequest.filename (không phân biệt hoa
+  thường) → 422 "Tên tệp video phải có đuôi: .mp4, .m4v, .mov, .mkv, .webm".
+  Storage key vẫn giữ đuôi (giờ luôn là một trong năm đuôi trên).
+
+Frontend không đổi: trình duyệt suy MIME từ đuôi tệp, và `ACCEPTED` ở
+components/curriculum/video-upload.tsx vốn đã loại mọi tệp không phải 4 MIME
+video. Kiểm ở API là để chặn người gọi thẳng API.
+
+Video đã có trong CSDL không bị ảnh hưởng: worker chỉ mở bản gốc khi transcode
+hoặc chạy lại. Một bản gốc cũ có đuôi lạ, nếu có, giờ sẽ bị từ chối thay vì bị
+đọc.
+
+==============================================================================
+3. TEST (TDD)
+==============================================================================
+Viết trước. Đỏ trước khi sửa:
+  - ImportError ALLOWED_VIDEO_EXTENSIONS (collect), rồi 5 ca API (`bai.m3u8`,
+    `bai.mp4.m3u8`, `bai.ts`, `bai.txt`, không đuôi → 201 thay vì 422)
+  - test_ffmpeg_and_ffprobe_open_the_upload_with_its_guards_on: AttributeError
+  - test_a_playlist_posing_as_an_upload_is_never_followed: "DID NOT RAISE
+    TranscodeError", tức là worker cũ transcode luôn playlist, đọc tệp .ts
+    cục bộ — với ffmpeg thật, không giả lập
+Thêm:
+  - test_every_extension_the_ticket_accepts_has_a_clip_below (bộ clip thử phải
+    khớp ALLOWED_VIDEO_EXTENSIONS)
+  - test_every_accepted_container_still_transcodes × 5 (.mp4 .m4v .mov .mkv
+    h264/aac, .webm vp9/opus — ffmpeg thật, có whitelist)
+  - test_every_video_extension_is_accepted_in_any_case × 5 (API, kể cả `.MP4`)
+  Các test ffmpeg thật theo luật cũ: skip trên máy không có ffmpeg, **fail** trên
+  CI (job backend cài ffmpeg từ 13/10).
+Sau sửa: tests/workers/test_transcode.py + tests/api/test_video_upload.py +
+tests/test_course_stats.py: 68 passed + ca 503 luôn đỏ trong container.
+ruff check: sạch. Toàn bộ backend: mục 6.
+
+==============================================================================
+4. DIỄN TẬP TRÊN WORKER THẬT — LỆNH CŨ VS LỆNH MỚI
+==============================================================================
+ffmpeg-hardening/worker_drill.py, chạy trong container `worker` (worker
+transcode) sau khi restart với code mới. Log: ffmpeg-hardening/worker-drill.log
+  playlist đội lốt bài tải lên (→ một .ts trên ổ worker):
+    lệnh cũ        : exit 0, 1 segment — tệp trên ổ worker thành bài giảng
+    run_ffmpeg mới : từ chối — "Error opening input files: Invalid argument"
+    ffprobe mới    : None
+  clip thật 4 s:
+    lệnh cũ        : exit 0, 1 segment
+    run_ffmpeg mới : ok, 1 segment, 4 s
+
+==============================================================================
+5. LUỒNG THẬT QUA API — VIDEO HỢP LỆ VẪN CHẠY
+==============================================================================
+ffmpeg-hardening/upload_drill.py, chạy trong container backend; worker đã
+restart. Giảng viên @e2e dựng khóa nháp + bài video. Log:
+ffmpeg-hardening/upload-drill.log
+  vé cho 'bai-giang.m3u8' → HTTP 422 "Tên tệp video phải có đuôi: .mp4, .m4v,
+                            .mov, .mkv, .webm"
+  vé cho 'bai-giang.mp4' (465.660 B) → PUT lên bucket 200 (URL ký kèm độ dài,
+                            PR #93)
+  transcode → ready sau 2,1 s, độ dài 14 s, manifest trong bucket 3 segment,
+              VOD
+  Đã xóa object khỏi bucket; `purge_e2e` gỡ 1 tài khoản, 1 khóa học.
+
+==============================================================================
+6. TOÀN BỘ BỘ TEST BACKEND
+==============================================================================
+`docker compose exec backend python -m pytest -q -rs` trên stack dev, 24 phút 19 s:
+  3 failed, 1896 passed, 2 skipped — tổng 1.901 (sau task NUL: 1.883, cộng 18 test
+  mới: 1 thứ tự cờ, 1 khớp bộ clip, 5 container, 1 playlist, 5 + 5 đuôi tệp ở API).
+  Ba ca đỏ là ba ca luôn đỏ trong container (hai `storage_..._503`, một
+  `deploy.sh` không được mount). Hai skip là `grader/runner` không có trong
+  container. Trên CI: backend phải ra 1.901 passed, 0 skipped, kể cả 7 ca ffmpeg
+  thật mới, chạy trên ffmpeg 6.1.1 của Ubuntu.

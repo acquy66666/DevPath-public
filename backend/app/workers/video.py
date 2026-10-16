@@ -53,6 +53,17 @@ ERROR_MESSAGE_MAX_LENGTH = 500
 # A long lecture on a small VPS is slow, but a job stuck forever is worse.
 TRANSCODE_TIMEOUT_SECONDS = 60 * 60
 
+# What ffmpeg and ffprobe may open while reading an upload. The file is a
+# stranger's, and some of ffmpeg's demuxers do what a file tells them: an HLS
+# playlist posing as a video is read segment by segment from wherever it
+# points, and what it reads becomes the published lecture. ffmpeg 7.1 already
+# refuses http there and paths without a media extension, but it still reads
+# a local `.ts` (docs/report/assets/phase-6/ffmpeg-hardening.txt). So: local
+# files only, and only the two demuxers the accepted uploads need -- mov for
+# .mp4/.m4v/.mov, matroska for .mkv/.webm (ALLOWED_VIDEO_EXTENSIONS). These
+# are input options and must come before the input they guard.
+INPUT_GUARDS = ("-protocol_whitelist", "file", "-format_whitelist", "mov,matroska")
+
 
 class TranscodeError(RuntimeError):
     """ffmpeg refused the file, or produced nothing usable."""
@@ -68,6 +79,7 @@ def probe_duration_seconds(source: Path) -> int | None:
         [
             "ffprobe",
             "-v", "error",
+            *INPUT_GUARDS,
             "-print_format", "json",
             "-show_entries", "format=duration",
             str(source),
@@ -102,6 +114,7 @@ def run_ffmpeg(source: Path, output_dir: Path) -> Path:
         [
             "ffmpeg",
             "-y",
+            *INPUT_GUARDS,
             "-i", str(source),
             # Escaped comma: ffmpeg splits filter arguments on bare commas.
             "-vf", f"scale=w=-2:h=min({MAX_HEIGHT}\\,ih)",

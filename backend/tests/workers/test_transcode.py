@@ -16,6 +16,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import VideoAsset
+from app.services.storage import ALLOWED_VIDEO_EXTENSIONS
 from app.workers import video as worker
 from app.workers.video import TranscodeError, transcode
 
@@ -286,3 +287,115 @@ def test_a_file_that_is_not_a_video_is_reported_not_crashed(tmp_path: Path) -> N
         worker.run_ffmpeg(source, tmp_path / "hls")
 
     assert "ffmpeg" in str(caught.value)
+
+
+# --- Reading a stranger's file ---------------------------------------------
+
+
+def test_ffmpeg_and_ffprobe_open_the_upload_with_its_guards_on(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The guards are input options: after `-i` they would bind to nothing,
+    or to the output. So the order is the assertion, not just the presence."""
+    calls: list[list[str]] = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(argv)
+        if argv[0] == "ffmpeg":
+            (tmp_path / "hls").mkdir(exist_ok=True)
+            (tmp_path / "hls" / worker.MANIFEST_NAME).write_text("#EXTM3U\n")
+        return subprocess.CompletedProcess(argv, 0, stdout='{"format":{"duration":"3"}}', stderr="")
+
+    monkeypatch.setattr(worker.subprocess, "run", fake_run)
+    source = tmp_path / "original.mp4"
+
+    worker.run_ffmpeg(source, tmp_path / "hls")
+    worker.probe_duration_seconds(source)
+
+    ffmpeg, ffprobe = calls
+    for argv in (ffmpeg, ffprobe):
+        guards = list(worker.INPUT_GUARDS)
+        start = next(i for i in range(len(argv)) if argv[i : i + len(guards)] == guards)
+        assert start < argv.index(str(source))
+    assert ffmpeg.index("-format_whitelist") < ffmpeg.index("-i")
+
+
+def _tiny_clip(path: Path, *extra: str) -> None:
+    subprocess.run(
+        [
+            "ffmpeg", "-y", "-loglevel", "error",
+            "-f", "lavfi", "-i", "testsrc=size=160x120:rate=10:duration=2",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+            *extra,
+            str(path),
+        ],
+        capture_output=True,
+        check=True,
+        timeout=120,
+    )
+
+
+#: One clip per extension an upload ticket accepts, made the way a phone or
+#: a screen recorder would make it.
+CLIPS = {
+    ".mp4": ("-c:v", "libx264", "-c:a", "aac"),
+    ".m4v": ("-c:v", "libx264", "-c:a", "aac", "-f", "mp4"),
+    ".mov": ("-c:v", "libx264", "-c:a", "aac"),
+    ".mkv": ("-c:v", "libx264", "-c:a", "aac"),
+    ".webm": ("-c:v", "libvpx-vp9", "-deadline", "realtime", "-c:a", "libopus"),
+}
+
+
+def test_every_extension_the_ticket_accepts_has_a_clip_below() -> None:
+    """Accepting a new extension without proving ffmpeg still opens it under
+    the whitelist would be a feature that fails at transcode time."""
+    assert set(CLIPS) == set(ALLOWED_VIDEO_EXTENSIONS)
+
+
+@needs_ffmpeg
+@pytest.mark.parametrize(("suffix", "codecs"), CLIPS.items())
+def test_every_accepted_container_still_transcodes(
+    tmp_path: Path, suffix: str, codecs: tuple[str, ...]
+) -> None:
+    """Both demuxers on the whitelist, and nothing an instructor may upload
+    left out."""
+    source = tmp_path / f"original{suffix}"
+    _tiny_clip(source, *codecs)
+
+    manifest = worker.run_ffmpeg(source, tmp_path / "hls")
+
+    assert manifest.read_text(encoding="utf-8").startswith("#EXTM3U")
+    assert worker.probe_duration_seconds(source) == 2
+
+
+@needs_ffmpeg
+def test_a_playlist_posing_as_an_upload_is_never_followed(tmp_path: Path) -> None:
+    """An HLS playlist is a list of other files to read. ffmpeg 7.1 already
+    refuses http and paths without a media extension there, but it still
+    reads a local `.ts` -- proven by the plain run below -- and whatever it
+    reads becomes the published video. With the guards the playlist is not
+    even parsed."""
+    secret = tmp_path / "somebody-elses-segment.ts"
+    _tiny_clip(tmp_path / "clip.mp4", "-c:v", "libx264", "-c:a", "aac")
+    subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(tmp_path / "clip.mp4"),
+         "-c", "copy", "-f", "mpegts", str(secret)],
+        capture_output=True, check=True, timeout=60,
+    )
+    playlist = tmp_path / "original.m3u8"
+    # The media-sequence tag is what makes ffmpeg's probe take it for HLS;
+    # without it the file is refused as unreadable and proves nothing.
+    playlist.write_text(
+        f"#EXTM3U\n#EXT-X-MEDIA-SEQUENCE:0\n#EXTINF:2.0,\n{secret}\n#EXT-X-ENDLIST\n",
+        encoding="utf-8",
+    )
+
+    plain = subprocess.run(
+        ["ffmpeg", "-y", "-loglevel", "error", "-i", str(playlist), "-f", "null", "-"],
+        capture_output=True, timeout=60, check=False,
+    )
+    assert plain.returncode == 0, "the threat this test is about went away"
+
+    with pytest.raises(TranscodeError):
+        worker.run_ffmpeg(playlist, tmp_path / "hls")
+    assert worker.probe_duration_seconds(playlist) is None

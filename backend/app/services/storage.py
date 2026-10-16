@@ -47,6 +47,14 @@ ALLOWED_VIDEO_TYPES = (
     "video/webm",
 )
 
+# The file name's extension survives into the storage key (`original.mp4`),
+# and ffmpeg reads an extension as a hint about what it is opening: an upload
+# named `bai.m3u8` would be read as an HLS playlist -- a list of other files
+# to fetch -- whatever Content-Type was declared. So the name is checked too,
+# against the same four containers: .mp4/.m4v/.mov open with ffmpeg's mov
+# demuxer, .mkv/.webm with matroska (`INPUT_GUARDS` in workers/video.py).
+ALLOWED_VIDEO_EXTENSIONS = (".mp4", ".m4v", ".mov", ".mkv", ".webm")
+
 # 2 GB. Above this a single PUT is the wrong shape and the upload wants the
 # multipart API, which is a bigger flow than Phase 2 needs.
 MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024

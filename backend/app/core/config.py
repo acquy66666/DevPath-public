@@ -149,6 +149,21 @@ class Settings(BaseSettings):
     # Per account, in the login window: somebody at an unlocked laptop guessing
     # the current password with a live access token.
     password_changes_per_user: int = 5
+    # Signed upload URLs. Each one lets the browser write exactly the bytes it
+    # declared into a bucket that, on the VPS, shares a 40-50 GB disk with
+    # Postgres -- and a ticket nobody confirms stays there for the orphan
+    # sweep's 1 + 14 days. So the limits are sized against that disk, per
+    # account (windows in `services/upload_limits.py`):
+    # * avatars, per 24 hours: 20 x 5 MB = 100 MB a day, ~1.5 GB at most
+    #   before the sweep catches up. Per hour would be 36 GB -- the disk.
+    # * videos, per hour: a session of building a course, with retries.
+    # * video bytes, per 24 hours: what actually fills the disk. Sixty 2 GB
+    #   tickets is more than the machine has, so a count alone protects
+    #   nothing here. 10 GB is several hours of lecture at screen-recording
+    #   bitrates, and a day of it still leaves the disk alarm time to ring.
+    avatar_upload_tickets_per_user: int = 20
+    video_upload_tickets_per_user: int = 60
+    video_upload_bytes_per_user: int = 10 * 1024 * 1024 * 1024
 
     # VNPay. Empty until somebody registers a merchant account at
     # sandbox.vnpayment.vn; `vnpay_enabled` is what the payment route checks,

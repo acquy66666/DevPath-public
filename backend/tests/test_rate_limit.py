@@ -45,9 +45,14 @@ class FakeRedis:
             self.expiry[key] = self.now + ex
         return True
 
-    async def incr(self, key: str) -> int:
+    async def incr(self, key: str, amount: int = 1) -> int:
         self._evict()
-        self.values[key] = self.values.get(key, 0) + 1
+        self.values[key] = self.values.get(key, 0) + amount
+        return self.values[key]
+
+    async def decr(self, key: str, amount: int = 1) -> int:
+        self._evict()
+        self.values[key] = self.values.get(key, 0) - amount
         return self.values[key]
 
     async def expire(self, key: str, seconds: int) -> bool:
@@ -70,7 +75,7 @@ class BrokenRedis(FakeRedis):
     async def set(self, *args, **kwargs):
         raise RedisConnectionError("redis is down")
 
-    async def incr(self, key: str) -> int:
+    async def incr(self, key: str, amount: int = 1) -> int:
         raise RedisConnectionError("redis is down")
 
 
@@ -179,6 +184,53 @@ async def test_a_counter_that_lost_its_expiry_gets_one_back(
     assert await fake_redis.ttl("hour:1") == WINDOW
 
 
+# --- A budget rather than a count -------------------------------------------
+
+BUDGET = 10
+
+
+async def test_a_weighted_count_spends_a_budget(limiter: RedisRateLimiter) -> None:
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=4) == ALLOWED
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=6) == ALLOWED
+
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=1) > 0
+
+
+async def test_a_refused_amount_is_not_spent(
+    limiter: RedisRateLimiter, fake_redis: FakeRedis
+) -> None:
+    """What the budget measures is what was granted.
+
+    Charging a refused request would let one oversized ask lock out the
+    smaller one that still fits -- the instructor who tries a 2 GB file and
+    then picks the 300 MB version of it.
+    """
+    await limiter.count("bytes:1", BUDGET, WINDOW, amount=8)
+
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=4) > 0
+    assert fake_redis.values["bytes:1"] == 8
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=2) == ALLOWED
+
+
+async def test_a_weighted_window_still_gets_its_lifetime(
+    limiter: RedisRateLimiter, fake_redis: FakeRedis
+) -> None:
+    """The first INCRBY of a window comes back as its own amount, not as 1."""
+    await limiter.count("bytes:1", BUDGET, WINDOW, amount=4)
+
+    assert await fake_redis.ttl("bytes:1") == WINDOW
+
+
+async def test_a_weighted_window_starts_over(
+    limiter: RedisRateLimiter, fake_redis: FakeRedis
+) -> None:
+    await limiter.count("bytes:1", BUDGET, WINDOW, amount=BUDGET)
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=1) > 0
+    fake_redis.now += WINDOW
+
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=BUDGET) == ALLOWED
+
+
 # --- When Redis is not there ------------------------------------------------
 
 
@@ -196,6 +248,7 @@ async def test_a_dead_redis_does_not_stop_anyone_from_submitting() -> None:
 
     assert await limiter.claim("submit:1", COOLDOWN) == ALLOWED
     assert await limiter.count("hour:1", LIMIT, WINDOW) == ALLOWED
+    assert await limiter.count("bytes:1", BUDGET, WINDOW, amount=4) == ALLOWED
 
 
 # --- Against the real thing -------------------------------------------------
@@ -222,12 +275,20 @@ async def real_redis():
     await client.aclose()
 
 
-async def test_the_real_client_understands_the_same_four_commands(real_redis) -> None:
+async def test_the_real_client_understands_the_same_commands(real_redis) -> None:
     limiter = RedisRateLimiter(real_redis)
     cooldown_key = f"rl:test:cooldown:{uuid.uuid4().hex}"
     window_key = f"rl:test:window:{uuid.uuid4().hex}"
+    budget_key = f"rl:test:budget:{uuid.uuid4().hex}"
 
     try:
+        assert await limiter.count(budget_key, 10, 30, amount=8) == ALLOWED
+        wait = await limiter.count(budget_key, 10, 30, amount=4)
+        assert 0 < wait <= 30
+        # INCRBY and DECRBY, not INCR: the refused 4 came back off the counter.
+        assert int(await real_redis.get(budget_key)) == 8
+        assert await real_redis.ttl(budget_key) > 0
+
         assert await limiter.claim(cooldown_key, 30) == ALLOWED
         wait = await limiter.claim(cooldown_key, 30)
         assert 0 < wait <= 30
@@ -238,4 +299,4 @@ async def test_the_real_client_understands_the_same_four_commands(real_redis) ->
         # The counter got a lifetime, so a refused caller is not refused forever.
         assert await real_redis.ttl(window_key) > 0
     finally:
-        await real_redis.delete(cooldown_key, window_key)
+        await real_redis.delete(cooldown_key, window_key, budget_key)

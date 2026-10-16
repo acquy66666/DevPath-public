@@ -80,7 +80,8 @@ const MESSAGES: Record<string, string> = {
   // ORDER_EXPIRED cố ý không có ở đây: câu của backend nói vì sao đơn không còn
   // thanh toán được (quá hạn, mã giảm giá đã kết thúc/hết lượt, khóa học ngừng bán).
 
-  // Video.
+  // Video. UPLOAD_RATE_LIMITED (video, ảnh đại diện) cố ý không có ở đây: câu
+  // của backend nói hạn mức nào bị chạm và phải đợi khoảng bao lâu.
   STORAGE_NOT_CONFIGURED:
     "Máy chủ chưa cấu hình kho lưu trữ nên chưa tải video lên được. Xem docs/huong-dan-cloudflare-r2.md.",
   STORAGE_ERROR: "Kho lưu trữ đang trục trặc. Thử lại sau ít phút.",

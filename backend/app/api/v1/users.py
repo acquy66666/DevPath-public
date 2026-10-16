@@ -92,15 +92,18 @@ async def change_password(
     status_code=status.HTTP_201_CREATED,
 )
 async def create_avatar_upload(
-    payload: AvatarUploadIn, current_user: CurrentUser, storage: Storage
+    payload: AvatarUploadIn, current_user: CurrentUser, storage: Storage, limiter: RateLimit
 ) -> AvatarUploadTicket:
     """Ask for somewhere to put a new profile picture. Carries no bytes.
 
     Like the video routes, this one answers 503 `STORAGE_NOT_CONFIGURED` when
     no bucket has been set up. That is deliberate: the rest of the profile page
     goes on working without object storage, and only this button does not.
+    429 UPLOAD_RATE_LIMITED after twenty tickets in a day.
     """
-    return users_service.create_avatar_upload_ticket(current_user, storage, payload)
+    return await users_service.create_avatar_upload_ticket(
+        current_user, storage, payload, limiter=limiter
+    )
 
 
 @router.post("/me/avatar/complete", response_model=UserOut)

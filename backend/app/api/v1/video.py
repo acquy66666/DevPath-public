@@ -20,6 +20,7 @@ from app.schemas.video import (
 )
 from app.services import transcripts as transcripts_service
 from app.services import video as video_service
+from app.services.rate_limit import RateLimiter, get_rate_limiter
 from app.services.storage import ObjectStorage, get_storage
 from app.services.tasks import TaskQueue, get_task_queue
 
@@ -27,6 +28,7 @@ router = APIRouter(tags=["video"])
 
 Storage = Annotated[ObjectStorage, Depends(get_storage)]
 Queue = Annotated[TaskQueue, Depends(get_task_queue)]
+RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
 @router.post(
@@ -41,15 +43,18 @@ async def create_video_upload(
     session: DbSession,
     storage: Storage,
     queue: Queue,
+    limiter: RateLimit,
 ) -> VideoUploadTicket:
     """Ask for somewhere to put a video.
 
     Answers 503 `STORAGE_NOT_CONFIGURED` when no bucket has been set up --
     deliberate, and the same shape as Google sign-in: the rest of the system
     keeps working without object storage, this one endpoint does not.
+    429 UPLOAD_RATE_LIMITED after sixty tickets in an hour, or once the sizes
+    declared in a day would pass 10 GB.
     """
     return await video_service.create_upload_ticket(
-        session, lesson_id, current_user, storage, payload, queue
+        session, lesson_id, current_user, storage, payload, queue, limiter=limiter
     )
 
 

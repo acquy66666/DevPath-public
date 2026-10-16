@@ -35,6 +35,7 @@ from app.services import curriculum as curriculum_service
 from app.services import video as video_service
 from app.workers import video as worker
 from app.workers.video import TranscodeError, transcode
+from tests.api.fakes import AllowAllRateLimiter
 
 
 class FakeStorage:
@@ -235,6 +236,7 @@ async def test_replacing_a_video_takes_its_length_off_until_the_new_one_is_ready
         built.instructor,
         FakeStorage(),
         VideoUploadRequest(filename="moi.mp4", content_type="video/mp4", size_bytes=1024),
+        limiter=AllowAllRateLimiter(),
     )
 
     assert await _stored_duration(db_session, built.course.id) == 300

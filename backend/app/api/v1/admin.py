@@ -398,7 +398,10 @@ async def create_banner_upload(
 ) -> BannerUploadTicket:
     """Sign a PUT for one new picture. Nothing is written until the banner is."""
     url, key, ttl = banners_service.upload_ticket(
-        storage, filename=body.filename, content_type=body.content_type
+        storage,
+        filename=body.filename,
+        content_type=body.content_type,
+        size_bytes=body.size_bytes,
     )
     return BannerUploadTicket(
         upload_url=url, storage_key=key, expires_in=ttl, content_type=body.content_type

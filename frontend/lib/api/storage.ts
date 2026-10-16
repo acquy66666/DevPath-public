@@ -7,7 +7,13 @@
  * picture differ in size and in nothing else.
  */
 
-/** The half of an upload ticket that describes the PUT itself. */
+/**
+ * The half of an upload ticket that describes the PUT itself.
+ *
+ * The URL is also signed for the `size_bytes` asked for with it, so the file
+ * sent must be the very `File` whose `.size` was declared — any other length
+ * is a 403. The browser sets Content-Length itself; nothing here should.
+ */
 export interface UploadTicket {
   upload_url: string;
   /** Must be sent back verbatim as the Content-Type of the PUT: it is signed. */

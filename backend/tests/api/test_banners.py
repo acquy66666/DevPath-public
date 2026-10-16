@@ -86,9 +86,25 @@ async def test_the_upload_ticket_signs_a_fresh_key_in_the_banner_folder(
 
     assert first.startswith("banners/") and first.endswith(".png")
     assert first != second
-    assert [key for key, _, _ in storage.signed] == [first, second]
+    assert [signed.key for signed in storage.signed] == [first, second]
     assert too_big.status_code == 422
     assert not_image.status_code == 422
+
+
+async def test_the_declared_size_is_signed_in(
+    api_client: AsyncClient, admin: dict, storage: FakeStorage
+) -> None:
+    """The bucket holds the PUT to the size the admin's browser declared."""
+    response = await api_client.post(
+        f"{ADMIN}/upload-url",
+        json={"filename": "tet.png", "content_type": "image/png", "size_bytes": 765_432},
+        headers=admin,
+    )
+
+    assert response.status_code == 200
+    signed = storage.signed[-1]
+    assert signed.key == response.json()["storage_key"]
+    assert signed.size_bytes == 765_432
 
 
 async def test_a_banner_takes_its_picture_from_the_ticket_and_goes_last(

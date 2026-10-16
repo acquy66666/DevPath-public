@@ -48,9 +48,9 @@ class AvatarUploadIn(BaseModel):
     """The browser describes the picture; the backend decides where it may go.
 
     The size is declared rather than measured, exactly as for a video: the
-    bytes go straight to the bucket and never pass through here. It is worth
-    checking anyway -- refusing a 40 MB photo now is kinder than refusing it
-    after the upload.
+    bytes go straight to the bucket and never pass through here. It is signed
+    into the upload URL, so the picture that lands is this size or nothing --
+    and refusing a 40 MB photo now is kinder than refusing it after the upload.
     """
 
     filename: str = Field(min_length=1, max_length=FILENAME_MAX_LENGTH)

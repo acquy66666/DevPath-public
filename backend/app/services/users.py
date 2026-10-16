@@ -139,7 +139,9 @@ def create_avatar_upload_ticket(
     ttl = get_settings().upload_url_ttl_seconds
     key = avatar_key(user.id, data.filename)
     return AvatarUploadTicket(
-        upload_url=storage.presigned_put_url(key, data.content_type, ttl),
+        upload_url=storage.presigned_put_url(
+            key, data.content_type, ttl, size_bytes=data.size_bytes
+        ),
         storage_key=key,
         expires_in=ttl,
         content_type=data.content_type,

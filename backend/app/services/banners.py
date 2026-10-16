@@ -92,12 +92,13 @@ async def list_all(session: AsyncSession) -> list[Banner]:
 
 
 def upload_ticket(
-    storage: ObjectStorage, *, filename: str, content_type: str
+    storage: ObjectStorage, *, filename: str, content_type: str, size_bytes: int
 ) -> tuple[str, str, int]:
     """(signed PUT URL, key, seconds it lives) for one new picture."""
     ttl = get_settings().upload_url_ttl_seconds
     key = banner_key(filename)
-    return storage.presigned_put_url(key, content_type, ttl), key, ttl
+    url = storage.presigned_put_url(key, content_type, ttl, size_bytes=size_bytes)
+    return url, key, ttl
 
 
 def _check_key(key: str) -> None:

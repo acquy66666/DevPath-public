@@ -20,9 +20,10 @@ class VideoUploadRequest(BaseModel):
     """The browser describes the file; the backend decides where it may go.
 
     The size is declared rather than measured because the backend never sees
-    the bytes. It is a courtesy check -- it saves an instructor from waiting
-    out a 4 GB upload that was never going to be accepted -- not a limit. The
-    limit that holds is the one configured on the bucket.
+    the bytes. It is signed into the upload URL, so the bucket holds the PUT
+    to exactly this length: checking it here is the limit, and it saves an
+    instructor from waiting out a 4 GB upload that was never going to be
+    accepted.
     """
 
     filename: str = Field(min_length=1, max_length=FILENAME_MAX_LENGTH)

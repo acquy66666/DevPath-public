@@ -36,7 +36,9 @@ class FakeStorage:
         self.downloaded: list[str] = []
         self.content_types: dict[str, str | None] = {}
 
-    def presigned_put_url(self, key: str, content_type: str, expires_in: int) -> str:
+    def presigned_put_url(
+        self, key: str, content_type: str, expires_in: int, *, size_bytes: int
+    ) -> str:
         return f"https://bucket.example/{key}"
 
     def public_url(self, key: str) -> str:

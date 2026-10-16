@@ -99,11 +99,26 @@ async def test_the_signed_content_type_and_ttl_match_the_ticket(
         api_client, headers, content_type="image/webp", filename="anh.webp"
     )
 
-    key, content_type, expires_in = storage.signed[-1]
+    key, content_type, expires_in, _ = storage.signed[-1]
     assert key == body["storage_key"]
     assert content_type == body["content_type"] == "image/webp"
     assert key.endswith(".webp")
     assert expires_in == get_settings().upload_url_ttl_seconds
+
+
+async def test_the_declared_size_is_signed_in(
+    api_client: AsyncClient, db_session: AsyncSession, storage: FakeStorage
+) -> None:
+    """The bucket holds the PUT to this exact length. Unsigned, a ticket for a
+    200 KB picture takes whatever the browser sends -- up to nginx's 2 GB."""
+    user = await make_user(db_session)
+    headers = await sign_in(api_client, user)
+
+    body = await ticket_for(api_client, headers, size_bytes=123_456)
+
+    signed = storage.signed[-1]
+    assert signed.key == body["storage_key"]
+    assert signed.size_bytes == 123_456
 
 
 async def test_every_ticket_gets_a_fresh_key(

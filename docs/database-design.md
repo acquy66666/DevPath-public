@@ -1,6 +1,6 @@
 # Thiết kế CSDL
 
-> File này phải luôn khớp với schema thật (xem skill `db-migration`). ERD hình vẽ làm ở [Phase 7](plan/phase-7-report.md); tài liệu này là đặc tả chữ, đủ chi tiết để viết model SQLAlchemy và migration mà không phải đoán thêm.
+> File này phải luôn khớp với schema thật (xem skill `db-migration`). ERD hình vẽ làm ở [Phase 8](plan/phase-8-report.md); tài liệu này là đặc tả chữ, đủ chi tiết để viết model SQLAlchemy và migration mà không phải đoán thêm.
 
 ## Quy ước chung
 

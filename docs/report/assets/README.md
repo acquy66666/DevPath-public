@@ -1,6 +1,6 @@
 # Kho bằng chứng — chỉ mục và lượt rà soát
 
-Thư mục này là nguyên liệu cho Phase 7 (viết báo cáo). Mỗi `phase-N/README.md` là chỉ mục **gate → tệp** của phase đó, [`decisions.md`](decisions.md) là nhật ký quyết định kỹ thuật cho chương 4, [`khao-sat-nen-tang-tham-chieu.md`](khao-sat-nen-tang-tham-chieu.md) là bảng khảo sát cho chương 1–2.
+Thư mục này là nguyên liệu cho Phase 8 (viết báo cáo; trước 16/10/2026 là Phase 7). Mỗi `phase-N/README.md` là chỉ mục **gate → tệp** của phase đó, [`decisions.md`](decisions.md) là nhật ký quyết định kỹ thuật cho chương 4, [`khao-sat-nen-tang-tham-chieu.md`](khao-sat-nen-tang-tham-chieu.md) là bảng khảo sát cho chương 1–2.
 
 Tệp này ghi **lượt rà soát kho** theo gate cuối Phase 6 ("mở `docs/report/assets/` đối chiếu với bảng bằng chứng trong skill `thesis-report` — thiếu gì đo/chụp lại ngay"). **Lượt 1: 05/10/2026**, làm trên máy dev khi chưa có VPS, nên còn một lượt cuối sau khi deploy.
 
@@ -115,7 +115,7 @@ Mọi tính năng (trừ phụ đề, đã cắt) đều có bằng chứng ch�
 Gỡ theo đúng thứ tự README là **study → sales → cart → coupons → interactions**. Sau khi gỡ, CSDL dev còn 4 khóa, 3 tài khoản, **0 đơn, 0 lượt ghi danh, 0 mã giảm giá** (`phase-6/fresh-machine.txt` §5). Dashboard, bảng xếp hạng, XP, gợi ý và giỏ hàng mẫu khi đó đều trống. Vì vậy:
 
 1. Chụp lại ảnh giao diện (mục 5) **trước** khi gỡ.
-2. Nếu Phase 7 cần chạy lại `eval_recommender`/`eval_chatbot` thì cũng chạy **trước**.
+2. Nếu Phase 8 cần chạy lại `eval_recommender`/`eval_chatbot` thì cũng chạy **trước**.
 3. Sau khi gỡ, chụp lại riêng danh sách khóa học và trang chủ nếu báo cáo cần hình catalog "sạch" 4 khóa. Hoặc chụp trên VPS, nơi vốn chỉ seed 4 khóa.
 
 ## 5. Còn thiếu — phân loại

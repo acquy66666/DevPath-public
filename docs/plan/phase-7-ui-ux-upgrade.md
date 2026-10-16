@@ -1,0 +1,63 @@
+# Phase 7 — Nâng cấp UI/UX toàn diện (dự kiến 3 tuần, sau mốc trình bày GVHD)
+
+**Mục tiêu:** DevPath có bản sắc riêng. Một design system làm bằng Claude Design, một nhân vật linh vật gốc phản ứng theo việc học, và mọi màn hình được thiết kế lại theo đó. Không đổi nghiệp vụ, không đổi API.
+
+Thiết kế đầy đủ, gồm lý do, phản mục tiêu, bản đồ phản ứng và nghiên cứu skill: [`docs/ui-ux/thiet-ke-nang-cap-ui-ux.md`](../ui-ux/thiet-ke-nang-cap-ui-ux.md). Đọc trước khi làm bất kỳ task nào dưới đây.
+
+> **User chốt 16/10/2026:** làm *sau khi* hoàn thiện tính năng và deploy 0đ cho buổi trình bày với GVHD (mục "Mốc trình bày GVHD" của [Phase 6](phase-6-hardening-deploy.md)). Các task Phase 6 còn chờ VPS **không chặn** phase này.
+>
+> **Luật của phase:** backend đứng yên (chỉ sửa lỗi nếu lộ ra). E2E luồng vàng xanh sau **mỗi** nhóm màn; đổi chữ hay vai trò mà spec dựa vào thì sửa spec cùng commit. Token chỉ ở `app/globals.css`, không có mã màu rời trong component. Nhân vật tôn trọng `prefers-reduced-motion`. Bằng chứng vào `docs/report/assets/phase-7/`.
+>
+> **Ngày dự kiến** phụ thuộc ngày bảo vệ, chưa chốt (tài liệu thiết kế, mục 10). Thiếu thời gian thì cắt nhóm màn **từ nhóm 10 ngược lên**, không cắt phần nền, nhân vật hay chất lượng.
+
+## Chuẩn bị
+
+- [ ] Cài skill cho phase. Kiểm audit skills.sh của từng skill cộng đồng trước, cài từng skill chứ không cài cả repo: `anthropics/skills` (frontend-design, theme-factory, canvas-design), `vercel-labs/agent-skills` (web-design-guidelines, react-best-practices), `shadcn/ui`, `ui-ux-pro-max`, `pedronauck/skills/motion`, `dylantarre/animation-principles`, `petrkindlmann/qa-skills/visual-testing`. Ghi skill nào đã cài, ở cấp nào (dự án/người dùng), giấy phép gì vào `docs/ui-ux/README.md`. **Không** cài `manutej/luxor-claude-marketplace/playwright-visual-testing` (audit HIGH risk)
+- [ ] Đo và chụp **"trước"**: chạy lại `docs/report/assets/phase-6/ui/capture.cjs` vào `phase-7/before/`; Lighthouse mobile cho trang chủ, chi tiết khóa học, trang học; axe-core trên ~10 trang chính; dung lượng JS trang chủ từ `next build`. Đây là cột "trước" của chương 5
+
+## Định danh thương hiệu (Claude Design)
+
+- [ ] Tạo artifact **Design System "DevPath"** từ codebase hiện tại. Chốt cùng user: bảng màu sáng (tối để sau — tài liệu thiết kế mục 10), màu ngữ nghĩa cho 7 verdict và 4 mức quiz, type scale, khoảng cách, bo góc, đổ bóng, **token chuyển động** (thời lượng, easing). Mọi cặp chữ/nền đạt WCAG AA
+- [ ] Chọn font có subset `vietnamese` đầy đủ, chụp thử chữ có dấu hai tầng ("Luồng", "Người", "Tiếng Việt", "ưở"). Tự host woff2 qua `app/fonts.css` theo `frontend/public/fonts/README.md`; `frontend/scripts/build-offline.sh` xanh
+
+## Nhân vật linh vật
+
+- [ ] Phác **ba hướng nhân vật** cạnh nhau trên một artifact Design (tắc kè "bắt bug", chim Lạc, robot — tài liệu thiết kế mục 4.1). User chọn hướng và đặt tên. Kiểm không giống Duo của Duolingo về loài, màu và dáng
+- [ ] Model sheet (chính diện, ¾, nghiêng) + **bộ biểu cảm** đủ các `mood` ở mục 5 của tài liệu thiết kế, dưới dạng **SVG nhiều lớp có tên lớp**
+- [ ] Spike công nghệ hoạt ảnh (≤ 1 ngày, bỏ sau khi đo): cùng trạng thái `celebrate` bằng SVG + Motion và — nếu user muốn tự làm trong Rive Editor — bằng Rive. So dung lượng tải, CPU, CSP (WASM), công làm. Ghi quyết định vào `decisions.md`
+- [ ] Component `components/mascot/` — `<Mascot mood size />`: phản ứng một lần mỗi sự kiện, ≤ 2–3 s rồi về tư thế nghỉ, không chặn click, tư thế tĩnh khi `prefers-reduced-motion`, tải lười ngoài màn đầu. Có trang xem trước mọi `mood` (chỉ ở dev) để chụp bằng chứng
+
+## Nền
+
+- [ ] Đưa token vào `app/globals.css` (`@theme`), cập nhật toàn bộ `components/ui/*` (button, card, input, badge, tabs, dialog, alert, pager…). Header, footer, menu điện thoại theo design system. **Đo lại tràn ngang ở 360/375/1440 px** (header khách từng là điểm tràn)
+- [ ] Trạng thái toàn site: `app/not-found.tsx` + 2 trang 404 riêng (khóa học, chứng chỉ) có nhân vật `lost`; `error.tsx` có `sorry`; skeleton loading theo design system; mọi empty state có nhân vật + đạo cụ
+
+## Thiết kế lại theo nhóm màn
+
+Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run lint` + E2E luồng vàng xanh → ảnh trước/sau 1440 + 375 px vào `phase-7/`.
+
+- [ ] Nhóm 2 — Trang công khai: trang chủ (banner, gợi ý, khóa mới), danh sách + tìm kiếm, chi tiết khóa học, trang giảng viên
+- [ ] Nhóm 3 — Nộp bài code ⭐: Monaco, kết quả từng test qua WebSocket, nhân vật theo **7 verdict** + `grading` theo tiến độ "test k/n"
+- [ ] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn)
+- [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ
+- [ ] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐
+- [ ] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave`
+- [ ] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`)
+- [ ] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào
+- [ ] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state
+
+## Chuyển động và chất lượng
+
+- [ ] Micro-interaction theo token chuyển động: hover/press, toast, thanh tiến độ, chuyển tab. Không có hoạt ảnh nào chặn thao tác; mọi hoạt ảnh tắt được bằng `prefers-reduced-motion` (kiểm bằng `page.emulateMedia({ reducedMotion: "reduce" })`)
+- [ ] Hồi quy hình ảnh: Playwright `toHaveScreenshot` cho ~10 trang khóa (che vùng động: giờ, avatar, số liệu), baseline commit vào repo, chạy trong CI. Baseline sinh **trên Linux** (job CI hoặc image Playwright), vì baseline chụp trên Windows render font khác và sẽ đỏ trên CI
+- [ ] Rà truy cập: axe-core trên các trang chính → 0 lỗi `critical`/`serious`; đi hết luồng vàng bằng bàn phím; rà skill `web-design-guidelines`
+- [ ] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu
+- [ ] Viết skill dự án **`devpath-ui`** (`.claude/skills/devpath-ui/`, dùng `skill-creator`, khuôn `brand-guidelines`): luật token, component, nhân vật (khi nào dùng `mood` nào, ở đâu không dùng), chuyển động. Skill `nextjs-feature` trỏ sang nó
+
+## Gate cuối phase (= đóng băng giao diện)
+
+- [ ] Design system Claude Design khớp `globals.css` (lệch thì code thắng, cập nhật artifact). Nhân vật đủ mọi `mood` của bản đồ phản ứng, có tư thế tĩnh
+- [ ] CI xanh: E2E "1 passed" (không "flaky"), hồi quy hình ảnh, axe, cộng toàn bộ bộ test cũ. 0 tràn ngang ở 360/375/1440 px
+- [ ] Bằng chứng `docs/report/assets/phase-7/`: ảnh trước/sau từng nhóm màn; chạy lại `capture.cjs` (42 ảnh mới **thay** bộ 05/10 cho chương 4); model sheet + bộ biểu cảm; GIF ngắn các phản ứng; bảng số đo Lighthouse/axe/dung lượng trước/sau; `phase-7/README.md` chỉ mục gate → tệp
+- [ ] Deploy bản mới lên URL demo (tunnel tên miền thật, hoặc VPS nếu đã có) và chạy lại luồng vàng ở đó
+- [ ] Tag git `phase-7-done` — **mốc code hoàn chỉnh dùng để viết báo cáo** (thay cho `phase-6-done` trước đây)

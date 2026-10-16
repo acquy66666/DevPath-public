@@ -487,7 +487,7 @@ CREATE TABLE public.orders (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT ck_orders_amounts_non_negative CHECK (((subtotal >= (0)::numeric) AND (discount >= (0)::numeric) AND (total >= (0)::numeric))),
     CONSTRAINT ck_orders_paid_evidence CHECK ((((status)::text = 'paid'::text) = ((paid_at IS NOT NULL) AND (provider_txn_id IS NOT NULL)))),
-    CONSTRAINT ck_orders_provider CHECK (((payment_provider)::text = ANY (ARRAY[('vnpay'::character varying)::text, ('momo'::character varying)::text]))),
+    CONSTRAINT ck_orders_provider CHECK (((payment_provider)::text = ANY ((ARRAY['vnpay'::character varying, 'momo'::character varying, 'none'::character varying])::text[]))),
     CONSTRAINT ck_orders_status CHECK (((status)::text = ANY (ARRAY[('pending'::character varying)::text, ('paid'::character varying)::text, ('failed'::character varying)::text, ('cancelled'::character varying)::text]))),
     CONSTRAINT ck_orders_total CHECK ((total = (subtotal - discount)))
 );

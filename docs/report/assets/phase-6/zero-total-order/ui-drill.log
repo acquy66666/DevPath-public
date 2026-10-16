@@ -1,0 +1,11 @@
+Đã gỡ 1 tài khoản, 0 khóa học, 1 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại.
+deleted 1 coupon(s)
+PASS  a paid course in the cart                        Cấu trúc dữ liệu & giải thuật với Python — 499.000 ₫
+PASS  the button says what it will do                  "Nhận khóa học" with MIENPHI63045C
+PASS  straight to our own result page                  /thanh-toan/ket-qua?ma=DP261016WNPPGC
+PASS  no payment URL asked for, no request to VNPay    none
+PASS  no VNPay transaction shown                       row absent
+PASS  the order, as the API stores it                  status paid, total 0.00, provider none, ref DP261016WNPPGC
+PASS  the course is the student's                      1 enrolment(s)
+PASS  and out of the cart                              0 line(s) left
+8/8

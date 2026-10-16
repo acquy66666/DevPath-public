@@ -133,11 +133,16 @@ export function OrderResult({ code }: { code: string | null }) {
 }
 
 function Receipt({ order, waiting }: { order: Order; waiting: boolean }) {
+  // A 0 đ order is settled at checkout and never sees a gateway: it was not
+  // "paid", and its reference is its own code, not a VNPay transaction.
+  const free = order.payment_provider === "none";
   const heading = {
     paid: {
       icon: <CheckCircle2 className="size-8 text-emerald-600" aria-hidden />,
-      title: "Thanh toán thành công",
-      description: "Các khóa học trong đơn đã vào tài khoản của bạn.",
+      title: free ? "Đã nhận khóa học" : "Thanh toán thành công",
+      description: free
+        ? "Đơn 0đ nên không cần thanh toán. Các khóa học đã vào tài khoản của bạn."
+        : "Các khóa học trong đơn đã vào tài khoản của bạn.",
     },
     pending: {
       icon: <Clock className="size-8 text-amber-600" aria-hidden />,
@@ -178,7 +183,7 @@ function Receipt({ order, waiting }: { order: Order; waiting: boolean }) {
               <dt className="text-muted-foreground">Mã đơn hàng</dt>
               <dd className="font-medium">{order.code}</dd>
             </div>
-            {order.provider_txn_id ? (
+            {order.provider_txn_id && !free ? (
               <div className="flex justify-between sm:block">
                 <dt className="text-muted-foreground">Mã giao dịch VNPay</dt>
                 <dd className="font-medium">{order.provider_txn_id}</dd>

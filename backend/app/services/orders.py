@@ -234,15 +234,17 @@ async def create_from_cart(
         coupon_id = applied.coupon.id
         stored_code = applied.coupon.code
 
+    total = (cart.total - discount).quantize(ZERO)
     values = {
         "user_id": user.id,
         "subtotal": cart.total,
         "discount": discount,
-        "total": (cart.total - discount).quantize(ZERO),
+        "total": total,
         "coupon_id": coupon_id,
         "coupon_code": stored_code,
         "status": "pending",
-        "payment_provider": "vnpay",
+        # Nothing to charge, so no gateway: see `_settle_without_payment`.
+        "payment_provider": "none" if total == ZERO else "vnpay",
     }
 
     # ON CONFLICT DO NOTHING and look at what came back, rather than catching an
@@ -281,6 +283,17 @@ async def create_from_cart(
             )
         )
 
+    if order.total == ZERO:
+        # The lines must be in the database before they are read back to
+        # enrol: the session does not autoflush.
+        await session.flush()
+        try:
+            await _settle_without_payment(session, order, now)
+        except coupons_service.CouponExhaustedError:
+            # Order, enrolments and cart change go together, or not at all.
+            await session.rollback()
+            raise
+
     await session.commit()
     return await _view(session, order)
 
@@ -310,6 +323,14 @@ async def payment_url(
 
     if order.status != "pending":
         raise OrderNotPayableError("Đơn hàng này không còn chờ thanh toán")
+
+    if order.total == ZERO:
+        # Only an order written before checkout settled 0 đ itself can be here.
+        # VNPay would refuse the amount on its own page; checking out again
+        # settles it.
+        raise OrderNotPayableError(
+            "Đơn hàng 0đ không cần thanh toán. Đặt hàng lại từ giỏ để nhận khóa học."
+        )
 
     minutes_left = await _minutes_left_to_pay(session, order, settings=settings, now=now)
 
@@ -415,6 +436,47 @@ async def _clear_purchased_lines(
     )
 
 
+async def _deliver(session: AsyncSession, order: Order) -> None:
+    """Enrol the buyer in what the order holds, and take it out of their cart."""
+    course_ids = list(
+        await session.scalars(
+            select(OrderItem.course_id).where(OrderItem.order_id == order.id)
+        )
+    )
+    for course_id in course_ids:
+        await enrollments_service.grant(
+            session, course_id, order.user_id, source="purchase"
+        )
+
+    await _clear_purchased_lines(session, order.user_id, course_ids)
+
+
+async def _settle_without_payment(
+    session: AsyncSession, order: Order, now: datetime
+) -> None:
+    """An order of 0 đ is paid the moment it is written.
+
+    VNPay cannot be asked to charge nothing, so sending one there ends on a
+    bank page that can only fail, with an order nothing will ever settle. There
+    is no money to wait for, so there is nothing for an IPN to confirm.
+
+    The coupon rule is the IPN's turned round. There, money has moved, so a
+    campaign that ran out in between is honoured anyway. Here nothing has been
+    paid: a code that lost its last use to someone else meanwhile raises, and
+    the whole checkout -- order, enrolments, cart -- rolls back with it.
+    """
+    order.status = "paid"
+    order.paid_at = now
+    # A paid order must carry a reference (`ck_orders_paid_evidence`); with no
+    # gateway, its own code is the only one there is.
+    order.provider_txn_id = order.code
+
+    await _deliver(session, order)
+
+    if order.coupon_id is not None:
+        await coupons_service.consume(session, order.coupon_id)
+
+
 async def _mark_paid(
     session: AsyncSession, order: Order, params: dict[str, str], now: datetime
 ) -> None:
@@ -432,17 +494,7 @@ async def _mark_paid(
         or order.code
     )
 
-    course_ids = list(
-        await session.scalars(
-            select(OrderItem.course_id).where(OrderItem.order_id == order.id)
-        )
-    )
-    for course_id in course_ids:
-        await enrollments_service.grant(
-            session, course_id, order.user_id, source="purchase"
-        )
-
-    await _clear_purchased_lines(session, order.user_id, course_ids)
+    await _deliver(session, order)
 
     if order.coupon_id is not None:
         try:

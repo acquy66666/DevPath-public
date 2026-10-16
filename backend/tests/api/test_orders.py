@@ -966,3 +966,148 @@ async def test_a_server_with_no_secret_cannot_verify_anything(
         object.__setattr__(settings, "vnpay_hash_secret", before)
 
     assert response.json()["RspCode"] == "97"
+
+
+# --- An order with nothing to pay ------------------------------------------
+
+
+async def cart_course_ids(client: AsyncClient, headers: dict[str, str]) -> list[str]:
+    cart = (await client.get("/api/v1/cart", headers=headers)).json()
+    return [line["course"]["id"] for line in cart["items"]]
+
+
+async def enrolment_of(session: AsyncSession, user: User, course: Course) -> Enrollment | None:
+    return await session.scalar(
+        select(Enrollment).where(
+            Enrollment.user_id == user.id, Enrollment.course_id == course.id
+        )
+    )
+
+
+async def test_a_fully_discounted_cart_is_settled_without_the_gateway(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    """A 100 % code leaves nothing to charge. VNPay cannot be asked for 0 đ,
+    so before this the buyer was sent to a payment page that could only fail,
+    holding a pending order nothing would ever settle."""
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="100", max_uses=5)
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+
+    order = await checkout(api_client, headers, coupon.code)
+
+    assert (order["status"], order["total"]) == ("paid", "0.00")
+    assert order["payment_provider"] == "none"
+    # The order's own code stands in for a gateway reference: a paid order
+    # must carry one (`ck_orders_paid_evidence`), and there was no gateway.
+    assert order["provider_txn_id"] == order["code"]
+    enrolment = await enrolment_of(db_session, student, course)
+    assert enrolment is not None and enrolment.source == "purchase"
+    assert await cart_course_ids(api_client, headers) == []
+    used = await db_session.scalar(select(Coupon.used_count).where(Coupon.id == coupon.id))
+    assert used == 1
+
+
+async def test_a_free_course_checked_out_through_the_cart_is_enrolled_at_once(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    """The cart takes a 0 đ course (the API allows it, the course page offers
+    "Đăng ký miễn phí" instead). Checking it out must not dead-end at VNPay."""
+    course = await make_course(db_session, owner, price="0")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+
+    order = await checkout(api_client, headers)
+
+    assert (order["status"], order["total"], order["payment_provider"]) == ("paid", "0.00", "none")
+    assert await enrolment_of(db_session, student, course) is not None
+
+
+async def test_an_order_with_something_to_pay_still_waits_for_the_gateway(
+    api_client: AsyncClient, db_session: AsyncSession, student: User, owner: User
+) -> None:
+    """Only a total of exactly zero skips the gateway: 1 đ is still money."""
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="fixed", value="399999")
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+
+    order = await checkout(api_client, headers, coupon.code)
+
+    assert (order["status"], order["total"]) == ("pending", "1.00")
+    assert order["payment_provider"] == "vnpay"
+    assert await enrolment_of(db_session, student, course) is None
+
+
+async def test_a_code_used_up_meanwhile_stops_a_free_checkout_whole(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    owner: User,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The opposite of the IPN's rule. There, money has moved and the order is
+    honoured even if the campaign ran out; here nothing has been paid, so a
+    code that lost its last use to someone else between the check and the
+    write gets nothing -- no order, no enrolment, the cart left as it was."""
+    from app.services import coupons as coupons_service
+    from app.services import orders as orders_service
+
+    course = await make_course(db_session, owner, price="400000")
+    coupon = await make_coupon(db_session, discount_type="percent", value="100", max_uses=1)
+    headers = await sign_in(api_client, student)
+    await add(api_client, course, headers)
+
+    async def taken_meanwhile(session, coupon_id):
+        raise coupons_service.CouponExhaustedError("Mã giảm giá đã hết lượt sử dụng")
+
+    monkeypatch.setattr(orders_service.coupons_service, "consume", taken_meanwhile)
+    # Read now: the rollback expires every object the session holds, these
+    # two included, and reloading one outside the request is not possible.
+    student_id, course_id = student.id, course.id
+
+    response = await api_client.post(
+        "/api/v1/orders", json={"coupon_code": coupon.code}, headers=headers
+    )
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "COUPON_EXHAUSTED"
+    assert await db_session.scalar(select(Order.id).where(Order.user_id == student_id)) is None
+    assert (
+        await db_session.scalar(
+            select(Enrollment.id).where(
+                Enrollment.user_id == student_id, Enrollment.course_id == course_id
+            )
+        )
+        is None
+    )
+    assert await cart_course_ids(api_client, headers) == [str(course_id)]
+
+
+async def test_a_pending_order_of_zero_is_never_sent_to_the_gateway(
+    api_client: AsyncClient,
+    db_session: AsyncSession,
+    student: User,
+    vnpay_configured: str,
+) -> None:
+    """Orders written before checkout settled them itself are still pending
+    at 0 đ. Asking VNPay to charge that would only fail on the bank's page;
+    the buyer is told to check out again, which settles it."""
+    db_session.add(
+        Order(
+            code="DP261016ZEROAA",
+            user_id=student.id,
+            subtotal=Decimal("0"),
+            discount=Decimal("0"),
+            total=Decimal("0"),
+            status="pending",
+        )
+    )
+    await db_session.flush()
+    headers = await sign_in(api_client, student)
+
+    response = await ask_to_pay(api_client, "DP261016ZEROAA", headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "ORDER_NOT_PAYABLE"

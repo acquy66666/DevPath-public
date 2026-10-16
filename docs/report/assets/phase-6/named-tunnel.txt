@@ -1,0 +1,125 @@
+NAMED TUNNEL (D1) — PHẦN LÀM ĐƯỢC TRƯỚC KHI CÓ TÊN MIỀN
+Ngày: 17/10/2026 · nhánh feature/named-tunnel
+Chuẩn bị cho task D1 của Phase 6, tức đường deploy 0đ cho buổi trình bày với
+GVHD. Hướng dẫn cho user: docs/huong-dan-ten-mien-va-tunnel.md. D1 chưa tick vì
+chưa chạy với tên miền và token thật (D0 là việc của user).
+Máy: Docker Desktop (8 GB, 8 CPU), stack dev chạy song song.
+
+Kết quả gọn:
+  - Stack production dựng thật bằng chính `deploy.sh --seed`, với overlay mới,
+    DOMAIN=devpath.localhost và một token giả. Mọi bước trước tunnel đều qua:
+    build, migrate, seed, 13 service healthy, API ↔ CSDL/Redis (readiness),
+    và **API ↔ bucket qua https://devpath.localhost** bằng chứng chỉ tự ký
+    `tunnel-cert` sinh ra, được backend tin qua AWS_CA_BUNDLE.
+  - Đến bước tunnel: cloudflared báo "Provided Tunnel token is not valid.", và
+    `deploy.sh` dừng sau 90 s kèm 20 dòng log của cloudflared. Đây là đúng hành
+    vi cần có khi token sai.
+  - `seed-demo.sh`: lần 1 exit 0. Đếm theo thứ tự đơn | ghi danh | XP | chứng
+    chỉ | mã giảm | banner: 40 | 89 | 649 | 28 | 7 | 3. Lần 2 mất 23 s, số dòng
+    giữ nguyên.
+  - Đọc qua nginx của stack (cổng 443 của host): readiness 200, 4 khóa, 3 banner
+    ảnh nằm ở https://devpath.localhost/devpath-media/…, trang chủ có khóa
+    Python. Bảng xếp hạng (đăng nhập bằng một người mua demo): tuần 12 người,
+    tháng 20 (đủ trang đầu). nguoimua08: 340 XP, chuỗi 7 ngày.
+  - Phần chỉ kiểm được khi có token thật: cloudflared kết nối, route trong
+    dashboard, và lệnh hỏi https://<DOMAIN>/api/v1/health/ready từ bên ngoài
+    qua Cloudflare (bước cuối của `deploy.sh` ở chế độ tunnel).
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+infra/docker-compose.named-tunnel.yml (mới, overlay trên docker-compose.prod.yml)
+  - cloudflared 2026.9.1 (cùng bản quick tunnel), `tunnel --no-autoupdate run`,
+    TUNNEL_TOKEN từ .env.prod. Route nằm trong dashboard: <DOMAIN> →
+    https://nginx:443, bật No TLS Verify. Không trỏ http://nginx:80, vì nginx sẽ
+    chuyển hướng sang https và trình duyệt quay vòng.
+  - tunnel-cert: service một lần dùng image certbot (có openssl). Sinh chứng chỉ
+    tự ký 825 ngày, SAN = DNS:<DOMAIN>, CA:TRUE, vào volume letsencrypt, ngay
+    đúng đường nginx đọc. Còn hạn ≥ 30 ngày và đúng tên thì để yên (đã thấy
+    trong log: "still good for 30 days or more, leaving it").
+  - nginx, backend, worker chờ tunnel-cert xong. backend + worker:
+    AWS_CA_BUNDLE = chứng chỉ đó (mount volume letsencrypt chỉ đọc). Lý do:
+    chúng gọi bucket ở https://<DOMAIN>, mà trong mạng compose tên đó là nginx.
+    Let's Encrypt không dùng được, vì nó cần gọi ngược về cổng 80 của tên miền.
+  - x-logging viết lại (anchor không đi qua tệp). CI kiểm cả hai tệp.
+
+infra/scripts/deploy.sh
+  `.env.prod` có TUNNEL_TOKEN khác rỗng → thêm overlay vào mọi lệnh compose.
+  Sau các kiểm cũ thì chờ "Registered tunnel connection" (90 s), rồi
+  `curl https://<DOMAIN>/api/v1/health/ready` từ host, tức là đi trọn đường của
+  người xem (thử lại tới 120 s cho DNS). Cuối script in "Deployed:
+  https://<DOMAIN>" và lệnh xem log đúng với bộ tệp đang dùng. Trên VPS (token
+  rỗng) không có gì đổi.
+
+infra/scripts/seed-demo.sh (mới)
+  Dữ liệu demo cho stack production, theo thứ tự README dùng cho 4 khóa thật:
+  seed_transcripts → seed_banners → seed_sales → seed_study → seed_coupons →
+  rebuild_leaderboard → issue_certificates → (có GEMINI_API_KEY:
+  ingest_course --all → rebuild_course_embeddings) → rebuild_recommendations.
+  Không có key thì nói rõ là trợ giảng AI sẽ không trả lời được.
+
+infra/.env.prod.example: TUNNEL_TOKEN= (rỗng, kèm chú thích: đây là bí mật,
+  để trống trên VPS).
+infra/scripts/check_env_examples.py: biến của overlay phải có trong
+  .env.prod.example. Lần chạy đầu bắt đúng TUNNEL_TOKEN còn thiếu.
+.github/workflows/ci.yml: bước "Every service's log is rotated" render thêm
+  prod + overlay.
+docs/huong-dan-ten-mien-va-tunnel.md (mới): D0 từng bước (nc.me → Namecheap →
+  Cloudflare Free → nameserver), D1 (Networking → Tunnels, token, route, No
+  TLS Verify, .env.prod, deploy.sh --seed, seed-demo.sh, Google OAuth), các hạn
+  chế. Runbook VPS và plan trỏ sang tài liệu này.
+
+==============================================================================
+2. DIỄN TẬP — STACK PRODUCTION THẬT, TOKEN GIẢ
+==============================================================================
+Cách chạy: `.env.prod` tạm (sinh từ example; secret ngẫu nhiên;
+DOMAIN=devpath.localhost; BACKUP_ENABLED=false; DOCKER_GID=0; TUNNEL_TOKEN là
+chuỗi có dạng token nhưng sai), rồi
+  COMPOSE_PROJECT_NAME=devpath-prodtest SEED_ADMIN_PASSWORD=… \
+    SEED_INSTRUCTOR_PASSWORD=… ./scripts/deploy.sh --seed
+Log đã lọc (bỏ dòng build): named-tunnel/deploy-drill.log
+  ==> TUNNEL_TOKEN is set: deploying behind the Cloudflare named tunnel
+  ==> Building images        (backend, frontend, grading, backup, docker-proxy)
+  ==> Migrating the database (từ trắng tới 79240999111f)
+  ==> Seeding                (admin@devpath.example created, 8 danh mục, 4 khóa)
+  ==> Starting
+  ==> Waiting for health
+  ==> Checking the API reaches its database and Redis
+  ==> Checking the API reaches its storage      ← qua TLS tự ký + AWS_CA_BUNDLE
+  ==> Waiting for the tunnel to reach Cloudflare
+  cloudflared has not connected in 90 s. Its log:
+  cloudflared-1  | Provided Tunnel token is not valid.
+  exit 1
+Trạng thái lúc đó: 13 service Up, mọi service có healthcheck đều healthy;
+cloudflared "Restarting (255)".
+
+Chứng chỉ (đọc bằng openssl trong image certbot):
+  subject=CN=devpath.localhost   notAfter=Jan 18 19:48:09 2029 GMT
+  X509v3 Subject Alternative Name: DNS:devpath.localhost
+  X509v3 Basic Constraints: critical, CA:TRUE
+
+seed-demo.sh (named-tunnel/seed-demo-1.log, seed-demo-2.log):
+  lần 1: exit 0; key Gemini rỗng nên bỏ qua RAG, có nói rõ;
+         "Đã ghi gợi ý cho 40 người dùng … chỉ collaborative"
+  CSDL:  đơn 40 | ghi danh 89 | xp_events 649 | chứng chỉ 28 | mã giảm 7 | banner 3
+  lần 2: exit 0 sau 23 s, cùng 40 | 89 | 649 | 28 | 7 | 3
+
+Từ host qua cổng 443 (curl --resolve devpath.localhost:443:127.0.0.1):
+  /api/v1/health/ready 200 · /api/v1/courses: 4 khóa · /api/v1/banners: 3, ảnh ở
+  https://devpath.localhost/devpath-media/banners/… · trang chủ có "Python cơ bản
+  cho người mới bắt đầu" · đăng nhập nguoimua08 → /leaderboard tuần 12 / tháng 20
+  / mọi lúc 20, /users/me/gamification 340 XP chuỗi 7 · đăng xuất 204.
+
+Dọn: `down -v` project devpath-prodtest (0 volume còn lại), xóa .env.prod tạm.
+Đã quét log giữ lại: không có token, mật khẩu hay secret nào trong đó.
+
+==============================================================================
+3. CÒN LẠI CHO D1 — CẦN TÊN MIỀN + TOKEN THẬT
+==============================================================================
+  - cloudflared kết nối (log "Registered tunnel connection").
+  - Route trong dashboard + No TLS Verify. Chỗ dễ sai nhất; nếu sai thì bước
+    curl cuối của deploy.sh chỉ ra.
+  - Upload qua tunnel: URL ký sẵn (#93) + Cloudflare Free 100 MB. Thử một tệp
+    nhỏ qua UI.
+  - Google OAuth với redirect URI https://<DOMAIN>/api/v1/auth/google/callback.
+  - Mốc trình bày GVHD: luồng vàng trên https://<DOMAIN>.

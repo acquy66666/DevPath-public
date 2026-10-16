@@ -1,0 +1,109 @@
+# The production stack on a real domain, from a machine with no public ports.
+#
+#   ./scripts/deploy.sh        # picks this file up by itself when .env.prod
+#                              # sets TUNNEL_TOKEN (docs/huong-dan-ten-mien-va-tunnel.md)
+#
+# What it is for: the supervisor demo before there is a server (Phase 6, D1).
+# The domain's DNS is on Cloudflare; a named tunnel created in the Cloudflare
+# dashboard sends https://<DOMAIN> to this machine's nginx. Unlike the quick
+# tunnel next door (docker-compose.tunnel.yml), the address is fixed -- which is
+# what Google sign-in needs, since its redirect URI is registered in advance.
+#
+# What it is not, stated plainly:
+#
+#   * a server. The site lives while this machine is on and awake -- Docker
+#     Desktop dies with sleep on this machine.
+#   * a way to upload large videos. Cloudflare's Free plan refuses any request
+#     body over 100 MB (HTTP 413), through a tunnel too. Demo with the seeded
+#     videos, or a short clip.
+#
+# Why a self-signed certificate on nginx: Let's Encrypt validates by calling
+# back to port 80 of the domain, and nothing here listens on the internet.
+# Cloudflare terminates the TLS the visitor sees; the hop from cloudflared to
+# nginx stays inside the compose network. The one other client of that
+# certificate is the app itself -- the API and the workers reach the bucket at
+# https://<DOMAIN>, which inside this network is nginx -- so they are told to
+# trust it (AWS_CA_BUNDLE), and nothing else.
+#
+# On the real server (D2) leave TUNNEL_TOKEN empty: this file is not used, and
+# init-tls.sh puts a Let's Encrypt certificate where this one would be.
+
+# Anchors do not cross files, so the rotation of docker-compose.prod.yml is
+# spelled out again; CI checks every service of both files has one.
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+    compress: "true"
+
+services:
+  # Writes the certificate nginx starts with, once. Leaves a valid one alone,
+  # so a restart does not hand the app a certificate it has never seen.
+  tunnel-cert:
+    image: certbot/certbot:v5.8.0
+    logging: *logging
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        set -e
+        live=/etc/letsencrypt/live/$${DOMAIN}
+        if [ -s "$$live/fullchain.pem" ] \
+          && openssl x509 -in "$$live/fullchain.pem" -noout -checkend 2592000 \
+          && openssl x509 -in "$$live/fullchain.pem" -noout -ext subjectAltName | grep -q "DNS:$${DOMAIN}"; then
+          echo "certificate for $${DOMAIN} still good for 30 days or more, leaving it"
+          exit 0
+        fi
+        mkdir -p "$$live"
+        # CA:TRUE so the same file can be the trust anchor the app is given;
+        # the SAN is what Python checks the host against, not the CN.
+        openssl req -x509 -nodes -newkey rsa:2048 -days 825 \
+          -keyout "$$live/privkey.pem" -out "$$live/fullchain.pem" \
+          -subj "/CN=$${DOMAIN}" \
+          -addext "subjectAltName=DNS:$${DOMAIN}" \
+          -addext "basicConstraints=critical,CA:TRUE"
+        echo "wrote a self-signed certificate for $${DOMAIN}"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env.prod}
+    volumes:
+      - letsencrypt:/etc/letsencrypt
+
+  nginx:
+    depends_on:
+      tunnel-cert:
+        condition: service_completed_successfully
+
+  backend:
+    environment:
+      AWS_CA_BUNDLE: /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      tunnel-cert:
+        condition: service_completed_successfully
+
+  worker:
+    environment:
+      AWS_CA_BUNDLE: /etc/letsencrypt/live/${DOMAIN}/fullchain.pem
+    volumes:
+      - letsencrypt:/etc/letsencrypt:ro
+    depends_on:
+      tunnel-cert:
+        condition: service_completed_successfully
+
+  cloudflared:
+    # The same pinned version as the quick tunnel; --no-autoupdate is that
+    # decision made inside the container.
+    image: cloudflare/cloudflared:2026.9.1
+    restart: unless-stopped
+    logging: *logging
+    # A remotely-managed tunnel: where it sends traffic is set in the
+    # Cloudflare dashboard (public hostname <DOMAIN> -> https://nginx:443,
+    # "No TLS Verify" on), so nothing about the route lives here. The token
+    # is the tunnel's whole credential -- a secret, like a password.
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env.prod, or remove it to deploy without the tunnel}
+    depends_on:
+      nginx:
+        condition: service_healthy

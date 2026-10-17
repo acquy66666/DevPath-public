@@ -32,6 +32,18 @@ if [[ ! -f .env.prod ]]; then
     exit 1
 fi
 
+# A machine with no public ports reaches its domain through a Cloudflare named
+# tunnel (docker-compose.named-tunnel.yml). The token in .env.prod is what says
+# so; on the real server it is empty and nothing below changes.
+tunnel=false
+if grep -Eq '^TUNNEL_TOKEN=.+' .env.prod; then
+    tunnel=true
+    COMPOSE=(docker compose -f docker-compose.prod.yml -f docker-compose.named-tunnel.yml
+        --env-file .env.prod)
+    echo "==> TUNNEL_TOKEN is set: deploying behind the Cloudflare named tunnel"
+fi
+domain="$(grep -E '^DOMAIN=' .env.prod | head -1 | cut -d= -f2- | tr -d '"'"'"'[:space:]')"
+
 echo "==> Building images"
 "${COMPOSE[@]}" build
 
@@ -108,12 +120,43 @@ next(iter(build_storage().list_objects("deploy-check/")), None)
     exit 1
 fi
 
+if [[ "${tunnel}" == true ]]; then
+    echo "==> Waiting for the tunnel to reach Cloudflare"
+    # cloudflared says so in its log, once per edge connection; there is no
+    # health check to ask. A token Cloudflare refuses shows up here too.
+    deadline=$((SECONDS + 90))
+    until "${COMPOSE[@]}" logs cloudflared 2>&1 | grep -q "Registered tunnel connection"; do
+        if (( SECONDS > deadline )); then
+            echo "cloudflared has not connected in 90 s. Its log:" >&2
+            "${COMPOSE[@]}" logs --tail 20 cloudflared >&2
+            exit 1
+        fi
+        sleep 3
+    done
+
+    echo "==> Asking https://${domain} from outside, through Cloudflare"
+    # From this host, by the public name: DNS, Cloudflare's edge, the tunnel,
+    # nginx, the API, its database and Redis -- the whole way a visitor comes.
+    # Retried for a while, because a fresh DNS record can take a minute.
+    deadline=$((SECONDS + 120))
+    until curl -fsS --max-time 15 "https://${domain}/api/v1/health/ready" >/dev/null; do
+        if (( SECONDS > deadline )); then
+            echo "https://${domain} does not answer through the tunnel. Check the" \
+                "tunnel's public hostname in the Cloudflare dashboard" \
+                "(docs/huong-dan-ten-mien-va-tunnel.md, D1)." >&2
+            exit 1
+        fi
+        sleep 5
+    done
+fi
+
 echo "==> Cleaning up images the new build replaced"
 docker image prune -f >/dev/null
 
 "${COMPOSE[@]}" ps
 echo
-echo "Deployed. Logs: docker compose -f docker-compose.prod.yml --env-file .env.prod logs -t --since 1h"
+echo "Deployed: https://${domain}"
+echo "Logs: ${COMPOSE[*]} logs -t --since 1h"
 
 # A reminder, not a gate: the site runs fine without the monitor, it just
 # breaks without anybody hearing about it.

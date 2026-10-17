@@ -114,7 +114,20 @@ Dọn: `down -v` project devpath-prodtest (0 volume còn lại), xóa .env.prod 
 Đã quét log giữ lại: không có token, mật khẩu hay secret nào trong đó.
 
 ==============================================================================
-3. CÒN LẠI CHO D1 — CẦN TÊN MIỀN + TOKEN THẬT
+3. D0 XONG — TÊN MIỀN devpath-01.me TRÊN CLOUDFLARE (17/10/2026)
+==============================================================================
+User đăng ký devpath-01.me ở Namecheap qua ưu đãi .me của Student Pack (nc.me).
+Lúc vừa có: nameserver dns1/dns2.registrar-servers.com (Namecheap BasicDNS),
+4 bản ghi A 185.199.108–111.153 (GitHub Pages, nc.me tạo sẵn).
+User thêm tên miền vào Cloudflare gói Free, xóa 4 bản ghi A đó, đổi nameserver
+ở Namecheap sang Custom DNS. Cloudflare: "Your domain is now protected by
+Cloudflare". Kiểm độc lập ngay sau đó:
+  nslookup -type=NS devpath-01.me 8.8.8.8  → bjorn.ns.cloudflare.com, alexa.ns.cloudflare.com
+  nslookup -type=NS devpath-01.me 1.1.1.1  → alexa.ns.cloudflare.com, bjorn.ns.cloudflare.com
+  nslookup devpath-01.me 1.1.1.1           → không còn địa chỉ nào (chờ route tunnel)
+
+==============================================================================
+4. CÒN LẠI CHO D1 — CẦN TÊN MIỀN + TOKEN THẬT
 ==============================================================================
   - cloudflared kết nối (log "Registered tunnel connection").
   - Route trong dashboard + No TLS Verify. Chỗ dễ sai nhất; nếu sai thì bước

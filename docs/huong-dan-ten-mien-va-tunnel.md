@@ -6,7 +6,7 @@ Làm theo từng bước cho hai task Phase 6: **D0** (tên miền) và **D1** (
 
 | Bước | Ai làm | Mất bao lâu |
 |---|---|---|
-| D0.1–D0.3 — nhận tên miền `.me` | **bạn** (tài khoản GitHub, Namecheap) | 10 phút |
+| D0.1–D0.3 — nhận tên miền (`.me` của Namecheap, hoặc name.com) | **bạn** (tài khoản GitHub, nhà đăng ký) | 10 phút |
 | D0.4–D0.7 — chuyển DNS sang Cloudflare | **bạn** (tài khoản Cloudflare) | 10 phút làm, rồi chờ từ vài phút tới 24 giờ |
 | D1.1–D1.3 — tạo tunnel, lấy token | **bạn** (dashboard Cloudflare) | 5 phút |
 | D1.4–D1.7 — dựng stack, nạp dữ liệu, kiểm | Claude, trên máy này | 20–30 phút (build image) |
@@ -25,6 +25,14 @@ Những gì Claude **không** làm thay: tạo tài khoản, đăng nhập, nh�
 
 > Nếu tới bước thanh toán mà Namecheap đòi **số thẻ** dù tổng là 0đ: dừng lại, đừng nhập, báo Claude. Theo tài liệu GitHub, ưu đãi này không cần trả tiền năm đầu.
 
+#### Hoặc: name.com thay cho Namecheap
+
+Student Pack còn một ưu đãi của **name.com**: một tên miền miễn phí năm đầu, kèm che thông tin chủ sở hữu và SSL. Trang pack ghi `.live`; trang hỗ trợ của name.com (cập nhật 06/2026) ghi "một trong các đuôi được áp dụng", nên đuôi nào được miễn phí thì xem lúc thanh toán. Mọi bước từ D0.4 trở đi giữ nguyên, vì Cloudflare không quan tâm tên miền mua ở đâu. Ba điểm khác:
+
+- Bấm vào ưu đãi name.com **từ trang pack** trong lúc **chưa đăng nhập name.com**: mã giảm giá tự áp, không phải gõ.
+- Điền thông tin liên hệ thật. ICANN bắt name.com gửi email xác minh, và không bấm xác minh thì tên miền có thể bị tạm khóa sau ít ngày.
+- Chọn đuôi có trong danh sách miễn phí, ví dụ `devpath-<tên bạn>.live`. Đuôi nào cũng chạy được với tunnel và với đăng nhập Google.
+
 ### D0.2. Chọn tên
 
 - Ngắn, dễ đọc lên khi trình bày, không dấu, không gạch dưới. Ví dụ: `devpath.me` (nếu còn), `devpath-<tên bạn>.me`, `<tên bạn>-devpath.me`.
@@ -42,11 +50,13 @@ Thanh toán 0đ. Vào **Domain List → Manage** của tên miền vừa có, t�
 3. Cloudflare quét các bản ghi DNS có sẵn. Tên miền mới nên gần như không có gì; xóa bản ghi `A`/`CNAME` nào Namecheap tạo sẵn cho tên miền gốc (thường là trang "parking"). Tunnel sẽ tự tạo bản ghi của nó ở D1.
 4. Cloudflare cho **hai nameserver**, dạng `ada.ns.cloudflare.com` và `bob.ns.cloudflare.com`. Giữ tab này mở.
 
-### D0.5. Đổi nameserver ở Namecheap sang Cloudflare
+### D0.5. Đổi nameserver sang Cloudflare
 
 1. Namecheap → **Domain List** → **Manage** ở `<tên-miền>`.
 2. Nếu **DNSSEC** đang bật (mục *Advanced DNS*), tắt trước. Tên miền mới mặc định là tắt.
 3. Tab **Domain**, mục **NAMESERVERS**: đổi từ *Namecheap BasicDNS* sang **Custom DNS**, nhập đúng hai nameserver Cloudflare cho, bấm dấu ✓ xanh để lưu.
+
+**Nếu mua ở name.com:** **My Domains** → bấm vào tên miền → **Manage Nameservers**, xóa các dòng `ns*.name.com` có sẵn, thêm hai nameserver của Cloudflare, rồi lưu. DNSSEC (mục *DNSSEC Management*) phải để trống, như với Namecheap.
 
 ### D0.6. Chờ Cloudflare kích hoạt
 

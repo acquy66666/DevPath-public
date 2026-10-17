@@ -47,7 +47,7 @@ Thanh toán 0đ. Vào **Domain List → Manage** của tên miền vừa có, t�
 
 1. Tạo tài khoản miễn phí ở https://dash.cloudflare.com/sign-up (email + mật khẩu), xác nhận email.
 2. Trong dashboard: **Add a domain** (hoặc *Onboard a domain*), nhập `<tên-miền>`, chọn **Free**.
-3. Cloudflare quét các bản ghi DNS có sẵn. Tên miền mới nên gần như không có gì; xóa bản ghi `A`/`CNAME` nào Namecheap tạo sẵn cho tên miền gốc (thường là trang "parking"). Tunnel sẽ tự tạo bản ghi của nó ở D1.
+3. Cloudflare quét các bản ghi DNS có sẵn. **Xóa mọi bản ghi `A`/`AAAA`/`CNAME` của tên miền gốc (`@`) và của `www`.** Tên miền nhận qua nc.me được tạo sẵn 4 bản ghi `A` trỏ vào GitHub Pages (`185.199.108.153` … `185.199.111.153`, đo trên `devpath-01.me` 17/10/2026), có khi kèm `CNAME www → <tên>.github.io`. Để lại thì chúng giành tên miền gốc với tunnel. Tunnel sẽ tự tạo bản ghi của nó ở D1.
 4. Cloudflare cho **hai nameserver**, dạng `ada.ns.cloudflare.com` và `bob.ns.cloudflare.com`. Giữ tab này mở.
 
 ### D0.5. Đổi nameserver sang Cloudflare

@@ -148,7 +148,7 @@ CSDL project devpath-demo, đọc bằng psql trong container postgres (email ch
                   token; cái thứ hai còn sống. Đúng luồng xoay vòng thường.
 
 ==============================================================================
-6. TÌM RA: IP THẬT CỦA NGƯỜI DÙNG MẤT SAU TUNNEL (chưa sửa)
+6. TÌM RA: IP THẬT CỦA NGƯỜI DÙNG MẤT SAU TUNNEL (đã sửa 18/10: tunnel-real-ip.txt)
 ==============================================================================
 Cả hai dòng refresh_tokens của phiên trên ghi ip_address = 172.20.0.8, tức
 IP của container devpath-demo-cloudflared-1 trên mạng compose, không phải IP

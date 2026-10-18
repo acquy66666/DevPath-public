@@ -22,6 +22,7 @@ from app.models import Lesson, User, VideoAsset
 from app.schemas.video import VideoAssetOut, VideoUploadRequest, VideoUploadTicket
 from app.services import course_stats
 from app.services import curriculum as curriculum_service
+from app.services.rate_limit import RateLimiter
 from app.services.storage import (
     ObjectStorage,
     asset_prefix,
@@ -30,6 +31,7 @@ from app.services.storage import (
 )
 from app.services.tasks import TaskQueue
 from app.services.transcripts import format_of_key
+from app.services.upload_limits import enforce_video_ticket_limits
 
 
 class VideoAssetNotFoundError(DomainError):
@@ -103,6 +105,8 @@ async def create_upload_ticket(
     storage: ObjectStorage,
     data: VideoUploadRequest,
     queue: TaskQueue | None = None,
+    *,
+    limiter: RateLimiter,
 ) -> VideoUploadTicket:
     """Sign a URL the browser can upload one video to, and remember that we did.
 
@@ -118,6 +122,11 @@ async def create_upload_ticket(
 
     if lesson.type != "video":
         raise LessonNotVideoError("Chỉ bài học dạng video mới gắn được video")
+
+    # After the questions about the lesson, so a 403 stays a 403; before
+    # anything is written, because asking for a ticket replaces the lesson's
+    # video, and a 429 must not cost the instructor the one they had.
+    await enforce_video_ticket_limits(limiter, user.id, size_bytes=data.size_bytes)
 
     previous = lesson.video_asset
     stale_prefix = asset_prefix(previous.id) if previous is not None else None

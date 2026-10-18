@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.exceptions import register_exception_handlers
+from app.core.no_nul import refuse_nul
 
 
 def create_app() -> FastAPI:
@@ -18,6 +19,9 @@ def create_app() -> FastAPI:
         title=settings.app_name,
         version="0.1.0",
         openapi_url="/openapi.json" if public_schema else None,
+        # Every route's first dependency, before the session, the rate limiter
+        # and authentication: Postgres cannot hold a NUL, so none gets in.
+        dependencies=[Depends(refuse_nul)],
     )
 
     app.add_middleware(

@@ -1,0 +1,54 @@
+account ve-tai-len-881ea16d@e2e.devpath.example (69c7424b-f2ed-4e98-a006-7e90bf35e3a0)
+
+[avatar] POST /users/me/avatar, 200 KB PNG, until refused
+      20 x 201, then:
+      HTTP 429  code=UPLOAD_RATE_LIMITED
+      Retry-After: 86400  retry_after=86400
+      message: Bạn đã xin tải ảnh đại diện lên 20 lần trong 24 giờ. Thử lại sau khoảng 24 giờ.
+      redis upload:avatar:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: value=20 ttl=86400 s
+  PASS  avatar: 20 tickets, the 21st is 429 UPLOAD_RATE_LIMITED
+  PASS  avatar: Retry-After within the 24 h window
+  PASS  avatar: still refused before the window ends (429)
+      DEL upload:avatar:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0
+  PASS  avatar: counter gone -> a ticket again (201)
+
+[video] POST /lessons/{id}/video, 1 MB, until refused (hourly count)
+      60 x 201 in 1.7 s, then:
+      HTTP 429  code=UPLOAD_RATE_LIMITED
+      Retry-After: 3598  retry_after=3598
+      message: Bạn đã xin tải video lên 60 lần trong một giờ — quá nhiều so với bình thường. Thử lại sau khoảng 60 phút.
+      redis upload:video:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: value=60 ttl=3598 s
+      redis upload:video-bytes:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: value=62914560 ttl=86398 s
+  PASS  video: 60 tickets in the hour, the 61st is 429
+  PASS  video: the refused ticket spent no bytes (60 x 1 MB on the budget)
+      EXPIRE upload:video:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0 3, sleep 4 s
+      redis upload:video:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: exists=0
+  PASS  video: the hour ran out on its own -> a ticket again (201)
+
+[video] 1.9 GB tickets until refused (24 h byte budget, 10 GB)
+      5 x 201, then:
+      HTTP 429  code=UPLOAD_RATE_LIMITED
+      Retry-After: 86394  retry_after=86394
+      message: Tệp này vượt hạn mức tải video của bạn: tối đa 10 GB trong 24 giờ. Chọn tệp nhỏ hơn, hoặc thử lại sau khoảng 24 giờ.
+      redis upload:video-bytes:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: value=10264510461 ttl=86394 s
+  PASS  video: 5 x 1.9 GB granted, the 6th refused (spent 9.56 GB)
+      redis upload:video-bytes:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0: value=10694007190 ttl=86394 s
+  PASS  video: 0.4 GB still fits after the refusal (201)
+      DELETE /lessons/24188974-b794-4f1e-b079-b7c94e02fc02 (and its video row); DEL counters
+
+[banner] POST /admin/banners/upload-url as admin, 8 MB, 25 times
+      statuses: [200] x 25; signed out
+  PASS  banner: 25 x 200, not limited
+
+10/10
+--- cleanup
+Đã gỡ 1 tài khoản, 1 khóa học, 0 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại.
+e2e users|0
+live admin sessions from the last 10 min|0
+video_assets in uploading|0
+upload:avatar:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0
+redis upload:* keys left: 1
+(the avatar ticket asked after DEL started a new counter; removed:)
+DEL upload:avatar:user:69c7424b-f2ed-4e98-a006-7e90bf35e3a0 -> 1
+redis upload:* keys left: 0
+bucket objects under avatars/69c7424b-*: 0

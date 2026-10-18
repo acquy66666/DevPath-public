@@ -84,14 +84,14 @@ class AllowAllRateLimiter:
 
     def __init__(self) -> None:
         self.claims: list[tuple[str, int]] = []
-        self.counts: list[tuple[str, int, int]] = []
+        self.counts: list[tuple[str, int, int, int]] = []
 
     async def claim(self, key: str, seconds: int) -> int:
         self.claims.append((key, seconds))
         return 0
 
-    async def count(self, key: str, limit: int, window_seconds: int) -> int:
-        self.counts.append((key, limit, window_seconds))
+    async def count(self, key: str, limit: int, window_seconds: int, amount: int = 1) -> int:
+        self.counts.append((key, limit, window_seconds, amount))
         return 0
 
 
@@ -116,14 +116,16 @@ class MemoryRateLimiter:
         self.held[key] = self.now + seconds
         return 0
 
-    async def count(self, key: str, limit: int, window_seconds: int) -> int:
+    async def count(self, key: str, limit: int, window_seconds: int, amount: int = 1) -> int:
         if self.window_ends.get(key, 0) <= self.now:
             self.used[key] = 0
             self.window_ends[key] = self.now + window_seconds
 
-        self.used[key] += 1
+        self.used[key] += amount
         if self.used[key] <= limit:
             return 0
+        # Refused, so not spent -- as in Redis.
+        self.used[key] -= amount
         return self.window_ends[key] - self.now
 
 

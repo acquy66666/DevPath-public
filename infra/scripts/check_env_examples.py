@@ -6,7 +6,8 @@
 Four checks, each one a way the examples have drifted before or could:
 
   1. every ${VAR} in docker-compose.yml is in infra/.env.example
-  2. every ${VAR} in docker-compose.prod.yml is in infra/.env.prod.example
+  2. every ${VAR} in docker-compose.prod.yml, and in its named-tunnel overlay,
+     is in infra/.env.prod.example
   3. every variable the dev stack hands an application container, the
      production stack hands it too -- unless it is listed below as dev-only,
      with the reason. This is the one that matters: VNPAY_* was set for the
@@ -113,6 +114,8 @@ def main() -> int:
     for compose, example in (
         ("docker-compose.yml", ".env.example"),
         ("docker-compose.prod.yml", ".env.prod.example"),
+        # An overlay on the production file, read with the same --env-file.
+        ("docker-compose.named-tunnel.yml", ".env.prod.example"),
     ):
         missing = compose_vars(INFRA / compose) - example_keys(INFRA / example)
         if missing:

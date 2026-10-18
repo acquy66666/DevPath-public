@@ -1,0 +1,114 @@
+==> TUNNEL_TOKEN is set: deploying behind the Cloudflare named tunnel
+ Image devpath-backend:prod Built 
+ Image devpath-backend:prod Built 
+ Image devpath-backend:prod Built 
+ Image devpath-docker-proxy:prod Built 
+ Image devpath-backend:prod Built 
+ Image devpath-backup:prod Built 
+ Image devpath-frontend:prod Built 
+ Image devpath-backend:prod Built 
+ Image devpath-grading:prod Built 
+==> Migrating the database
+ Network devpath-prodtest_default Creating 
+ Volume devpath-prodtest_postgres_data Creating 
+ Volume devpath-prodtest_postgres_data Creating 
+ Network devpath-prodtest_default Creating 
+ Volume devpath-prodtest_postgres_data Created 
+ Volume devpath-prodtest_postgres_data Created 
+ Network devpath-prodtest_default Created 
+ Network devpath-prodtest_default Created 
+ Volume devpath-prodtest_letsencrypt Creating 
+ Volume devpath-prodtest_storage_data Creating 
+ Volume devpath-prodtest_letsencrypt Creating 
+ Volume devpath-prodtest_redis_data Creating 
+ Volume devpath-prodtest_redis_data Creating 
+ Volume devpath-prodtest_storage_data Creating 
+ Volume devpath-prodtest_storage_data Created 
+ Volume devpath-prodtest_storage_data Created 
+ Volume devpath-prodtest_letsencrypt Created 
+ Volume devpath-prodtest_letsencrypt Created 
+ Volume devpath-prodtest_redis_data Created 
+ Volume devpath-prodtest_redis_data Created 
+ Container devpath-prodtest-tunnel-cert-1 Exited 
+ Container devpath-prodtest-storage-init-1 Exited 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 576c29b76f4e, create_users_categories_courses
+INFO  [alembic.runtime.migration] Running upgrade 576c29b76f4e -> adab7334f140, add_refresh_tokens
+INFO  [alembic.runtime.migration] Running upgrade adab7334f140 -> f7d37ee5caf2, add_curriculum_tables
+INFO  [alembic.runtime.migration] Running upgrade f7d37ee5caf2 -> 0c55c726cc39, add_course_search_vector_trigger
+INFO  [alembic.runtime.migration] Running upgrade 0c55c726cc39 -> 991bc02a257b, add_enrollments
+INFO  [alembic.runtime.migration] Running upgrade 991bc02a257b -> b6dea13f199c, add_lesson_progress
+INFO  [alembic.runtime.migration] Running upgrade b6dea13f199c -> 852a7bf2510b, add_notes_and_bookmarks
+INFO  [alembic.runtime.migration] Running upgrade 852a7bf2510b -> 7b60984bf439, add_reviews
+INFO  [alembic.runtime.migration] Running upgrade 7b60984bf439 -> 86a5023fa0b8, add_code_grading_tables
+INFO  [alembic.runtime.migration] Running upgrade 86a5023fa0b8 -> 123eb876dda5, add_submission_is_trial
+INFO  [alembic.runtime.migration] Running upgrade 123eb876dda5 -> a03e9e2f9ce9, add_doc_chunks
+INFO  [alembic.runtime.migration] Running upgrade a03e9e2f9ce9 -> 50ccf4fc23fb, add_quiz_tables
+INFO  [alembic.runtime.migration] Running upgrade 50ccf4fc23fb -> 42fff7804290, add_chat_sessions_messages
+INFO  [alembic.runtime.migration] Running upgrade 42fff7804290 -> ca9e1c7ffdbb, add_quiz_question_review
+INFO  [alembic.runtime.migration] Running upgrade ca9e1c7ffdbb -> 17e181ed9f26, add_course_embeddings
+INFO  [alembic.runtime.migration] Running upgrade 17e181ed9f26 -> 45c681ca42af, add_cart_and_wishlist
+INFO  [alembic.runtime.migration] Running upgrade 45c681ca42af -> d23158098a8c, add_coupons
+INFO  [alembic.runtime.migration] Running upgrade d23158098a8c -> 99c7ba304d8d, add_orders_and_payments
+INFO  [alembic.runtime.migration] Running upgrade 99c7ba304d8d -> 3f7c33c23e64, add_order_item_discount
+INFO  [alembic.runtime.migration] Running upgrade 3f7c33c23e64 -> e9d78af241e6, add_xp_events_and_streaks
+INFO  [alembic.runtime.migration] Running upgrade e9d78af241e6 -> b6fc99d6b6af, add_certificates
+INFO  [alembic.runtime.migration] Running upgrade b6fc99d6b6af -> 8f1cea268f50, add_qa_and_notifications
+INFO  [alembic.runtime.migration] Running upgrade 8f1cea268f50 -> c7c21bbd1a9b, add_notification_list_index_and_qa_question
+INFO  [alembic.runtime.migration] Running upgrade c7c21bbd1a9b -> 6e27fe4795b3, add_reports_and_moderation_notifications
+INFO  [alembic.runtime.migration] Running upgrade 6e27fe4795b3 -> 5b10213a072e, add_banners
+INFO  [alembic.runtime.migration] Running upgrade 5b10213a072e -> 503c1217538c, drop_submissions_peak_memory_mb
+INFO  [alembic.runtime.migration] Running upgrade 503c1217538c -> 551da64fc983, add_orphan_objects
+INFO  [alembic.runtime.migration] Running upgrade 551da64fc983 -> abb01d258134, add_refresh_tokens_replaced_by_id
+INFO  [alembic.runtime.migration] Running upgrade abb01d258134 -> 79240999111f, allow_orders_settled_without_a_gateway
+==> Seeding
+ Container devpath-prodtest-tunnel-cert-1 Exited 
+ Container devpath-prodtest-storage-init-1 Exited 
+admin      : admin@devpath.example (created)
+categories : 8 created
+instructors: 2 created
+courses    : 4 created
+sample HLS : https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
+==> Starting
+ Network devpath-prodtest_grading-docker Creating 
+ Network devpath-prodtest_grading-docker Creating 
+ Volume devpath-prodtest_certbot_webroot Creating 
+ Volume devpath-prodtest_certbot_webroot Creating 
+ Volume devpath-prodtest_certbot_webroot Created 
+ Volume devpath-prodtest_certbot_webroot Created 
+ Network devpath-prodtest_grading-docker Created 
+ Network devpath-prodtest_grading-docker Created 
+ Container devpath-prodtest-grading-workspace-1 Exited 
+ Container devpath-prodtest-tunnel-cert-1 Exited 
+ Container devpath-prodtest-tunnel-cert-1 Exited 
+ Container devpath-prodtest-tunnel-cert-1 Exited 
+ Container devpath-prodtest-grading-workspace-1 Exited 
+ Container devpath-prodtest-storage-init-1 Exited 
+ Container devpath-prodtest-storage-init-1 Exited 
+==> Waiting for health
+==> Checking the API reaches its database and Redis
+==> Checking the API reaches its storage
+==> Waiting for the tunnel to reach Cloudflare
+cloudflared has not connected in 90 s. Its log:
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+cloudflared-1  | Provided Tunnel token is not valid.
+cloudflared-1  | See 'cloudflared tunnel run --help'.
+exit 1

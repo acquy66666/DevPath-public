@@ -1,0 +1,23 @@
+# after: feature/nul-everywhere (working tree on 568a186 + app/core/no_nul.py), container devpath-nul-api, 2026-10-16T19:26Z
+1. Without signing in
+  POST /auth/register, full_name has a NUL                       -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.full_name
+     ... and that account exists afterwards: False
+  POST /auth/login, email has a NUL                              -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.email
+  GET /courses?q=py<NUL>thon  (query string)                     -> HTTP 422 VALIDATION_ERROR string_contains_nul @ query.q
+  GET /courses/by-slug/py%00thon  (path)                         -> HTTP 422 VALIDATION_ERROR string_contains_nul @ path.slug
+  GET /certificates/ABCD%00EFGH  (path)                          -> HTTP 422 VALIDATION_ERROR string_contains_nul @ path.code
+  GET /payments/vnpay/ipn?vnp_TxnRef=<NUL>  (logged to jsonb)    -> HTTP 422 VALIDATION_ERROR string_contains_nul @ query.vnp_TxnRef
+
+2. Signed in as a fresh student
+  PATCH /users/me, full_name has a NUL                           -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.full_name
+     ... full_name afterwards: 'Học Viên NUL'
+  POST /cart/coupon, code has a NUL                              -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.code
+  POST /reports, details has a NUL                               -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.details
+  POST /chat-sessions/{id}/messages, question has a NUL          -> HTTP 422 VALIDATION_ERROR string_contains_nul @ body.content
+     ... messages stored in that session: 0
+
+3. Controls
+  POST /auth/register, full_name "\u0000" as six characters      -> HTTP 201
+     ... stored as 'Gạch chéo \\u0000 thật', NUL inside: False
+  POST /auth/register, raw 0x00 byte inside the JSON text        -> HTTP 422 VALIDATION_ERROR json_invalid @ body.92
+  GET /health, header value has a 0x00 byte (raw socket)         -> HTTP/1.1 400 Bad Request

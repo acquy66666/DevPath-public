@@ -1,9 +1,21 @@
-NAMED TUNNEL (D1) — PHẦN LÀM ĐƯỢC TRƯỚC KHI CÓ TÊN MIỀN
-Ngày: 17/10/2026 · nhánh feature/named-tunnel
-Chuẩn bị cho task D1 của Phase 6, tức đường deploy 0đ cho buổi trình bày với
-GVHD. Hướng dẫn cho user: docs/huong-dan-ten-mien-va-tunnel.md. D1 chưa tick vì
-chưa chạy với tên miền và token thật (D0 là việc của user).
-Máy: Docker Desktop (8 GB, 8 CPU), stack dev chạy song song.
+NAMED TUNNEL (D0 + D1) — https://devpath-01.me QUA CLOUDFLARE, 0đ
+Ngày: 17/10/2026 (code, diễn tập token giả, D0) · 18/10/2026 (D1 chạy thật,
+mục 5) · nhánh feature/named-tunnel
+Đường deploy 0đ cho buổi trình bày với GVHD: stack production chạy trên máy
+dev, Cloudflare đưa người xem vào qua named tunnel. Hướng dẫn cho user:
+docs/huong-dan-ten-mien-va-tunnel.md.
+Máy: Docker Desktop (8 GB, 8 CPU). Mục 1–2: stack dev chạy song song; mục 5:
+stack dev dừng (hướng dẫn D1.5).
+
+Kết quả D1 (18/10, mục 5): https://devpath-01.me trả lời từ bên ngoài qua
+Cloudflare, chứng chỉ Let's Encrypt của Cloudflare được Chrome tin mà không
+cần cờ gì. Trang chủ, danh mục, chi tiết khóa học đều 200, ảnh trong bucket
+tải qua tunnel. Tải lên bằng URL ký sẵn qua Cloudflare: đúng 1 MiB → 200,
+lệch 1 byte → 403, 101 MiB → 413 ngay ở edge. Cloudflared khởi động lại thì
+site trở lại sau 3 s. Tìm ra hai thứ đã sửa: stack production trùng tên
+project compose với stack dev (sẽ chiếm CSDL và bucket của dev), và một
+connector thừa do chạy lệnh mẫu của dashboard làm 15/15 request rơi vào nó
+thành 502.
 
 Kết quả gọn:
   - Stack production dựng thật bằng chính `deploy.sh --seed`, với overlay mới,
@@ -127,12 +139,121 @@ Cloudflare". Kiểm độc lập ngay sau đó:
   nslookup devpath-01.me 1.1.1.1           → không còn địa chỉ nào (chờ route tunnel)
 
 ==============================================================================
-4. CÒN LẠI CHO D1 — CẦN TÊN MIỀN + TOKEN THẬT
+4. CÒN LẠI CHO D1 (ghi 17/10) — đã làm hết ở mục 5, trừ hai dòng cuối
 ==============================================================================
-  - cloudflared kết nối (log "Registered tunnel connection").
-  - Route trong dashboard + No TLS Verify. Chỗ dễ sai nhất; nếu sai thì bước
-    curl cuối của deploy.sh chỉ ra.
-  - Upload qua tunnel: URL ký sẵn (#93) + Cloudflare Free 100 MB. Thử một tệp
-    nhỏ qua UI.
+  - cloudflared kết nối (log "Registered tunnel connection").        → 5c
+  - Route trong dashboard + No TLS Verify.                             → 5c
+  - Upload qua tunnel: URL ký sẵn (#93) + Cloudflare Free 100 MB.      → 5f
   - Google OAuth với redirect URI https://<DOMAIN>/api/v1/auth/google/callback.
   - Mốc trình bày GVHD: luồng vàng trên https://<DOMAIN>.
+
+==============================================================================
+5. D1 CHẠY THẬT — 18/10/2026
+==============================================================================
+5a. Token (user tạo tunnel devpath-demo trong dashboard, tự dán vào
+    infra/.env.prod dòng 26, không qua chat). Kiểm hình dạng, không in giá trị:
+    một dòng TUNNEL_TOKEN, 184 ký tự, bắt đầu eyJ, chỉ ký tự base64, không
+    dấu cách/nháy; giải mã ra JSON đúng ba trường a/s/t (t là UUID). Tệp có
+    CRLF nhưng compose đọc vào không dính \r (đọc qua `config --format json`).
+
+5b. Lỗi tìm ra trước khi deploy: TRÙNG TÊN PROJECT COMPOSE.
+    docker-compose.yml (dev) và docker-compose.prod.yml đều khai `name:
+    devpath`, và cùng tên volume (postgres_data, redis_data, storage_data).
+    Hướng dẫn D1.5 cũ (dừng stack dev, rồi deploy.sh) sẽ thay container của
+    stack dev và mở volume CSDL + bucket của dev bằng mật khẩu production.
+    Diễn tập 17/10 không gặp vì chạy với COMPOSE_PROJECT_NAME=devpath-prodtest.
+    Sửa:
+      - deploy.sh, chế độ tunnel: tên project (đọc từ `compose config`) trùng
+        tên của docker-compose.yml thì dừng trước khi build, kèm chỉ dẫn.
+      - .env.prod của máy dev: COMPOSE_PROJECT_NAME=devpath-demo (biến này
+        trong --env-file thắng `name:` của tệp compose — đã thử).
+      - .env.prod.example + hướng dẫn D1.4: dòng đó, kèm lý do.
+    Chạy hai chiều trên máy dev: thiếu dòng → "This stack would be compose
+    project "devpath", the dev stack's…", exit 1, chưa build gì; có dòng →
+    "==> Compose project: devpath-demo". shellcheck sạch.
+
+5c. deploy.sh --seed (log: named-tunnel/deploy-d1.log). Mật khẩu seed sinh
+    ngẫu nhiên vào infra/.env.seed-demo (gitignored), không in ra.
+    exit 0, mọi bước qua: build → migrate → seed → 13 service healthy →
+    readiness → API ↔ bucket → "Registered tunnel connection" → curl
+    https://devpath-01.me/api/v1/health/ready từ host qua Cloudflare.
+    cloudflared 2026.9.1: 4 kết nối QUIC (hkg01, hkg11, hkg13). Cấu hình
+    dashboard đẩy xuống đúng: hostname devpath-01.me → https://nginx:443,
+    originRequest.noTLSVerify = true, còn lại http_status:404.
+
+5d. seed-demo.sh (log: named-tunnel/seed-demo-d1.log): exit 0, có key Gemini
+    nên lần này nạp cả RAG + nhúng khóa học. Đếm trong CSDL production:
+      đơn 40 | ghi danh 89 | xp_events 649 | chứng chỉ 28 (28 có PDF) |
+      mã giảm 7 | banner 3 | doc_chunks 23 | course_embeddings 4 |
+      khóa published 4 — khớp diễn tập 17/10 và kho RAG của CSDL dev (23 chunk).
+    Bảng xếp hạng tuần/tháng/mọi lúc: 13/21/40 người.
+
+5e. Từ bên ngoài, qua Cloudflare:
+    DNS (1.1.1.1): 172.67.197.12, 104.21.21.80, 2606:4700:3036::ac43:c50c —
+      IP của Cloudflare, bản ghi CNAME tới tunnel do route tự tạo.
+    Chứng chỉ người xem nhận: Let's Encrypt YE1 (Universal SSL của
+      Cloudflare), SAN *.devpath-01.me + devpath-01.me, hạn 15/01/2027,
+      TLS 1.3, Node xác thực được (authorized=true).
+    Header trang chủ: server cloudflare, CF-RAY (SIN), HSTS 2 năm, CSP
+      Report-Only + frame-ancestors 'none' của nginx còn nguyên, alt-svc h3.
+    20/20 GET /api/v1/health/ready → 200.
+    Chrome thật (Playwright, channel chrome, KHÔNG ignoreHTTPSErrors) —
+      named-tunnel/tunnel_check.cjs, ảnh tunnel-{home,catalogue,course}-1440.png:
+        /                    200  "DevPath — Học lập trình trực tuyến"
+        /khoa-hoc            200  4 khóa
+        /khoa-hoc/cau-truc-…  200  h1 "Cấu trúc dữ liệu & giải thuật với Python"
+        fetch readiness từ trang: 200 {"status":"ready",…}
+        3 ảnh banner /devpath-media/banners/… → 200
+        console: 3 lỗi, đều POST /api/v1/auth/refresh → 401 (khách chưa đăng
+        nhập không có cookie refresh — hành vi sẵn có, không do tunnel);
+        nginx 0 phản hồi 5xx.
+
+5f. Tải lên qua tunnel — named-tunnel/tunnel_upload.sh, log
+    tunnel-upload-d1.log. Tài khoản dùng một lần @e2e; gọi API vào nginx
+    trên máy (--resolve 127.0.0.1), còn mọi PUT vào URL ký sẵn và GET ẩn
+    danh đi bằng tên công khai: DNS → edge Cloudflare → tunnel → nginx → bucket.
+      vé ảnh đại diện: URL trên https://devpath-01.me/devpath-media/…
+      PUT 1 MiB, khai 1 MiB             → 200
+      PUT 1 MiB + 1 byte, khai 1 MiB    → 403 (chữ ký Content-Length, #93)
+      PUT 101 MiB                       → 413 ngay ở edge (vé 1 MiB, nếu tới
+                                          bucket sẽ là 403; route media của
+                                          nginx cho 2 GB) = giới hạn 100 MB
+                                          của Cloudflare Free, đúng như ghi
+                                          trong hướng dẫn
+      xác nhận ảnh → GET ẩn danh qua tunnel 200 image/png, byte giống hệt.
+    Smoke storage cũ (rustfs-compose/prod_smoke.py) trong container backend
+    của stack này: 21/21 PASS (đi https://devpath-01.me → alias nginx trong
+    mạng compose, không qua Cloudflare), gồm PUT 100 MB qua nginx.
+
+5g. Connector thừa. Lúc dừng stack dev thấy container `amazing_cori`
+    (cloudflare/cloudflared:latest, mạng bridge mặc định, không restart) đã
+    chạy 13 phút: lệnh `docker run … --token` mẫu của dashboard, được chạy dù
+    hướng dẫn D1.1 dặn không. Nó cũng nhận cấu hình route, nhưng ngoài mạng
+    stack nên `lookup nginx … no such host`. Cloudflare chia request cho mọi
+    connector của tunnel:
+      curl 20/20 → 200 (tình cờ đều tới connector của stack);
+      Chrome lần 1: trang chủ 200, rồi /khoa-hoc, readiness, 3 ảnh banner và
+        các chunk JS → 502 Bad gateway. Log: 15/15 request lỗi đi qua
+        amazing_cori; cloudflared của stack 0 lỗi; nginx 0 phản hồi 5xx.
+    User cho phép, Claude dừng + xóa container đó; Chrome lần 2 sạch (5e).
+    Hướng dẫn D1.1 thêm cách nhận ra và gỡ connector thừa.
+
+5h. Tự hồi phục: `compose restart cloudflared` (restart: unless-stopped) →
+    readiness qua Cloudflare 200 lại sau 3 s, rồi 20/20 GET / → 200.
+
+Dọn: scripts.purge_e2e gỡ 2 tài khoản dùng một lần (smoke + tải lên). Quét
+log và script giữ lại bằng mọi giá trị ≥ 12 ký tự của .env.prod và
+.env.seed-demo: chỉ trùng tên miền, tên project, tên bucket, tên model
+embedding — không có token, mật khẩu hay secret.
+Stack demo devpath-demo để chạy; stack dev đang dừng (bật lại:
+`docker compose -f infra/docker-compose.yml up -d`, volume dev còn nguyên).
+
+==============================================================================
+6. CÒN LẠI SAU D1
+==============================================================================
+  - Đăng nhập Google (hướng dẫn D1.7): user tạo OAuth client với origin
+    https://devpath-01.me + redirect /api/v1/auth/google/callback.
+  - CSP enforce: luồng vàng trên tên miền thật, console không vi phạm.
+  - Mốc trình bày GVHD: luồng vàng trọn trên https://devpath-01.me, gồm
+    WebSocket chấm bài và SSE trợ giảng đi qua Cloudflare (chưa kiểm ở D1 vì
+    cần đăng nhập).

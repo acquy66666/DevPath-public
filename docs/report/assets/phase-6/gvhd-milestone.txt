@@ -1,0 +1,184 @@
+MỐC TRÌNH BÀY GVHD — LUỒNG VÀNG TRÊN https://devpath-01.me, CÓ ĐĂNG NHẬP GOOGLE
+Ngày: 18/10/2026 · nhánh feature/gvhd-milestone (từ main sau PR #102–#104)
+Task Phase 6 (mục "Vận hành"): luồng vàng chạy trọn trên tên miền thật qua D1
+(Cloudflare named tunnel → stack production `devpath-demo` trên máy dev), có
+đăng nhập Google và VNPay tới URL đã ký + IPN giả lập; cập nhật
+docs/huong-dan-demo-truoc-giao-vien.md cho URL mới.
+
+Giờ ghi theo giờ Việt Nam. Header bảo mật lúc chạy: Content-Security-Policy
+enforce (csp-enforce.txt).
+
+Quy ước che: email Google ghi dạng h***@gmail.com; ảnh có tên/avatar Google
+làm mờ bằng CSS `filter: blur()` chèn vào trang ngay trước khi chụp; ảnh
+chứng chỉ làm mờ cả mã chứng chỉ, vì /cert/<mã> là trang công khai, có mã là
+tra ngược ra tên thật. IP không ghi.
+
+Kết quả gọn:
+  - Hai lượt luồng vàng trên tên miền thật, đều trọn: E2E (tài khoản email,
+    khóa dựng tạm) 1 passed; và một tài khoản Google thật đi bằng Chrome thật
+    của user (mục 2).
+  - Lượt Google đi qua: đăng nhập Google → giỏ + mã CHAOMUNG50 → trang sandbox
+    thật của VNPay nhận URL đã ký → IPN giả lập `00 Confirm Success` → đơn
+    `paid`, ghi danh `purchase` → trợ giảng AI trả lời qua SSE có trích nguồn →
+    15 bài đánh dấu hoàn thành → nộp code sai (WA 50/100) rồi đúng (AC 100/100),
+    tiến độ qua WebSocket → 16/16 → chứng chỉ, PDF.
+  - Diễn thử kịch bản mới lộ ra 3 chỗ sai trong chính tài liệu, đã sửa (mục 4).
+
+==============================================================================
+1. E2E LUỒNG VÀNG (20:26) — gvhd-milestone/e2e/ (8 ảnh)
+==============================================================================
+frontend/e2e/golden-flow.spec.ts chạy vào stack demo:
+  E2E_BASE_URL = E2E_API_URL = https://devpath-01.me
+  E2E_ADMIN_PASSWORD = SEED_ADMIN_PASSWORD (infra/.env.seed-demo)
+  E2E_COMPOSE_FILE = tệp compose tạm chỉ khai `name: devpath-demo` + service
+                     backend, để `docker compose exec` tìm container
+  E2E_CHROME_CHANNEL = chrome
+
+  1 passed (1,2 phút). Đăng ký email → thêm giỏ → URL VNPay đã ký (trang ngân
+  hàng thay bằng route) → IPN ký trong container backend → học bài đọc → nộp
+  code, verdict + tiến độ từng case qua WebSocket → chứng chỉ. Spec đỏ nếu có
+  vi phạm CSP của site, và nếu header không phải policy enforce.
+  scripts.purge_e2e dọn sạch ở cuối.
+
+==============================================================================
+2. TÀI KHOẢN GOOGLE THẬT, CHROME THẬT (21:13–21:24) — gvhd-milestone/google/
+==============================================================================
+Chrome của user qua Claude in Chrome. User tự bấm "Đăng nhập bằng Google" và
+chọn tài khoản (tài khoản nằm trong Test users). Claude không nhập mật khẩu
+nào và không bấm bước cấp quyền OAuth. Mọi bước sau đó Claude làm trên UI.
+
+Trước (20:36), CSDL devpath-demo, tài khoản h***@gmail.com (student, google):
+  đơn 0 · ghi danh 1 (khóa JavaScript, từ lần thử 18/10 chiều) · chứng chỉ 0
+  · bài nộp 0 · XP 0
+
+  bước                                 kết quả                          ảnh
+  -----------------------------------  -------------------------------  ----
+  /dang-nhap có nút Google             có                               01
+  đăng nhập Google                     last_login 21:13:28, về trang    02
+                                       chủ đã đăng nhập
+  khóa 499.000 ₫ → "Thêm vào giỏ hàng" giỏ 1 khóa
+  /gio-hang, mã CHAOMUNG50             499.000 − 249.500 = 249.500 ₫    03
+  "Thanh toán qua VNPay"               sandbox.vnpayment.vn,            04
+                                       "Chọn phương thức thanh toán
+                                       (Test)" — VNPay nhận URL đã ký
+                                       (TmnCode hợp lệ, chữ ký khớp).
+                                       Không nhập thẻ (quyết định 16/10).
+  đơn                                  DP261018HQARRC pending 21:15:15,
+                                       subtotal 499.000, discount
+                                       249.500, total 249.500, vnpay
+  IPN giả lập (lệnh dưới)              IPN trả 200 {"RspCode":"00",
+                                       "Message":"Confirm Success"} →
+                                       paid 21:16, mã giao dịch 92332915
+  /thanh-toan/ket-qua?vnp_TxnRef=…     "Thanh toán thành công", mã đơn, 05
+                                       mã giao dịch, dòng CHAOMUNG50
+  khóa Python → "Đăng ký học miễn phí" vào /hoc
+  trợ giảng AI: "Dòng if __name__ ==   trả lời dần (SSE), trích [1] →   06
+    "__main__": dùng để làm gì?"       bài "Chia chương trình thành
+                                       nhiều file"
+  15 bài không phải code               "Đánh dấu hoàn thành" từng bài,
+                                       0/16 → 15/16
+  "Bài tập: đếm số chẵn", code sai:
+    Chạy thử                           2/2 test mẫu đúng (lưu is_trial)
+    Nộp bài 21:21:37                   Sai kết quả 50/100: test 1–4
+                                       đúng, test 5–6 (ẩn) sai
+    sau 59 s, code đúng, Nộp 21:22:36  Đúng 100/100, 16/16 · 100 % ·     07
+                                       đã hoàn thành khóa học
+  "Xem chứng chỉ" → /cert/<mã>         "Chứng chỉ hợp lệ", khóa Python, 08
+                                       giảng viên Trần Minh Khoa
+  /khoa-hoc-cua-toi                    190 XP (16 × 10 + 30 AC), chuỗi  09
+                                       1 ngày, 3 khóa
+
+Lệnh IPN (đúng như hướng dẫn demo, Chặng 5), trong infra/:
+  $DEMO exec postgres psql -U devpath -Atc "select code from orders where status = 'pending' order by created_at desc limit 1"
+    → DP261018HQARRC
+  $DEMO exec backend python -m scripts.simulate_vnpay_ipn DP261018HQARRC
+    đơn hàng : DP261018HQARRC — 249.500 ₫ (pending)
+    giả lập  : thành công, mã 00
+    IPN trả  : 200 {"RspCode":"00","Message":"Confirm Success"}
+    đơn hàng : paid lúc 18/10/2026 21:16 giờ VN, mã giao dịch 92332915
+
+WebSocket qua Cloudflare, access log nginx (IP che), mỗi lần chấm một dòng:
+  21:21:31  GET /api/v1/submissions/bd4bef07-…/events  101   (chạy thử)
+  21:21:42  GET /api/v1/submissions/4c6013bc-…/events  101   (nộp, WA)
+  21:22:40  GET /api/v1/submissions/ae9acb4a-…/events  101   (nộp, AC)
+
+Sau (21:24), CSDL:
+  đơn 1        DP261018HQARRC paid 249.500, provider_txn_id 92332915,
+               payment_events 1
+  ghi danh 3   javascript (free) · cấu trúc dữ liệu (purchase) ·
+               python (free, completed)
+  bài nộp 3    AC 100 (is_trial) · WA 50 · AC 100
+  chứng chỉ 1  khóa Python, mã 16 ký tự, pdf_key có (worker đã vẽ)
+  XP 190       giỏ 0 dòng · CHAOMUNG50 used_count 0 → 1
+Qua Cloudflare, không đăng nhập: /cert/<mã> 200; /api/v1/certificates/<mã>/pdf
+200 application/pdf, 20.031 byte, bắt đầu bằng %PDF-.
+
+Dữ liệu này để lại có chủ đích: hôm trình bày, tài khoản Google có sẵn khóa
+đã mua và chứng chỉ (hướng dẫn demo, Chặng 9). Màn mua hàng diễn bằng một tài
+khoản đăng ký tại chỗ (Chặng 4–5).
+
+==============================================================================
+3. HAI THỨ THẤY ĐƯỢC TRONG CHROME CỦA USER
+==============================================================================
+(a) CSP chặn beacon RUM của Cloudflare trên trình duyệt thật. Trang học có
+    thẻ <script src="https://static.cloudflareinsights.com/beacon.min.js/…">
+    do edge chèn vào, nhưng resource timing của nó là status 0, 0 byte,
+    0 ms; `window.__cfBeacon` undefined; 0 request tới /cdn-cgi/rum. Script
+    không được tải và không chạy.
+    Cloudflare chỉ chèn khi request có `Accept: text/html`: curl trơn ra 0
+    chỗ, cùng URL thêm header đó ra 1 chỗ. Mục D1.8 của
+    huong-dan-ten-mien-va-tunnel.md từng hướng dẫn kiểm bằng curl trơn, tức
+    luôn báo "đã tắt" kể cả khi RUM còn bật → đã sửa.
+(b) Video không phát được trong lượt này, và đó không phải lỗi của site. Tab
+    Claude điều khiển ở trạng thái `document.visibilityState = "hidden"` (cửa
+    sổ Chrome bị cửa sổ khác che), và Chrome hoãn tải media ở tab ẩn:
+    readyState 0, không có request tới test-streams.mux.dev. Video HLS trên
+    chính tên miền này, với CSP enforce, đã phát được trong Chrome ở lượt đo
+    csp-enforce (currentTime 2,0 s). Hôm trình bày, tab đang hiện nên không
+    gặp chuyện này.
+
+==============================================================================
+4. DIỄN THỬ LỘ RA BA CHỖ SAI TRONG TÀI LIỆU — ĐÃ SỬA
+==============================================================================
+  - Hướng dẫn demo (bản viết cùng ngày) bảo chép mã đơn từ `vnp_TxnRef` trên
+    thanh địa chỉ. Thực tế VNPay đổi ngay URL đã ký thành
+    /paymentv2/Transaction/PaymentMethod.html?token=…, không còn tham số
+    vnp_ nào. Giờ lấy mã bằng lệnh psql một dòng ở trên (đã chạy thật).
+    Nút "Quay lại" của VNPay mở hộp "Hủy thanh toán", nên dặn bấm "Đóng".
+  - Kịch bản chấm code ghi "trượt ở một test ẩn". Thực tế 50/100: trượt 2
+    trong 4 test ẩn.
+  - Lệnh kiểm RUM ở D1.8 (mục 3a).
+
+==============================================================================
+5. HƯỚNG DẪN DEMO VIẾT LẠI CHO TÊN MIỀN THẬT
+==============================================================================
+docs/huong-dan-demo-truoc-giao-vien.md: bản cũ mô tả stack dev ở
+localhost:3000, nút Google bị ẩn, nút mua bị mờ, chưa có giao diện quản trị,
+"chưa deploy". Bản mới:
+  - Phần 1–2: làm mới dữ liệu demo hôm trước (seed_study/seed_sales --purge →
+    seed-demo.sh); không deploy trong 24 giờ trước; dừng stack dev; `$DEMO up
+    -d --no-build`; kiểm chỉ có MỘT connector cloudflared (connector lạc từng
+    làm 15/15 request thành 502); readiness + catalog hỏi từ ngoài qua
+    Cloudflare.
+  - Phần 3: 12 chặng (~30 phút): tìm kiếm không dấu, SSR + "Khóa học tương
+    tự", đăng ký / Google, mua qua VNPay + IPN giả lập, học và lưu tiến độ,
+    trợ giảng AI (một câu trả lời, một câu từ chối), chấm code (WA rồi AC),
+    XP / bảng xếp hạng / chứng chỉ, khu giảng viên, khu quản trị, hạ tầng.
+  - Phần 4–6: các nút không được bấm (thẻ test trên VNPay, video > 100 MB,
+    cooldown, NAT chung phòng), sự cố 530/502, câu hỏi hay gặp với số liệu đã
+    đo.
+
+Đã kiểm trên dữ liệu thật của stack demo: mã giảm giá (CHAOMUNG50 50 %, còn
+hạn, 100 lượt; HETHAN, HETLUOT), nguoimua08 có 2 chứng chỉ (FastAPI, cấu trúc
+dữ liệu), tên bài code và chương, canonical/og:url trỏ https://devpath-01.me.
+
+==============================================================================
+6. CÒN LẠI, GHI RÕ
+==============================================================================
+  - Không thanh toán thật trên VNPay (quyết định 16/10); VNPay chưa khai IPN
+    URL.
+  - OAuth Google ở chế độ Testing: chỉ email trong Test users đăng nhập được,
+    cho tới khi user bấm Publish app.
+  - RUM của Cloudflare vẫn bật lúc ghi tệp này. Site không bị ảnh hưởng,
+    console có một dòng chặn mỗi trang.
+  - Máy chủ thật (Azure for Students) vẫn là gate của Phase 6.

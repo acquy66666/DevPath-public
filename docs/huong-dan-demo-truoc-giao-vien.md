@@ -1,149 +1,178 @@
 # Hướng dẫn tự chạy và trình bày DevPath trước giáo viên
 
-Tài liệu này phục vụ đúng một việc: **đứng trước giáo viên và cho hệ thống chạy mà không vấp**. Nó gồm chuỗi lệnh chạy thủ công kèm giải thích từng lệnh, kịch bản bấm chuột theo thứ tự, danh sách nút không được bấm, và câu trả lời cho những câu chắc chắn bị hỏi.
+Tài liệu này phục vụ đúng một việc: **đứng trước giáo viên và cho hệ thống chạy mà không vấp**. Nó gồm chuỗi lệnh kèm giải thích, kịch bản bấm chuột theo thứ tự, danh sách nút không được bấm, và câu trả lời cho những câu chắc chắn bị hỏi.
 
-Hai tài liệu bổ trợ, không trùng nội dung:
+**Từ 18/10/2026 buổi trình bày chạy trên tên miền thật `https://devpath-01.me`**, không còn trên `localhost`. Đó là **stack production** (`infra/docker-compose.prod.yml`, project compose `devpath-demo`) chạy trên chính máy này. Cloudflare đưa người xem vào qua named tunnel, nên giáo viên mở được từ máy hay điện thoại của mình. Cách dựng từ đầu nằm ở [huong-dan-ten-mien-va-tunnel.md](huong-dan-ten-mien-va-tunnel.md). Tài liệu này chỉ lo phần vận hành và trình bày. Lần chạy trọn luồng vàng trên tên miền thật để chốt mốc này: [gvhd-milestone.txt](report/assets/phase-6/gvhd-milestone.txt).
 
-- [huong-dan-chay-va-docker.md](huong-dan-chay-va-docker.md) — cấu trúc file và vai trò của Docker
-- [huong-dan-du-an.md](huong-dan-du-an.md) — sửa từng phần giao diện, luồng một request
+Tài liệu bổ trợ:
 
-Mọi con số trong tài liệu này đo trực tiếp trên máy, không phải ước lượng.
+- [huong-dan-chay-va-docker.md](huong-dan-chay-va-docker.md): cấu trúc file và vai trò của Docker
+- [huong-dan-du-an.md](huong-dan-du-an.md): sửa từng phần giao diện, luồng một request
+
+Mọi lệnh dưới đây chạy trong **Git Bash** tại `D:\Desktop\E-learning\infra`, trừ khi ghi khác. Để gõ ngắn, đặt một biến cho lệnh compose của stack demo (mỗi lần mở terminal mới phải đặt lại):
+
+```bash
+DEMO="docker compose -f docker-compose.prod.yml -f docker-compose.named-tunnel.yml --env-file .env.prod"
+```
+
+`.env.prod` có `COMPOSE_PROJECT_NAME=devpath-demo`, nên lệnh này nhắm đúng stack demo chứ không đụng stack dev.
 
 ---
 
-## Phần 1 — Hôm trước ngày demo
+## Phần 1 — Hôm trước ngày trình bày
 
 Làm hết, đừng để tới sáng hôm sau.
 
-- [ ] **Diễn thử trọn kịch bản Phần 3 một lần.** Đây là việc quan trọng nhất. Lỗi lộ ra lúc diễn thử thì sửa được; lộ ra trước mặt thầy thì không.
-- [ ] **Tắt chế độ ngủ.** Settings → Power & sleep → cả "Screen" lẫn "Sleep" đặt **Never**, cắm sạc, không gập máy. Máy ngủ là Docker chết, và chết theo kiểu phải chạy script mới dậy lại được.
-- [ ] **Kiểm tra mạng.** Video của 4 khóa mẫu lấy từ Internet (`test-streams.mux.dev`), mất mạng là mất phần phát video. Chuẩn bị sẵn điện thoại phát 4G.
-- [ ] **Chuẩn bị dữ liệu tiến độ.** Đăng ký một tài khoản học viên, ghi danh một khóa miễn phí, xem video chừng một phút rồi thoát. Có sẵn dữ liệu này thì màn "vào lại đúng chỗ cũ" diễn được ngay, không phải ngồi chờ trước mặt thầy.
-- [ ] **Đặt bookmark trình duyệt** trỏ đúng `http://localhost:3000` — **không phải `127.0.0.1`**. Lý do ở Phần 5, mục 4.
-- [ ] **Chạy test một lần** để biết con số thật mà nói (xem Phần 6, câu 7).
-- [ ] **Kiểm tra image sandbox chấm bài** có sẵn: `docker image ls devpath-sandbox-python` phải ra tag `v1`. Thiếu thì build một lần (cần mạng): `cd grader` rồi `python -m runner.images`. Runner chạy với `--pull never` nên thiếu image là Chặng 8 báo lỗi hệ thống ngay.
-- [ ] **Đừng build lại image, đừng chạy `npm ci`** trong vòng 24 giờ trước demo. Cả hai đều phụ thuộc mạng và đều có thể làm hỏng thứ đang chạy tốt.
+- [ ] **Diễn thử trọn kịch bản Phần 3 một lần, trên `https://devpath-01.me`, từ một máy khác hoặc điện thoại (mạng 4G).** Đây là việc quan trọng nhất. Lỗi lộ ra lúc diễn thử thì sửa được; lộ ra trước mặt thầy thì không.
+- [ ] **Làm mới dữ liệu demo.** Dữ liệu học tập "già" đi theo ngày: nạp từ hơn một ngày trước thì chuỗi ngày học về 0 và bảng xếp hạng tuần trống. Gỡ rồi nạp lại:
+
+  ```bash
+  $DEMO exec backend python -m scripts.seed_study --purge
+  ```
+  ```bash
+  $DEMO exec backend python -m scripts.seed_sales --purge
+  ```
+  ```bash
+  ./scripts/seed-demo.sh
+  ```
+
+  `seed-demo.sh` nạp lời giảng, banner, đơn hàng 12 tháng, 70 ngày học, mã giảm giá, chứng chỉ, rồi nhúng tài liệu cho trợ giảng AI. Chạy lại nhiều lần không sinh trùng.
+- [ ] **Tắt chế độ ngủ.** Settings → Power & sleep → cả "Screen" lẫn "Sleep" đặt **Never**, cắm sạc, không gập máy. Máy ngủ là Docker chết, site trả lỗi 530, và phải chạy script mới dậy lại được.
+- [ ] **Kiểm tra mạng.** Máy này là máy chủ: mất mạng là cả site tắt với người xem, không chỉ phần video. Video của 4 khóa mẫu còn lấy từ `test-streams.mux.dev`. Chuẩn bị điện thoại phát 4G.
+- [ ] **Đừng chạy `./scripts/deploy.sh` trong 24 giờ trước buổi trình bày.** Nó build lại mọi image. Lần deploy đầu ngày 18/10, Docker Desktop chết giữa lúc build và site trả 530. Cũng đừng `npm ci`, đừng build lại image sandbox.
+- [ ] **Đăng nhập Google:** OAuth client đang ở chế độ **Testing**, nên chỉ những email nằm trong *Test users* mới đăng nhập được. Muốn thầy đăng nhập bằng Google của thầy thì làm một trong hai: thêm email của thầy vào *Test users*, hoặc bấm **Publish app** ([huong-dan-ten-mien-va-tunnel.md](huong-dan-ten-mien-va-tunnel.md) mục D1.7).
+- [ ] **Tắt RUM của Cloudflare** (mục D1.8 cùng tài liệu), nếu chưa tắt. Không tắt thì site vẫn chạy bình thường, nhưng ai mở DevTools sẽ thấy mỗi trang có một dòng đỏ: Content-Security-Policy chặn script phân tích mà Cloudflare tự chèn vào. Kiểm bằng lệnh `curl` có `Accept: text/html` ở D1.8; `curl` trơn luôn ra 0 nên không nói lên điều gì.
+- [ ] **Chuẩn bị tài khoản:** mở `infra/.env.seed-demo` để có mật khẩu admin và giảng viên (Phần 3). Đăng nhập thử từng tài khoản một lần.
 
 ---
 
-## Phần 2 — Chuỗi lệnh chạy thủ công, 15 phút trước giờ
+## Phần 2 — 15 phút trước giờ
 
-Bốn bước, chạy tại thư mục gốc `D:\Desktop\E-learning`. Sau mỗi bước có cách kiểm chứng — **đừng sang bước sau khi bước trước chưa đạt**.
+Sau mỗi bước có cách kiểm chứng. **Đừng sang bước sau khi bước trước chưa đạt.**
 
-### Bước 1 — Bật Docker
+### Bước 1 — Docker đang chạy
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File C:\Users\Admin\start-docker.ps1
 ```
 
-| Thành phần | Nghĩa |
-|---|---|
-| `powershell` | Gọi trình thông dịch PowerShell để chạy file `.ps1` |
-| `-ExecutionPolicy Bypass` | Tạm bỏ chính sách chặn chạy script, **chỉ cho lần chạy này**, không đổi cài đặt hệ thống |
-| `-File <đường dẫn>` | File script cần chạy |
-
-Script đẩy thư mục socket cũ của Docker sang một bên rồi mới khởi động daemon — vòng qua lỗi Windows 1920 mô tả ở [huong-dan-chay-va-docker.md](huong-dan-chay-va-docker.md) mục 3.10. **Tuyệt đối không bấm icon Docker Desktop.**
+Chỉ cần khi Docker không chạy (máy vừa khởi động, vừa ngủ dậy). Script đẩy thư mục socket cũ của Docker sang một bên rồi mới khởi động daemon; lý do ở [huong-dan-chay-va-docker.md](huong-dan-chay-va-docker.md) mục 3.10. **Tuyệt đối không bấm icon Docker Desktop.** Lần đầu có thể treo; chạy lại lần hai.
 
 ✅ Đạt khi in ra `DOCKER DA SAN SANG`.
 
-### Bước 2 — Dựng 8 container
+### Bước 2 — Stack demo đang chạy, stack dev đang dừng
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d --wait
+docker compose -f docker-compose.yml stop
 ```
 
-| Thành phần | Nghĩa |
-|---|---|
-| `docker compose` | Chạy nhiều container cùng lúc theo mô tả trong một file |
-| `-f infra/docker-compose.yml` | Chỉ định file mô tả; thiếu cờ này Docker báo không tìm thấy compose file |
-| `up` | Tạo và khởi động các service, dùng lại image sẵn có chứ **không** build lại |
-| `-d` | Chạy nền, trả lại con trỏ dòng lệnh. Bỏ `-d` thì Ctrl+C sẽ tắt luôn cả stack |
-| `--wait` | **Chặn cho tới khi mọi healthcheck xanh.** Nhờ nó không phải ngồi gõ `ps` để đoán xem đã lên chưa |
-
-Thứ tự khởi động do `depends_on` quyết định: `postgres` + `redis` + `storage` (rồi `storage-init` tạo bucket) → chờ healthy → `backend`, `worker`, `beat`, `grading-worker` → chờ backend healthy → `frontend`.
-
-✅ Đạt khi lệnh tự thoát không báo lỗi. Khoảng 20–40 giây.
-
-### Bước 3 — Kiểm chứng hai tầng
+Dừng stack dev cho đỡ RAM (máy 8 GB). Nó đang dừng rồi thì lệnh này không làm gì.
 
 ```bash
-docker compose -f infra/docker-compose.yml ps
+$DEMO up -d --no-build
 ```
 
-Xem trạng thái từng service. 7 dòng phải ghi `(healthy)`; riêng `beat` chỉ ghi `Up` vì nó không có healthcheck (nó chỉ phát lịch, không nhận việc). Chữ `(health: starting)` nghĩa là còn đang khởi động — chờ thêm 30 giây.
+Các service chạy lâu của stack demo đều có `restart: unless-stopped`, nên sau khi Docker sống lại chúng thường tự lên. Lệnh này để chắc ăn: thiếu service nào thì nó dựng lại từ image có sẵn. `--no-build` cấm build lại.
 
 ```bash
-curl -s "http://localhost:8000/api/v1/courses?page_size=3"
+$DEMO ps
 ```
 
-**Đây mới là phép thử thật.** `-s` tắt thanh tiến trình cho output sạch. Phải làm bước này vì `(healthy)` của backend chỉ chứng minh tiến trình còn sống — endpoint `/health` cố ý **không** chạm database. Chỉ khi `/courses` trả về `"total":4` mới chắc là migration đã chạy và dữ liệu đã có.
+✅ Đạt khi 13 dòng đều `Up`, và mọi dòng có healthcheck đều `(healthy)`. `beat`, `certbot` và `cloudflared` không có healthcheck nên chỉ ghi `Up`. Còn `(health: starting)` thì chờ thêm 30 giây.
 
-✅ Đạt khi thấy `"total":4` — CSDL dev ở đúng trạng thái này từ 06/10/2026. Thấy `"total":24` nghĩa là ai đó đã nạp lại 20 khóa giả do `scripts/seed_interactions.py` tạo để đo hệ gợi ý. Chúng làm bẩn catalog, nên trước buổi demo hãy gỡ — **theo thứ tự ngược với lúc nạp**, vì đơn hàng mẫu của `seed_sales` cũng mua các khóa giả này và đơn hàng thì không script nào tự xóa (gỡ `seed_interactions` trước sẽ bị từ chối kèm lời nhắc). Mỗi lệnh dạng `docker compose -f infra/docker-compose.yml exec backend python -m scripts.<tên> --purge`, lần lượt `seed_community`, `seed_study`, `seed_sales`, `seed_cart`, `seed_coupons`, `seed_interactions` — rồi kiểm lại thấy `4`. Sau đó nạp lại phần demo cần (bỏ `--purge`): `seed_sales`, `seed_study`, `seed_coupons`, `rebuild_leaderboard`, `issue_certificates`, `rebuild_recommendations` — để dashboard, bảng xếp hạng và mã `CHAOMUNG50` trên banner có số. **Dữ liệu này "già" đi theo ngày**: nạp từ hơn một ngày trước buổi demo thì chuỗi ngày học về 0 và bảng tuần trống, nên làm lại cặp `seed_study`/`seed_sales` (gỡ rồi nạp) vào hôm trước hoặc sáng hôm bảo vệ. Danh sách đầy đủ ở mục "Dữ liệu demo đầy đủ" của [README](../README.md), kết quả lần chạy 06/10 ở [purge-demo-data.txt](report/assets/phase-6/purge-demo-data.txt).
+### Bước 3 — Chỉ có một connector cloudflared
 
-Nếu `total` bằng 0 hoặc lệnh báo lỗi thì database còn trắng, chạy hai lệnh sau. Bản PowerShell:
-
-```powershell
-cd backend; .\.venv\Scripts\python.exe -m alembic upgrade head
+```bash
+docker ps --format '{{.Image}}  {{.Names}}' | grep cloudflared
 ```
 
-Tạo toàn bộ bảng. Alembic đọc chuỗi kết nối từ `app/core/config.py` chứ không phải từ `alembic.ini`, nên **bắt buộc đứng ở thư mục `backend`**. Migration đã chạy rồi thì nó bỏ qua, chạy lại vô hại.
+✅ Đạt khi in **đúng một dòng**: `cloudflare/cloudflared:2026.9.1  devpath-demo-cloudflared-1`. Thấy thêm một container image `cloudflare/cloudflared:latest` (sinh ra khi lỡ chạy lệnh mẫu của dashboard) thì `docker stop` + `docker rm` nó ngay. Cloudflare chia request cho mọi connector, và connector lạc này không nằm trong mạng của stack: đo 18/10, 15/15 request rơi vào nó đều thành 502.
 
-```powershell
-.\.venv\Scripts\python.exe -m scripts.seed
+### Bước 4 — Hỏi từ bên ngoài, qua Cloudflare
+
+```bash
+curl -s https://devpath-01.me/api/v1/health/ready
 ```
 
-Nạp 1 admin, 2 giảng viên, 8 danh mục và 4 khóa học kèm mục lục đầy đủ. `-m scripts.seed` chạy `scripts/seed.py` **dưới dạng module** để các lệnh `import app...` bên trong tìm được đường. Script idempotent: chạy lần hai không nhân đôi dữ liệu.
+✅ Đạt khi có `"status":"ready"`. Request này đi đúng đường của người xem: Cloudflare → tunnel → nginx → backend → CSDL + Redis.
 
-> Máy không có `.venv` (máy mới clone): chạy hai lệnh này trong container — `docker compose -f infra/docker-compose.yml exec backend alembic upgrade head` rồi `docker compose -f infra/docker-compose.yml exec backend python -m scripts.seed`, đứng ở thư mục gốc dự án.
->
-> Trong Git Bash phải đổi dấu `\` thành `/` — bash coi `\S` là ký tự thoát nên `.venv\Scripts\python.exe` sẽ biến thành `.venvScriptspython.exe`. Bản Git Bash: `cd backend && ./.venv/Scripts/python.exe -m alembic upgrade head`. Ngược lại, PowerShell 5.1 không có toán tử `&&`, phải dùng `;`.
+```bash
+curl -s "https://devpath-01.me/api/v1/courses?page_size=1"
+```
 
-### Bước 4 — Mở sẵn ba tab
+✅ Đạt khi có `"total":4`.
+
+### Bước 5 — Mở sẵn các tab
 
 | Tab | Địa chỉ | Dùng lúc nào |
 |---|---|---|
-| 1 | `http://localhost:3000` | Toàn bộ kịch bản demo |
-| 2 | `http://localhost:8000/docs` | Chặng 10 — tài liệu API tự sinh |
-| 3 | `http://localhost:8000/api/v1/health` | Dự phòng khi bị hỏi "backend có sống không" |
-
-Mở tab 1 bằng **`localhost`**, không phải `127.0.0.1`.
+| 1 | `https://devpath-01.me` | Toàn bộ kịch bản, vai học viên |
+| 2 | `https://devpath-01.me/dang-nhap` trong **cửa sổ ẩn danh** | Giảng viên, rồi admin (Chặng 10–11). Mỗi cửa sổ giữ một phiên riêng |
+| 3 | Git Bash ở `infra/`, đã đặt `DEMO` | Chặng 5: lệnh IPN giả lập |
 
 ---
 
-## Phần 3 — Kịch bản demo, 10 chặng
+## Phần 3 — Kịch bản trình bày, 12 chặng (~30 phút)
 
-Tài khoản có sẵn (mật khẩu hard-code trong seed, chỉ dùng ở máy local):
+Tài khoản:
 
-| Email | Mật khẩu | Vai trò | Dùng để |
+| Email | Mật khẩu | Vai trò | Dùng ở |
 |---|---|---|---|
-| `khoa.tran@devpath.example` | `devpath-instructor` | instructor | Chặng 9 — khu giảng viên |
-| `mai.anh@devpath.example` | `devpath-instructor` | instructor | Dự phòng |
-| `admin@devpath.example` | `devpath-admin` | admin | **Không dùng để demo** — chưa có giao diện quản trị, đăng nhập vào thì màn hình y hệt khách vãng lai |
+| tự đăng ký tại chỗ | tự đặt | học viên | Chặng 4–8 |
+| tài khoản Google của bạn (nằm trong *Test users*) | — | học viên | Chặng 4, 9 |
+| `nguoimua08@sales.devpath.example` | `devpath-buyer` | học viên có 70 ngày lịch sử | Chặng 9: XP, chuỗi ngày, chứng chỉ |
+| `khoa.tran@devpath.example` | `SEED_INSTRUCTOR_PASSWORD` trong `infra/.env.seed-demo` | giảng viên | Chặng 10 |
+| `admin@devpath.example` | `SEED_ADMIN_PASSWORD` trong `infra/.env.seed-demo` | admin | Chặng 11 |
 
-Học viên thì tự đăng ký tại chỗ — chính nó là màn diễn luồng đăng ký.
+Mật khẩu admin và giảng viên của stack demo là chuỗi ngẫu nhiên, không nằm trong repo. Mật khẩu `devpath-buyer` thì nằm trong repo, nên tài khoản người mua chỉ dùng cho demo.
 
-**Chặng 1 · Trang chủ (30 giây).** Mở `http://localhost:3000`, giới thiệu tên hệ thống. Bấm nút **"Khám phá khóa học"** giữa trang để vào catalog; nút bên cạnh dẫn sang trang đăng ký (hai nút này nối thật từ 19/09/2026, trước đó bị `disabled`).
+**Chặng 1 · Trang chủ trên tên miền thật (30 giây).** Mở `https://devpath-01.me`. Chỉ vào ổ khóa: chứng chỉ thật của Cloudflare, mở được từ mọi máy. Banner, hàng "Khóa học mới". Câu nói kèm: đây là stack production, cùng file compose sẽ chạy trên VPS, đi vào qua Cloudflare named tunnel nên chi phí 0đ.
 
-**Chặng 2 · Tìm kiếm tiếng Việt (2 phút).** Ở `/khoa-hoc`, gõ **`lap trinh`** không dấu vào ô Tìm kiếm rồi bấm "Lọc" — vẫn ra khóa có dấu "Lập trình". Đây là điểm đáng khoe nhất của phần catalog: `to_tsvector('simple', unaccent(...))` với trọng số A/B/C cho tiêu đề / phụ đề / mô tả, xếp hạng bằng `ts_rank`. Chọn thêm Giá = "Miễn phí" thì còn 3/4 khóa. Chỉ vào thanh địa chỉ: mỗi trạng thái lọc là một URL chia sẻ được, và form dùng `method="get"` nên bộ lọc vẫn chạy cả khi tắt JavaScript.
+**Chặng 2 · Tìm kiếm tiếng Việt (1 phút).** Ở `/khoa-hoc`, gõ **`lap trinh`** không dấu → vẫn ra khóa có dấu "Lập trình". Dưới nền là `to_tsvector('simple', unaccent(...))`, trọng số A/B/C cho tiêu đề / phụ đề / mô tả, xếp hạng bằng `ts_rank`. Chọn Giá = "Miễn phí" thì còn 3/4 khóa. Mỗi trạng thái lọc là một URL chia sẻ được.
 
-**Chặng 3 · Trang chi tiết (1 phút).** Mở `/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau`. Chuột phải → View Source để chứng minh nội dung nằm sẵn trong HTML đầu tiên: server-side render, có canonical và thẻ Open Graph cho SEO.
+**Chặng 3 · Trang chi tiết (1 phút).** Mở khóa "Cấu trúc dữ liệu & giải thuật với Python" (499.000 ₫). Chuột phải → View Source: nội dung nằm sẵn trong HTML (SSR), có canonical và Open Graph trỏ `https://devpath-01.me`. Cuộn xuống khối **"Khóa học tương tự"**: đó là phần content-based của hệ gợi ý (embedding Gemini, cosine trên pgvector).
 
-**Chặng 4 · Đăng ký (1 phút).** `/dang-ky` — họ tên, email, mật khẩu tối thiểu 8 ký tự. Đăng ký xong tự đăng nhập và về trang chủ. Nói kèm: mật khẩu băm bcrypt, access token sống 15 phút giữ trong bộ nhớ, refresh token nằm trong cookie HttpOnly nên JavaScript không đọc được.
+**Chặng 4 · Đăng ký, hoặc đăng nhập bằng Google (1 phút).** `/dang-ky`: họ tên, email, mật khẩu ≥ 8 ký tự. Xong thì tự đăng nhập. Nói kèm: bcrypt; access token sống 15 phút trong bộ nhớ; refresh token nằm trong cookie HttpOnly và xoay vòng mỗi lần dùng. Có thì diễn thêm **"Đăng nhập bằng Google"** ở `/dang-nhap` bằng tài khoản Google trong *Test users*: redirect URI cố định `https://devpath-01.me/api/v1/auth/google/callback`, chống CSRF bằng cookie `state`. Đây là thứ mà URL tunnel ngẫu nhiên trước kia không làm được.
 
-**Chặng 5 · Ghi danh (30 giây).** Về trang chi tiết khóa Python, bấm **"Đăng ký học miễn phí"** → tự nhảy sang `/hoc/python-co-ban-cho-nguoi-moi-bat-dau`.
+**Chặng 5 · Mua khóa có phí qua VNPay (3 phút).** Vẫn tài khoản vừa đăng ký:
 
-**Chặng 6 · ĐINH CỦA BUỔI DEMO, lưu tiến độ (3 phút).** Ở trang học:
+1. Trang khóa 499.000 ₫ → **"Thêm vào giỏ hàng"** → biểu tượng giỏ trên header nhảy số → **"Xem giỏ hàng"**.
+2. Nhập mã **`CHAOMUNG50`** → tổng còn 249.500 ₫. Có thể thử `HETHAN` hoặc `HETLUOT` để thấy hai lời từ chối khác nhau.
+3. **"Thanh toán qua VNPay"** → trình duyệt sang **trang sandbox thật của VNPay** (`sandbox.vnpayment.vn`), với URL do server ký HMAC-SHA512. VNPay nhận URL đó, tức là mã merchant hợp lệ và chữ ký khớp. **Không nhập thẻ** (Phần 4).
+4. Lấy mã đơn ở tab 3. Thanh địa chỉ không có mã: VNPay đổi ngay URL đã ký thành một `token` của họ (đo 18/10). Đơn vừa tạo là đơn chờ thanh toán mới nhất:
 
-1. Bấm Play, đổi tốc độ phát sang 1.5×.
-2. Xem tới khoảng giây 40 rồi **bấm Pause** — pause là mốc lưu chắc chắn nhất.
-3. **F5 tải lại trang** → video tua đúng về chỗ cũ.
-4. Đóng tab, mở lại `/hoc/python-co-ban-cho-nguoi-moi-bat-dau` **không kèm `?bai=`** → tự mở đúng bài đang học dở.
+   ```bash
+   $DEMO exec postgres psql -U devpath -Atc "select code from orders where status = 'pending' order by created_at desc limit 1"
+   ```
 
-Giải thích: nhịp tim 10 giây một lần, cộng với lưu khi pause, khi chuyển tab và khi rời trang — ba mốc đó khiến vị trí không bao giờ mất quá 10 giây.
+   Rồi gửi IPN cho mã đó (dạng `DP261018HQARRC`):
 
-**Chặng 7 · Ghi chú, bookmark, đánh giá (2 phút).** Vẫn ở trang học: gõ một ghi chú, nó hiện kèm nhãn `mm:ss`; tua video đi chỗ khác rồi **bấm vào nhãn thời gian** — video nhảy về đúng giây đó và tự phát. Bấm "Đánh dấu để xem lại", rồi "Đánh dấu hoàn thành" → thanh tiến độ nhích lên dạng `2/12 bài · 17%`. Quay lại trang chi tiết khóa học, cuộn xuống mục Đánh giá: vì đã ghi danh nên form hiện ra — chọn sao, gõ nhận xét, gửi. F5 thấy điểm trung bình ở đầu trang đã đổi.
+   ```bash
+   $DEMO exec backend python -m scripts.simulate_vnpay_ipn DP...
+   ```
 
-**Chặng 8 · Chấm code tự động (3 phút).** Vẫn là tài khoản học viên, ở khóa Python mở bài **"Bài tập: đếm số chẵn"** (chương 3). Dán lời giải *cố tình sai*:
+   Lệnh này ký callback server-to-server (IPN) bằng đúng secret mà backend dùng, rồi gửi vào `/api/v1/payments/vnpay/ipn`. Phải thấy `IPN trả  : 200 {"RspCode":"00","Message":"Confirm Success"}` và dòng cuối ghi `paid`.
+5. Ở tab 1, mở `https://devpath-01.me/thanh-toan/ket-qua?vnp_TxnRef=DP…` → **"Thanh toán thành công"**, có mã đơn, mã giao dịch VNPay, dòng giảm giá CHAOMUNG50 → "Vào học ngay". Trên trang VNPay **đừng bấm "Quay lại"**: nó mở hộp "Hủy thanh toán"; bấm "Đóng" là thoát ra được.
+
+Câu nói kèm: **chỉ IPN được quyền nói là đã trả tiền**. Trang kết quả chỉ lấy mã đơn rồi hỏi lại API, vì tham số trình duyệt mang về, người dùng tự sửa được. Thứ tự kiểm: chữ ký → đơn → số tiền → trạng thái → mã phản hồi. Ghi danh, trừ lượt mã giảm giá và bỏ khỏi giỏ nằm trong cùng một transaction. VNPay gửi lại IPN thì lần sau trả `02` và không đổi gì. Vì sao giả lập IPN: xem Phần 6, câu 3.
+
+**Chặng 6 · Học, lưu tiến độ (3 phút).** Ở trang học:
+
+1. Bấm Play, đổi tốc độ 1.5×, xem tới khoảng giây 40 rồi **Pause**.
+2. **F5** → video tua đúng về chỗ cũ.
+3. Gõ một ghi chú → nó hiện kèm nhãn `mm:ss`; tua đi chỗ khác rồi bấm nhãn → video nhảy về đúng giây đó.
+4. "Đánh dấu hoàn thành" → thanh tiến độ nhích lên.
+
+Nhịp tim 10 giây một lần, cộng với lưu khi pause, khi chuyển tab và khi rời trang, nên vị trí không bao giờ mất quá 10 giây.
+
+**Chặng 7 · Trợ giảng AI (2 phút).** Ghi danh khóa **Python cơ bản** (miễn phí) → trang học → tab **"Trợ giảng AI"**. Hỏi:
+
+- *"Dòng if \_\_name\_\_ == "\_\_main\_\_": dùng để làm gì?"* → chữ hiện dần (SSE, qua cả Cloudflare lẫn nginx), có số `[1]`. Bấm số đó thì bài nguồn mở ngay bên cạnh.
+- *"Thủ đô của nước Úc là thành phố nào?"* → trợ giảng từ chối, vì chỉ trả lời từ tài liệu của khóa.
+
+Câu nói kèm: RAG trên pgvector. Truy vấn top-k lọc khóa đã xuất bản và người hỏi đã ghi danh **ngay trong câu SQL**. Đo trên bộ 20 câu × 3 lần: 58/60 đạt, bài đúng xếp hạng 1 ở 42/42, từ chối sạch 18/18. Mỗi người chỉ được hỏi một câu mỗi 3 giây.
+
+**Chặng 8 · Chấm code tự động (3 phút).** Khóa Python, chương "Rẽ nhánh và vòng lặp", bài **"Bài tập: đếm số chẵn"**. Dán lời giải *cố tình sai*:
 
 ```python
 n = int(input())
@@ -151,49 +180,65 @@ a = list(map(int, input().split()))
 print(sum(1 for x in a if x % 2 == 0 and x > 0))
 ```
 
-1. Bấm **"Chạy thử"** → qua cả 2 test mẫu. Nói kèm: chạy thử chỉ chấm với test mẫu và không tính vào lịch sử.
-2. Bấm **"Nộp bài"** → từng test đổi màu **theo thời gian thực** (WebSocket), và bài trượt ở một test **ẩn**: dãy có số âm và số 0. Test ẩn chỉ báo đúng/sai, không lộ đầu vào hay đáp án.
-3. Sửa điều kiện thành `if x % 2 == 0`, nộp lại → **AC**, và bài học tự đánh dấu hoàn thành.
+1. **"Chạy thử"** → qua cả 2 test mẫu (chạy thử chỉ chấm test mẫu, không tính vào lịch sử).
+2. **"Nộp bài"** → từng test đổi màu **theo thời gian thực** (WebSocket, đi qua Cloudflare). Kết quả: **Sai kết quả, 50/100**. Qua 2 test mẫu và 2 trong 4 test **ẩn**, trượt 2 test ẩn còn lại (dãy có số âm hoặc số 0). Test ẩn chỉ báo đúng/sai, không lộ đầu vào.
+3. Chờ ít nhất 10 giây (cooldown), sửa thành `if x % 2 == 0`, nộp lại → **AC**, bài học tự đánh dấu hoàn thành, cộng 10 XP của bài học và 30 XP thưởng AC.
 
-Câu nói kèm: mỗi test chạy trong một container dùng một lần — không mạng, không quyền root, filesystem chỉ đọc, giới hạn CPU/RAM/số tiến trình, timeout hai lớp. Bảy kiểu tấn công (đọc file ngoài, gọi mạng, fork bomb…) đều bị chặn, có test tự động trong CI.
+Câu nói kèm: mỗi test chạy trong một container dùng một lần: không mạng, không root, filesystem chỉ đọc, giới hạn CPU/RAM/số tiến trình, timeout hai lớp. Worker chấm bài không cầm Docker socket mà đi qua một proxy chỉ cho tạo đúng một kiểu sandbox. Bảy kiểu tấn công đều bị chặn, có test trong CI.
 
-**Chặng 9 · Khu giảng viên (3 phút).** Bấm avatar → Đăng xuất. Đăng nhập `khoa.tran@devpath.example` / `devpath-instructor` → menu avatar mọc thêm mục **"Khóa học tôi dạy"** → `/giang-day` đã có sẵn 2 khóa để nói chuyện. Mở một khóa, tới thẻ "Nội dung khóa học": **giữ chuột vào tay nắm 6 chấm và kéo một bài học sang chương khác** — thứ tự lưu ngay, không có nút Lưu. Diễn thêm bản bàn phím: chọn tay nắm, bấm Space, mũi tên lên/xuống, Space lần nữa — có thông báo tiếng Việt cho trình đọc màn hình. Cuối cùng bấm "Gửi duyệt" ở thẻ Trạng thái → badge nhảy sang "đã xuất bản" và mọc link "Xem trang công khai →". Muốn khoe quiz: dữ liệu mẫu **chưa có** bài quiz nào, nên thêm một bài học loại *Quiz* trong mục lục, soạn 2 câu ngay tại chỗ; phía học viên có đồng hồ đếm ngược do server giữ giờ.
+**Chặng 9 · XP, chuỗi ngày, bảng xếp hạng, chứng chỉ (2 phút).** Đăng xuất, đăng nhập `nguoimua08@sales.devpath.example` / `devpath-buyer`:
 
-**Chặng 10 · Tài liệu API (1 phút).** Mở `http://localhost:8000/docs` — Swagger sinh tự động từ Pydantic v2, 14 nhóm endpoint. Bấm "Try it out" trên `POST /api/v1/auth/login` để gọi API sống ngay tại chỗ. Câu chốt: tài liệu này không bao giờ lệch code, vì nó **là** code.
+- `/khoa-hoc-cua-toi`: khối thành tích ở đầu trang (XP, chuỗi ngày học). XP là sổ cái chỉ ghi thêm; chuỗi ngày tính theo ngày Việt Nam.
+- `/bang-xep-hang`: tuần / tháng / mọi thời gian, giữ trong Redis sorted set, dựng lại được từ sổ cái.
+- Mở khóa "Xây dựng REST API với FastAPI" hoặc "Cấu trúc dữ liệu & giải thuật" (tài khoản này đã hoàn thành cả hai) → **"Xem chứng chỉ"** → `/cert/<mã>`: trang **công khai**, ai có mã cũng xác thực được. Có QR và tệp PDF.
+
+Hoặc dùng tài khoản Google đã diễn thử: tài khoản đó đã có chứng chỉ khóa Python từ lần chạy chốt mốc.
+
+**Chặng 10 · Khu giảng viên (3 phút).** Ở cửa sổ ẩn danh, đăng nhập `khoa.tran@devpath.example`:
+
+- `/giang-day/thong-ke`: doanh thu, học viên mới, tỉ lệ hoàn thành theo 7 ngày / 30 ngày / 90 ngày / 12 tháng, có "Xem dạng bảng". Đơn ở Chặng 5 đã nằm trong số liệu.
+- Mở một khóa → mục lục: **kéo một bài sang chương khác** bằng tay nắm 6 chấm. Thứ tự lưu ngay, không có nút Lưu. Có bản bàn phím: Space, mũi tên, Space.
+- `/giang-day/hoi-dap`: hộp thư câu hỏi của học viên.
+- Muốn khoe AI sinh quiz: thêm bài loại *Quiz* → "Sinh câu hỏi bằng AI" từ nội dung bài → giảng viên phải duyệt từng câu trước khi xuất bản. Bước này gọi Gemini và tạo dữ liệu thật trên stack demo.
+
+**Chặng 11 · Khu quản trị (2 phút).** Đăng xuất, đăng nhập `admin@devpath.example` (cùng cửa sổ ẩn danh):
+
+- `/quan-tri`: tổng quan toàn sàn (doanh thu, người dùng hoạt động trong ngày, khóa hot).
+- `/quan-tri/khoa-hoc`: hàng đợi duyệt. Khóa giảng viên gửi lên dừng ở "chờ duyệt"; admin duyệt mới xuất bản, và việc nạp tài liệu cho trợ giảng chạy sau khi duyệt.
+- `/quan-tri/bao-cao`, `/nguoi-dung`, `/ma-giam-gia`, `/banner`: kiểm duyệt nội dung, khóa tài khoản (thu hồi mọi phiên), mã giảm giá, banner trang chủ.
+
+**Chặng 12 · Hạ tầng và bảo mật (2 phút, nói là chính).** Có thể mở DevTools → Network → một trang bất kỳ để chỉ header `content-security-policy` (enforce từ 18/10) và `strict-transport-security`. Nói:
+
+- Một file compose production, chạy y hệt trên VPS. Ở đây có thêm overlay tunnel; nginx lấy IP thật từ `CF-Connecting-IP`, chỉ tin đúng địa chỉ của cloudflared.
+- Monitor, backup CSDL mỗi đêm, readiness endpoint, xoay vòng log. Mỗi thứ có diễn tập ghi trong `docs/report/assets/phase-6/`.
+- Tài liệu API (`/docs`) **cố ý tắt ở production**. Muốn xem thì mở trên stack dev.
 
 ---
 
-## Phần 4 — Những nút từng là bẫy
+## Phần 4 — Những nút không được bấm
 
 | Thứ | Chuyện gì xảy ra | Nói gì nếu bị hỏi |
 |---|---|---|
-| Nút "Chọn video để tải lên" | **Chạy được từ 18/09/2026** — file lên storage S3 (RustFS) chạy trong stack, worker chuyển mã HLS xong trong vài giây. Mở bằng Chrome/Edge qua `localhost:3000` (không phải `127.0.0.1`) | Phần 6, câu 2 |
-| Nút đổi ảnh đại diện | Cũng chạy được từ 18/09/2026. Trên stack dev không bao giờ ra 503 `STORAGE_NOT_CONFIGURED` (để trống `R2_*` là dùng storage của stack). Nếu gặp ở production thiếu khóa R2 thì từ 19/09/2026 câu báo lỗi nói về ảnh đại diện, không còn nói về video | Phần 6, câu 3 |
-| Nút "Mua khóa học" ở khóa 499.000₫ | Nút mờ kèm dòng "Thanh toán đang được hoàn thiện" | **Đây là điểm cộng chứ không phải lỗi** — Phần 6, câu 4 |
-
-Nút "Đăng nhập bằng Google" **không hiện** trên máy này: component tự trả về `null` khi thiếu `NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED=true`. Đó là thiết kế có chủ đích để không mời người dùng bấm vào thứ chắc chắn lỗi — nên ở đây không có bẫy.
+| Nhập thẻ test / quét QR trên trang VNPay | VNPay chưa khai IPN URL của dự án, nên tiền "trả" xong không ai báo về. Đơn đứng ở *chờ thanh toán*; trang kết quả hỏi lại suốt 90 giây rồi thôi, vẫn báo đang chờ | Phần 6, câu 3 |
+| Tải lên video > 100 MB | Bị 413 ngay ở Cloudflare (gói Free chặn thân request > 100 MB, đo thật 18/10) | Đường tunnel có giới hạn này; VPS thì không. Demo upload bằng clip vài MB |
+| Nộp code hai lần cách nhau < 10 giây, hỏi trợ giảng hai câu cách nhau < 3 giây | 429, kèm thông báo chờ | Đó là rate limit có chủ đích, chống spam hàng đợi và quota Gemini |
+| Cả phòng cùng đăng ký trong một giờ | Cả phòng chung một IP công khai (NAT), mà mỗi IP chỉ được 50 lượt đăng ký/giờ; người thứ 51 nhận 429 | Giới hạn theo IP thật của người dùng (đã sửa sau tunnel); NAT thì không tách được |
+| Đăng nhập Google bằng email ngoài *Test users* | Google chặn ("Access blocked"), nếu app chưa Publish | Phần 1 |
+| `./scripts/deploy.sh` ngay trước giờ | Build lại mọi image, có lần làm Docker Desktop chết giữa chừng | Không chạy |
 
 ---
 
 ## Phần 5 — Sự cố giữa buổi
 
-**1. Docker chết vì máy ngủ.** Đừng bấm icon Docker Desktop. Chạy lại Bước 1 rồi Bước 2. Dữ liệu không mất vì nằm trong named volume `devpath_postgres_data`.
+**1. Site báo lỗi 530 / 1033 của Cloudflare.** Cloudflare không thấy connector nào, tức máy ngủ, Docker chết hoặc cloudflared dừng. Làm lại Phần 2 từ Bước 1. Cloudflared khởi động lại thì site trở lại sau khoảng 3 giây (đo 18/10). Dữ liệu không mất, vì nằm trong volume của project `devpath-demo`.
 
-**2. Video không phát, khung báo đỏ.** Mất mạng. Bật 4G điện thoại. Phần còn lại của hệ thống — đăng nhập, tìm kiếm, ghi danh, ghi chú — vẫn chạy bình thường vì toàn bộ dữ liệu nằm trong Docker trên máy.
+**2. Site báo 502.** Thường là connector thừa (Phần 2, Bước 3). Không phải thì xem `$DEMO ps`: `nginx` hoặc `frontend` có đang `(healthy)` không.
 
-**3. Trang báo "Không tải được danh sách khóa học", hoặc trang chủ thiếu hàng "Khóa học mới".** Backend chưa lên (từ 02/10 trang chủ không còn khối "Kết nối backend"; hàng "Khóa học mới" im lặng biến mất khi không đọc được catalogue). Kiểm tra `http://localhost:8000/api/v1/health`. `/khoa-hoc` có trang lỗi riêng (`khoa-hoc/error.tsx`), nên không trắng trang. Đã thử lại ngày 19/09/2026 bằng cách dừng container backend, cả khi tải lại trang lẫn khi bấm link từ trang chủ. Trang lỗi mất khoảng 4–8 giây mới hiện, vì Next phải chờ tên `backend` phân giải thất bại; trong lúc đó là khung xương đang tải.
+**3. Video không phát.** Mất mạng tới `test-streams.mux.dev`. Bật 4G. Mọi phần khác vẫn chạy.
 
-**4. Đăng nhập xong F5 là mất phiên.** Đang mở bằng `127.0.0.1`. Trình duyệt coi `127.0.0.1` và `localhost` là hai site khác nhau, mà cookie refresh đặt `SameSite=lax` nên bị bỏ im lặng. Mở lại bằng `localhost:3000`.
+**4. Trợ giảng AI báo lỗi.** Gemini quá tải hoặc hết quota tạm thời. Adapter tự thử lại khi chưa có chữ nào; nếu đã ra chữ rồi mới hỏng thì báo lỗi và **không lưu** câu trả lời dở. Chờ một phút rồi hỏi lại.
 
-**5. `port is already allocated`.** Có tiến trình khác giữ cổng. Sửa `POSTGRES_PORT` / `BACKEND_PORT` / `FRONTEND_PORT` trong `infra/.env` rồi `up -d` lại. Bẫy: đổi `POSTGRES_PORT` sẽ làm hỏng lệnh alembic và seed chạy từ venv, vì mặc định trong config là `localhost:5432`.
-
-**6. `Module not found` sau khi đổi `package.json`.** `docker compose up -d` dùng lại image cũ. Phải chạy:
-
-```bash
-docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes frontend
-```
-
-`--build` dựng lại image, `--renew-anon-volumes` vứt bỏ `node_modules` cũ nằm trong anonymous volume. Thiếu một trong hai cờ là lỗi còn nguyên. **Đừng chạy lệnh này ngay trước giờ demo** — nó cần mạng và mất vài phút.
+**5. Nộp bài chờ lâu.** Hàng đợi chấm bài chạy 2 bài cùng lúc, mỗi test là một container riêng. Một người nộp mất khoảng 3 giây; cả lớp 20 người nộp cùng lúc thì người cuối chờ 35–50 giây (đo ở load test 02/10).
 
 **Nếu bị hỏi câu không trả lời được:** nói "chỗ này em phải mở code xem lại" rồi mở ra tìm thật. Tìm được câu trả lời trong repo của mình chính là thứ đang được đánh giá.
 
@@ -201,26 +246,26 @@ docker compose -f infra/docker-compose.yml up -d --build --renew-anon-volumes fr
 
 ## Phần 6 — Câu hỏi chắc chắn bị hỏi
 
-**1. "Cho thầy xem đăng nhập bằng Google."**
-> Dạ luồng OAuth Google em code xong rồi, có test tự động ở `backend/tests/api/test_google_auth.py`, gồm cả chống CSRF bằng cookie `state`. Trên máy demo em cố ý không bật vì client secret không được nằm trong repo. Hệ thống xử lý đúng: nút bị ẩn đi thay vì để thầy bấm rồi lỗi, còn gọi thẳng API thì trả 503 với mã `GOOGLE_OAUTH_NOT_CONFIGURED` chứ không phải 500.
+**1. "Đăng nhập Google có thật không, hay chỉ là nút?"**
+> Dạ thật. Redirect URI là `https://devpath-01.me/api/v1/auth/google/callback`, cố định nhờ tên miền thật. `state` chống CSRF nằm trong cookie Secure/HttpOnly. Tài khoản tạo bằng Google không có mật khẩu. Liên kết Google vào một tài khoản email **chưa xác thực** thì hệ thống xóa mật khẩu cũ và thu hồi mọi phiên trước, để không ai chiếm trước được tài khoản của người khác. Ứng dụng đang ở chế độ Testing của Google, nên chỉ email em khai báo mới đăng nhập được.
 
 **2. "Em thử upload một video xem."**
-> Dạ luồng upload em làm theo kiểu presigned URL: backend chỉ ký một URL có hạn cho đúng một key rồi đứng ngoài, trình duyệt PUT thẳng lên object storage nên file hàng trăm MB không đi qua FastAPI. Storage là RustFS — một server S3 tự host, chạy trong Docker cả ở máy này lẫn trên VPS; trên VPS nó nằm sau nginx, cùng origin với trang. Em chọn nó bằng cách cho chính code lưu trữ của app chạy thử 20 kiểm trên hai ứng viên, vì Cloudflare R2 bắt khai báo thẻ thanh toán. Code chỉ nói giao thức S3, nên đổi sang R2 chỉ là đổi biến môi trường. Chữ ký còn khóa luôn loại file: PUT một file khác kiểu với cái đã khai thì storage trả 403.
+> Dạ luồng upload dùng presigned URL: backend ký một URL có hạn cho đúng một key, **ký luôn cả kích thước và loại file đã khai**, rồi đứng ngoài. Trình duyệt PUT thẳng lên object storage. File khác kích thước một byte là storage trả 403. Storage là RustFS, server S3 tự host, cùng origin với trang. Đổi sang Cloudflare R2 chỉ là đổi biến môi trường. Số vé xin URL còn bị giới hạn theo tài khoản, để không ai làm đầy đĩa. Qua tunnel này thì Cloudflare chặn file trên 100 MB, nên em demo bằng clip nhỏ.
 
-**3. "Avatar với video dùng chung luồng upload à?"**
-> Dạ chung luồng presigned URL nên chung mã lỗi từ backend; từ 19/09/2026 mỗi màn hình tự chọn câu thông báo cho mã đó (`AVATAR_UPLOAD_MESSAGES` trong `frontend/lib/api/error-messages.ts`), nên người đổi ảnh không đọc thấy chữ "video" nữa. Về bảo mật thì key upload luôn bị kiểm tra phải nằm trong `avatars/<id-của-chính-mình>` trước khi gắn vào tài khoản, nên không gắn được file của người khác.
+**3. "Sao không thanh toán thật luôn?"**
+> Dạ toàn bộ phần của em đã chạy thật: giỏ hàng, mã giảm giá, đơn hàng, URL thanh toán ký HMAC-SHA512 mà sandbox VNPay đã nhận, và xử lý IPN với đủ các nhánh lỗi, có test. Bước còn lại là VNPay phải khai IPN URL của em vào hệ thống của họ; cổng merchant không có ô tự khai, em đã gửi mail cho kỹ thuật VNPay. Vì vậy em ký IPN bằng đúng secret mà server dùng và gửi vào đúng endpoint đó. Server không phân biệt được, nên mọi kiểm tra vẫn chạy thật.
 
-**4. "Sao nút mua khóa học bấm không được?"**
-> Dạ khóa có phí em để đúng một cái trong dữ liệu mẫu để chứng minh phần hiển thị giá và bộ lọc theo giá chạy được. Thanh toán VNPay/MoMo nằm ở giai đoạn sau theo đề cương. Ở backend em chặn hẳn: hàm ghi danh miễn phí từ chối khóa có giá bằng lỗi 409 `COURSE_NOT_FREE` chứ không lặng lẽ cho qua, vì dòng ghi danh đó chính là dòng mà thanh toán sẽ phải sinh ra.
+**4. "Em deploy lên máy chủ thật chưa?"**
+> Dạ đây là bản production thật: cùng file `docker-compose.prod.yml`, nginx có TLS, Content-Security-Policy enforce, backup, monitor. Chỉ khác là nó chạy trên máy em, và Cloudflare đưa người xem vào qua tunnel thay cho IP của VPS. Máy chủ Azure for Students là bước cuối của giai đoạn này; lúc đó em giữ nguyên tên miền và chỉ đổi DNS.
 
-**5. "Vì sao dùng Docker mà không cài trực tiếp?"**
-> Dạ hệ thống cần Postgres kèm pgvector, Redis và ffmpeg chạy song song. Redis không có bản chính thức cho Windows, pgvector phải tự biên dịch. Docker gói cả ba vào một lệnh, và quan trọng hơn: máy em, máy CI và máy chủ chạy **cùng một image**, nên "chạy được trên máy em" không còn là câu bào chữa. Thầy có thể kiểm chứng bằng `docker compose -f infra/docker-compose.yml exec backend ffmpeg -version`.
+**5. "Test có bao nhiêu?"**
+> CI chạy 2.256 ca tự động (đo 13/10): backend 1.873 ca trên Postgres và Redis thật, 0 skip; grader trên Docker thật, gồm 7 kiểu tấn công sandbox; và E2E Playwright đi trọn luồng đăng ký → mua → học → nộp code → chứng chỉ trên cả stack. Luồng E2E đó em cũng chạy trên chính `https://devpath-01.me`, và nó đỏ nếu trình duyệt báo bất kỳ vi phạm Content-Security-Policy nào của site. Mỗi route API còn có một luật phân quyền trong test; thêm route mà quên luật là test đỏ. Coverage backend 94,5 %.
 
-**6. "Em deploy lên máy chủ thật chưa?"**
-> Dạ chưa. Cấu hình deploy em viết xong và CI kiểm chứng được — `infra/docker-compose.prod.yml` chỉ mở cổng 80/443 qua nginx, không publish Postgres/Redis ra ngoài, không bind mount mã nguồn. Em chưa deploy vì chưa có VPS và tên miền. Luồng end-to-end thì em demo được ngay trên máy này, chỉ khác là đăng nhập bằng email thay vì Google.
+**6. "Hệ gợi ý đo thế nào?"**
+> Dạ hệ lai giữa collaborative filtering item-based và content-based (embedding), trộn bằng Reciprocal Rank Fusion. Em đo bằng cách cắt dữ liệu theo học viên, 5 fold: recall@5 0,884 với người dùng cũ. Với khóa vừa xuất bản chưa có tương tác (cold-start), CF đơn thuần không gợi ý được khóa đó, còn hệ lai đạt recall@5 0,626.
 
-**7. "Test có bao nhiêu, chạy thế nào?"**
-> `cd backend` rồi `./.venv/Scripts/python.exe -m pytest -q`. Đo ngày 07/09/2026: **471 passed, 2 skipped** trong 4 phút 6 giây. Hai test bị skip là các test cần Postgres khi máy không có database — đó là chủ ý, còn trên CI thì không kết nối được là fail, để một service hỏng không bao giờ hiện ra thành build xanh. Trên CI, Postgres được dựng bằng đúng image mà máy dev dùng, migration chạy lên–xuống–lên trên database trắng, và seed chạy hai lần để chứng minh chạy lại không sinh thêm dữ liệu.
+**7. "Vì sao dùng Docker mà không cài trực tiếp?"**
+> Dạ hệ thống cần Postgres + pgvector, Redis, ffmpeg, RustFS, và sandbox chấm bài phải là container. Docker gói tất cả vào một lệnh. Quan trọng hơn: máy em, máy CI và máy chủ chạy **cùng một image**, nên "chạy được trên máy em" không còn là câu bào chữa.
 
 **8. "Điểm đánh giá trung bình tính lúc nào?"**
-> Dạ tính lại ngay trong cùng transaction với lượt đánh giá, có `SELECT ... FOR UPDATE` trên dòng khóa học để hai người đánh giá cùng lúc không ghi đè nhau. Chi tiết ở [huong-dan-du-an.md](huong-dan-du-an.md) mục 6.
+> Dạ tính lại ngay trong cùng transaction với lượt đánh giá, có `SELECT ... FOR UPDATE` trên dòng khóa học, để hai người đánh giá cùng lúc không ghi đè nhau. Chi tiết ở [huong-dan-du-an.md](huong-dan-du-an.md) mục 6.

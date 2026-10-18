@@ -170,10 +170,10 @@ Làm trong Google Cloud Console, giao diện **Google Auth Platform** (bản cũ
 Zone gói Free được Cloudflare **tự bật RUM** (Web Analytics): edge chèn script `https://static.cloudflareinsights.com/beacon.min.js` vào HTML của mọi trang. Site không dùng nó, và Content-Security-Policy của site (enforce từ 18/10) chặn nó. Chức năng không ảnh hưởng gì, nhưng console mỗi trang có một dòng đỏ "Loading the script … violates the following Content Security Policy directive". Tắt hẳn để console sạch:
 
 1. Dashboard Cloudflare → **Analytics & Logs → Web Analytics** → dòng `<tên-miền>` → **Manage site** → **Advanced options** → **Disable** (nhãn có thể đổi theo phiên bản dashboard; cùng công tắc này còn có ở *Speed → Observatory*, mục RUM).
-2. Kiểm: lệnh dưới in `0` là edge đã thôi chèn.
+2. Kiểm: lệnh dưới in `0` là edge đã thôi chèn. Phải có `Accept: text/html`: Cloudflare chỉ chèn vào request trông như của trình duyệt, nên `curl` trơn luôn ra `0`, kể cả khi RUM còn bật (đo 18/10).
 
 ```bash
-curl -s https://<tên-miền>/ | grep -c cloudflareinsights
+curl -s -H 'Accept: text/html' https://<tên-miền>/ | grep -c cloudflareinsights
 ```
 
 Đừng "sửa" bằng cách thêm host đó vào `script-src`: beacon đo khách, mà trang `/chinh-sach-bao-mat` không hứa điều đó ([bằng chứng](report/assets/phase-6/csp-enforce.txt) mục 3).

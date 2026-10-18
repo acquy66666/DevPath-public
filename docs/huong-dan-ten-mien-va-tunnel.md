@@ -82,6 +82,8 @@ Ra hai dòng `*.ns.cloudflare.com` là xong D0. Gửi Claude **tên miền** (kh
 2. Loại connector: **Cloudflared**. Tên: `devpath-demo`. **Create Tunnel**.
 3. Màn hình cài connector hiện một lệnh có dạng `cloudflared ... --token eyJ...`. Chọn môi trường **Docker** cho dễ đọc. **Chỉ chép chuỗi token** (phần dài bắt đầu bằng `eyJ` ngay sau `--token`) và **đừng chạy lệnh đó**: stack của dự án tự chạy cloudflared với token này. Bấm tiếp.
 
+> Lỡ chạy lệnh `docker run cloudflare/cloudflared ...` thì dừng nó: `docker ps` tìm container image `cloudflare/cloudflared`, rồi `docker stop <tên>` và `docker rm <tên>`. Container đó không ở trong mạng của stack nên không tìm thấy `nginx`. Cloudflare chia request cho mọi connector của tunnel, nên request nào rơi vào nó đều lỗi (log của nó ghi `lookup nginx ... no such host`). Đo 18/10: dashboard nhận connector đó là "đã kết nối" dù nó không phục vụ được gì.
+
 > Nếu dashboard bắt tạo "Zero Trust organization" hay chọn gói: chọn gói **Free**. Tài liệu Cloudflare ghi gói Free có một bước "billing" nhưng không trừ tiền. Nếu bị đòi số thẻ mà bạn không có hoặc không muốn nhập: dừng, báo Claude. Còn đường tạo tunnel bằng dòng lệnh `cloudflared` (đăng nhập qua trình duyệt, không qua màn đó).
 
 ### D1.2. Trỏ tên miền vào nginx của stack
@@ -95,7 +97,7 @@ Trong tunnel vừa tạo → tab **Routes** (bản cũ gọi là *Public Hostnam
 | Path | để trống |
 | Service URL | `https://nginx:443` |
 
-Rồi mở **Additional application settings → TLS** → bật **No TLS Verify** → lưu.
+Rồi mở **Additional application settings → TLS** → bật **No TLS Verify** → lưu. Ở dashboard bản mới, tùy chọn này tên là **Disable TLS certificate verification**. Hai tên là một tùy chọn (`noTLSVerify`); các ô TLS khác để mặc định.
 
 Vì sao `https://nginx:443` và *No TLS Verify*: nginx của stack phục vụ HTTPS bằng một chứng chỉ tự ký, vì Let's Encrypt không gọi ngược được về máy dev. Đoạn cloudflared → nginx nằm trong mạng Docker; chứng chỉ người xem thấy là chứng chỉ thật của Cloudflare. Trỏ vào `http://nginx:80` thì nginx chuyển hướng sang https, rồi Cloudflare lại gửi về http, và trình duyệt quay vòng mãi.
 
@@ -115,12 +117,13 @@ Claude tạo từ `infra/.env.prod.example`, với secret ngẫu nhiên. Những
 |---|---|
 | `DOMAIN` | `<tên-miền>` |
 | `TUNNEL_TOKEN` | **bạn dán** (D1.3) |
+| `COMPOSE_PROJECT_NAME` | `devpath-demo`. Bắt buộc: stack dev cũng là project `devpath`, mà cùng project là cùng container và cùng volume, nên stack này sẽ chiếm CSDL và bucket của dev. Thiếu dòng này thì `deploy.sh` từ chối chạy |
 | `GEMINI_API_KEY` | chép từ `infra/.env` (dòng 77) — không có thì trợ giảng AI không trả lời |
 | `BACKUP_ENABLED` | `false` — máy dev chưa có nơi lưu backup B2 (runbook VPS mục 2c); để `true` thì `deploy.sh` dừng |
 | `DOCKER_GID` | `0` — socket của Docker Desktop là `root:root` (đo ở load test 02/10) |
 | `GOOGLE_*` | để trống ở lần đầu; bật ở D1.7 |
 
-Mật khẩu cho tài khoản admin và giảng viên do seed tạo thì **không** nằm trong tệp. Bạn nhập vào terminal ở D1.5 (`SEED_ADMIN_PASSWORD`, `SEED_INSTRUCTOR_PASSWORD`); seed từ chối chạy ở production nếu thiếu.
+Mật khẩu cho tài khoản admin và giảng viên do seed tạo thì **không** nằm trong tệp này: `deploy.sh --seed` đọc chúng từ shell (`SEED_ADMIN_PASSWORD`, `SEED_INSTRUCTOR_PASSWORD`), và seed từ chối chạy ở production nếu thiếu. Lần dựng 18/10, Claude sinh hai mật khẩu ngẫu nhiên vào `infra/.env.seed-demo` (cũng nằm trong `.gitignore`). Mở tệp đó khi cần đăng nhập `admin@devpath.example` hoặc giảng viên seed.
 
 ### D1.5. Dựng stack production
 
@@ -131,8 +134,10 @@ docker compose -f infra/docker-compose.yml stop
 Dừng stack dev cho đỡ RAM (máy có 8 GB). Bật lại sau bằng `up -d`. Ảnh sandbox `devpath-sandbox-python:v1` đã có trên máy, nên không cần bước 2b của runbook VPS.
 
 ```bash
-cd infra && SEED_ADMIN_PASSWORD='<mật khẩu admin>' SEED_INSTRUCTOR_PASSWORD='<mật khẩu giảng viên>' ./scripts/deploy.sh --seed
+cd infra && set -a && . ./.env.seed-demo && set +a && ./scripts/deploy.sh --seed
 ```
+
+Không có `.env.seed-demo` thì truyền thẳng: `SEED_ADMIN_PASSWORD='…' SEED_INSTRUCTOR_PASSWORD='…' ./scripts/deploy.sh --seed`.
 
 `deploy.sh` thấy `TUNNEL_TOKEN` trong `.env.prod` thì tự thêm `docker-compose.named-tunnel.yml`. Nó build image, migrate, seed, chờ healthy, kiểm API ↔ CSDL/Redis/bucket, chờ cloudflared kết nối. Cuối cùng nó hỏi `https://<tên-miền>/api/v1/health/ready` **từ bên ngoài, qua Cloudflare**; trả lời được là cả đường đi đã thông.
 

@@ -265,6 +265,47 @@ async def test_a_pdf_is_not_a_video(
     assert storage.signed == []
 
 
+@pytest.mark.parametrize(
+    "filename", ["bai.m3u8", "bai.mp4.m3u8", "bai.ts", "bai.txt", "bai-khong-duoi"]
+)
+async def test_a_name_that_is_not_a_video_file_is_refused(
+    api_client: AsyncClient, db_session: AsyncSession, storage: FakeStorage, filename: str
+) -> None:
+    """The extension survives into the storage key, and ffmpeg reads it as a
+    hint: `original.m3u8` is opened as an HLS playlist -- a list of other
+    files to fetch -- whatever Content-Type was declared."""
+    owner = await make_user(db_session, "instructor")
+    lesson = await make_lesson(db_session, owner)
+    headers = await sign_in(api_client, owner)
+
+    response = await api_client.post(
+        f"/api/v1/lessons/{lesson.id}/video",
+        json=upload_body(filename=filename),
+        headers=headers,
+    )
+
+    assert response.status_code == 422, response.text
+    assert storage.signed == []
+
+
+@pytest.mark.parametrize("filename", ["BAI-GIANG.MP4", "a.m4v", "a.mov", "a.mkv", "a.webm"])
+async def test_every_video_extension_is_accepted_in_any_case(
+    api_client: AsyncClient, db_session: AsyncSession, storage: FakeStorage, filename: str
+) -> None:
+    owner = await make_user(db_session, "instructor")
+    lesson = await make_lesson(db_session, owner)
+    headers = await sign_in(api_client, owner)
+
+    response = await api_client.post(
+        f"/api/v1/lessons/{lesson.id}/video",
+        json=upload_body(filename=filename),
+        headers=headers,
+    )
+
+    assert response.status_code == 201, response.text
+    assert response.json()["storage_key"].endswith(filename[filename.rindex(".") :].lower())
+
+
 async def test_a_file_over_the_limit_is_refused_before_it_is_uploaded(
     api_client: AsyncClient, db_session: AsyncSession, storage: FakeStorage
 ) -> None:

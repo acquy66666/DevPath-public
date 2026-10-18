@@ -1,0 +1,7 @@
+instructor video-0bd6064e@e2e.devpath.example, lesson d4dce407-f130-41f0-9b94-9c6b37f34fc6
+ticket for 'bai-giang.m3u8' -> HTTP 422: Value error, Tên tệp video phải có đuôi: .mp4, .m4v, .mov, .mkv, .webm
+ticket for 'bai-giang.mp4' (465,660 B) -> key videos/af660bd5-882e-4ea5-8c59-429c91076544/original.mp4; PUT -> HTTP 200
+transcode -> ready after 2.1 s, duration 14 s, error None
+manifest in the bucket: 3 segments, VOD=True
+deleted videos/af660bd5-882e-4ea5-8c59-429c91076544/ from the bucket
+Đã gỡ 1 tài khoản, 1 khóa học, 0 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại.

@@ -6,7 +6,7 @@ Làm theo từng bước cho hai task Phase 6: **D0** (tên miền) và **D1** (
 
 | Bước | Ai làm | Mất bao lâu |
 |---|---|---|
-| D0.1–D0.3 — nhận tên miền `.me` | **bạn** (tài khoản GitHub, Namecheap) | 10 phút |
+| D0.1–D0.3 — nhận tên miền (`.me` của Namecheap, hoặc name.com) | **bạn** (tài khoản GitHub, nhà đăng ký) | 10 phút |
 | D0.4–D0.7 — chuyển DNS sang Cloudflare | **bạn** (tài khoản Cloudflare) | 10 phút làm, rồi chờ từ vài phút tới 24 giờ |
 | D1.1–D1.3 — tạo tunnel, lấy token | **bạn** (dashboard Cloudflare) | 5 phút |
 | D1.4–D1.7 — dựng stack, nạp dữ liệu, kiểm | Claude, trên máy này | 20–30 phút (build image) |
@@ -25,6 +25,14 @@ Những gì Claude **không** làm thay: tạo tài khoản, đăng nhập, nh�
 
 > Nếu tới bước thanh toán mà Namecheap đòi **số thẻ** dù tổng là 0đ: dừng lại, đừng nhập, báo Claude. Theo tài liệu GitHub, ưu đãi này không cần trả tiền năm đầu.
 
+#### Hoặc: name.com thay cho Namecheap
+
+Student Pack còn một ưu đãi của **name.com**: một tên miền miễn phí năm đầu, kèm che thông tin chủ sở hữu và SSL. Trang pack ghi `.live`; trang hỗ trợ của name.com (cập nhật 06/2026) ghi "một trong các đuôi được áp dụng", nên đuôi nào được miễn phí thì xem lúc thanh toán. Mọi bước từ D0.4 trở đi giữ nguyên, vì Cloudflare không quan tâm tên miền mua ở đâu. Ba điểm khác:
+
+- Bấm vào ưu đãi name.com **từ trang pack** trong lúc **chưa đăng nhập name.com**: mã giảm giá tự áp, không phải gõ.
+- Điền thông tin liên hệ thật. ICANN bắt name.com gửi email xác minh, và không bấm xác minh thì tên miền có thể bị tạm khóa sau ít ngày.
+- Chọn đuôi có trong danh sách miễn phí, ví dụ `devpath-<tên bạn>.live`. Đuôi nào cũng chạy được với tunnel và với đăng nhập Google.
+
 ### D0.2. Chọn tên
 
 - Ngắn, dễ đọc lên khi trình bày, không dấu, không gạch dưới. Ví dụ: `devpath.me` (nếu còn), `devpath-<tên bạn>.me`, `<tên bạn>-devpath.me`.
@@ -39,14 +47,16 @@ Thanh toán 0đ. Vào **Domain List → Manage** của tên miền vừa có, t�
 
 1. Tạo tài khoản miễn phí ở https://dash.cloudflare.com/sign-up (email + mật khẩu), xác nhận email.
 2. Trong dashboard: **Add a domain** (hoặc *Onboard a domain*), nhập `<tên-miền>`, chọn **Free**.
-3. Cloudflare quét các bản ghi DNS có sẵn. Tên miền mới nên gần như không có gì; xóa bản ghi `A`/`CNAME` nào Namecheap tạo sẵn cho tên miền gốc (thường là trang "parking"). Tunnel sẽ tự tạo bản ghi của nó ở D1.
+3. Cloudflare quét các bản ghi DNS có sẵn. **Xóa mọi bản ghi `A`/`AAAA`/`CNAME` của tên miền gốc (`@`) và của `www`.** Tên miền nhận qua nc.me được tạo sẵn 4 bản ghi `A` trỏ vào GitHub Pages (`185.199.108.153` … `185.199.111.153`, đo trên `devpath-01.me` 17/10/2026), có khi kèm `CNAME www → <tên>.github.io`. Để lại thì chúng giành tên miền gốc với tunnel. Tunnel sẽ tự tạo bản ghi của nó ở D1.
 4. Cloudflare cho **hai nameserver**, dạng `ada.ns.cloudflare.com` và `bob.ns.cloudflare.com`. Giữ tab này mở.
 
-### D0.5. Đổi nameserver ở Namecheap sang Cloudflare
+### D0.5. Đổi nameserver sang Cloudflare
 
 1. Namecheap → **Domain List** → **Manage** ở `<tên-miền>`.
 2. Nếu **DNSSEC** đang bật (mục *Advanced DNS*), tắt trước. Tên miền mới mặc định là tắt.
 3. Tab **Domain**, mục **NAMESERVERS**: đổi từ *Namecheap BasicDNS* sang **Custom DNS**, nhập đúng hai nameserver Cloudflare cho, bấm dấu ✓ xanh để lưu.
+
+**Nếu mua ở name.com:** **My Domains** → bấm vào tên miền → **Manage Nameservers**, xóa các dòng `ns*.name.com` có sẵn, thêm hai nameserver của Cloudflare, rồi lưu. DNSSEC (mục *DNSSEC Management*) phải để trống, như với Namecheap.
 
 ### D0.6. Chờ Cloudflare kích hoạt
 
@@ -72,6 +82,8 @@ Ra hai dòng `*.ns.cloudflare.com` là xong D0. Gửi Claude **tên miền** (kh
 2. Loại connector: **Cloudflared**. Tên: `devpath-demo`. **Create Tunnel**.
 3. Màn hình cài connector hiện một lệnh có dạng `cloudflared ... --token eyJ...`. Chọn môi trường **Docker** cho dễ đọc. **Chỉ chép chuỗi token** (phần dài bắt đầu bằng `eyJ` ngay sau `--token`) và **đừng chạy lệnh đó**: stack của dự án tự chạy cloudflared với token này. Bấm tiếp.
 
+> Lỡ chạy lệnh `docker run cloudflare/cloudflared ...` thì dừng nó: `docker ps` tìm container image `cloudflare/cloudflared`, rồi `docker stop <tên>` và `docker rm <tên>`. Container đó không ở trong mạng của stack nên không tìm thấy `nginx`. Cloudflare chia request cho mọi connector của tunnel, nên request nào rơi vào nó đều lỗi (log của nó ghi `lookup nginx ... no such host`). Đo 18/10: dashboard nhận connector đó là "đã kết nối" dù nó không phục vụ được gì.
+
 > Nếu dashboard bắt tạo "Zero Trust organization" hay chọn gói: chọn gói **Free**. Tài liệu Cloudflare ghi gói Free có một bước "billing" nhưng không trừ tiền. Nếu bị đòi số thẻ mà bạn không có hoặc không muốn nhập: dừng, báo Claude. Còn đường tạo tunnel bằng dòng lệnh `cloudflared` (đăng nhập qua trình duyệt, không qua màn đó).
 
 ### D1.2. Trỏ tên miền vào nginx của stack
@@ -85,7 +97,7 @@ Trong tunnel vừa tạo → tab **Routes** (bản cũ gọi là *Public Hostnam
 | Path | để trống |
 | Service URL | `https://nginx:443` |
 
-Rồi mở **Additional application settings → TLS** → bật **No TLS Verify** → lưu.
+Rồi mở **Additional application settings → TLS** → bật **No TLS Verify** → lưu. Ở dashboard bản mới, tùy chọn này tên là **Disable TLS certificate verification**. Hai tên là một tùy chọn (`noTLSVerify`); các ô TLS khác để mặc định.
 
 Vì sao `https://nginx:443` và *No TLS Verify*: nginx của stack phục vụ HTTPS bằng một chứng chỉ tự ký, vì Let's Encrypt không gọi ngược được về máy dev. Đoạn cloudflared → nginx nằm trong mạng Docker; chứng chỉ người xem thấy là chứng chỉ thật của Cloudflare. Trỏ vào `http://nginx:80` thì nginx chuyển hướng sang https, rồi Cloudflare lại gửi về http, và trình duyệt quay vòng mãi.
 
@@ -105,12 +117,13 @@ Claude tạo từ `infra/.env.prod.example`, với secret ngẫu nhiên. Những
 |---|---|
 | `DOMAIN` | `<tên-miền>` |
 | `TUNNEL_TOKEN` | **bạn dán** (D1.3) |
+| `COMPOSE_PROJECT_NAME` | `devpath-demo`. Bắt buộc: stack dev cũng là project `devpath`, mà cùng project là cùng container và cùng volume, nên stack này sẽ chiếm CSDL và bucket của dev. Thiếu dòng này thì `deploy.sh` từ chối chạy |
 | `GEMINI_API_KEY` | chép từ `infra/.env` (dòng 77) — không có thì trợ giảng AI không trả lời |
 | `BACKUP_ENABLED` | `false` — máy dev chưa có nơi lưu backup B2 (runbook VPS mục 2c); để `true` thì `deploy.sh` dừng |
 | `DOCKER_GID` | `0` — socket của Docker Desktop là `root:root` (đo ở load test 02/10) |
 | `GOOGLE_*` | để trống ở lần đầu; bật ở D1.7 |
 
-Mật khẩu cho tài khoản admin và giảng viên do seed tạo thì **không** nằm trong tệp. Bạn nhập vào terminal ở D1.5 (`SEED_ADMIN_PASSWORD`, `SEED_INSTRUCTOR_PASSWORD`); seed từ chối chạy ở production nếu thiếu.
+Mật khẩu cho tài khoản admin và giảng viên do seed tạo thì **không** nằm trong tệp này: `deploy.sh --seed` đọc chúng từ shell (`SEED_ADMIN_PASSWORD`, `SEED_INSTRUCTOR_PASSWORD`), và seed từ chối chạy ở production nếu thiếu. Lần dựng 18/10, Claude sinh hai mật khẩu ngẫu nhiên vào `infra/.env.seed-demo` (cũng nằm trong `.gitignore`). Mở tệp đó khi cần đăng nhập `admin@devpath.example` hoặc giảng viên seed.
 
 ### D1.5. Dựng stack production
 
@@ -121,8 +134,10 @@ docker compose -f infra/docker-compose.yml stop
 Dừng stack dev cho đỡ RAM (máy có 8 GB). Bật lại sau bằng `up -d`. Ảnh sandbox `devpath-sandbox-python:v1` đã có trên máy, nên không cần bước 2b của runbook VPS.
 
 ```bash
-cd infra && SEED_ADMIN_PASSWORD='<mật khẩu admin>' SEED_INSTRUCTOR_PASSWORD='<mật khẩu giảng viên>' ./scripts/deploy.sh --seed
+cd infra && set -a && . ./.env.seed-demo && set +a && ./scripts/deploy.sh --seed
 ```
+
+Không có `.env.seed-demo` thì truyền thẳng: `SEED_ADMIN_PASSWORD='…' SEED_INSTRUCTOR_PASSWORD='…' ./scripts/deploy.sh --seed`.
 
 `deploy.sh` thấy `TUNNEL_TOKEN` trong `.env.prod` thì tự thêm `docker-compose.named-tunnel.yml`. Nó build image, migrate, seed, chờ healthy, kiểm API ↔ CSDL/Redis/bucket, chờ cloudflared kết nối. Cuối cùng nó hỏi `https://<tên-miền>/api/v1/health/ready` **từ bên ngoài, qua Cloudflare**; trả lời được là cả đường đi đã thông.
 

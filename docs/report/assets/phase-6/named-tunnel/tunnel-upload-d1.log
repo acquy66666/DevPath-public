@@ -1,0 +1,8 @@
+account: tunnel-upload-df56d473ad@e2e.devpath.example
+ticket host: devpath-01.me
+PUT 1 MiB, declared 1 MiB, through the tunnel: 200 cloudflare
+PUT 1 MiB + 1 byte, declared 1 MiB, through the tunnel: 403 cloudflare
+PUT 101 MiB through the tunnel: 413 cloudflare
+avatar: https://devpath-01.me/devpath-media/avatars/72d76273-4ee4-4c93-8341-dbcb7ae4ad88/d4e3bb8ec7fd4272902ab7ba558cccda.png
+anonymous GET through the tunnel: 200 cloudflare image/png
+bytes read back: identical

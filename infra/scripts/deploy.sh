@@ -41,6 +41,21 @@ if grep -Eq '^TUNNEL_TOKEN=.+' .env.prod; then
     COMPOSE=(docker compose -f docker-compose.prod.yml -f docker-compose.named-tunnel.yml
         --env-file .env.prod)
     echo "==> TUNNEL_TOKEN is set: deploying behind the Cloudflare named tunnel"
+
+    # The tunnel is the dev machine, where docker-compose.yml already runs as
+    # project "devpath" -- the name docker-compose.prod.yml gives itself too.
+    # Same project, same volume names: this stack would replace the dev
+    # containers and open the dev database and bucket with its own passwords.
+    # COMPOSE_PROJECT_NAME in .env.prod overrides the file's name.
+    project="$("${COMPOSE[@]}" config 2>/dev/null | sed -n 's/^name: //p' | head -1)"
+    dev_project="$(sed -n 's/^name: //p' docker-compose.yml | head -1)"
+    if [[ -z "${project}" || "${project}" == "${dev_project}" ]]; then
+        echo "This stack would be compose project \"${project:-?}\", the dev stack's." \
+            "Add COMPOSE_PROJECT_NAME=devpath-demo to .env.prod" \
+            "(docs/huong-dan-ten-mien-va-tunnel.md, D1.4)." >&2
+        exit 1
+    fi
+    echo "==> Compose project: ${project}"
 fi
 domain="$(grep -E '^DOMAIN=' .env.prod | head -1 | cut -d= -f2- | tr -d '"'"'"'[:space:]')"
 

@@ -1,0 +1,28 @@
+==> TUNNEL_TOKEN is set: deploying behind the Cloudflare named tunnel
+==> Compose project: devpath-demo
+==> Building images
+==> Migrating the database
+==> Seeding
+==> Starting
+==> Waiting for health
+==> Checking the API reaches its database and Redis
+==> Checking the API reaches its storage
+==> Waiting for the tunnel to reach Cloudflare
+==> Asking https://devpath-01.me from outside, through Cloudflare
+==> Cleaning up images the new build replaced
+NAME  IMAGE  COMMAND  SERVICE  CREATED  STATUS  PORTS
+devpath-demo-backend-1  devpath-backend:prod  "uvicorn app.main:ap…"  backend  55 seconds ago  Up 46 seconds (healthy)  8000/tcp
+devpath-demo-backup-1  devpath-backup:prod  "python3 /usr/local/…"  backup  55 seconds ago  Up 49 seconds (healthy)  5432/tcp
+devpath-demo-beat-1  devpath-backend:prod  "celery -A app.worke…"  beat  55 seconds ago  Up 48 seconds  8000/tcp
+devpath-demo-certbot-1  certbot/certbot:v5.8.0  "sh -c 'trap exit TE…"  certbot  55 seconds ago  Up 49 seconds  80/tcp, 443/tcp
+devpath-demo-cloudflared-1  cloudflare/cloudflared:2026.9.1  "cloudflared --no-au…"  cloudflared  52 seconds ago  Up 17 seconds  
+devpath-demo-docker-proxy-1  devpath-docker-proxy:prod  "python -m proxy.ser…"  docker-proxy  53 seconds ago  Up 48 seconds (healthy)  2375/tcp
+devpath-demo-frontend-1  devpath-frontend:prod  "docker-entrypoint.s…"  frontend  52 seconds ago  Up 40 seconds (healthy)  3000/tcp
+devpath-demo-grading-worker-1  devpath-grading:prod  "celery -A app.worke…"  grading-worker  51 seconds ago  Up 16 seconds (healthy)  
+devpath-demo-nginx-1  nginx:1.27-alpine  "/bin/sh -c '(while …"  nginx  55 seconds ago  Up 48 seconds (healthy)  0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+devpath-demo-postgres-1  pgvector/pgvector:pg16  "docker-entrypoint.s…"  postgres  About a minute ago  Up About a minute (healthy)  5432/tcp
+devpath-demo-redis-1  redis:7-alpine  "docker-entrypoint.s…"  redis  About a minute ago  Up About a minute (healthy)  6379/tcp
+devpath-demo-storage-1  rustfs/rustfs:1.0.1@sha256:1803faef57627e2d9c2e7d89d655d712ddded5389040054987163043fecb6a3c  "/entrypoint.sh rust…"  storage  About a minute ago  Up About a minute (healthy) 
+devpath-demo-worker-1  devpath-backend:prod  "celery -A app.worke…"  worker  55 seconds ago  Up 46 seconds (healthy)  8000/tcp
+Deployed: https://devpath-01.me
+exit=0

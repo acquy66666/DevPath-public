@@ -1,0 +1,11 @@
+certificate {"authorized":true,"subject":"devpath-01.me","issuer":"Let's Encrypt / YE1","validTo":"Jan 15 10:04:51 2027 GMT","altNames":"DNS:*.devpath-01.me, DNS:devpath-01.me","protocol":"TLSv1.3"}
+page /: 200 via cloudflare cf-ray=true csp-report-only=true title="DevPath — Học lập trình trực tuyến"
+page /khoa-hoc: 200 via cloudflare cf-ray=true csp-report-only=true title="Khóa học lập trình — DevPath"
+catalogue links: 4 /khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python /khoa-hoc/xay-dung-rest-api-voi-fastapi /khoa-hoc/javascript-hien-dai-es6-va-dom /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+page /khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python: 200 h1="Cấu trúc dữ liệu & giải thuật với Python"
+fetch /api/v1/health/ready from the page: 200 {"status":"ready","checks":{"database":"ok","redis":"ok"}}
+media through the tunnel: 200 /devpath-media/banners/54f7ea8380454e368465d62c71621a01.png, 200 /devpath-media/banners/9c6121ba752f4b829ae797f8e1d5de2c.png, 200 /devpath-media/banners/9babdcc6fa0b47bd9511bb26e5041252.png
+console errors/warnings: 3
+  error: Failed to load resource: the server responded with a status of 401 ()
+  error: Failed to load resource: the server responded with a status of 401 ()
+  error: Failed to load resource: the server responded with a status of 401 ()

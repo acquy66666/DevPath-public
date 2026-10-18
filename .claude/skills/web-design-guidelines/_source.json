@@ -1,0 +1,9 @@
+{
+  "repo": "vercel-labs/agent-skills",
+  "path": "skills/web-design-guidelines",
+  "commit": "063bee94c3f4df8453406c830b0a7df0f2860278",
+  "files": 1,
+  "local_patches": [
+    "rules pinned to references/command.md @ web-interface-guidelines 434b7f91364665f2f733b310ec54809bf8f37937, no fetch at run time"
+  ]
+}

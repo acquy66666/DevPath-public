@@ -1,0 +1,52 @@
+{
+  "base": "https://devpath-01.me",
+  "at": "2026-10-18T09:28:28.095Z",
+  "button_href": "/api/v1/auth/google/authorize",
+  "authorize": {
+    "status": 307,
+    "location_host": "accounts.google.com",
+    "set_cookie_flags": [
+      "HttpOnly",
+      "Max-Age=600",
+      "Path=/api/v1/auth",
+      "SameSite=lax",
+      "Secure"
+    ]
+  },
+  "google": {
+    "endpoint": "https://accounts.google.com/o/oauth2/v2/auth",
+    "client_id": "3571…-…r.apps.googleusercontent.com",
+    "redirect_uri": "https://devpath-01.me/api/v1/auth/google/callback",
+    "redirect_uri_expected": "https://devpath-01.me/api/v1/auth/google/callback",
+    "response_type": "code",
+    "scope": "openid email profile",
+    "prompt": "select_account",
+    "state_length": 43,
+    "state_matches_cookie": true,
+    "cookie": {
+      "path": "/api/v1/auth",
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax",
+      "lifetime_seconds": 599
+    },
+    "landed_on": "accounts.google.com/v3/signin/identifier",
+    "page_title": "Đăng nhập - Tài khoản Google"
+  },
+  "privacy_policy": {
+    "status": 200,
+    "title": "Chính sách bảo mật — DevPath",
+    "headings": [
+      "1. Dữ liệu DevPath thu thập",
+      "2. DevPath dùng dữ liệu vào việc gì",
+      "3. Ai nhìn thấy gì về bạn",
+      "4. Bên thứ ba xử lý dữ liệu",
+      "5. Cookie và bộ nhớ trình duyệt",
+      "6. Lưu trữ và bảo vệ dữ liệu",
+      "7. Quyền của bạn",
+      "8. Thay đổi chính sách",
+      "9. Liên hệ"
+    ],
+    "footer_link": 1
+  }
+}

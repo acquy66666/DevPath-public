@@ -1,0 +1,189 @@
+ĐĂNG NHẬP GOOGLE TRÊN TÊN MIỀN THẬT — https://devpath-01.me
+Ngày: 18/10/2026 · nhánh feature/google-login (chồng lên feature/named-tunnel)
+Task Phase 6 "Bật đăng nhập Google trên tên miền thật — redirect URI cố định,
+thứ mà URL tunnel ngẫu nhiên ở Phase 2 không làm được". Chạy trên stack demo
+(project compose `devpath-demo`) sau Cloudflare named tunnel của D1, máy dev
+Docker Desktop. Hướng dẫn cho user: docs/huong-dan-ten-mien-va-tunnel.md D1.7.
+
+Kết quả gọn:
+  - Một tài khoản Google thật đăng nhập được trên https://devpath-01.me
+    (16:32:55 giờ VN): CSDL `devpath-demo` từ 43 → 44 tài khoản, 0 → 1 tài
+    khoản Google; vai `student`, email đã xác minh, không có mật khẩu, ảnh đại
+    diện từ lh3.googleusercontent.com, có phiên đăng nhập sống (mục 5).
+  - Phía máy chủ, trước → sau: `/api/v1/auth/google/authorize` 503 → 307 sang
+    accounts.google.com; trang đăng nhập có nút "Đăng nhập bằng Google";
+    `redirect_uri` = https://devpath-01.me/api/v1/auth/google/callback, khớp
+    từng ký tự; `state` khớp cookie HttpOnly + Secure + SameSite=Lax +
+    Path=/api/v1/auth + Max-Age=600. Google mở trang "Tiếp tục tới
+    devpath-01.me", không báo redirect_uri_mismatch (mục 4).
+  - Callback giả mạo `state` → GOOGLE_STATE_INVALID; hủy ở màn đồng ý →
+    GOOGLE_ACCESS_DENIED (mục 4).
+  - Thêm trang /chinh-sach-bao-mat (404 → 200), vì Google không cho mở ứng
+    dụng cho mọi tài khoản ("Publish app") khi chưa có chính sách bảo mật
+    trên tên miền (mục 2).
+  - Tìm ra (chưa sửa ở task này): sau tunnel, IP ghi cho mọi người dùng là IP
+    của container cloudflared → giới hạn theo IP bị mọi khách dùng chung (mục 6).
+
+==============================================================================
+1. CẤU HÌNH
+==============================================================================
+Code OAuth có từ Phase 2 (services/google_oauth.py, api/v1/auth.py; test:
+tests/test_google_oauth.py, tests/test_google_sign_in.py,
+tests/api/test_google_auth.py). Task này không đổi dòng code backend nào —
+thứ thiếu là một redirect URI cố định, và D1 đã cho nó.
+
+OAuth client (user tạo trong Google Auth Platform, project riêng):
+  - Loại Web application. Origin https://devpath-01.me; redirect
+    https://devpath-01.me/api/v1/auth/google/callback.
+  - Audience External, trạng thái Testing, có Test users. Scope chỉ là
+    `openid email profile` (không nhạy cảm) nên không cần Google duyệt.
+  - Client secret Google chỉ hiện một lần lúc tạo.
+
+infra/.env.prod (gitignored; user tự dán, không qua chat). Claude chỉ kiểm
+dạng, không in giá trị:
+  GOOGLE_CLIENT_ID      dài 72, đuôi .apps.googleusercontent.com   → đúng
+  GOOGLE_CLIENT_SECRET  dài 35, đầu GOCSPX-, không khoảng trắng     → đúng
+  GOOGLE_LOGIN_ENABLED  false → true (build arg của frontend, nên phải build lại)
+GOOGLE_REDIRECT_URI không nằm trong .env.prod: docker-compose.prod.yml dựng
+nó từ DOMAIN, nên lên máy chủ thật giữ nguyên tên miền là giữ nguyên URI.
+
+==============================================================================
+2. TRANG CHÍNH SÁCH BẢO MẬT
+==============================================================================
+Lúc user bấm "Publish app", Google từ chối: "Valid app name, support email,
+homepage url, and privacy policy url are required for switching the app to
+external production mode." Ở chế độ Testing, chỉ email nằm trong Test users
+(tối đa 100) mới đăng nhập được, tức người xem demo không dùng được tài khoản
+Google của họ.
+
+Thêm frontend/app/(marketing)/chinh-sach-bao-mat/page.tsx (server component
+tĩnh, tiếng Việt) và link ở chân trang. Nội dung viết theo đúng thứ code đang
+làm: 3 scope Google; dữ liệu tài khoản / học tập / trợ giảng AI / đơn hàng /
+IP + trình duyệt của phiên; ai thấy gì (bảng xếp hạng, trang chứng chỉ công
+khai); bên thứ ba (Google + Gemini API, VNPay, Cloudflare); cookie
+`devpath_refresh` 30 ngày + cookie state 10 phút + localStorage; quyền của
+người dùng. Không quảng cáo, không công cụ theo dõi. Mục Liên hệ trỏ về email
+hỗ trợ trên màn hình đồng ý của Google (user chọn không ghi email lên trang).
+
+Kiểm qua tunnel: 200, tiêu đề "Chính sách bảo mật — DevPath", 9 mục, chân
+trang có 1 link tới trang (capture-log.json, ảnh 03-chinh-sach-bao-mat.png).
+Publish app là việc của user trong console: điền Application home page
+https://devpath-01.me + privacy policy link https://devpath-01.me/chinh-sach-bao-mat.
+
+==============================================================================
+3. DEPLOY
+==============================================================================
+  cd infra && set -a && . ./.env.seed-demo && set +a && ./scripts/deploy.sh
+
+Lượt 1: build đủ 5 image, rồi BuildKit rớt ("target worker: failed to receive
+status: rpc error: code = Unavailable desc = error reading from server: EOF").
+Ngay sau đó Docker Engine trả 500 cho mọi lệnh và https://devpath-01.me trả
+530 (Cloudflare không gọi được về máy). Đây là kiểu chết Docker Desktop đã
+biết trên máy này: chạy C:\Users\Admin\start-docker.ps1 → engine lên lại, 13
+container của stack demo tự khởi động, site 200, readiness 200.
+
+Lượt 2: build lại từng image một (`compose build <service>`) → cả 5 lấy từ
+cache, mỗi cái ~4 s, tức lượt 1 đã build xong. `deploy.sh` exit 0: migrate,
+healthy, API ↔ CSDL/Redis/bucket, cloudflared kết nối, hỏi
+https://devpath-01.me/api/v1/health/ready từ bên ngoài qua Cloudflare. Vẫn
+đúng một connector (không có container cloudflare/cloudflared:latest nào).
+
+Bài học cho buổi GVHD: đừng deploy sát giờ trình bày. Docker Desktop 8 GB vừa
+chạy stack demo vừa build 5 image song song có thể chết, và site tắt theo.
+
+==============================================================================
+4. KIỂM PHÍA MÁY CHỦ — Chrome thật, headless, từ bên ngoài qua Cloudflare
+==============================================================================
+  NODE_PATH=frontend/node_modules node docs/report/assets/phase-6/google-login/capture.cjs
+Chỉ đi tới màn hình đăng nhập của Google, không đăng nhập, không ghi CSDL.
+Kết quả đầy đủ: google-login/capture-log.json (18/10 16:28 giờ VN).
+
+Trước deploy (curl):  /api/v1/auth/google/authorize → 503
+                      /chinh-sach-bao-mat           → 404
+Sau deploy:
+  /dang-nhap          nút "Đăng nhập bằng Google", href /api/v1/auth/google/authorize
+                      (ảnh 01-dang-nhap.png)
+  bấm nút             307 → accounts.google.com/o/oauth2/v2/auth
+    client_id         3571…r.apps.googleusercontent.com (che bớt)
+    redirect_uri      https://devpath-01.me/api/v1/auth/google/callback  = mong đợi
+    response_type     code
+    scope             openid email profile
+    prompt            select_account
+    state             43 ký tự, khớp cookie devpath_oauth_state
+    cookie            Path=/api/v1/auth; HttpOnly; Secure; SameSite=Lax; Max-Age=600
+  Google              accounts.google.com/v3/signin/identifier, "Đăng nhập -
+                      Tài khoản Google", dòng "Tiếp tục tới devpath-01.me"
+                      (ảnh 02-google-dang-nhap.png). Google kiểm client_id và
+                      redirect_uri trước khi vẽ trang này; sai một ký tự là
+                      trang lỗi "Error 400: redirect_uri_mismatch".
+
+Callback không đi qua authorize của mình (curl, không cookie):
+  ?code=x&state=made-up   → 307 /dang-nhap?loi=GOOGLE_STATE_INVALID
+  ?error=access_denied    → 307 /dang-nhap?loi=GOOGLE_ACCESS_DENIED
+
+==============================================================================
+5. ĐĂNG NHẬP THẬT — user, tài khoản Google nằm trong Test users
+==============================================================================
+User bấm nút trên https://devpath-01.me/dang-nhap bằng Chrome của mình, chọn
+tài khoản, đồng ý, về trang chủ đã đăng nhập. Claude không nhập mật khẩu nào.
+
+CSDL project devpath-demo, đọc bằng psql trong container postgres (email che):
+  trước   16:28:47   google_users 0 · all_users 43
+  sau     16:33:11   google_users 1 · all_users 44
+
+  email_masked    h***@gmail.com
+  role            student
+  oauth_provider  google
+  sub_len         21            (định danh `sub` của Google, khóa liên kết)
+  email_verified  t             (claim email_verified của Google)
+  no_password     t             (tài khoản tạo bằng Google, không có mật khẩu)
+  google_avatar   t             (avatar_url ở lh3.googleusercontent.com)
+  has_name        t
+  not_locked      t
+  created_vn      2026-10-18 16:32:55.546
+  last_login_vn   2026-10-18 16:32:55.543
+
+  refresh_tokens  2 — cái đầu cấp lúc callback (16:32:55), đã bị xoay
+                  (revoked + replaced_by_id) khi trang tải lần đầu xin access
+                  token; cái thứ hai còn sống. Đúng luồng xoay vòng thường.
+
+==============================================================================
+6. TÌM RA: IP THẬT CỦA NGƯỜI DÙNG MẤT SAU TUNNEL (chưa sửa)
+==============================================================================
+Cả hai dòng refresh_tokens của phiên trên ghi ip_address = 172.20.0.8, tức
+IP của container devpath-demo-cloudflared-1 trên mạng compose, không phải IP
+của người dùng.
+
+Nguyên nhân: infra/nginx/snippets/proxy.conf ghi đè X-Forwarded-For bằng
+$remote_addr (sửa 01/10 để client không tự chọn IP). Trên VPS thật nginx là
+chặng đầu nên đúng; sau named tunnel, chặng ngay trước nginx là cloudflared.
+Comment trong tệp đã đoán trước: "If a CDN is ever put in front of nginx,
+this becomes the CDN's address and has to be taken from the CDN's own header
+instead, behind set_real_ip_from."
+
+Hệ quả trên https://devpath-01.me:
+  - Giới hạn theo IP (đăng ký 50/giờ/IP, đăng nhập 100/15 phút/IP) bị mọi
+    khách dùng chung một suất. Cả phòng cùng đăng ký thì người thứ 51 trong
+    giờ nhận 429 AUTH_RATE_LIMITED. Giới hạn theo email/tài khoản không đổi.
+  - Cột refresh_tokens.ip_address ghi cùng một IP nội bộ cho mọi người.
+Hướng sửa (task riêng): khi chạy sau tunnel, nginx lấy IP từ CF-Connecting-IP
+nhưng chỉ tin header đó nếu request đến từ cloudflared (`set_real_ip_from`
+đúng mạng của nó + `real_ip_header CF-Connecting-IP`), còn VPS không tunnel
+giữ nguyên như cũ. Không đổi trong task này vì đụng cấu hình bảo mật của nginx.
+
+==============================================================================
+7. CÒN LẠI
+==============================================================================
+  - Publish app (user, trong console) để mọi tài khoản Google đăng nhập được
+    — trang chính sách đã sẵn sàng (mục 2).
+  - Ảnh màn hình đã đăng nhập bằng Google thuộc "Mốc trình bày GVHD" (luồng
+    vàng trên tên miền thật) — chụp ở task đó.
+  - Lên máy chủ thật: giữ DOMAIN thì redirect URI giữ nguyên, không phải sửa
+    client trong Google.
+
+Tệp kèm (google-login/):
+  capture.cjs               script kiểm mục 4 (chạy lại được)
+  capture-log.json          kết quả lần chạy 18/10
+  01-dang-nhap.png          trang đăng nhập có nút Google
+  02-google-dang-nhap.png   trang của Google, "Tiếp tục tới devpath-01.me"
+  03-chinh-sach-bao-mat.png trang chính sách bảo mật (cả trang)

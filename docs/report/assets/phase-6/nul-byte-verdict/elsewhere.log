@@ -1,0 +1,2 @@
+POST /auth/register, full_name with a NUL (no sign-in needed) -> HTTP 500
+PATCH /users/me, full_name with a NUL -> HTTP 500

@@ -734,6 +734,49 @@ async def test_empty_code_is_refused(
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize("route", ["submissions", "trial-runs"])
+async def test_code_with_a_nul_byte_is_refused_before_it_is_stored(
+    api_client: AsyncClient,
+    exercise: dict,
+    owner: dict[str, str],
+    student: dict[str, str],
+    route: str,
+):
+    """A Postgres text column cannot hold `\\0`, so the insert would raise and
+    the student would get a 500. Python refuses such a file anyway ("source
+    code cannot contain null bytes"): the honest answer is a 422, now."""
+    await add_case(api_client, exercise, owner, is_hidden=False)
+
+    response = await api_client.post(
+        f"/api/v1/code-exercises/{exercise['id']}/{route}",
+        json={"code": "print(1)\x00"},
+        headers=student,
+    )
+
+    assert response.status_code == 422, response.text
+
+
+async def test_a_nul_byte_in_what_the_instructor_writes_is_refused(
+    api_client: AsyncClient, lesson: dict, exercise: dict, owner: dict[str, str]
+):
+    """Same column type, same 500 -- on the authoring side."""
+    case = await add_case(api_client, exercise, owner)
+    writes = [
+        ("post", f"/api/v1/code-exercises/{exercise['id']}/test-cases",
+         {"input": "1\x00", "expected_output": "3\n"}),
+        ("post", f"/api/v1/code-exercises/{exercise['id']}/test-cases",
+         {"input": "", "expected_output": "3\x00"}),
+        ("patch", f"/api/v1/test-cases/{case['id']}", {"input": "\x00"}),
+        ("patch", f"/api/v1/test-cases/{case['id']}", {"expected_output": "\x00"}),
+        ("patch", f"/api/v1/code-exercises/{exercise['id']}", {"starter_code": "\x00"}),
+        ("patch", f"/api/v1/code-exercises/{exercise['id']}", {"statement_md": "Đề\x00"}),
+    ]
+
+    for method, url, body in writes:
+        response = await getattr(api_client, method)(url, json=body, headers=owner)
+        assert response.status_code == 422, (method, url, body, response.text)
+
+
 async def test_the_history_is_newest_first_and_paged(
     api_client: AsyncClient, exercise: dict, owner: dict[str, str], student: dict[str, str]
 ):

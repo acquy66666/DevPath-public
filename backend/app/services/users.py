@@ -21,6 +21,7 @@ from app.services.storage import (
     avatar_prefix,
     delete_quietly,
 )
+from app.services.upload_limits import enforce_avatar_ticket_limit
 
 
 class RoleChangeNotAllowedError(DomainError):
@@ -125,8 +126,8 @@ async def change_password(
     return tokens
 
 
-def create_avatar_upload_ticket(
-    user: User, storage: ObjectStorage, data: AvatarUploadIn
+async def create_avatar_upload_ticket(
+    user: User, storage: ObjectStorage, data: AvatarUploadIn, *, limiter: RateLimiter
 ) -> AvatarUploadTicket:
     """Sign a URL the browser may PUT one picture to.
 
@@ -134,8 +135,11 @@ def create_avatar_upload_ticket(
     than the video flow: an avatar has no processing to follow, so until the
     browser says the bytes landed there is no state worth keeping. A ticket
     nobody uses costs one unreferenced object at worst, and the account goes
-    on wearing the picture it already had.
+    on wearing the picture it already had -- which is why the tickets are
+    counted, before one is signed: a loop of them is a loop of those objects.
     """
+    await enforce_avatar_ticket_limit(limiter, user.id)
+
     ttl = get_settings().upload_url_ttl_seconds
     key = avatar_key(user.id, data.filename)
     return AvatarUploadTicket(

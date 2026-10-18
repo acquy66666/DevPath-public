@@ -11,7 +11,9 @@ Two shapes, because they answer two different abuses:
 * `claim` -- one action per key per N seconds. A double-clicked button, or a
   script hammering one exercise.
 * `count` -- so many actions per key per window. A patient script that waits
-  out the cooldown, and the one thing a cooldown alone cannot stop.
+  out the cooldown, and the one thing a cooldown alone cannot stop. Given an
+  `amount`, the same counter is a budget: bytes of upload per day, where one
+  ticket for 2 GB and one for 2 KB are not the same thing to a disk.
 
 Redis holds both, because the API runs as several processes and a counter in
 Python memory would give each of them its own idea of the limit.
@@ -42,8 +44,14 @@ class RateLimiter(Protocol):
         """Take `key` for `seconds`. Returns 0 if it was free, else the wait."""
         ...
 
-    async def count(self, key: str, limit: int, window_seconds: int) -> int:
-        """Count one action against `limit` per window. 0 while under it."""
+    async def count(
+        self, key: str, limit: int, window_seconds: int, amount: int = 1
+    ) -> int:
+        """Spend `amount` of `limit` per window. 0 while it fits, else the wait.
+
+        A refused amount is not spent: the counter measures what was let
+        through.
+        """
         ...
 
 
@@ -69,15 +77,26 @@ class RedisRateLimiter:
         except RedisError as exc:
             return self._fail_open(exc)
 
-    async def count(self, key: str, limit: int, window_seconds: int) -> int:
+    async def count(
+        self, key: str, limit: int, window_seconds: int, amount: int = 1
+    ) -> int:
         try:
-            used = await self._redis.incr(key)
-            if used == 1:
-                # First of the window: give the counter its lifetime. Until
-                # this lands the key has none, which `_time_left` repairs.
+            # INCRBY, which redis-py spells `incr(key, amount)`.
+            used = await self._redis.incr(key, amount)
+            if used == amount:
+                # First of the window -- the counter was empty, whatever the
+                # amount: give it its lifetime. Until this lands the key has
+                # none, which `_time_left` repairs.
                 await self._redis.expire(key, window_seconds)
             if used <= limit:
                 return ALLOWED
+            # Over: take the amount back off. For a count of one this changes
+            # nothing anyone can see -- the window is just as spent. For a
+            # budget it is the difference between "2 GB did not fit, 300 MB
+            # still does" and a refused request eating the rest of the day.
+            # Two requests racing here can each see the other's amount for a
+            # moment and both be refused; the error is on the safe side.
+            await self._redis.decr(key, amount)
             return await self._time_left(key, window_seconds)
         except RedisError as exc:
             return self._fail_open(exc)

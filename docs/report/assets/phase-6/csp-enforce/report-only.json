@@ -1,0 +1,975 @@
+{
+  "label": "report-only",
+  "base": "https://devpath-01.me",
+  "started": "2026-10-18T11:10:31.958Z",
+  "browser": "chrome",
+  "policies": {
+    "content-security-policy: frame-ancestors 'none'": 44,
+    "content-security-policy-report-only: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'": 43,
+    "content-security-policy-report-only: frame-ancestors 'none'": 1
+  },
+  "control": {
+    "policy": "script-src 'self'; img-src 'none' (Report-Only)",
+    "event": 17,
+    "console": 17,
+    "directives": [
+      "img-src",
+      "script-src-elem"
+    ]
+  },
+  "steps": [
+    {
+      "name": "đối chứng: bộ thu bắt được vi phạm cố ý",
+      "ok": true,
+      "ms": 4508,
+      "note": "sự kiện 17, console 17, chỉ thị img-src, script-src-elem"
+    },
+    {
+      "name": "xem /",
+      "ok": true,
+      "ms": 2693,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khoa-hoc",
+      "ok": true,
+      "ms": 2903,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khoa-hoc?q=python",
+      "ok": true,
+      "ms": 2701,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /bang-xep-hang",
+      "ok": true,
+      "ms": 2797,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /chinh-sach-bao-mat",
+      "ok": true,
+      "ms": 2671,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /tro-thanh-giang-vien",
+      "ok": true,
+      "ms": 2810,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /dang-ky",
+      "ok": true,
+      "ms": 2225,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khong-co-trang-nay",
+      "ok": true,
+      "ms": 2454,
+      "note": "HTTP 404"
+    },
+    {
+      "name": "xem /khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "ok": true,
+      "ms": 2596,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khoa-hoc/xay-dung-rest-api-voi-fastapi",
+      "ok": true,
+      "ms": 31588,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khoa-hoc/javascript-hien-dai-es6-va-dom",
+      "ok": true,
+      "ms": 2700,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "ok": true,
+      "ms": 31564,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "chứng chỉ công khai + PDF",
+      "ok": true,
+      "ms": 13170,
+      "note": "QXWA3B5ADZEL6W3K, PDF HTTP 200, application/pdf"
+    },
+    {
+      "name": "nút Google trên /dang-nhap dẫn sang Google",
+      "ok": true,
+      "ms": 2996,
+      "note": "accounts.google.com"
+    },
+    {
+      "name": "đăng ký tài khoản học viên",
+      "ok": true,
+      "ms": 3327,
+      "note": "csp-mvdq7ixg@e2e.devpath.example"
+    },
+    {
+      "name": "xem /",
+      "ok": true,
+      "ms": 2480,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "ghi danh khóa Python miễn phí",
+      "ok": true,
+      "ms": 2784,
+      "note": null
+    },
+    {
+      "name": "phát video HLS",
+      "ok": true,
+      "ms": 5445,
+      "note": "currentTime 2.0 s, src https…"
+    },
+    {
+      "name": "trợ giảng AI trả lời qua SSE",
+      "ok": true,
+      "ms": 2191,
+      "note": "HTTP 200 text/event-stream; charset=utf-8"
+    },
+    {
+      "name": "bài đọc",
+      "ok": true,
+      "ms": 2630,
+      "note": null
+    },
+    {
+      "name": "Monaco + chạy thử trong sandbox",
+      "ok": true,
+      "ms": 8268,
+      "note": "run HTTP 201, worker: blob"
+    },
+    {
+      "name": "đổi ảnh đại diện (PUT lên bucket bằng URL ký sẵn)",
+      "ok": true,
+      "ms": 3783,
+      "note": "PUT HTTP 200, ảnh mới hiện"
+    },
+    {
+      "name": "xem /khoa-hoc-cua-toi",
+      "ok": true,
+      "ms": 2874,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /thong-bao",
+      "ok": true,
+      "ms": 2648,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /yeu-thich",
+      "ok": true,
+      "ms": 2534,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /bang-xep-hang",
+      "ok": true,
+      "ms": 2547,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "giỏ hàng → sang VNPay với URL đã ký",
+      "ok": true,
+      "ms": 5527,
+      "note": "sandbox.vnpayment.vn"
+    },
+    {
+      "name": "đăng nhập instructor",
+      "ok": false,
+      "ms": 30004,
+      "error": "TimeoutError: page.goto: Timeout 30000ms exceeded."
+    },
+    {
+      "name": "xem /giang-day",
+      "ok": true,
+      "ms": 4414,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /giang-day/thong-ke",
+      "ok": true,
+      "ms": 4002,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /giang-day/hoi-dap",
+      "ok": true,
+      "ms": 4421,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /giang-day/moi",
+      "ok": true,
+      "ms": 4882,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "đăng nhập admin",
+      "ok": true,
+      "ms": 5530,
+      "note": null
+    },
+    {
+      "name": "xem /quan-tri",
+      "ok": true,
+      "ms": 8823,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/khoa-hoc",
+      "ok": true,
+      "ms": 5505,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/khoa-hoc/7c3bc1b1-3db9-4dd1-a50f-26639fb9ed42",
+      "ok": true,
+      "ms": 7730,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/bao-cao",
+      "ok": true,
+      "ms": 5531,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/nguoi-dung",
+      "ok": true,
+      "ms": 6010,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/danh-muc",
+      "ok": true,
+      "ms": 6398,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/ma-giam-gia",
+      "ok": true,
+      "ms": 5695,
+      "note": "HTTP 200"
+    },
+    {
+      "name": "xem /quan-tri/banner",
+      "ok": true,
+      "ms": 6271,
+      "note": "HTTP 200"
+    }
+  ],
+  "violations": [
+    {
+      "step": "xem /",
+      "via": "console",
+      "page": "/",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /",
+      "via": "event",
+      "page": "/",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc",
+      "via": "console",
+      "page": "/khoa-hoc",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc",
+      "via": "event",
+      "page": "/khoa-hoc",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc?q=python",
+      "via": "console",
+      "page": "/khoa-hoc?q=python",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc?q=python",
+      "via": "event",
+      "page": "/khoa-hoc?q=python",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /bang-xep-hang",
+      "via": "console",
+      "page": "/bang-xep-hang",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /bang-xep-hang",
+      "via": "event",
+      "page": "/bang-xep-hang",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /chinh-sach-bao-mat",
+      "via": "console",
+      "page": "/chinh-sach-bao-mat",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /chinh-sach-bao-mat",
+      "via": "event",
+      "page": "/chinh-sach-bao-mat",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /tro-thanh-giang-vien",
+      "via": "console",
+      "page": "/tro-thanh-giang-vien",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /tro-thanh-giang-vien",
+      "via": "event",
+      "page": "/tro-thanh-giang-vien",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /dang-ky",
+      "via": "console",
+      "page": "/dang-ky",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /dang-ky",
+      "via": "event",
+      "page": "/dang-ky",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khong-co-trang-nay",
+      "via": "console",
+      "page": "/khong-co-trang-nay",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khong-co-trang-nay",
+      "via": "event",
+      "page": "/khong-co-trang-nay",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "via": "console",
+      "page": "/khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "via": "event",
+      "page": "/khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc/xay-dung-rest-api-voi-fastapi",
+      "via": "console",
+      "page": "/khoa-hoc/xay-dung-rest-api-voi-fastapi",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc/xay-dung-rest-api-voi-fastapi",
+      "via": "event",
+      "page": "/khoa-hoc/xay-dung-rest-api-voi-fastapi",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc/javascript-hien-dai-es6-va-dom",
+      "via": "console",
+      "page": "/khoa-hoc/javascript-hien-dai-es6-va-dom",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc/javascript-hien-dai-es6-va-dom",
+      "via": "event",
+      "page": "/khoa-hoc/javascript-hien-dai-es6-va-dom",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "via": "console",
+      "page": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "via": "event",
+      "page": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "chứng chỉ công khai + PDF",
+      "via": "console",
+      "page": "/cert/QXWA3B5ADZEL6W3K",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "chứng chỉ công khai + PDF",
+      "via": "event",
+      "page": "/cert/QXWA3B5ADZEL6W3K",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "nút Google trên /dang-nhap dẫn sang Google",
+      "via": "console",
+      "page": "/dang-nhap",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "nút Google trên /dang-nhap dẫn sang Google",
+      "via": "event",
+      "page": "/dang-nhap",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "đăng ký tài khoản học viên",
+      "via": "console",
+      "page": "/dang-ky",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "đăng ký tài khoản học viên",
+      "via": "event",
+      "page": "/dang-ky",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /",
+      "via": "console",
+      "page": "/",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /",
+      "via": "event",
+      "page": "/",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "ghi danh khóa Python miễn phí",
+      "via": "console",
+      "page": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "ghi danh khóa Python miễn phí",
+      "via": "event",
+      "page": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "phát video HLS",
+      "via": "console",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "phát video HLS",
+      "via": "event",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "bài đọc",
+      "via": "console",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=53aaa037-69dc-4fa0-94db-d16ff7c7aefa",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "bài đọc",
+      "via": "event",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=53aaa037-69dc-4fa0-94db-d16ff7c7aefa",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "Monaco + chạy thử trong sandbox",
+      "via": "console",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a361fbf9-15ed-4bf4-8544-3a407a70a15d",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "Monaco + chạy thử trong sandbox",
+      "via": "event",
+      "page": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a361fbf9-15ed-4bf4-8544-3a407a70a15d",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "đổi ảnh đại diện (PUT lên bucket bằng URL ký sẵn)",
+      "via": "console",
+      "page": "/ho-so",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "đổi ảnh đại diện (PUT lên bucket bằng URL ký sẵn)",
+      "via": "event",
+      "page": "/ho-so",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /khoa-hoc-cua-toi",
+      "via": "console",
+      "page": "/khoa-hoc-cua-toi",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /khoa-hoc-cua-toi",
+      "via": "event",
+      "page": "/khoa-hoc-cua-toi",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /thong-bao",
+      "via": "console",
+      "page": "/thong-bao",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /thong-bao",
+      "via": "event",
+      "page": "/thong-bao",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /yeu-thich",
+      "via": "console",
+      "page": "/yeu-thich",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /yeu-thich",
+      "via": "event",
+      "page": "/yeu-thich",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /bang-xep-hang",
+      "via": "console",
+      "page": "/bang-xep-hang",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /bang-xep-hang",
+      "via": "event",
+      "page": "/bang-xep-hang",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "giỏ hàng → sang VNPay với URL đã ký",
+      "via": "console",
+      "page": "/khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "giỏ hàng → sang VNPay với URL đã ký",
+      "via": "event",
+      "page": "/khoa-hoc/cau-truc-du-lieu-va-giai-thuat-voi-python",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "giỏ hàng → sang VNPay với URL đã ký",
+      "via": "console",
+      "page": "/gio-hang",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "giỏ hàng → sang VNPay với URL đã ký",
+      "via": "event",
+      "page": "/gio-hang",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "đăng nhập instructor",
+      "via": "console",
+      "page": "/giang-day",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "đăng nhập instructor",
+      "via": "event",
+      "page": "/giang-day",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /giang-day",
+      "via": "console",
+      "page": "/giang-day",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /giang-day",
+      "via": "event",
+      "page": "/giang-day",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /giang-day/thong-ke",
+      "via": "console",
+      "page": "/giang-day/thong-ke",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /giang-day/thong-ke",
+      "via": "event",
+      "page": "/giang-day/thong-ke",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /giang-day/hoi-dap",
+      "via": "console",
+      "page": "/giang-day/hoi-dap",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /giang-day/hoi-dap",
+      "via": "event",
+      "page": "/giang-day/hoi-dap",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /giang-day/moi",
+      "via": "console",
+      "page": "/giang-day/moi",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /giang-day/moi",
+      "via": "event",
+      "page": "/giang-day/moi",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "đăng nhập admin",
+      "via": "console",
+      "page": "/dang-nhap",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "đăng nhập admin",
+      "via": "event",
+      "page": "/dang-nhap",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri",
+      "via": "console",
+      "page": "/quan-tri",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri",
+      "via": "event",
+      "page": "/quan-tri",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/khoa-hoc",
+      "via": "console",
+      "page": "/quan-tri/khoa-hoc",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/khoa-hoc",
+      "via": "event",
+      "page": "/quan-tri/khoa-hoc",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/khoa-hoc/7c3bc1b1-3db9-4dd1-a50f-26639fb9ed42",
+      "via": "console",
+      "page": "/quan-tri/khoa-hoc/7c3bc1b1-3db9-4dd1-a50f-26639fb9ed42",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/khoa-hoc/7c3bc1b1-3db9-4dd1-a50f-26639fb9ed42",
+      "via": "event",
+      "page": "/quan-tri/khoa-hoc/7c3bc1b1-3db9-4dd1-a50f-26639fb9ed42",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/bao-cao",
+      "via": "console",
+      "page": "/quan-tri/bao-cao",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/bao-cao",
+      "via": "event",
+      "page": "/quan-tri/bao-cao",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/nguoi-dung",
+      "via": "console",
+      "page": "/quan-tri/nguoi-dung",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/nguoi-dung",
+      "via": "event",
+      "page": "/quan-tri/nguoi-dung",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/danh-muc",
+      "via": "console",
+      "page": "/quan-tri/danh-muc",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/danh-muc",
+      "via": "event",
+      "page": "/quan-tri/danh-muc",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/ma-giam-gia",
+      "via": "console",
+      "page": "/quan-tri/ma-giam-gia",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/ma-giam-gia",
+      "via": "event",
+      "page": "/quan-tri/ma-giam-gia",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    },
+    {
+      "step": "xem /quan-tri/banner",
+      "via": "console",
+      "page": "/quan-tri/banner",
+      "text": "Loading the script 'https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092' violates the following Content Security Policy directive: \"script-src 'self' 'unsafe-inline'\". Note that 'script-src-elem' was not explicitly set, so 'script-src' is used as a fallback. The policy is report-only, so the violation has been logged but no further action has been taken."
+    },
+    {
+      "step": "xem /quan-tri/banner",
+      "via": "event",
+      "page": "/quan-tri/banner",
+      "disposition": "report",
+      "effectiveDirective": "script-src-elem",
+      "blockedURI": "https://static.cloudflareinsights.com/beacon.min.js/vce701823e78c4301a35b7e07294d87301792088814092",
+      "sourceFile": "",
+      "lineNumber": 0,
+      "sample": ""
+    }
+  ],
+  "pageErrors": [],
+  "purged": "Đã gỡ 1 tài khoản, 0 khóa học, 1 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại."
+}

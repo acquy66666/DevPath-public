@@ -12,7 +12,13 @@
  */
 import path from "node:path";
 
-import { expect, type Page, request as playwrightRequest, test } from "@playwright/test";
+import {
+  type ConsoleMessage,
+  expect,
+  type Page,
+  request as playwrightRequest,
+  test,
+} from "@playwright/test";
 
 import {
   PASSWORD,
@@ -24,6 +30,14 @@ import {
 } from "./support/stack";
 
 const VNPAY = /^https:\/\/sandbox\.vnpayment\.vn\//;
+
+/**
+ * Cloudflare's analytics beacon. Cloudflare's edge adds it to every page of a
+ * zone that has RUM switched on -- free zones do by default -- so it is not
+ * the site's, and the policy refusing it is the policy doing its job
+ * (infra/nginx/snippets/security-headers.conf).
+ */
+const EDGE_BEACON = /https:\/\/static\.cloudflareinsights\.com\/beacon/;
 
 /** The fields of a grading event this spec reads (`GradingEvent` in lib/api). */
 interface GradingFrame {
@@ -55,8 +69,28 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
   const fullName = "Học Viên Luồng Vàng";
   const email = `${unique("hocvien")}@e2e.devpath.example`;
 
+  // Everything the browser refused -- or, under a Report-Only policy, would
+  // have refused -- on the way. nginx sends the Content-Security-Policy, so
+  // the dev stack has none and this stays empty there; against the production
+  // stack it is the check that the policy and the site still agree
+  // (docs/report/assets/phase-6/csp-enforce.txt). Chrome prints every
+  // violation, a worker's included, to the console.
+  const refused: string[] = [];
+  const noteRefusal = (where: () => string) => (message: ConsoleMessage) => {
+    const text = message.text();
+    if (/Content Security Policy/i.test(text) && !EDGE_BEACON.test(text)) {
+      refused.push(`${where()}: ${text}`);
+    }
+  };
+  page.on("console", noteRefusal(() => page.url()));
+  page.on("worker", (worker) => worker.on("console", noteRefusal(() => worker.url())));
+
   await test.step("đăng ký tài khoản", async () => {
-    await page.goto("/dang-ky");
+    const response = await page.goto("/dang-ky");
+    if (new URL(page.url()).protocol === "https:") {
+      // Behind nginx: the policy is enforced, not merely reported.
+      expect(response?.headers()["content-security-policy"]).toContain("default-src 'self'");
+    }
     await page.getByLabel("Họ và tên").fill(fullName);
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Mật khẩu").fill(PASSWORD);
@@ -171,4 +205,8 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
     await expect(page.getByText(course.title).first()).toBeVisible();
     await snap(page, "08-chung-chi");
   });
+
+  // The last page's late loads report too.
+  await page.waitForLoadState("networkidle");
+  expect(refused, "Content-Security-Policy violations").toEqual([]);
 });

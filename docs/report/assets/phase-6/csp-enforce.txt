@@ -1,0 +1,187 @@
+BẬT ENFORCE CHO CONTENT-SECURITY-POLICY — https://devpath-01.me
+Ngày: 18/10/2026 · nhánh feature/csp-enforce (chồng lên feature/tunnel-real-ip)
+Task Phase 6 (mục "Vận hành"): từ 01/10 policy đầy đủ chỉ ở chế độ
+Content-Security-Policy-Report-Only, cái duy nhất được enforce là
+`frame-ancestors 'none'`. Điều kiện để bật: Chrome chạy luồng vàng trên tên
+miền thật mà console không có vi phạm nào của site.
+
+Giờ ghi theo giờ Việt Nam. Stack: project compose `devpath-demo` (stack
+production trên máy dev, qua Cloudflare named tunnel). Snippet nginx được
+bind-mount nên đổi header chỉ cần `nginx -t && nginx -s reload`, không build lại.
+
+Công cụ:
+  csp-enforce/csp-probe.cjs   Chrome thật (Playwright 1.63, channel chrome) đi qua
+                              mọi vai; ghi vi phạm từ 3 nguồn: sự kiện
+                              `securitypolicyviolation` (chi tiết + report/enforce),
+                              console của trang, console của worker. Kiểm cả chức
+                              năng (video phát, SSE xong, PUT 200…), không chỉ
+                              đếm vi phạm. Tự dọn bằng scripts.purge_e2e.
+  frontend/e2e/golden-flow.spec.ts  thêm bước kiểm: có vi phạm CSP là đỏ; chạy
+                              vào https thì header phải là policy enforce.
+
+==============================================================================
+1. ĐỐI CHỨNG: BỘ THU CÓ NGHE THẤY KHÔNG
+==============================================================================
+"0 vi phạm" chỉ có nghĩa khi bộ thu đã bắt được một vi phạm cố ý. Mỗi lượt
+probe mở đầu bằng trang chủ trả lại qua `page.route` với policy Report-Only
+chặt hơn (`script-src 'self'; img-src 'none'`):
+
+  sự kiện 17, console 17 — chỉ thị script-src-elem (script nội tuyến của Next),
+  img-src. Giống hệt ở cả 3 lượt.
+
+==============================================================================
+2. TRƯỚC KHI BẬT: REPORT-ONLY (18:10–18:15) — csp-enforce/report-only.json
+==============================================================================
+42 bước, 1 hỏng: đăng nhập giảng viên (`page.goto /dang-nhap` quá 30 s,
+không lặp lại ở 2 lượt sau, nên lượt này các trang /giang-day được xem
+dưới vai khách).
+
+82 vi phạm = 41 sự kiện (disposition `report`) + 41 dòng console, TẤT CẢ cùng
+một thứ:
+
+  script-src-elem  https://static.cloudflareinsights.com/beacon.min.js/vce70…
+
+Đó là beacon Web Analytics/RUM do EDGE CỦA CLOUDFLARE tự chèn vào HTML của
+mọi trang trong zone, không phải code của site. Cloudflare ghi rõ zone Free
+được bật RUM tự động (trừ khách ở EU):
+  https://developers.cloudflare.com/speed/observatory/rum-beacon/
+  https://developers.cloudflare.com/web-analytics/faq/
+
+Vi phạm của chính site: 0. Vì Report-Only không chặn, tới lúc này beacon
+vẫn được tải và chạy trên mọi trang, mà trang /chinh-sach-bao-mat không hề
+nói với khách là có đo lường như vậy.
+
+==============================================================================
+3. QUYẾT ĐỊNH: GIỮ POLICY, KHÔNG MỞ CHO BEACON
+==============================================================================
+Đã cân nhắc thêm https://static.cloudflareinsights.com vào script-src. Không
+làm, vì ba lẽ:
+  - không phần nào của site cần nó; policy giữ nguyên tắc "không host script
+    bên ngoài nào" ghi trong security-headers.conf từ 01/10;
+  - nó đo khách mà trang chính sách bảo mật không hề nhắc tới; enforce chặn
+    nó thì lời hứa của trang đó lại đúng;
+  - chặn nó không làm hỏng gì (mục 4: mọi chức năng vẫn chạy).
+
+Hệ quả: mỗi trang có một dòng đỏ "blocked" trong console cho tới khi tắt RUM
+của zone trong dashboard Cloudflare (việc của user, đã ghi vào
+docs/huong-dan-ten-mien-va-tunnel.md mục D1.8). Probe đếm riêng beacon này là "edge chèn", E2E bỏ qua nó; cả hai không tính
+nó là vi phạm của site. Chỉ đúng URL đó, mọi vi phạm khác vẫn làm đỏ.
+
+Đổi trong infra/nginx/snippets/security-headers.conf:
+  - `Content-Security-Policy-Report-Only: <policy>` → `Content-Security-Policy: <policy>`
+    (policy giữ nguyên từng chữ, đã có `frame-ancestors 'none'`);
+  - bỏ dòng `Content-Security-Policy "frame-ancestors 'none'"` riêng;
+  - giữ `X-Frame-Options: DENY` cho trình duyệt cũ.
+Reload nginx trên devpath-demo lúc 18:17. `curl -I https://devpath-01.me/`:
+  content-security-policy: default-src 'self'; script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:;
+    media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https:;
+    worker-src 'self' blob:; object-src 'none'; base-uri 'self';
+    form-action 'self'; frame-ancestors 'none'
+  x-frame-options: DENY
+  (không còn header Report-Only nào)
+
+==============================================================================
+4. SAU KHI BẬT: ENFORCE (18:26–18:29) — csp-enforce/enforce.json
+==============================================================================
+44 bước, 0 hỏng · 0 vi phạm của site · 0 lỗi JS không bắt · exit 0
+Beacon Cloudflare bị CHẶN 88 lần (44 sự kiện `enforce` + 44 console, 36 URL).
+Lượt enforce đầu (18:18–18:21, trước khi tách beacon) ra đúng số đó.
+
+Những thứ dễ bị CSP làm hỏng, và kết quả thật:
+  video HLS (hls.js: worker blob:, MSE blob:, segment từ test-streams.mux.dev)
+                       → phát, currentTime 2,0 s
+  trợ giảng AI (fetch + SSE)  → HTTP 200 text/event-stream, panel báo "đã trả lời xong"
+  Monaco (AMD loader /monaco, worker blob:) + Chạy thử trong sandbox
+                       → POST trial-runs 201, kết quả hiện, worker blob đang chạy
+  ảnh đại diện: PUT thẳng lên /devpath-media bằng URL ký sẵn (connect-src)
+                       → PUT 200, ảnh mới hiện (naturalWidth > 0)
+  giỏ → "Thanh toán qua VNPay" → điều hướng sang sandbox.vnpayment.vn (thay bằng route)
+  /dang-nhap → nút Google → accounts.google.com
+  PDF chứng chỉ trong tab mới, với `object-src 'none'` → trình xem PDF của
+                       Chrome mở bình thường (csp-enforce/enforce-pdf.png).
+                       Chrome bọc PDF trong một tài liệu chỉ mang lại
+                       `frame-ancestors 'none'` của policy (Playwright thấy header
+                       đó; curl thấy policy đầy đủ ở edge, cf-cache-status DYNAMIC).
+Các trang đã mở, mỗi trang có cuộn hết để ảnh lazy cũng được tải:
+  khách:     /, /khoa-hoc, /khoa-hoc?q=python, /bang-xep-hang, /chinh-sach-bao-mat,
+             /tro-thanh-giang-vien, /dang-ky, trang 404, 4 trang chi tiết khóa,
+             /cert/<mã>, /dang-nhap
+  học viên mới (@e2e, tự đăng ký qua form): /, ghi danh, /hoc (video, bài đọc,
+             bài code), /ho-so, /khoa-hoc-cua-toi, /thong-bao, /yeu-thich,
+             /bang-xep-hang, /gio-hang
+  giảng viên khoa.tran: /giang-day, trình soạn 2 khóa, /giang-day/thong-ke,
+             /giang-day/hoi-dap, /giang-day/moi
+  admin:     /quan-tri, /quan-tri/khoa-hoc, trang duyệt khóa Python, /bao-cao,
+             /nguoi-dung, /danh-muc, /ma-giam-gia, /banner
+45 lượt điều hướng mang đúng policy enforce ở trên (trừ tab PDF, xem trên).
+
+==============================================================================
+5. LUỒNG VÀNG E2E TRÊN TÊN MIỀN THẬT, CSP ENFORCE
+==============================================================================
+E2E_BASE_URL=E2E_API_URL=https://devpath-01.me, IPN giả lập ký trong container
+backend của devpath-demo (một tệp compose tạm chỉ khai `name: devpath-demo` để
+`docker compose exec` tìm thấy container).
+
+  lượt 1 (~18:22): mọi bước qua, kể cả khung WebSocket chấm bài + chứng chỉ;
+                  đỏ ở bước kiểm cuối vì 6 dòng beacon Cloudflare → dẫn tới tách
+                  beacon "edge chèn" (mục 3).
+  lượt 2 (18:24): 1 passed (33,7 s). Ảnh 8 bước: csp-enforce/e2e/.
+
+Đột biến (spec sửa tạm rồi trả lại, `git diff` xác nhận):
+  1. `page.route` thay header của /dang-ky bằng `script-src 'self'`
+     → đỏ ngay ở bước kiểm header: Expected "default-src 'self'",
+       Received "script-src 'self'".
+  2. giữ header thật, thêm `Content-Security-Policy-Report-Only: script-src 'self'`
+     cho /dang-ky (trang vẫn chạy) → cả luồng qua, đỏ đúng ở bước kiểm cuối:
+     2 dòng "Executing inline script violates … 'script-src 'self''".
+     (Lượt đầu của đột biến này hỏng ở beforeAll vì ECONNRESET lúc dựng khóa
+     qua Cloudflare, không liên quan; chạy lại ra kết quả trên.)
+
+CI chạy E2E trên stack dev (không có nginx, không có CSP) nên ở đó bước kiểm
+này luôn rỗng; nó có tác dụng khi chạy vào stack production, như mục này.
+
+==============================================================================
+6. CI: KHÔNG QUAY LẠI REPORT-ONLY
+==============================================================================
+Bước "nginx accepts the rendered config" (job deploy-config) thêm hai kiểm trên
+`nginx -T`: không còn chữ Content-Security-Policy-Report-Only, và có
+`add_header Content-Security-Policy "default-src … script-src … frame-ancestors`.
+Chạy đúng các lệnh đó trong nginx:1.27-alpine trên máy dev:
+  cấu hình thật                                   → CSP check passed, exit 0
+  đột biến: đổi lại tên Report-Only               → "back to Report-Only", exit 1
+  đột biến: chỉ còn frame-ancestors 'none'        → "lost its directives", exit 1
+
+==============================================================================
+7. DỮ LIỆU
+==============================================================================
+Mỗi lượt probe và E2E dọn bằng scripts.purge_e2e (1 tài khoản, 1 đơn chờ
+thanh toán mỗi lượt probe). Sau cùng, CSDL devpath-demo: 0 tài khoản
+@e2e.devpath.example, 0 khóa E2E, 0 đơn của chúng. Ảnh đại diện tải lên trong
+probe là object mồ côi, job dọn mồ côi xóa sau 1 + 14 ngày.
+Lượt probe đầu tiên (bỏ) treo 20 phút ở `response.finished()` của Playwright
+với luồng SSE (câu trả lời đã lưu sau 1,5 s); giờ chờ câu panel báo xong, và
+mỗi bước có trần 3 phút.
+
+==============================================================================
+8. CÒN LẠI, GHI RÕ
+==============================================================================
+- `script-src 'unsafe-inline'` vẫn còn: Next chèn script khởi động nội tuyến.
+  Thay bằng nonce thì theo tài liệu Next (node_modules/next/dist/docs/01-app/
+  02-guides/content-security-policy.md) mọi trang phải render động, mất trang
+  tĩnh. Vì vậy policy này KHÔNG chặn được XSS chèn script nội tuyến. Thứ nó
+  chặn được: script từ host khác (beacon ở trên là ví dụ thật), eval (không có
+  'unsafe-eval'), <object>/<embed>, đổi <base>, form gửi đi nơi khác, bị nhúng
+  khung.
+- `img-src`/`media-src`/`connect-src` vẫn mở `https:`: video seed là luồng HLS
+  mẫu trên test-streams.mux.dev, ảnh Google ở lh3.googleusercontent.com, và
+  bucket chuyển sang R2 thì đổi host. Thu hẹp được khi video seed về bucket.
+- Chỉ đo trên Chrome. Firefox/Safari chưa chạy.
+- Chưa có báo cáo vi phạm từ khách thật (report-uri/report-to): thêm thì phải
+  thêm một endpoint ghi nhận, việc mới ở pha đóng băng nghiệp vụ.
+- Không có quiz trên CSDL demo nên màn làm quiz chưa được mở dưới policy này
+  (không tải gì ngoài React/API). Upload video của giảng viên không chạy qua
+  UI; nó dùng đúng cơ chế PUT lên /devpath-media mà ảnh đại diện đã chạy ở trên.
+- Phase 7 thêm thư viện hoạt ảnh/font/hình: chạy lại csp-probe.cjs và E2E vào
+  stack production trước khi merge. Rive (WASM) thì phải kiểm 'wasm-unsafe-eval'
+  trước khi chọn (docs/ui-ux/thiet-ke-nang-cap-ui-ux.md).

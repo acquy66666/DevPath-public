@@ -419,6 +419,17 @@ jobs:
                 echo "nginx ignores X-Accel-Buffering: the chat answers would stop streaming" >&2
                 exit 1
               fi
+              # The site policy is enforced, not merely reported, and is the
+              # whole policy rather than frame-ancestors alone: a browser ran
+              # every role through it with no violation first
+              # (phase-6/csp-enforce.txt).
+              if nginx -T 2>/dev/null | grep -q "Content-Security-Policy-Report-Only"; then
+                echo "the Content-Security-Policy is back to Report-Only" >&2
+                exit 1
+              fi
+              nginx -T 2>/dev/null \
+                | grep -qE "add_header Content-Security-Policy \"default-src [^\"]*script-src [^\"]*frame-ancestors" \
+                || { echo "the enforced Content-Security-Policy lost its directives" >&2; exit 1; }
               # The media bucket is served on this origin. Without Host passed
               # through, every presigned upload is a 403 (measured); without
               # the sandbox policy, an uploaded file opened as a page would run

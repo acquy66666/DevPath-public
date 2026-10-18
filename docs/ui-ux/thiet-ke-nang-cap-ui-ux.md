@@ -49,7 +49,7 @@ Lý do đằng sau **(giả định)**: giao diện hiện tại là shadcn/ui g
 | E2E luồng vàng dựa vào role/name trên UI thật, kể cả khung WebSocket chấm bài | `frontend/e2e/golden-flow.spec.ts` | Mỗi đổi chữ/vai trò phải sửa spec cùng commit; E2E chạy sau mỗi nhóm màn |
 | Script chụp 42 ảnh cho chương 4 | `docs/report/assets/phase-6/ui/capture.cjs` | Chạy *trước* (ảnh "trước") và *sau* (ảnh mới cho báo cáo) |
 | Media cùng origin, CSP sandbox cho tệp tải lên | `infra/nginx/snippets/media.conf` | Asset nhân vật nằm trong `frontend/public` (bundle), **không** đi qua bucket |
-| CSP sắp bật enforce (task Phase 6) | `infra/nginx/snippets/security-headers.conf` | Thư viện hoạt ảnh không được cần `unsafe-eval`. Rive dùng WASM → kiểm `script-src`/`wasm-unsafe-eval` trước khi chọn |
+| CSP đã enforce (18/10, task Phase 6) | `infra/nginx/snippets/security-headers.conf` | Thư viện hoạt ảnh không được cần `unsafe-eval`. Rive dùng WASM → kiểm `script-src`/`wasm-unsafe-eval` trước khi chọn. Trước khi merge một nhóm màn đổi thứ được tải (thư viện, font, hình): chạy `docs/report/assets/phase-6/csp-enforce/csp-probe.cjs` + E2E vào stack production — vi phạm nào cũng là đỏ |
 | Chứng chỉ PDF vẽ bằng WeasyPrint | `backend/app/services/certificates.py` | Nếu đưa nhân vật/màu mới vào PDF thì đó là đổi backend; để ngoài đợt này **(giả định)** |
 
 ## 4. Nhân vật linh vật

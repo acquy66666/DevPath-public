@@ -72,6 +72,14 @@ services:
     depends_on:
       tunnel-cert:
         condition: service_completed_successfully
+    # Takes the visitor's address from CF-Connecting-IP -- from cloudflared's
+    # address below and nowhere else. The real server does without it.
+    volumes:
+      - ./nginx/tunnel/real-ip.conf:/etc/nginx/conf.d/tunnel-real-ip.conf:ro
+    networks:
+      tunnel:
+        # Pinned too, only so that it can never be handed cloudflared's.
+        ipv4_address: 10.250.250.2
 
   backend:
     environment:
@@ -104,6 +112,25 @@ services:
     command: ["tunnel", "--no-autoupdate", "run"]
     environment:
       TUNNEL_TOKEN: ${TUNNEL_TOKEN:?set TUNNEL_TOKEN in .env.prod, or remove it to deploy without the tunnel}
+    # On the tunnel network alone, at a fixed address: the one address
+    # nginx/tunnel/real-ip.conf believes CF-Connecting-IP from. Not on
+    # `default` as well -- there `nginx` would also resolve to nginx's other
+    # address, and a request sent that way would come from one nginx does not
+    # trust (the visitor counted as cloudflared again). The network is not
+    # internal: cloudflared dials out to Cloudflare through it.
+    networks:
+      tunnel:
+        ipv4_address: 10.250.250.3
     depends_on:
       nginx:
         condition: service_healthy
+
+networks:
+  # cloudflared -> nginx, nobody else. A /29 outside Docker's own pools
+  # (172.17-31.x, 192.168.x), so no network compose creates by itself can
+  # take it first; .1 is the gateway, and it is not trusted either.
+  tunnel:
+    ipam:
+      config:
+        - subnet: 10.250.250.0/29
+          gateway: 10.250.250.1

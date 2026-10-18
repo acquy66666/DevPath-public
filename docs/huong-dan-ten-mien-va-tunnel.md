@@ -101,6 +101,8 @@ Rồi mở **Additional application settings → TLS** → bật **No TLS Verify
 
 Vì sao `https://nginx:443` và *No TLS Verify*: nginx của stack phục vụ HTTPS bằng một chứng chỉ tự ký, vì Let's Encrypt không gọi ngược được về máy dev. Đoạn cloudflared → nginx nằm trong mạng Docker; chứng chỉ người xem thấy là chứng chỉ thật của Cloudflare. Trỏ vào `http://nginx:80` thì nginx chuyển hướng sang https, rồi Cloudflare lại gửi về http, và trình duyệt quay vòng mãi.
 
+IP của người xem: sau tunnel, nginx chỉ thấy cloudflared, nên nó lấy IP thật từ header `CF-Connecting-IP` mà Cloudflare viết — và chỉ tin header đó từ đúng địa chỉ của cloudflared (`10.250.250.3`, trên mạng riêng `tunnel` mà `docker-compose.named-tunnel.yml` tạo). Nhờ vậy giới hạn đăng ký/đăng nhập theo IP tính riêng từng người, và danh sách thiết bị đăng nhập ghi đúng IP. Deploy báo `Pool overlaps` nghĩa là dải `10.250.250.0/29` trùng một mạng có sẵn: đổi ở cả `infra/nginx/tunnel/real-ip.conf` lẫn overlay ([bằng chứng](report/assets/phase-6/tunnel-real-ip.txt)).
+
 Cloudflare tự tạo bản ghi DNS (CNAME tới `<id>.cfargotunnel.com`). Nếu nó báo trùng một bản ghi đã có của tên miền gốc thì xóa bản ghi cũ ở **DNS → Records** rồi thêm route lại.
 
 ### D1.3. Gửi token cho Claude, nhưng không qua chat

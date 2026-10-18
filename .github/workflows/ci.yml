@@ -436,6 +436,104 @@ jobs:
                 || { echo "expected the two /devpath-media locations" >&2; exit 1; }
             '
 
+      # Behind the named tunnel every visitor reaches nginx from cloudflared,
+      # so the visitor's address is taken from CF-Connecting-IP -- believed
+      # from cloudflared's pinned address and from nowhere else. A range would
+      # let anybody who reaches the published ports name their own address,
+      # past the per-address sign-in limits (phase-6/tunnel-real-ip.txt). The
+      # real server must not believe the header at all. Checked on the files,
+      # then on a real nginx started from the two compose files and asked as
+      # cloudflared, as a neighbour on its network, from the default network
+      # and through the published port.
+      - name: Only cloudflared may say who the visitor is
+        working-directory: infra
+        env:
+          TUNNEL_TOKEN: ci-not-a-real-token
+        run: |
+          tunnel=(docker compose -p devpath-realip -f docker-compose.prod.yml
+                  -f docker-compose.named-tunnel.yml --env-file .env.prod)
+          "${tunnel[@]}" config --format json > rendered-realip.json
+          docker compose -f docker-compose.prod.yml --env-file .env.prod config --format json > rendered-vps.json
+          read -r trusted neighbour < <(python3 - rendered-realip.json rendered-vps.json <<'EOF'
+          import ipaddress, json, pathlib, re, sys
+          tunnel = json.load(open(sys.argv[1]))
+          vps = json.load(open(sys.argv[2]))
+          conf = pathlib.Path("nginx/tunnel/real-ip.conf").read_text()
+          directive = lambda name, text: re.findall(rf"^\s*{name}\s+([^;]+);", text, re.M)
+
+          froms = directive("set_real_ip_from", conf)
+          assert len(froms) == 1, f"real-ip.conf trusts {froms}, expected one address"
+          trusted = ipaddress.ip_network(froms[0].strip())
+          assert trusted.num_addresses == 1, f"real-ip.conf trusts a range: {trusted}"
+          trusted = str(trusted.network_address)
+          assert directive("real_ip_header", conf) == ["CF-Connecting-IP"], "real_ip_header is not CF-Connecting-IP"
+
+          services = tunnel["services"]
+          cloudflared = services["cloudflared"].get("networks", {})
+          assert cloudflared == {"tunnel": {"ipv4_address": trusted}}, \
+              f"cloudflared must sit on the tunnel network alone, at {trusted}: {cloudflared}"
+          on_tunnel = sorted(n for n, s in services.items() if "tunnel" in (s.get("networks") or {}))
+          assert on_tunnel == ["cloudflared", "nginx"], f"on the tunnel network: {on_tunnel}"
+          nginx_at = services["nginx"]["networks"]["tunnel"]["ipv4_address"]
+          assert nginx_at != trusted
+          assert any(v["target"] == "/etc/nginx/conf.d/tunnel-real-ip.conf" and v.get("read_only")
+                     for v in services["nginx"]["volumes"]), "nginx does not mount real-ip.conf"
+          ipam = tunnel["networks"]["tunnel"]["ipam"]["config"][0]
+          subnet = ipaddress.ip_network(ipam["subnet"])
+          assert ipaddress.ip_address(trusted) in subnet and ipam["gateway"] != trusted
+
+          # The real server: no tunnel network, nothing mounted from
+          # nginx/tunnel, and no realip directive anywhere it reads.
+          assert "tunnel" not in vps["networks"]
+          for name, spec in vps["services"].items():
+              assert not any("nginx/tunnel" in str(v.get("source", "")) for v in spec.get("volumes", [])), name
+          for path in [*pathlib.Path("nginx/templates").iterdir(), *pathlib.Path("nginx/snippets").iterdir()]:
+              text = path.read_text()
+              assert not directive("set_real_ip_from", text) and not directive("real_ip_header", text), path
+
+          taken = {trusted, nginx_at, ipam["gateway"]}
+          neighbour = next(str(h) for h in subnet.hosts() if str(h) not in taken)
+          print(trusted, neighbour)
+          EOF
+          )
+          [ -n "$neighbour" ] || exit 1
+          echo "trusted: $trusted only; asking as $neighbour too"
+
+          "${tunnel[@]}" up -d --wait nginx
+          forged=198.51.100.7
+          ask() {  # network, address (or ""), user agent
+            docker run --rm --network "devpath-realip_$1" ${2:+--ip "$2"} curlimages/curl:8.10.1 \
+              -s -o /dev/null -H "CF-Connecting-IP: $forged" -A "$3" http://nginx/
+          }
+          ask tunnel "$trusted" as-cloudflared
+          ask tunnel "$neighbour" as-neighbour
+          ask default "" as-default-network
+          curl -s -o /dev/null -H "CF-Connecting-IP: $forged" -A as-host http://127.0.0.1/
+          "${tunnel[@]}" logs --no-log-prefix nginx > nginx-realip.log
+          "${tunnel[@]}" down -v
+
+          seen() { grep "\"$1\" \"-\"\$" nginx-realip.log | tail -n 1 | cut -d' ' -f1; }
+          status=0
+          if [ "$(seen as-cloudflared)" = "$forged" ]; then
+            echo "as-cloudflared: counted as $forged, from CF-Connecting-IP"
+          else
+            echo "cloudflared's CF-Connecting-IP was not taken: $(seen as-cloudflared)" >&2; status=1
+          fi
+          if [ "$(seen as-neighbour)" = "$neighbour" ]; then
+            echo "as-neighbour: counted as $neighbour, the header ignored"
+          else
+            echo "a neighbour of cloudflared was believed: $(seen as-neighbour)" >&2; status=1
+          fi
+          for who in as-default-network as-host; do
+            addr="$(seen "$who")"
+            if [ -z "$addr" ] || [ "$addr" = "$forged" ]; then
+              echo "$who: the forged header was believed, or nothing was logged ($addr)" >&2; status=1
+            else
+              echo "$who: counted as $addr, the header ignored"
+            fi
+          done
+          [ "$status" -eq 0 ] || { cat nginx-realip.log >&2; exit 1; }
+
       # The real installer on a real systemd: the runner has both, and no
       # stack is up, so the first round must run, find every service missing,
       # and still finish cleanly -- a failed unit means the monitor broke, not

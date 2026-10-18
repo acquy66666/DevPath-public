@@ -1,0 +1,201 @@
+IP THẬT CỦA NGƯỜI DÙNG SAU CLOUDFLARE NAMED TUNNEL — https://devpath-01.me
+Ngày: 18/10/2026 · nhánh feature/tunnel-real-ip (chồng lên feature/google-login)
+Task Phase 6 (mục "Vận hành"), tách từ google-login.txt mục 6: sau tunnel, mọi
+người dùng tới backend với IP của container cloudflared, nên giới hạn theo IP
+(đăng ký 50/giờ/IP, đăng nhập 100/15 phút/IP) bị cả phòng dùng chung.
+
+Quy ước che: IP công khai của máy gọi KHÔNG ghi ra đây, kể cả một phần. Nơi
+nào ghi "<IP của máy gọi>" là script đã so giá trị đó với `ip=` của
+https://devpath-01.me/cdn-cgi/trace (Cloudflare nói khách là ai) và thấy khớp.
+Địa chỉ nội bộ Docker (172.20.x, 10.250.250.x) và địa chỉ tài liệu
+203.0.113.x / 198.51.100.x (RFC 5737, chỉ dùng làm giá trị giả) ghi nguyên.
+
+==============================================================================
+1. TRƯỚC KHI SỬA (đo trên stack demo đang chạy, 16:39)
+==============================================================================
+Cột đầu access log của nginx ($remote_addr):
+
+  GET qua https://devpath-01.me (Cloudflare → cloudflared)   172.20.0.8
+  GET thẳng 127.0.0.1:443, kèm CF-Connecting-IP: 203.0.113.77  172.20.0.1
+
+172.20.0.8 là devpath-demo-cloudflared-1 trên mạng `default` (172.20.0.0/16),
+172.20.0.1 là gateway của chính mạng đó — đường đi của mọi kết nối vào cổng
+80/443 mà nginx publish ra host. Một lượt đăng nhập sai mỗi đường:
+
+  auth:login:ip:172.20.0.8 = 1     ← mọi khách qua tunnel chung khóa này
+  auth:login:ip:172.20.0.1 = 1
+
+Nguyên nhân: infra/nginx/snippets/proxy.conf ghi đè X-Forwarded-For bằng
+$remote_addr (cố ý từ 01/10 để client không tự chọn IP — security-review.txt),
+backend đọc IP qua uvicorn `--forwarded-allow-ips *`. Chặng ngay trước nginx
+là cloudflared, nên $remote_addr là cloudflared.
+
+==============================================================================
+2. VÌ SAO KHÔNG TIN CẢ MỘT SUBNET (đo, không đoán)
+==============================================================================
+(a) Ở trên: request thẳng vào cổng publish tới từ 172.20.0.1, cùng /16 với
+    cloudflared. `set_real_ip_from 172.20.0.0/16` = ai chạm được cổng 443 cũng
+    tự đặt được IP của mình.
+
+(b) Cho cloudflared một mạng riêng cũng chưa đủ. Sau khi nginx nằm trên hai
+    mạng, Docker Desktop không cố định mạng nào nhận cổng publish: trong 4 lượt
+    chạy bước CI mới trên máy dev (project tạm, cổng 18080), 1 lượt request từ
+    host tới qua gateway CỦA MẠNG TUNNEL (10.250.250.1), 3 lượt qua gateway mạng
+    default (172.22.0.1).
+
+(c) Đối chứng — cố ý đổi real-ip.conf thành `set_real_ip_from 10.250.250.0/29`
+    (cả mạng tunnel), dựng nginx 3 lượt, mỗi lượt gửi CF-Connecting-IP:
+    198.51.100.7 từ một container hàng xóm (10.250.250.4) và từ host:
+
+      lượt   hàng xóm .4        host qua cổng publish
+      1      198.51.100.7 (tin)  198.51.100.7 (tin)
+      2      198.51.100.7 (tin)  198.51.100.7 (tin)
+      3      198.51.100.7 (tin)  172.22.0.1
+
+    → tin /29 thì request thẳng giả được IP ở 2/3 lượt.
+
+Kết luận: tin đúng MỘT địa chỉ (/32) — địa chỉ ghim của cloudflared — trên một
+mạng chỉ có nginx và cloudflared. Gateway (.1) và mọi địa chỉ khác không được tin.
+
+==============================================================================
+3. THAY ĐỔI
+==============================================================================
+  infra/nginx/tunnel/real-ip.conf (mới)
+      set_real_ip_from 10.250.250.3;
+      real_ip_header CF-Connecting-IP;
+      Cấp http (gắn vào conf.d), nên áp cho cả hai server block.
+  infra/docker-compose.named-tunnel.yml
+      - mạng `tunnel` 10.250.250.0/29, gateway .1 (ngoài các pool Docker tự cấp
+        172.17–31.x / 192.168.x, nên không mạng compose nào chiếm trước được;
+        không đụng WSL 172.18.192.0/20 hay Wi-Fi 192.168.1.0/24 của máy dev);
+      - cloudflared CHỈ nằm trên `tunnel`, ghim 10.250.250.3 (nằm thêm trên
+        `default` thì `nginx` phân giải ra cả địa chỉ kia, request đi đường đó
+        mang IP động của cloudflared → lại không được tin, khách lại bị đếm là
+        cloudflared). Mạng không `internal`: cloudflared ra Cloudflare qua đó;
+      - nginx thêm `tunnel` ở 10.250.250.2 (ghim để không bao giờ lấy mất .3)
+        + mount real-ip.conf vào /etc/nginx/conf.d/tunnel-real-ip.conf (ro).
+  infra/nginx/snippets/proxy.conf — chỉ sửa comment. Dòng
+      `proxy_set_header X-Forwarded-For $remote_addr;` giữ nguyên (vẫn ghi đè).
+  .github/workflows/ci.yml — bước "Only cloudflared may say who the visitor is"
+      (mục 6).
+  Route trong dashboard Cloudflare không đổi: `https://nginx:443` — trên mạng
+  tunnel, `nginx` phân giải ra 10.250.250.2.
+
+Không đổi code backend: refresh_tokens.ip_address và khóa giới hạn đọc
+request.client.host, mà uvicorn lấy từ X-Forwarded-For nginx đặt. Kéo theo:
+`vnp_IpAddr` gửi VNPay (orders.client_ip đọc X-Forwarded-For) giờ cũng là IP
+thật của người mua.
+
+==============================================================================
+4. SAU KHI SỬA — trên https://devpath-01.me (16:55–16:59)
+==============================================================================
+Deploy: `cd infra && set -a && . ./.env.seed-demo && set +a && ./scripts/deploy.sh`
+(không --seed) → exit 0, gồm cả bước tự hỏi /api/v1/health/ready từ bên ngoài
+qua Cloudflare. Docker không chết lần này. Tái tạo: nginx, cloudflared,
+backend, worker, beat (+ 3 service một lần); Postgres/Redis/storage giữ nguyên.
+
+Mạng sau deploy:
+  devpath-demo-cloudflared-1   devpath-demo_tunnel=10.250.250.3   (chỉ mạng này)
+  devpath-demo-nginx-1         devpath-demo_default=172.20.0.7, devpath-demo_tunnel=10.250.250.2
+  devpath-demo_tunnel          10.250.250.0/29 gw=10.250.250.1, thành viên: nginx, cloudflared
+  `nginx -T` trong container: có conf.d/tunnel-real-ip.conf với đúng hai dòng trên.
+  Đúng một connector: 1 container cloudflared (devpath-demo-cloudflared-1,
+  image ghim 2026.9.1), không có image cloudflare/cloudflared:latest; log ghi
+  4 "Registered tunnel connection" (4 kết nối edge của một connector).
+
+4a. nginx thấy ai ($remote_addr trong access log)
+  GET qua tunnel                                   → <IP của máy gọi>
+  GET qua tunnel, kèm X-Forwarded-For: 203.0.113.88
+      + X-Real-IP: 203.0.113.89                    → <IP của máy gọi> (bỏ qua)
+  GET thẳng 127.0.0.1:443, CF-Connecting-IP: 203.0.113.77      → 172.20.0.1
+  GET thẳng 127.0.0.1:443, CF-Connecting-IP: <IP của máy gọi>  → 172.20.0.1
+
+4b. refresh_tokens.ip_address (tài khoản dùng một lần @e2e.devpath.example)
+  đăng ký qua tunnel (201)                                  → <IP của máy gọi>
+  đăng nhập thẳng 127.0.0.1:443 (200), CF-Connecting-IP giả
+      = <IP của máy gọi>                                    → 172.20.0.1
+  (so với google-login.txt mục 5: cả hai dòng của phiên Google là 172.20.0.8)
+
+4c. Giới hạn đăng nhập 100/15 phút/IP
+  101 lần đăng nhập sai qua tunnel, 101 email khác nhau (để giới hạn theo email
+  10/15 phút không chen vào): 100 × 401, lần 101 → 429.
+  Thẳng 127.0.0.1:443 ngay sau đó, CF-Connecting-IP giả = đúng IP vừa bị chặn
+  → 401 (không 429): header giả không đưa ai vào suất của người khác.
+  Khóa đếm trong Redis lúc đó:
+    auth:login:ip:<IP của máy gọi>   = 100
+    auth:login:ip:172.20.0.1         = 2      (hai request thẳng)
+    auth:register:ip:<IP của máy gọi> = 1     (lượt đăng ký ở 4b)
+    — không còn khóa nào cho 172.20.0.8 / 10.250.250.3.
+  Nội dung 429 qua tunnel (đặt tạm bộ đếm của IP mình = 100, TTL 60 s):
+    HTTP 429, Retry-After: 60
+    {"detail":{"code":"AUTH_RATE_LIMITED","message":"Có quá nhiều lần đăng nhập
+    từ mạng này. Thử lại sau khoảng 2 phút.","retry_after":60}}
+  cùng lúc, thẳng 127.0.0.1:443 với CF-Connecting-IP = IP đó → 401.
+
+4d. Dọn: xóa mọi khóa auth:* (còn 0), `python -m scripts.purge_e2e` trong
+  container backend: "Đã gỡ 1 tài khoản, 0 khóa học, 0 đơn hàng và 0 chứng chỉ".
+
+4e. Site sau deploy, qua tunnel: / 200, /khoa-hoc 200, /api/v1/health/ready 200,
+  /api/v1/courses 200, /chinh-sach-bao-mat 200, /api/v1/auth/google/authorize
+  307 sang accounts.google.com với redirect_uri https://devpath-01.me/... như cũ.
+
+==============================================================================
+5. KHÁCH CÓ GIẢ ĐƯỢC CF-Connecting-IP QUA CLOUDFLARE KHÔNG? — không
+==============================================================================
+Request tới https://devpath-01.me mà tự mang header CF-Connecting-IP (giá trị
+giả 203.0.113.77, hay chính IP thật của mình) bị edge của Cloudflare từ chối:
+HTTP 403, thân "error code: 1000", và không có dòng nào trong access log của
+nginx — request không tới máy dev. Vậy CF-Connecting-IP nginx nhận từ
+cloudflared luôn do Cloudflare viết. X-Forwarded-For/X-Real-IP khách tự gửi
+thì tới nơi nhưng bị bỏ qua (4a), vì nginx chỉ đọc CF-Connecting-IP và vẫn
+ghi đè X-Forwarded-For.
+
+==============================================================================
+6. MÁY CHỦ THẬT (không tunnel) GIỮ NGUYÊN — và CI giữ nó như vậy
+==============================================================================
+`nginx -T` của cấu hình VPS (templates + snippets qua entrypoint của image,
+DOMAIN=devpath.example.com, đúng cách bước CI "nginx accepts the rendered
+config" dựng), trước và sau thay đổi: 6 dòng khác, toàn là comment của
+proxy.conf; bỏ comment + dòng trống thì giống hệt (md5
+31ed55e4ef932b5cc46a29c5d76a45ac cả hai), 0 directive set_real_ip_from /
+real_ip_header. `docker compose -f docker-compose.prod.yml config`: nginx chỉ
+trên `default`, không có mạng `tunnel`, không mount gì từ nginx/tunnel.
+
+Bước CI mới (job deploy-config) "Only cloudflared may say who the visitor is":
+  Trên tệp: real-ip.conf có đúng một set_real_ip_from, là một địa chỉ (/32),
+  real_ip_header là CF-Connecting-IP; địa chỉ đó = ipv4_address của cloudflared;
+  cloudflared chỉ ở mạng tunnel; chỉ nginx + cloudflared ở mạng tunnel; nginx
+  mount real-ip.conf ro; bản VPS không có mạng tunnel, không mount nginx/tunnel,
+  không directive realip nào trong templates/ và snippets/.
+  Trên nginx thật dựng từ chính hai tệp compose (project devpath-realip), gửi
+  CF-Connecting-IP: 198.51.100.7 và đọc access log:
+    từ địa chỉ của cloudflared (10.250.250.3)  → phải là 198.51.100.7
+    từ hàng xóm trên mạng tunnel (.4)          → phải là chính nó
+    từ mạng default                            → không được là 198.51.100.7
+    từ host qua cổng publish                   → không được là 198.51.100.7
+Chạy bước đó trên máy dev (chỉ đổi cổng host sang 18080/18443 vì 80/443 là của
+stack demo): xanh. Đột biến: tin cả /29 → đỏ "real-ip.conf trusts a range";
+cloudflared nằm thêm trên default → đỏ "cloudflared must sit on the tunnel
+network alone".
+
+==============================================================================
+7. GIỚI HẠN, NÓI THẲNG
+==============================================================================
+  - Giờ đếm theo IP CÔNG KHAI thật — nhưng cả phòng chung một Wi-Fi thì thường
+    cũng chung một IP công khai (NAT của trường). Khi đó đăng ký 50/giờ và đăng
+    nhập 100/15 phút vẫn là một suất cho cả phòng: lớp 30–40 người đăng ký một
+    lượt vẫn vừa, đăng ký lại nhiều lần thì không. Người dùng 4G có IP riêng.
+    Hai con số là mặc định trong backend/app/core/config.py
+    (registrations_per_ip, login_attempts_per_ip); docker-compose.prod.yml
+    hiện không truyền biến nào cho chúng, nên muốn nới cho buổi demo thì phải
+    thêm vào compose trước — chưa làm, không thuộc task này.
+  - Chỉ có một IP công khai để thử (máy dev không có IPv6), nên "hai khách
+    khác nhau" ở 4c là khách qua tunnel và request thẳng vào cổng 443. Khóa đếm
+    mang đúng IP của từng request, nên hai IP công khai khác nhau là hai khóa.
+  - Mạng 10.250.250.0/29 trùng một mạng có sẵn trên máy thì compose báo
+    "Pool overlaps" lúc deploy: đổi địa chỉ ở cả real-ip.conf và overlay (CI
+    kiểm hai nơi khớp nhau).
+  - Đường này chỉ đúng khi cloudflared là chặng duy nhất trước nginx. Trên máy
+    chủ thật, bản ghi DNS phải là "DNS only" (runbook mục 0d); bật proxy cam
+    của Cloudflare trước VPS thì IP lại thành IP của Cloudflare, và phải làm
+    lại việc này cho dải IP của Cloudflare.

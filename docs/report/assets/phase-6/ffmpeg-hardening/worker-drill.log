@@ -1,0 +1,10 @@
+ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers
+
+playlist posing as an upload:
+  old command line : exit 0, 1 segment(s) written, the file on the worker's disk is now a lecture
+  run_ffmpeg (new) : refused -- Error opening input files: Invalid argument
+  probe_duration_seconds (new): None
+
+real 4 s clip:
+  old command line : exit 0, 1 segment(s) written
+  run_ffmpeg (new) : ok, 1 segment(s), duration 4 s

@@ -1,0 +1,129 @@
+BYTE NUL TRONG OUTPUT: BÀI SAI BỊ CHẤM THÀNH LỖI HỆ THỐNG
+Ngày: 16/10/2026 · nhánh feature/nul-byte-verdict
+Tách từ security-review-codebase.txt (01/10). Máy: Docker Desktop, Engine 29.7.2,
+stack dev; sandbox thật devpath-sandbox-python:v1, đi qua docker-proxy như mọi
+bài nộp.
+
+Kết quả gọn:
+  - Lỗi có thật, và nặng hơn mô tả cũ. Python in được `\0`, còn cột `text` của
+    Postgres không chứa được nó ("invalid byte sequence for encoding UTF8:
+    0x00"). Worker không ghi được kết quả, nên job retry 2 lần (code của người
+    lạ chạy thêm 2 lượt), rồi bài bị đỗ thành lỗi hệ thống. Đo trên sandbox
+    thật: 59,9 s, 3 lượt chấm, học viên đọc "Hệ thống chấm bài đang gặp sự
+    cố" cho một bài sai (WA).
+  - Cùng gốc: code nộp lên có chứa NUL → HTTP 500 (đo thật).
+  - Sửa: worker thay `\0` bằng U+2400 ␀ (SYMBOL FOR NULL) trước khi ghi stdout
+    của case mẫu và message, nên học viên thấy chương trình của mình in ra gì.
+    API của phân hệ chấm bài (code nộp, chạy thử, input/expected của test case,
+    starter code, đề bài) từ chối NUL bằng 422 VALIDATION_ERROR.
+  - Sau sửa, cùng chương trình đó: WA sau 5,3 s, 1 lượt chấm, 6 dòng kết quả,
+    stdout case mẫu hiện '3␀\n'. Code chứa NUL → 422.
+  - Còn ngoài task, ghi lại: NUL ở trường văn bản khác của app vẫn 500, kể cả
+    `POST /auth/register` (không cần đăng nhập). Tách task riêng.
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/app/workers/grading.py
+  `storable(text)` thay "\x00" bằng NUL_STAND_IN = U+2400. Một ký tự thay một
+  ký tự, nên trần STORED_OUTPUT_LIMIT vẫn đúng nghĩa. Dùng ở ba chỗ ghi văn bản
+  đến từ sandbox:
+    - `submission_results.stdout_trunc`: chỉ case mẫu. Case ẩn vẫn là NULL như
+      cũ; bất biến "output case ẩn không rời server" không đổi.
+    - `submissions.message`: lời trình biên dịch / lỗi hệ thống.
+    - `park_submission`: lý do đỗ. Lần ghi này mà hỏng thì bài kẹt ở `running`
+      mãi, nên cũng phải an toàn.
+  Verdict không đổi: so sánh output vẫn do runner làm trên stdout gốc
+  (grader/ không đụng tới). `\0` không phải khoảng trắng nên "3\0" ≠ "3" → WA.
+
+backend/app/schemas/grading.py
+  Validator `NoNul` (AfterValidator) trên mọi trường văn bản tự do của phân hệ:
+  SubmissionCreate.code (dùng cho cả nộp bài lẫn chạy thử), TestCaseCreate/
+  Update.input + expected_output, CodeExerciseCreate/Update.statement_md +
+  starter_code. Lỗi đi qua envelope 422 chung:
+    {"code":"VALIDATION_ERROR", ... "msg":"Value error, Không được chứa ký tự NUL (\0)"}
+  Mất gì: một bài tập không thể đòi chương trình in `\0`. Postgres vốn không lưu
+  được expected output như vậy, nên trước đây cũng không làm được.
+
+Checklist skill sandbox-grading: không đổi cờ container, không đổi runner hay
+proxy, không đổi giới hạn tài nguyên/thời gian/output, code vẫn đi qua mount
+chứ không qua shell, output case ẩn vẫn không được lưu. Bản sửa chỉ ở tầng
+lưu trữ.
+
+==============================================================================
+2. TEST (TDD)
+==============================================================================
+Viết trước, 5 ca đỏ với đúng lỗi Postgres
+(asyncpg CharacterNotInRepertoireError ... 0x00):
+  tests/workers/test_grading.py
+    - test_a_program_that_prints_a_nul_byte_still_gets_its_verdict
+      (WA, status done, stdout_trunc == "3␀\n")
+    - test_a_nul_byte_in_the_message_is_stored_too (CE, message có ␀)
+  tests/api/test_grading.py
+    - test_code_with_a_nul_byte_is_refused_before_it_is_stored[submissions|trial-runs]
+    - test_a_nul_byte_in_what_the_instructor_writes_is_refused (6 lần ghi:
+      POST test case input/expected, PATCH test case input/expected, PATCH
+      starter_code, PATCH statement_md → đều 422)
+Sau khi sửa: tests/workers/test_grading.py + tests/api/test_grading.py 110 passed.
+ruff check: sạch. Toàn bộ backend: mục 5.
+
+==============================================================================
+3. TRƯỚC — CODE CŨ, SANDBOX THẬT
+==============================================================================
+nul-byte-verdict/drill.py chạy trong container backend, gọi API dev thật. Một
+học viên @e2e ghi danh khóa seed "Python cơ bản cho người mới bắt đầu", nộp
+vào bài code của khóa (2 case mẫu, 4 case ẩn). Chương trình nộp:
+    input()
+    input()
+    print(3, end="\0\n")      ← mã nguồn chứa hai ký tự `\0`, output chứa NUL
+Bản sửa tạm cất bằng `git stash`, rồi restart grading-worker + backend (worker
+dev mount thẳng backend/). Log: nul-byte-verdict/before.log + before-worker.log
+
+  code chứa NUL byte                 → HTTP 500
+  chương trình in NUL                → status error, verdict None, sau 59,9 s
+    message: "Hệ thống chấm bài đang gặp sự cố. Bài của bạn chưa được chấm —
+              vui lòng nộp lại sau ít phút."
+    submission_results: 0 dòng
+  worker:
+    15:05:34 attempt 1 DBAPIError ... CharacterNotInRepertoireError → Retry in 15s
+    15:05:54 attempt 2 (cùng lỗi)                                  → Retry in 30s
+    15:06:28 attempt 3 (cùng lỗi)                                  → giving up
+
+Tức là mỗi lần nộp như vậy tốn 3 lượt sandbox × 6 case, và nhìn từ phía học
+viên thì giống hệt lúc hệ thống chấm sập thật.
+
+==============================================================================
+4. SAU — CODE MỚI, CÙNG CHƯƠNG TRÌNH
+==============================================================================
+`git stash pop`, restart lại hai service. Log: nul-byte-verdict/after.log
+
+  code chứa NUL byte                 → HTTP 422 VALIDATION_ERROR
+  chương trình in NUL                → status done, verdict WA, score 0, sau 5,3 s
+    case 0: WA, stdout học viên thấy '3␀\n'
+    case 1: WA, stdout học viên thấy '3␀\n'
+    case 2–5: WA, ẩn (không lưu output)
+    submission_results: 6 dòng
+  worker kể từ lúc restart: 0 dòng "grading failed" / "retry" / "giving up".
+Tài khoản thử đã gỡ bằng `scripts.purge_e2e`.
+
+==============================================================================
+5. TOÀN BỘ BỘ TEST BACKEND
+==============================================================================
+`docker compose exec backend python -m pytest -q -rs` trên stack dev, 17 phút 36 s:
+  3 failed, 1878 passed, 2 skipped — tổng 1.883 (trước task: 1.878, cộng 5 test mới).
+  Ba ca đỏ là ba ca luôn đỏ trong container (hai `storage_..._503`, một
+  `deploy.sh` không được mount); hai skip là `grader/runner` không có trong
+  container. Trên CI: backend phải ra 1.883 passed, 0 skipped.
+
+==============================================================================
+6. CÒN LẠI — KHÔNG THUỘC TASK NÀY
+==============================================================================
+nul-byte-verdict/elsewhere.py (chỉ đo), log elsewhere.log:
+  POST /auth/register, full_name có NUL (không cần đăng nhập) → HTTP 500
+  PATCH /users/me, full_name có NUL                           → HTTP 500
+Không mất dữ liệu (insert hỏng thì rollback) và không lộ gì (500 trả câu chung),
+nhưng ai cũng tạo được 500 tùy ý, và mọi form có trường văn bản đều có cùng
+lỗ. Sửa từng schema là đi vá từng chỗ. Hướng gọn hơn cho task sau: một luật
+chung ở tầng request, hoặc một exception handler đổi lỗi
+CharacterNotInRepertoireError của asyncpg thành 422, kèm test quét mọi route
+nhận body (như test_authorization_matrix quét phân quyền).

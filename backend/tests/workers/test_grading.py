@@ -306,6 +306,42 @@ async def test_stored_output_is_capped(db_session: AsyncSession) -> None:
     assert len(result.stdout_trunc) == STORED_OUTPUT_LIMIT
 
 
+async def test_a_program_that_prints_a_nul_byte_still_gets_its_verdict(
+    db_session: AsyncSession,
+) -> None:
+    """Python prints `\\0` without complaint; a Postgres text column refuses it.
+
+    Unhandled, the row cannot be written: the job raises, is retried twice --
+    running a stranger's code twice more -- and is parked as our failure, so
+    a student whose program printed a NUL reads "the grader is broken" rather
+    than "wrong answer". It is a wrong answer, and what it printed is shown
+    with the NUL made visible.
+    """
+    exercise = await make_exercise(db_session, hidden=(False,))
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(db_session, submission.id, judge=judging("WA", stdout="3\x00\n"))
+
+    await db_session.refresh(submission)
+    assert (submission.status, submission.verdict) == ("done", "WA")
+    (result,) = await results_of(db_session, submission)
+    assert result.stdout_trunc == "3␀\n"
+
+
+async def test_a_nul_byte_in_the_message_is_stored_too(db_session: AsyncSession) -> None:
+    """The compiler's words come from the sandbox the same way stdout does."""
+    exercise = await make_exercise(db_session)
+    submission = await make_submission(db_session, exercise)
+
+    await run_grading(
+        db_session, submission.id, judge=judging("CE", message="dòng 1\x00 sai")
+    )
+
+    await db_session.refresh(submission)
+    assert (submission.status, submission.verdict) == ("done", "CE")
+    assert submission.message == "dòng 1␀ sai"
+
+
 # --- Failure, and whose fault it is ----------------------------------------
 
 

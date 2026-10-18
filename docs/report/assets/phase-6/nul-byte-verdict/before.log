@@ -1,0 +1,5 @@
+student nul-8b5f3ec6@e2e.devpath.example, exercise 6061fd40-623e-4e10-8380-d8682449279c
+code containing a NUL byte -> HTTP 500
+program printing a NUL -> status error, verdict None, score None, after 59.9 s
+  message: 'Hệ thống chấm bài đang gặp sự cố. Bài của bạn chưa được chấm — vui lòng nộp lại sau ít phút.'
+  rows in submission_results: 0

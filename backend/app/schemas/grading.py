@@ -11,8 +11,9 @@ mistake rather than a silent leak.
 
 import uuid
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field
 
 from app.models.grading import (
     MAX_MEMORY_LIMIT_MB,
@@ -25,13 +26,28 @@ from app.models.grading import (
 TERMINAL_STATUSES = frozenset({"done", "error"})
 
 
+def _refuse_nul(value: str | None) -> str | None:
+    """A Postgres text column cannot hold `\\0`: the insert would raise, and
+    the caller would get a 500 for what is really a bad request. Python will
+    not run a file containing one either, so for code it is no loss; for a
+    test case it means a program's NUL is not something an exercise can ask
+    for (the worker shows one as U+2400 when a program prints it anyway)."""
+    if value is not None and "\x00" in value:
+        raise ValueError("Không được chứa ký tự NUL (\\0)")
+    return value
+
+
+#: Text that is stored as typed. Every free-text field of this module is one.
+NoNul = AfterValidator(_refuse_nul)
+
+
 # --- Code exercises --------------------------------------------------------
 
 
 class CodeExerciseCreate(BaseModel):
-    statement_md: str = Field(min_length=1)
+    statement_md: Annotated[str, Field(min_length=1), NoNul]
     language: str = "python"
-    starter_code: str | None = None
+    starter_code: Annotated[str | None, NoNul] = None
     time_limit_ms: int = Field(default=2000, ge=MIN_TIME_LIMIT_MS, le=MAX_TIME_LIMIT_MS)
     memory_limit_mb: int = Field(
         default=256, ge=MIN_MEMORY_LIMIT_MB, le=MAX_MEMORY_LIMIT_MB
@@ -41,8 +57,8 @@ class CodeExerciseCreate(BaseModel):
 class CodeExerciseUpdate(BaseModel):
     """Every field optional: a PATCH says what changes, not what stays."""
 
-    statement_md: str | None = Field(default=None, min_length=1)
-    starter_code: str | None = None
+    statement_md: Annotated[str | None, Field(min_length=1), NoNul] = None
+    starter_code: Annotated[str | None, NoNul] = None
     time_limit_ms: int | None = Field(
         default=None, ge=MIN_TIME_LIMIT_MS, le=MAX_TIME_LIMIT_MS
     )
@@ -69,15 +85,15 @@ class CodeExerciseOut(BaseModel):
 
 
 class TestCaseCreate(BaseModel):
-    input: str = ""
-    expected_output: str
+    input: Annotated[str, NoNul] = ""
+    expected_output: Annotated[str, NoNul]
     is_hidden: bool = True
     score_weight: int = Field(default=1, gt=0)
 
 
 class TestCaseUpdate(BaseModel):
-    input: str | None = None
-    expected_output: str | None = None
+    input: Annotated[str | None, NoNul] = None
+    expected_output: Annotated[str | None, NoNul] = None
     is_hidden: bool | None = None
     score_weight: int | None = Field(default=None, gt=0)
 
@@ -125,7 +141,7 @@ class TestCaseOrder(BaseModel):
 class SubmissionCreate(BaseModel):
     # A cap so a submission cannot be used to store a file: 64 KB is many
     # times any exercise answer and far below anything worth abusing.
-    code: str = Field(min_length=1, max_length=64_000)
+    code: Annotated[str, Field(min_length=1, max_length=64_000), NoNul]
 
 
 class SubmissionResultOut(BaseModel):

@@ -8,6 +8,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.services.storage import (
+    ALLOWED_VIDEO_EXTENSIONS,
     ALLOWED_VIDEO_TYPES,
     FILENAME_MAX_LENGTH,
     MAX_UPLOAD_BYTES,
@@ -29,6 +30,14 @@ class VideoUploadRequest(BaseModel):
     filename: str = Field(min_length=1, max_length=FILENAME_MAX_LENGTH)
     content_type: str
     size_bytes: int = Field(gt=0)
+
+    @field_validator("filename")
+    @classmethod
+    def only_video_extensions(cls, value: str) -> str:
+        if PurePosixPath(value).suffix.lower() not in ALLOWED_VIDEO_EXTENSIONS:
+            allowed = ", ".join(ALLOWED_VIDEO_EXTENSIONS)
+            raise ValueError(f"Tên tệp video phải có đuôi: {allowed}")
+        return value
 
     @field_validator("content_type")
     @classmethod

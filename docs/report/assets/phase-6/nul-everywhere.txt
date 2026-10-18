@@ -1,0 +1,234 @@
+KÝ TỰ NUL Ở MỌI ROUTE: 422 THAY VÌ 500
+Ngày: 17/10/2026 · nhánh feature/nul-everywhere
+Tách từ nul-byte-verdict.txt mục 6 (16/10). Máy: Docker Desktop, stack dev
+(Postgres 16 + pgvector, Redis, Gemini thật). API đo bằng uvicorn trong hai
+container riêng, cùng image devpath-backend:dev và cùng biến môi trường với
+backend dev: `devpath-nul-base` chạy bản xuất nguyên vẹn của origin/main
+568a186 (`git archive`), `devpath-nul-api` chạy nhánh này. Container backend
+dev của checkout chính (đang ở nhánh của phiên khác) không bị đụng tới.
+
+Kết quả gọn:
+  - Lỗi có thật và rộng hơn mô tả cũ. Postgres không lưu được `\0` trong cột
+    text/varchar, và cũng không so được: INSERT, UPDATE lẫn SELECT có tham số
+    chứa NUL đều hỏng (asyncpg CharacterNotInRepertoireError, SQLSTATE 22021).
+    Đo qua HTTP thật trên code cũ: 7/10 request có NUL ra 500, kể cả
+    `POST /auth/register` (không cần đăng nhập), ô tìm kiếm khóa học
+    (`?q=`), slug trên URL và IPN của VNPay. 3 trong 7 ca chỉ là SELECT.
+  - Ca nặng nhất không phải 500: trợ giảng AI trả HTTP 200. Câu hỏi có NUL vẫn
+    được nhúng, Gemini vẫn viết câu trả lời và stream về trong ~5 s, rồi mới
+    hỏng lúc lưu, kết thúc bằng sự kiện `error CHAT_NOT_SAVED`. Tiền Gemini đã
+    trả, lượt rate limit đã tính, không có gì được lưu.
+  - Sửa bằng một luật chung: dependency cấp app `refuse_nul`, cái đầu tiên mọi
+    route phụ thuộc. Nó xét path, query string và body JSON FastAPI đã parse,
+    trả 422 VALIDATION_ERROR kèm vị trí (`body.full_name`, `query.q`,
+    `path.slug`), trước CSDL, rate limit và xác thực.
+  - Sau sửa, cùng script: 10/10 → 422. Log server: 0 lỗi asyncpg, 0 lượt tìm
+    vector (trước: 8 lỗi, 1 lượt nhúng + trả lời của Gemini).
+  - Không chặn nhầm: chuỗi JSON `"\\u0000"` (gạch chéo thật) vẫn 201 và được
+    lưu nguyên văn, trước cũng như sau.
+  - Test quét mọi route, theo kiểu test_authorization_matrix: 159 route HTTP
+    (query), 106 route có path param, 53 route đọc body, 1 WebSocket. TDD: 321
+    ca đỏ khi chưa gắn luật, 383/383 xanh sau. Toàn bộ backend 2257 passed,
+    chỉ đỏ 2 ca storage-503 vốn luôn đỏ trong container (mục 4).
+
+==============================================================================
+1. ĐO TRƯỚC KHI SỬA — nul-everywhere/before.log
+==============================================================================
+Script nul-everywhere/drill.py, chạy trong container đang phục vụ code cần
+đo. Tài khoản tạo ra là @e2e.devpath.example (purge_e2e dọn).
+
+  Request có NUL                                         Code cũ
+  -----------------------------------------------------  -------------------------
+  POST /auth/register, full_name (không đăng nhập)       500
+  POST /auth/login, email                                422 (email-validator)
+  GET  /courses?q=py<NUL>thon                            500
+  GET  /courses/by-slug/py%00thon                        500
+  GET  /certificates/ABCD%00EFGH                         404 (mã bị kiểm khuôn trước khi tra)
+  GET  /payments/vnpay/ipn?vnp_TxnRef=DP<NUL>            500
+  PATCH /users/me, full_name                             500 (tên giữ nguyên)
+  POST /cart/coupon, code                                500
+  POST /reports, details                                 500
+  POST /chat-sessions/{id}/messages, content             200: sources > delta > error CHAT_NOT_SAVED
+                                                         (0 tin nhắn được lưu)
+
+Log server của devpath-nul-base trong lượt đo: 8 lần
+"asyncpg.exceptions.CharacterNotInRepertoireError: invalid byte sequence for
+encoding "UTF8": 0x00". Câu SQL hỏng:
+  INSERT users · UPDATE users · INSERT reports · INSERT chat_messages ·
+  SELECT courses (tìm kiếm) · SELECT courses (slug) · SELECT coupons ·
+  SELECT orders (IPN tra mã đơn trước khi ghi payment_events)
+7 lần thành 500. Lần thứ 8 là INSERT chat_messages, bị service chat bắt sau
+khi stream đã chạy: câu hỏi được nhúng và tìm vector lúc 19:26:43 UTC, câu
+INSERT hỏng lúc 19:26:48 UTC.
+
+Đối chứng (giống nhau trước và sau sửa, không phải việc của luật):
+  - full_name = "Gạch chéo \\u0000 thật" (gạch chéo thật + "u0000") → 201,
+    lưu nguyên văn, không có NUL.
+  - Byte 0x00 thô nằm trong văn bản JSON → 422 json_invalid. JSON không cho
+    ký tự điều khiển chưa escape, FastAPI tự từ chối.
+  - Header có byte 0x00 (gửi bằng socket thô) → "HTTP/1.1 400 Bad Request" từ
+    uvicorn/h11, trước khi request tới app.
+
+==============================================================================
+2. CHỌN CÁCH SỬA — SỐ ĐO NÀO QUYẾT ĐỊNH
+==============================================================================
+Ba hướng: (a) kiểm input ở một tầng chung trước router; (b) exception handler
+đổi lỗi CSDL thành 422; (c) cả hai. Chọn (a), lý do ở decisions.md mục
+"Ký tự NUL ở mọi route". Các số đo đứng sau lựa chọn:
+
+  - Ca trợ giảng AI ở mục 1: lỗi xảy ra sau khi HTTP 200 đã gửi đi và bị
+    service bắt lại. Handler (b) không bao giờ thấy nó, và Gemini đã được trả
+    tiền. Chỉ (a), chạy trước mọi thứ, mới làm request bị từ chối không tốn gì.
+  - jsonb báo một lỗi khác. Đo bằng asyncpg trên CSDL dev:
+      tham số text  chứa NUL → CharacterNotInRepertoireError  SQLSTATE 22021
+      tham số jsonb chứa NUL → UntranslatableCharacterError   SQLSTATE 22P05
+    (psql: "unsupported Unicode escape sequence ... \u0000 cannot be converted
+    to text"). Handler (b) chỉ cho 22021 sẽ bỏ sót mọi cột jsonb
+    (payload thông báo, payment_events, ...).
+  - (b) không phân biệt được NUL do client gửi với NUL đến từ chỗ khác (hồ
+    sơ Google, câu trả lời của Gemini). Gọi những ca đó là 422 là sai; giữ
+    500 kèm log mới đúng. Vì thế không làm (c).
+  - Chi phí của (a), đo trong container (min của 5 lần lặp):
+      body                    cỡ        find_nul    json.loads của chính body
+      bài nộp 64 KB           62,5 KiB    1,2 µs      286,7 µs
+      transcript ~1 MB      1132,8 KiB  231,7 µs     1570,6 µs
+      quiz 200 đáp án          0,9 KiB   30,4 µs       10,3 µs
+      sắp xếp 300 id          29,0 KiB   31,9 µs       34,0 µs
+    Vài chục µs trên một request vốn tốn vài ms. Body không bị parse lần hai:
+    Starlette giữ kết quả FastAPI đã parse.
+
+Dependency cấp app chứ không phải middleware ASGI: dependency đọc đúng body
+đã parse, lỗi đi qua handler RequestValidationError sẵn có (cùng envelope),
+và FastAPI ghép dependency cấp app vào đầu danh sách của mọi route, kể cả
+route thêm sau này (FastAPI 0.141: `_RouterIncludeContext.dependencies =
+[*parent_router.dependencies, ...]`). Middleware phải tự đệm, tự parse, tự
+dựng response, và đứng ngoài các exception handler.
+
+==============================================================================
+3. ĐÃ ĐỔI GÌ
+==============================================================================
+backend/app/core/no_nul.py (mới)
+  `find_nul(value)`: vị trí của chuỗi đầu tiên chứa NUL trong một giá trị
+  JSON đã parse, theo thứ tự trong tài liệu, tính cả key; None nếu không có.
+  Viết bằng vòng lặp với vị trí giữ dạng chuỗi (cha, bước), vì json của
+  Python parse được tài liệu lồng sâu hơn mức đệ quy Python đi được: walker
+  đệ quy sẽ là một kiểu 500 mới. Test: lồng 100.000 tầng.
+  `refuse_nul(connection)`: xét path param → query (cả key lẫn value) → body.
+  Body chỉ xét khi route có đọc body và Content-Type là JSON, đúng điều kiện
+  FastAPI dùng trước khi parse. Route không đọc body thì NUL trong đó không
+  tới đâu, nên không bị xét. HTTP → RequestValidationError. WebSocket →
+  WebSocketRequestValidationError, FastAPI đóng handshake với mã 1008.
+
+backend/app/main.py
+  `FastAPI(..., dependencies=[Depends(refuse_nul)])`.
+
+Câu trả lời thật (lượt đo sau sửa):
+  {"detail":{"code":"VALIDATION_ERROR","message":"Dữ liệu gửi lên không hợp lệ",
+   "errors":[{"type":"string_contains_nul","loc":["body","full_name"],
+              "msg":"Không được chứa ký tự NUL (\\0)"}]}}
+Frontend vốn hiện câu chung cho VALIDATION_ERROR, không phải sửa.
+
+Không xét (lý do ở decisions.md): header (uvicorn đã trả 400), cookie (API
+chỉ đọc refresh token, băm trước khi truy vấn, và state OAuth, chỉ đem so).
+Validator NoNul của phân hệ chấm bài (PR #95) giữ nguyên.
+
+==============================================================================
+4. TEST (TDD)
+==============================================================================
+backend/tests/api/test_nul_everywhere.py, 383 ca:
+  Quét mọi route, theo kiểu test_authorization_matrix. Danh sách route lấy
+  từ chính app, nên route thêm sau này tự vào sweep:
+    - test_every_route_that_reads_a_body_refuses_a_nul_in_it   53 route
+    - test_every_route_refuses_a_nul_in_its_query_string      159 route
+    - test_every_route_refuses_a_nul_in_its_path              106 route
+    - test_the_websocket_refuses_a_nul_before_its_handshake   1 (đóng 1008)
+    - test_every_body_is_json                                  53 route. Luật
+      chỉ đọc body JSON, nên route nào nhận form sẽ làm test này đỏ cho tới
+      khi refuse_nul được dạy đọc form.
+  "Bị từ chối bởi luật, không phải vì request hỏng": mọi ca đòi đúng một lỗi
+  type `string_contains_nul` ở đúng `loc`, chứ không chỉ đòi 422. Request đi
+  ẩn danh, với CSDL và rate limiter bị thay bằng thứ làm test đỏ nếu bị gọi:
+  luật phải trả lời trước cả hai, và trước xác thực.
+  Hàm find_nul: không NUL → None; vị trí lồng; key; thứ tự tài liệu;
+  `"\\u0000"` không bị bắt; lồng 100.000 tầng.
+  Tới CSDL: đăng ký có NUL → 422 và không có dòng users nào; PATCH /users/me
+  → 422 và tên không đổi; `\u0000` sáu ký tự → 201 và lưu nguyên văn.
+
+Test viết trước, chạy với find_nul là stub (NotImplementedError) và chưa gắn
+dependency: đỏ. Lượt đó còn lẫn một lỗi của chính test (đường dẫn thiếu
+/api/v1 vì FastAPI 0.141 giữ route của router con không có tiền tố), đã sửa.
+Đo lại cho sạch, trên một bản sao của nhánh với đúng một thay đổi là bỏ dòng
+`dependencies=[Depends(refuse_nul)]`: 321 failed, 62 passed.
+  315 ca  request chạm tới CSDL ("the request reached the database"): phiên
+          CSDL và xác thực chạy trước, không có gì chặn
+    3 ca  query string của /health, /health/ready (200) và
+          /auth/google/authorize (503, Google chưa cấu hình trong test)
+    2 ca  tới CSDL thật: CharacterNotInRepertoireError (đăng ký, sửa hồ sơ)
+    1 ca  WebSocket được accept rồi đóng 4401 (lời từ chối của chính handler)
+  62 ca xanh cả khi chưa gắn là những ca không phụ thuộc chỗ gắn: 53
+  test_every_body_is_json, 6 test của find_nul, kiểm danh sách route, route
+  không đọc body, và `\u0000` sáu ký tự.
+Gắn lại dòng đó: 383 passed.
+
+Toàn bộ backend (container devpath-backend:dev, code của nhánh, CSDL + Redis
+dev, `pytest -q -rs`, 14 phút 55 giây):
+  2 failed, 2257 passed, 2 skipped
+  - 2 failed: test_storage_that_was_never_configured_answers_503 ở
+    test_avatar.py và test_video_upload.py. Hai ca này luôn đỏ trong container
+    vì storage tự rơi về storage dev minio.localhost (đã biết từ 30/09; CI xanh).
+  - 2 skipped: test_grading_queue.py, vì grader/runner không được mount vào
+    container chạy thử. Trên CI các ca này chạy, và skip ở đó là fail.
+Tài khoản @e2e của các lượt đo: `scripts.purge_e2e` gỡ 7 tài khoản, CSDL
+dev còn 0.
+
+==============================================================================
+5. ĐO SAU KHI SỬA — nul-everywhere/after.log
+==============================================================================
+Cùng script, cùng thứ tự, container devpath-nul-api:
+
+  Request có NUL                                         Trước                     Sau
+  -----------------------------------------------------  ------------------------  -------------------
+  POST /auth/register, full_name                         500                       422 @ body.full_name
+  POST /auth/login, email                                422 value_error           422 @ body.email
+  GET  /courses?q=py<NUL>thon                            500                       422 @ query.q
+  GET  /courses/by-slug/py%00thon                        500                       422 @ path.slug
+  GET  /certificates/ABCD%00EFGH                         404                       422 @ path.code
+  GET  /payments/vnpay/ipn?vnp_TxnRef=DP<NUL>            500                       422 @ query.vnp_TxnRef
+  PATCH /users/me, full_name                             500                       422 @ body.full_name
+  POST /cart/coupon, code                                500                       422 @ body.code
+  POST /reports, details                                 500                       422 @ body.details
+  POST /chat-sessions/{id}/messages, content             200 + CHAT_NOT_SAVED      422 @ body.content
+
+Log server của devpath-nul-api từ lúc khởi động lại với code mới: 0 lỗi
+asyncpg, 0 câu tìm vector, 0 response 500 (11 × 200, 7 × 201, 2 × 401,
+21 × 422; số lượt gấp đôi vì có một lượt đo đầu bị dừng giữa chừng bởi lỗi
+của chính script ở nhánh không-SSE, đã sửa trước khi chạy hai lượt lưu ở đây).
+
+==============================================================================
+6. CÒN LẠI, GHI RÕ
+==============================================================================
+  - IPN của VNPay trả 422 kèm envelope chung cho query có NUL, thay vì
+    {"RspCode": ...} với HTTP 200 như mọi callback khác, và callback đó không
+    được ghi vào payment_events. Trước đây nó cũng không ghi được (500 ngay ở
+    SELECT). VNPay không gửi NUL; người gửi được NUL không phải VNPay.
+  - NUL không đến từ client (tên hồ sơ Google, câu trả lời của Gemini) vẫn ra
+    500 nếu có. Đó là lỗi phía server và nên hiện ra như vậy. Chưa thấy ca
+    nào trong thực tế.
+  - Route nhận form (hiện chưa có) không được luật xét. test_every_body_is_json
+    sẽ đỏ khi route như vậy xuất hiện.
+
+==============================================================================
+CÁCH CHẠY LẠI
+==============================================================================
+  # biến môi trường giống hệt backend dev
+  docker inspect devpath-backend-1 --format '{{range .Config.Env}}{{println .}}{{end}}' \
+    | grep -v '^PATH=\|^GPG_KEY=\|^PYTHON_\|^$' > backend.env
+  # API chạy code cần đo (thư mục backend/ của checkout đó)
+  docker run -d --name devpath-nul-api --network devpath_default --env-file backend.env \
+    -v "<checkout>/backend:/app" -w /app devpath-backend:dev \
+    uvicorn app.main:app --host 0.0.0.0 --port 8000
+  docker exec -i devpath-nul-api python - < docs/report/assets/phase-6/nul-everywhere/drill.py
+  # dọn tài khoản @e2e
+  docker exec devpath-nul-api python -m scripts.purge_e2e
+  # test
+  docker compose -f infra/docker-compose.yml exec backend pytest tests/api/test_nul_everywhere.py

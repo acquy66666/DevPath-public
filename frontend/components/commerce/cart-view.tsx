@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { CouponBox } from "@/components/commerce/coupon-box";
@@ -28,6 +29,7 @@ import {
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { createOrder, createPaymentUrl } from "@/lib/api/orders";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { nothingToPay, settledOrderPath } from "@/lib/commerce/checkout";
 import { formatAmount, formatPrice } from "@/lib/format";
 
 /**
@@ -84,16 +86,27 @@ export function CartView() {
   // means a server with no VNPay credentials can still say "đơn đã tạo, đây"
   // instead of losing it behind an error.
   const [orderCode, setOrderCode] = useState<string | null>(null);
+  const router = useRouter();
   const checkout = useMutation({
     mutationFn: async () => {
       const order = await createOrder(accessToken as string, couponCode);
       setOrderCode(order.code);
-      return createPaymentUrl(accessToken as string, order.code);
+      // A 0 đ order comes back already paid: no gateway, no payment URL.
+      const settled = settledOrderPath(order);
+      if (settled) return { href: settled, gateway: false };
+      return {
+        href: await createPaymentUrl(accessToken as string, order.code),
+        gateway: true,
+      };
     },
-    onSuccess: (url: string) => {
-      // A full navigation rather than the router: the destination is VNPay,
-      // which is not this app.
-      window.location.href = url;
+    onSuccess: ({ href, gateway }) => {
+      if (gateway) {
+        // A full navigation rather than the router: the destination is
+        // VNPay, which is not this app.
+        window.location.href = href;
+        return;
+      }
+      router.push(href);
     },
   });
 
@@ -148,6 +161,8 @@ export function CartView() {
 
   const owned = cart.data.items.filter((item) => item.already_enrolled);
   const discount = coupon.data ?? null;
+  // What pressing the button will cost: the total, and the button's words.
+  const amountDue = discount ? discount.total : cart.data.total;
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
@@ -195,7 +210,7 @@ export function CartView() {
           <CardHeader>
             <CardDescription>Tổng cộng</CardDescription>
             <CardTitle className="text-3xl">
-              {formatPrice(discount ? discount.total : cart.data.total)}
+              {formatPrice(amountDue)}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -234,7 +249,9 @@ export function CartView() {
               {checkout.isPending ? (
                 <Loader2 className="animate-spin" aria-hidden />
               ) : null}
-              Thanh toán qua VNPay
+              {nothingToPay(amountDue)
+                ? "Nhận khóa học"
+                : "Thanh toán qua VNPay"}
             </Button>
 
             {checkout.isError ? (
@@ -260,7 +277,9 @@ export function CartView() {
             ) : null}
 
             <p className="text-center text-xs text-muted-foreground">
-              Bạn sẽ được chuyển sang trang thanh toán của VNPay.
+              {nothingToPay(amountDue)
+                ? "Đơn 0đ: khóa học vào tài khoản ngay, không qua trang thanh toán."
+                : "Bạn sẽ được chuyển sang trang thanh toán của VNPay."}
             </p>
           </CardContent>
         </Card>

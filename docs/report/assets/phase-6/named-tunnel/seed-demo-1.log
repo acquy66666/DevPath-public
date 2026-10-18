@@ -1,0 +1,57 @@
+==> scripts.seed_transcripts
+python-co-ban-cho-nguoi-moi-bat-dau (published):
+  0-0.txt   2091 ký tự  Cài đặt Python và VS Code
+  0-1.txt   1643 ký tự  Chương trình đầu tiên: Hello, World!
+  1-0.srt    707 ký tự  Biến và phép gán
+  1-1.txt   1771 ký tự  Số, chuỗi và boolean
+  1-2.txt   1614 ký tự  f-string: ghép chuỗi cho người đọc
+  2-0.txt   1668 ký tự  Câu lệnh if / elif / else
+  2-1.txt   1558 ký tự  Vòng lặp for và range
+  2-2.txt   1635 ký tự  Vòng lặp while và điều kiện dừng
+  2-3.txt   1790 ký tự  break, continue và vòng lặp lồng nhau
+  3-0.txt   1549 ký tự  Định nghĩa hàm, tham số, giá trị trả về
+  3-1.txt   1928 ký tự  Tham số mặc định và tham số từ khóa
+  3-3.txt   2037 ký tự  Chia chương trình thành nhiều file
+
+Đã xếp 1 job ingest cho worker (khóa đang xuất bản).
+==> scripts.seed_banners
+banner tạo mới: 3
+  Chào bạn mới: giảm 50% mọi khóa học với mã CHAOMUNG50  ->  /khoa-hoc
+  Học Python từ số không — bài tập được chấm tự động ngay khi nộp  ->  /khoa-hoc?q=python
+  Bảng xếp hạng tuần này: ai học chăm nhất?  ->  /bang-xep-hang
+
+Xem ở trang chủ; sửa, tắt, sắp xếp ở /quan-tri/banner.
+==> scripts.seed_sales
+Đã nạp 40 đơn hàng (40 lượt bán) của 40 người mua, tổng 19.161.600 ₫, trải trong 365 ngày gần nhất. Mật khẩu người mua: 'devpath-buyer'.
+==> scripts.seed_study
+Đã cho người mua mẫu học 649 bài, làm 0 bài trắc nghiệm đạt và 0 lần trượt, tham gia thêm 49 khóa miễn phí, trong 70 ngày gần nhất.
+  Dẫn đầu tuần này: Người mua 31 120 XP, Người mua 08 110 XP, Người mua 06 100 XP
+  Dẫn đầu mọi thời gian: Người mua 06 360 XP, Người mua 09 360 XP, Người mua 08 340 XP
+  Chuỗi dài nhất từng có: Người mua 02 9 ngày
+  Chuỗi đang giữ dài nhất: Người mua 08 7 ngày
+==> scripts.seed_coupons
+mã tạo mới     : 6
+khóa học gắn mã: 1
+khóa không có trên sàn, bỏ khỏi mã: python-nang-cao-decorator-generator-context-manager (chạy `python -m scripts.seed_interactions` nếu cần)
+
+  CHAOMUNG50           -50%  giảm 50% toàn sàn, còn hạn
+  GIAM100K       -100.000 ₫  giảm số tiền cố định, không giới hạn lượt, không có hạn kết thúc
+  PYTHON30             -30%  chỉ áp cho khóa Python có phí — phần còn lại của giỏ giữ nguyên giá
+  HETHAN               -40%  đã hết hạn — lời từ chối kèm ngày hết hạn
+  SAPCHAY              -25%  chưa tới ngày bắt đầu — lời từ chối kèm ngày mở
+  HETLUOT         -50.000 ₫  đã dùng hết lượt (10/10)
+
+Gõ mã ở ô "Mã giảm giá" trong trang /gio-hang. Ba mã cuối là để xem lời từ chối.
+==> scripts.rebuild_leaderboard
+Bảng tuần này       lb:xp:week:2026-W42      12 người
+Bảng tháng này      lb:xp:month:2026-10      21 người
+Bảng mọi thời gian  lb:xp:all                40 người
+==> scripts.issue_certificates
+Đã cấp 0 chứng chỉ.
+Mọi chứng chỉ đã có PDF.
+==> GEMINI_API_KEY is empty: no assistant, and recommendations from purchases only. Set it in .env.prod and run this again.
+==> scripts.rebuild_recommendations
+Không có vector khóa học nào cho model gemini-embedding-001: chỉ dùng nửa collaborative
+Đã ghi gợi ý cho 40 người dùng (top 20 mỗi người), chỉ collaborative (chưa có vector khóa học: scripts.rebuild_course_embeddings).
+
+Demo data in place. Accounts: the admin and instructors from SEED_*_PASSWORD; buyers nguoimua01..40@sales.devpath.example / devpath-buyer.

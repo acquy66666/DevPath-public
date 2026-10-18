@@ -56,10 +56,14 @@ from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
 #: `pending` is where every order starts; the other three are terminal.
 ORDER_STATUSES = ("pending", "paid", "failed", "cancelled")
 
-#: One provider so far. The column exists because `provider_txn_id` is only
+#: One gateway so far. The column exists because `provider_txn_id` is only
 #: unique *within* a provider -- MoMo and VNPay may well both call a
-#: transaction `1234567`.
-PAYMENT_PROVIDERS = ("vnpay", "momo")
+#: transaction `1234567`. `none` is an order whose total was 0 đ (a 100 %
+#: code, a free course checked out through the cart): it is settled at
+#: checkout, never sent to a gateway, and its `provider_txn_id` is its own
+#: code. Writing it down as `vnpay` would put a payment in the books that no
+#: VNPay statement will ever show.
+PAYMENT_PROVIDERS = ("vnpay", "momo", "none")
 
 #: `DP` + yymmdd + 6 random characters. Short enough to read out loud on the
 #: phone, unique enough that nobody has to think about collisions.
@@ -134,7 +138,7 @@ class Order(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             name="ck_orders_status",
         ),
         CheckConstraint(
-            "payment_provider IN ('vnpay', 'momo')", name="ck_orders_provider"
+            "payment_provider IN ('vnpay', 'momo', 'none')", name="ck_orders_provider"
         ),
         CheckConstraint(
             "subtotal >= 0 AND discount >= 0 AND total >= 0",

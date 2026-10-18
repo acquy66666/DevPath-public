@@ -369,13 +369,18 @@ jobs:
         working-directory: infra
         run: |
           docker compose -f docker-compose.prod.yml config --no-interpolate --format json > rendered.json
-          python3 - rendered.json <<'EOF'
+          # The named-tunnel overlay adds services of its own (the supervisor
+          # demo without a server); they need rotation as much as the rest.
+          docker compose -f docker-compose.prod.yml -f docker-compose.named-tunnel.yml \
+            config --no-interpolate --format json > rendered-tunnel.json
+          python3 - rendered.json rendered-tunnel.json <<'EOF'
           import json, sys
-          services = json.load(open(sys.argv[1]))["services"]
-          bare = [n for n, s in services.items() if not s.get("logging", {}).get("options", {}).get("max-size")]
-          if bare:
-              sys.exit("No log rotation on: " + ", ".join(sorted(bare)))
-          print(f"{len(services)} services, every one rotated.")
+          for path in sys.argv[1:]:
+              services = json.load(open(path))["services"]
+              bare = [n for n, s in services.items() if not s.get("logging", {}).get("options", {}).get("max-size")]
+              if bare:
+                  sys.exit(f"{path}: no log rotation on " + ", ".join(sorted(bare)))
+              print(f"{path}: {len(services)} services, every one rotated.")
           EOF
 
       # The examples are the documentation of every switch, and production

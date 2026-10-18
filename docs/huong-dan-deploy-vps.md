@@ -15,6 +15,8 @@ Kế hoạch đã chốt **không thuê máy chủ** cho tới Phase 6 ([lý do 
 
 Student Pack đã có từ 08/09/2026. Phần GitHub Pro đã dùng ngay để bật ruleset bảo vệ `main`. **DigitalOcean đã rút khỏi pack**: mọi credit từ pack, kể cả credit đã nhận, hết hạn 31/07/2026, nên đừng đi tìm thẻ DigitalOcean trên trang pack nữa. Heroku trong pack thì không dùng được, vì worker chấm bài cần Docker daemon. Với Azure, VM ở trạng thái *deallocated* không tính tiền compute (chỉ tính đĩa): dựng máy sát ngày bảo vệ và tắt giữa các buổi là đủ giữ credit.
 
+**Chưa có máy chủ mà cần tên miền thật ngay** (buổi trình bày với GVHD): [huong-dan-ten-mien-va-tunnel.md](huong-dan-ten-mien-va-tunnel.md). Tên miền `.me`, DNS trên Cloudflare, và một named tunnel tới stack production chạy trên máy dev; vẫn là `deploy.sh` của tài liệu này, chỉ thêm `TUNNEL_TOKEN`.
+
 Tài liệu này viết cho chặng thứ hai. Mọi bước đều không phụ thuộc nhà cung cấp — Azure, Oracle, VPS Việt Nam hay máy nào khác đều chạy y hệt, chỉ khác chỗ bấm nút tạo máy.
 
 ---

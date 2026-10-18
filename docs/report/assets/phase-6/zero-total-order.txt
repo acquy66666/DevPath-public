@@ -1,0 +1,131 @@
+ĐƠN 0Đ: TẤT TOÁN NGAY LÚC ĐẶT, KHÔNG ĐƯA SANG VNPAY
+Ngày: 16/10/2026 · nhánh feature/zero-total-order · migration 79240999111f
+Tách từ gate Phase 5 (phase-5-commerce-admin.md, mục admin duyệt khóa, 01/10):
+"giỏ nhận khóa 0đ qua API và mã giảm 100% hợp lệ → đơn total = 0 vẫn đi sang
+VNPay". Stack dev, Chrome thật.
+
+Kết quả gọn:
+  - Lỗi có thật. Đơn được tạo `pending` với `payment_provider = 'vnpay'`, rồi
+    frontend luôn xin URL thanh toán và chuyển sang VNPay với số tiền 0. VNPay
+    không thu được 0đ, nên người mua kẹt trên trang ngân hàng, còn đơn thì
+    không có IPN nào tất toán. Hai đường dẫn tới đơn 0đ: mã giảm 100 %, và
+    khóa 0đ đặt qua giỏ (API cho phép; trang khóa học thì hiện nút "Đăng ký
+    miễn phí").
+  - Sửa: đơn có `total = 0` được tất toán ngay trong transaction tạo đơn (paid
+    → ghi danh `purchase` → bỏ khỏi giỏ → trừ lượt coupon), với
+    `payment_provider = 'none'` và `provider_txn_id` = mã đơn. Mã hết lượt
+    giữa chừng thì cả đơn rollback (chưa có tiền nào chuyển, nên không như
+    IPN). `payment-url` từ chối đơn 0đ còn `pending` từ trước bằng 409.
+    Frontend đi thẳng tới trang kết quả; nút và dòng gợi ý nói đúng việc sẽ
+    xảy ra.
+  - Luồng UI thật với mã 100 %: 8/8 — về trang kết quả "Đã nhận khóa học", 0
+    request tới VNPay hay /payment-url, khóa học đã ghi danh, giỏ trống. E2E
+    luồng vàng (mua có phí qua VNPay) vẫn 1 passed.
+
+==============================================================================
+1. ĐÃ ĐỔI GÌ
+==============================================================================
+CSDL — migration 79240999111f_allow_orders_settled_without_a_gateway
+  `ck_orders_provider`: ('vnpay', 'momo') → ('vnpay', 'momo', 'none'). Downgrade
+  từ chối khi còn đơn 'none': đó là đơn đã tất toán, có ghi danh phía sau, không
+  phải dòng để xóa, và đổi nhãn thành 'vnpay' là bịa ra một giao dịch. Đã chạy
+  downgrade -1 → upgrade head trên CSDL dev. docs/database-design.md cập nhật.
+  Không ghi 'vnpay': đơn đó sẽ là một giao dịch không sao kê VNPay nào có khi
+  đối soát.
+
+backend/app/services/orders.py
+  - `create_from_cart`: `payment_provider = 'none'` khi total = 0. Sau khi ghi
+    các dòng hàng thì `flush()`: session không autoflush, mà bước ghi danh đọc
+    lại các dòng đó. Lần viết đầu thiếu bước này nên đơn `paid` mà không ghi
+    danh ai; test bắt được. Rồi `_settle_without_payment`.
+  - `_settle_without_payment`: status paid, paid_at, provider_txn_id = mã đơn
+    (vì `ck_orders_paid_evidence`), `_deliver` (ghi danh + bỏ khỏi giỏ — tách
+    ra từ `_mark_paid` để hai đường dùng chung), rồi `coupons.consume`. Ngược
+    với IPN: IPN gặp mã hết lượt thì vẫn tính đơn (tiền đã chuyển); ở đây ném
+    COUPON_EXHAUSTED và `session.rollback()`, nên không đơn, không ghi danh,
+    giỏ còn nguyên.
+  - `payment_url`: đơn `pending` có total 0 (chỉ có thể là đơn tạo trước bản
+    sửa) → 409 ORDER_NOT_PAYABLE "Đơn hàng 0đ không cần thanh toán. Đặt hàng lại
+    từ giỏ để nhận khóa học."
+  - Đơn có tiền (kể cả 1 đ) giữ nguyên đường cũ: pending → VNPay → IPN.
+
+frontend
+  - lib/commerce/checkout.ts (không import gì, test bằng `node --test`):
+    `settledOrderPath(order)` (đơn trả về `paid` → /thanh-toan/ket-qua?ma=…,
+    mã được encode) và `nothingToPay(amount)`.
+  - components/commerce/cart-view.tsx: đơn trả về đã `paid` thì `router.push`
+    tới trang kết quả, không xin URL thanh toán. Khi số tiền phải trả là 0, nút
+    là "Nhận khóa học" (thay vì "Thanh toán qua VNPay"), dòng gợi ý là "Đơn 0đ:
+    khóa học vào tài khoản ngay, không qua trang thanh toán." Một biến
+    `amountDue` dùng chung cho tổng tiền, nút và gợi ý. Lần đầu tôi đặt nó trước
+    chỗ khai báo `discount` nên trang hỏng; tsc + drill bắt được.
+  - components/commerce/order-result.tsx: đơn `payment_provider = 'none'` →
+    tiêu đề "Đã nhận khóa học", và không có dòng "Mã giao dịch VNPay" (mã đó là
+    mã đơn, không phải giao dịch VNPay).
+
+==============================================================================
+2. TEST
+==============================================================================
+Backend, viết trước (tests/api/test_orders.py, mục "An order with nothing to
+pay"). Đỏ trước khi sửa: 4 ca, đúng lý do — ('pending', '0.00') thay vì
+('paid', '0.00'); payment-url trên đơn 0đ trả URL thay vì 409.
+  - test_a_fully_discounted_cart_is_settled_without_the_gateway: mã 100 % →
+    paid, total 0, provider none, txn = mã đơn, ghi danh `purchase`, giỏ trống,
+    coupon used_count 1
+  - test_a_free_course_checked_out_through_the_cart_is_enrolled_at_once
+  - test_an_order_with_something_to_pay_still_waits_for_the_gateway (1 đ còn
+    lại → pending, vnpay, chưa ghi danh; xanh từ đầu, là test chốt)
+  - test_a_code_used_up_meanwhile_stops_a_free_checkout_whole (consume ném
+    COUPON_EXHAUSTED → 409, 0 đơn, 0 ghi danh, giỏ còn khóa học)
+  - test_a_pending_order_of_zero_is_never_sent_to_the_gateway (409
+    ORDER_NOT_PAYABLE)
+  Sau sửa: test_orders + test_coupons + test_admin_coupons + test_discount_split
+  94 passed. ruff check (app, tests, alembic): sạch.
+Frontend: `npm test` 8/8 (4 ca mới của checkout.ts), `tsc --noEmit` sạch,
+`eslint` sạch.
+E2E luồng vàng (`E2E_CHROME_CHANNEL=chrome npm run test:e2e`, stack dev):
+  1 passed (23,2 s). Luồng có tiền: giỏ → VNPay với URL đã ký → IPN ký trong
+  container.
+Toàn bộ backend: mục 4.
+
+==============================================================================
+3. LUỒNG UI THẬT — MÃ GIẢM 100 %
+==============================================================================
+zero-total-order/ui-drill.cjs (Playwright + Chrome, stack dev). Mã 100 % tạm
+tạo bằng zero-total-order/coupon.py (ghi thẳng bảng, như seed_coupons), xóa sau
+khi chạy. Học viên @e2e đăng nhập bằng form thật. Log:
+zero-total-order/ui-drill.log. Ảnh: cart-100-percent.png, result-settled.png
+(1440 px).
+  PASS  khóa có phí trong giỏ          Cấu trúc dữ liệu & giải thuật với Python — 499.000 ₫
+  PASS  nút nói đúng việc sẽ làm       "Nhận khóa học" với MIENPHI63045C
+  PASS  về thẳng trang kết quả         /thanh-toan/ket-qua?ma=DP261016WNPPGC
+  PASS  không xin payment URL, không request tới VNPay   none
+  PASS  không hiện mã giao dịch VNPay  row absent
+  PASS  đơn như API lưu                status paid, total 0.00, provider none, ref DP261016WNPPGC
+  PASS  khóa học đã là của học viên    1 enrolment(s)
+  PASS  và đã ra khỏi giỏ              0 line(s) left
+  8/8 · purge_e2e gỡ 1 tài khoản + 1 đơn; mã tạm đã xóa.
+
+Lần chạy đầu cũng 8/8, nhưng ảnh cho thấy dưới nút "Nhận khóa học" vẫn ghi "Bạn
+sẽ được chuyển sang trang thanh toán của VNPay". Đã sửa dòng đó rồi chạy lại;
+ảnh trong thư mục là của lần chạy sau.
+
+==============================================================================
+4. TOÀN BỘ BỘ TEST BACKEND
+==============================================================================
+`docker compose exec backend python -m pytest -q -rs` trên stack dev, 13 phút 55 s:
+  3 failed, 1901 passed, 2 skipped — tổng 1.906 (sau task ffmpeg: 1.901, cộng 5
+  test mới). Ba ca đỏ là ba ca luôn đỏ trong container (hai
+  `storage_..._503`, một `deploy.sh` không được mount); hai skip là
+  `grader/runner` không có trong container. Trên CI: backend phải ra 1.906
+  passed, 0 skipped. E2E chạy cùng lúc với bộ này mà không làm đỏ ca nào.
+
+==============================================================================
+5. GHI CHÚ
+==============================================================================
+- Thống kê: đơn 0đ được tính là đơn `paid` có tổng 0, nên doanh thu không đổi.
+  Một lượt mua bằng mã 100 % hiện trong "lượt bán" của giảng viên với doanh
+  thu 0, và đúng là vậy. Khóa 0đ ghi danh qua nút "Đăng ký miễn phí" vẫn
+  không tạo đơn; chỉ đường qua giỏ mới tạo.
+- Một mã 100 % là món quà admin tự tạo; trần `max_uses` và `consume` vẫn giữ
+  như với mã thường.

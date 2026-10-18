@@ -151,10 +151,17 @@ Nạp lời giảng, banner, đơn hàng 12 tháng, 70 ngày học (XP, chuỗi,
 
 ### D1.7. Đăng nhập Google trên tên miền thật
 
-1. Google Cloud Console → **APIs & Services → Credentials** → OAuth client (loại *Web application*).
-2. **Authorized JavaScript origins**: `https://<tên-miền>`. **Authorized redirect URIs**: `https://<tên-miền>/api/v1/auth/google/callback`.
-3. Trong `infra/.env.prod`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_LOGIN_ENABLED=true` (biến cuối nằm trong bundle frontend, nên phải build lại).
-4. Chạy lại `./scripts/deploy.sh` (không cần `--seed`).
+Làm trong Google Cloud Console, giao diện **Google Auth Platform** (bản cũ gọi là *APIs & Services → OAuth consent screen / Credentials*). Code chỉ xin `openid email profile`, toàn scope không nhạy cảm, nên không cần Google duyệt ứng dụng.
+
+1. Tạo project ở <https://console.cloud.google.com/projectcreate> (ví dụ `devpath`, *No organization*), rồi chọn nó ở ô project góc trên.
+2. <https://console.cloud.google.com/auth/overview> → **Get started**: *App name* `DevPath`, *User support email*, *Audience* **External**, email liên hệ, đồng ý *User Data Policy* → **Create**.
+3. <https://console.cloud.google.com/auth/branding>: **Authorized domains** thêm `<tên-miền>`. **Đừng tải logo** (có logo là phải chờ Google duyệt).
+4. <https://console.cloud.google.com/auth/audience>: ứng dụng mới ở chế độ *Testing*, chỉ các email trong **Test users** đăng nhập được (tối đa 100) — thêm email của mình vào đó là đủ để thử.
+5. <https://console.cloud.google.com/auth/clients/create>: loại **Web application**. **Authorized JavaScript origins**: `https://<tên-miền>`. **Authorized redirect URIs**: `https://<tên-miền>/api/v1/auth/google/callback` — khớp từng ký tự, không `www`, không `/` cuối. **Client secret chỉ hiện một lần** lúc tạo; lỡ đóng hộp thoại thì mở client và thêm secret mới.
+6. Tự dán vào `infra/.env.prod` (không qua chat): `GOOGLE_CLIENT_ID` (đuôi `.apps.googleusercontent.com`), `GOOGLE_CLIENT_SECRET` (đầu `GOCSPX-`), và `GOOGLE_LOGIN_ENABLED=true` — biến cuối nằm trong bundle frontend, nên phải build lại.
+7. Chạy lại `./scripts/deploy.sh` (không cần `--seed`).
+
+**Mở cho mọi tài khoản Google** (để người xem demo đăng nhập bằng tài khoản của họ): nút **Publish app** ở trang Audience đòi trang chủ và **chính sách bảo mật** trên tên miền ("Valid app name, support email, homepage url, and privacy policy url are required…"). Site có sẵn trang `https://<tên-miền>/chinh-sach-bao-mat` (link ở chân trang). Ở trang Branding điền *Application home page* `https://<tên-miền>` và *Application privacy policy link* `https://<tên-miền>/chinh-sach-bao-mat`, lưu, rồi quay lại Audience bấm **Publish app**. Đổi dữ liệu app lưu giữ thì sửa trang đó cho khớp.
 
 ---
 

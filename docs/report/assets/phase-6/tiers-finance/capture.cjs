@@ -6,13 +6,43 @@
 // Đăng nhập bằng tài khoản seed (mật khẩu mặc định của scripts/seed.py và
 // seed_courses.py), không ghi gì vào CSDL ngoài phiên đăng nhập, và thu hồi
 // phiên sau khi chụp. ONLY=<regex> để chụp một phần; HEADED=1 để xem.
+//
+// Stack demo (Phase 7, ảnh "trước"): BASE_URL=API_URL=https://devpath-01.me,
+// RESOLVE_TO=127.0.0.1 (đi thẳng vào nginx của máy này —
+// docs/report/assets/phase-7/stack.cjs), SEED_*_PASSWORD từ infra/.env.seed-demo,
+// OUT_DIR=<thư mục ảnh>. Bảng kê (12) lập một bản nháp tháng trước rồi xóa.
 
 const path = require("node:path");
 const { chromium } = require("@playwright/test");
 
+const { stack, realUsers, blurPrivate } = require("../../phase-7/stack.cjs");
+
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const API = process.env.API_URL ?? "http://localhost:8000";
-const OUT = __dirname;
+const OUT = path.resolve(process.env.OUT_DIR ?? __dirname);
+const ROUTE = stack(BASE);
+// Người dùng thật (tài khoản Google của user trên stack demo): làm mờ trên mọi ảnh.
+const PRIVATE = realUsers(process.env.COMPOSE_PROJECT ?? "devpath");
+const CONTEXT = { viewport: { width: 1360, height: 900 }, locale: "vi-VN", ignoreHTTPSErrors: ROUTE.mapped };
+
+/** Gọi API từ trong trang: cookie và đường đi đúng như của trình duyệt. */
+function inPage(page, method, url, { token, data } = {}) {
+  return page.evaluate(
+    async ({ method, url, token, data }) => {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      if (data !== undefined) headers["Content-Type"] = "application/json";
+      const r = await fetch(url, {
+        method,
+        headers,
+        credentials: "include",
+        body: data === undefined ? undefined : JSON.stringify(data),
+      });
+      const text = await r.text();
+      return text ? JSON.parse(text) : {};
+    },
+    { method, url, token, data },
+  );
+}
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 
 const ADMIN = { email: "admin@devpath.example", password: process.env.SEED_ADMIN_PASSWORD ?? "devpath-admin" };
@@ -67,19 +97,21 @@ async function shot(page, name, route, prepare) {
     await settle(page);
   }
   if (prepare) await prepare(page);
+  const masked = await blurPrivate(page, PRIVATE);
   const file = path.join(OUT, `${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
-  console.log("chụp", path.relative(process.cwd(), file));
+  console.log("chụp", path.relative(process.cwd(), file), masked ? `(che ${masked} chỗ có người dùng thật)` : "");
 }
 
 (async () => {
   const browser = await chromium.launch({
     channel: process.env.CHROME_CHANNEL ?? "chrome",
     headless: !process.env.HEADED,
+    args: ROUTE.chromeArgs,
   });
   try {
     // --- Admin ---------------------------------------------------------------
-    const adminContext = await browser.newContext({ viewport: { width: 1360, height: 900 }, locale: "vi-VN" });
+    const adminContext = await browser.newContext(CONTEXT);
     const admin = await signIn(adminContext, ADMIN);
     await shot(admin, "01-admin-tong-quan", "/quan-tri");
     await shot(admin, "02-admin-doanh-thu-30-ngay", "/quan-tri/doanh-thu");
@@ -115,23 +147,21 @@ async function shot(page, name, route, prepare) {
       }, API);
       const now = new Date(Date.now() + 7 * 3600_000);
       const month = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1)).toISOString().slice(0, 10);
-      const headers = { Authorization: `Bearer ${token}` };
-      const created = await adminContext.request.post(`${API}/api/v1/admin/payouts/statements`, {
-        headers,
+      const batch = await inPage(admin, "POST", `${API}/api/v1/admin/payouts/statements`, {
+        token,
         data: { month, instructor_ids: [] },
       });
-      const batch = await created.json();
       for (const statement of batch.created ?? []) {
         await shot(admin, "12-admin-bang-ke", `/quan-tri/thanh-toan/${statement.id}`);
-        await adminContext.request.delete(`${API}/api/v1/admin/payouts/statements/${statement.id}`, { headers });
+        await inPage(admin, "DELETE", `${API}/api/v1/admin/payouts/statements/${statement.id}`, { token });
       }
       if (!batch.created?.length) console.log("không có gì để lập bảng kê tháng", month, JSON.stringify(batch));
     }
-    await adminContext.request.post(`${API}/api/v1/auth/logout`).catch(() => {});
+    await inPage(admin, "POST", `${API}/api/v1/auth/logout`).catch(() => {});
     await adminContext.close();
 
     // --- Instructor ----------------------------------------------------------
-    const teacherContext = await browser.newContext({ viewport: { width: 1360, height: 900 }, locale: "vi-VN" });
+    const teacherContext = await browser.newContext(CONTEXT);
     const teacher = await signIn(teacherContext, TEACHER);
     await shot(teacher, "09-giang-vien-thong-ke", "/giang-day/thong-ke", async (page) => {
       await page.getByRole("button", { name: "12 tháng" }).click();
@@ -155,7 +185,7 @@ async function shot(page, name, route, prepare) {
     const forbidden = await teacher.goto(`${BASE}/quan-tri/doanh-thu`, { waitUntil: "domcontentloaded" });
     await settle(teacher);
     console.log("giảng viên mở /quan-tri/doanh-thu:", forbidden?.status(), new URL(teacher.url()).pathname);
-    await teacherContext.request.post(`${API}/api/v1/auth/logout`).catch(() => {});
+    await inPage(teacher, "POST", `${API}/api/v1/auth/logout`).catch(() => {});
     await teacherContext.close();
   } finally {
     await browser.close();

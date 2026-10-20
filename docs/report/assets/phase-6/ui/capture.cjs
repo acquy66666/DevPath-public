@@ -4,53 +4,78 @@
  *
  *   NODE_PATH=frontend/node_modules node docs/report/assets/phase-6/ui/capture.cjs
  *
- * Chạy vào một stack đang bật (mặc định stack dev ở localhost), đã có đủ dữ
- * liệu demo theo bảng "Dữ liệu demo đầy đủ" trong README gốc, kể cả
- * `scripts.seed_community`. Mỗi vai đăng nhập đúng một lần bằng form thật,
- * phiên được thu hồi khi chụp xong vai đó.
+ * Stack production chạy trên máy này (stack demo `devpath-demo`, Phase 7):
+ *
+ *   cd infra && set -a && . ./.env.seed-demo && set +a && cd ..
+ *   BASE_URL=https://devpath-01.me API_URL=https://devpath-01.me RESOLVE_TO=127.0.0.1 \
+ *     COMPOSE_PROJECT=devpath-demo OUT_DIR=docs/report/assets/phase-7/before/ui \
+ *     NODE_PATH=frontend/node_modules node docs/report/assets/phase-6/ui/capture.cjs
+ *
+ * Chạy vào một stack đang bật, có dữ liệu demo của bốn khóa thật (README gốc,
+ * "Dữ liệu demo đầy đủ"; trên stack demo là `infra/scripts/seed-demo.sh`).
+ * Mỗi vai đăng nhập bằng form thật, phiên được thu hồi khi chụp xong vai đó.
  *
  * Biến môi trường:
  *   BASE_URL / API_URL   mặc định http://localhost:3000 và http://localhost:8000.
  *                        Trên stack production cả hai là https://<DOMAIN>.
+ *   RESOLVE_TO           đi thẳng vào nginx của máy này thay vì qua DNS thật
+ *                        (docs/report/assets/phase-7/stack.cjs giải thích vì sao).
+ *   OUT_DIR              thư mục ảnh, mặc định thư mục của script này.
  *   ONLY                 regex trên tên ảnh, để chụp lại một phần.
  *   CHROME_CHANNEL       mặc định "chrome" (Chrome cài trên máy); "" = Chromium
  *                        của Playwright.
  *   SKIP_STAGE=1         bỏ phần cần dựng khóa học tạm (sinh quiz AI, hàng đợi
- *                        duyệt) — phần này gọi Gemini và cần `docker compose`
- *                        để dọn bằng scripts.purge_e2e.
- *   COMPOSE_FILE         compose file của stack để dọn (mặc định infra/docker-compose.yml).
+ *                        duyệt, làm quiz) — phần này gọi Gemini.
+ *   KEEP_STAGE=1         không dọn dữ liệu tạm ở cuối (để xem lại bằng tay).
+ *   COMPOSE_PROJECT      project compose của stack, để dọn bằng scripts.purge_e2e
+ *                        (mặc định `devpath` = stack dev; stack demo: `devpath-demo`).
  *   SEED_*_PASSWORD      mật khẩu tài khoản seed nếu không phải mặc định của stack dev.
  *
- * Việc ghi dữ liệu trong lúc chụp, và vì sao chấp nhận được:
- *   - hocvien07 làm quiz "Kiểm tra: ép kiểu" và nộp bài "đếm số chẵn" (một
- *     lần sai, một lần đúng) — để có ảnh màn hình làm bài thật. Thuộc tài
- *     khoản seed_interactions, bị gỡ cùng tài khoản khi dọn dữ liệu demo.
- *   - một giảng viên dùng một lần (@e2e.devpath.example) dựng khóa "Git cho
- *     người mới bắt đầu", sinh quiz bằng Gemini và gửi duyệt; scripts.purge_e2e
- *     xóa sạch ở cuối.
+ * Việc ghi dữ liệu trong lúc chụp, và vì sao chấp nhận được — mọi thứ thuộc tài
+ * khoản dùng một lần `@e2e.devpath.example`, `scripts.purge_e2e` xóa ở cuối:
+ *   - một học viên ghi danh khóa Python, viết ghi chú theo mốc video, hỏi một
+ *     câu ở bài "Ép kiểu…" (giảng viên seed trả lời qua API — sinh thông báo
+ *     cho cả hai), báo cáo khóa học một lần (cho hàng đợi báo cáo của admin),
+ *     hỏi trợ giảng AI bốn câu của buổi demo 22/09 (hai câu có nguồn, hai câu
+ *     bị từ chối — bốn lượt Gemini), bỏ khóa có phí vào giỏ và hai khóa vào
+ *     yêu thích, rồi nộp bài "đếm số chẵn" một lần sai, một lần đúng.
+ *     Trước 20/10 phần này dựa vào hocvien07/hocvien25 của seed_interactions +
+ *     seed_community, đã gỡ khỏi CSDL ngày 06/10.
+ *   - một giảng viên dựng khóa "Git cho người mới bắt đầu", sinh quiz bằng
+ *     Gemini và gửi duyệt; admin seed duyệt qua API, học viên trên ghi danh và
+ *     làm quiz đó (khóa Python của seed không có quiz).
+ *   - thông báo `qa_question` mà câu hỏi tạm sinh cho giảng viên seed (tài
+ *     khoản không bị purge) được xóa bằng SQL theo `thread_id`.
+ *
+ * Người dùng thật (email không phải `*.example`, vd tài khoản Google của user
+ * trên stack demo) bị làm mờ trên mọi ảnh: tên, email, ảnh đại diện Google.
  */
 const { execFileSync } = require("node:child_process");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { chromium, request: playwrightRequest } = require("@playwright/test");
+const { chromium } = require("@playwright/test");
+
+const { stack, apiClient, realUsers, blurPrivate } = require("../../phase-7/stack.cjs");
 
 const BASE = (process.env.BASE_URL ?? "http://localhost:3000").replace(/\/$/, "");
 const API = (process.env.API_URL ?? "http://localhost:8000").replace(/\/$/, "");
-const OUT = process.env.OUT_DIR ?? __dirname;
+const OUT = path.resolve(process.env.OUT_DIR ?? __dirname);
 const ONLY = process.env.ONLY ? new RegExp(process.env.ONLY) : null;
 const CHANNEL = process.env.CHROME_CHANNEL ?? "chrome";
-const COMPOSE_FILE =
-  process.env.COMPOSE_FILE ?? path.resolve(__dirname, "../../../../..", "infra/docker-compose.yml");
+const PROJECT = process.env.COMPOSE_PROJECT ?? "devpath";
+
+const ROUTE = stack(BASE);
+const client = apiClient(BASE, API);
+// Người dùng thật (tài khoản Google của user trên stack demo): làm mờ trên mọi ảnh.
+const PRIVATE = realUsers(PROJECT);
 
 const COURSE = "python-co-ban-cho-nguoi-moi-bat-dau";
-const LEARNER_PASSWORD = process.env.SEED_LEARNER_PASSWORD ?? "devpath-learner";
+const PAID_COURSE = "cau-truc-du-lieu-va-giai-thuat-voi-python";
+const WISHED_COURSES = ["xay-dung-rest-api-voi-fastapi", "javascript-hien-dai-es6-va-dom"];
 const ACCOUNTS = {
-  // Ghi danh khóa Python, chủ các phiên trợ giảng AI demo, người hỏi một câu
-  // được giảng viên trả lời (scripts.seed_community), có gợi ý cá nhân.
-  learner: { email: "hocvien07@seed.devpath.example", password: LEARNER_PASSWORD },
-  // Giỏ có khóa Python nâng cao (mã PYTHON30 áp được) và danh sách yêu thích.
-  shopper: { email: "hocvien25@seed.devpath.example", password: LEARNER_PASSWORD },
+  // Học viên dùng một lần, dựng ở stageLearner() (vai học viên + giỏ hàng).
+  learner: null,
   // Lịch sử học 70 ngày (scripts.seed_study): XP, chuỗi ngày, chứng chỉ.
   buyer: {
     email: "nguoimua31@sales.devpath.example",
@@ -90,6 +115,7 @@ async function newContext(browser, viewport = DESKTOP) {
     timezoneId: "Asia/Ho_Chi_Minh",
     isMobile: viewport === PHONE,
     hasTouch: viewport === PHONE,
+    ignoreHTTPSErrors: ROUTE.mapped,
   });
   // Nút công cụ của `next dev` ở góc dưới trái không thuộc sản phẩm.
   await context.addInitScript(() => {
@@ -125,10 +151,11 @@ async function shot(page, name, prepare, { fullPage = false, clip, settleMs = 40
     if (prepare) await prepare(page);
     if (settleMs) await settle(page, settleMs);
     else await page.evaluate(() => document.fonts.ready);
+    const masked = await blurPrivate(page, PRIVATE);
     const file = path.join(OUT, `${name}.png`);
     await page.screenshot({ path: file, fullPage, clip, animations: "disabled" });
-    results.push({ name, url: page.url().replace(BASE, ""), ok: true, ms: Date.now() - started });
-    log("ok  ", name);
+    results.push({ name, url: page.url().replace(BASE, ""), ok: true, ms: Date.now() - started, ...(masked ? { masked } : {}) });
+    log("ok  ", name, masked ? `(che ${masked} chỗ có người dùng thật)` : "");
   } catch (error) {
     if (process.env.DEBUG_DIR) {
       await page
@@ -177,28 +204,163 @@ async function signIn(context, account) {
   return page;
 }
 
-/** Thu hồi phiên: cookie refresh nằm trong context, gửi kèm request này. */
+/**
+ * Thu hồi phiên: gọi đúng endpoint nút "Đăng xuất" gọi, từ trong trang, để
+ * cookie refresh của context đi kèm và request đi đúng đường của trình duyệt.
+ */
 async function signOut(context) {
-  await context.request.post(`${API}/api/v1/auth/logout`).catch(() => {});
+  const page = context.pages()[0] ?? (await context.newPage());
+  if (!page.url().startsWith(BASE)) {
+    await page.goto(`${BASE}/chinh-sach-bao-mat`, { waitUntil: "domcontentloaded" }).catch(() => {});
+  }
+  await page
+    .evaluate(
+      (api) => fetch(`${api}/api/v1/auth/logout`, { method: "POST", credentials: "include" }),
+      API,
+    )
+    .catch(() => {});
 }
 
 // --- API (dựng dữ liệu tạm) -----------------------------------------------
 
-async function api(request, method, url, { token, data } = {}) {
-  const response = await request.fetch(`${API}/api/v1${url}`, {
-    method,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    data,
-    timeout: 120_000,
-  });
-  if (!response.ok()) {
-    throw new Error(`${method} ${url}: ${response.status()} ${await response.text()}`);
-  }
-  return response.status() === 204 ? {} : response.json();
+/** Một lượt gọi API (JSON). */
+function api(method, url, options) {
+  return client.call(method, url, options);
 }
 
-async function apiLogin(request, account) {
-  return (await api(request, "POST", "/auth/login", { data: account })).access_token;
+/** Một câu hỏi trợ giảng: đọc hết luồng SSE, hỏng nếu không kết thúc bằng `done`. */
+async function ask(sessionId, question, token) {
+  const response = await client.call("POST", `/chat-sessions/${sessionId}/messages`, {
+    token,
+    data: { content: question },
+    raw: true,
+  });
+  if (!/^event: done$/m.test(response.text)) {
+    throw new Error(`trợ giảng không trả lời xong "${question}": ${response.text.slice(-300)}`);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function container(service) {
+  const id = execFileSync(
+    "docker",
+    ["ps", "-q", "--filter", `label=com.docker.compose.project=${PROJECT}`, "--filter", `label=com.docker.compose.service=${service}`],
+    { encoding: "utf8" },
+  ).trim().split("\n")[0];
+  if (!id) throw new Error(`không thấy container ${service} của project ${PROJECT}`);
+  return id;
+}
+
+function sql(query) {
+  return execFileSync(
+    "docker",
+    ["exec", container("postgres"), "sh", "-c", `psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Atc "${query}"`],
+    { encoding: "utf8" },
+  ).trim();
+}
+
+// --- Học viên dùng một lần ------------------------------------------------
+
+const STAGE = { learner: null, threadIds: [], sessions: [] };
+
+const NOTES = [
+  [42, "range(start, stop, step): stop không bao giờ được tính."],
+  [85, "range(1, 10, 2) → 1, 3, 5, 7, 9. Bước âm thì đếm ngược: range(10, 0, -2)."],
+  [131, "Duyệt danh sách thì dùng thẳng `for x in xs`, cần chỉ số mới dùng enumerate()."],
+];
+
+const QUESTION = {
+  title: 'int("3.5") báo lỗi nhưng int(3.5) thì không?',
+  body:
+    'Em gõ `int("3.5")` thì bị `ValueError: invalid literal for int()`, nhưng ' +
+    "`int(3.5)` lại ra 3. Sao hai cách viết lại khác nhau vậy ạ?",
+  reply:
+    "Hai lệnh nhận hai kiểu dữ liệu khác nhau. Với một **số thực**, `int()` bỏ phần " +
+    "thập phân nên `int(3.5)` là `3`. Với một **chuỗi**, `int()` chỉ đọc được chuỗi " +
+    'viết đúng một số nguyên, nên `"3.5"` bị từ chối. Muốn đi từ chuỗi đó sang số ' +
+    'nguyên thì qua số thực trước: `int(float("3.5"))`.',
+};
+
+// Bốn câu của buổi demo trợ giảng 22/09 (phase-4/chatbot-demo.txt): hai câu
+// có trong bài giảng, hai câu ngoài phạm vi phải bị từ chối.
+const CHAT = [
+  "range(1, 10, 2) sinh ra những số nào?",
+  "Vì sao input() + 1 bị lỗi, sửa thế nào?",
+  "Thủ đô của nước Úc là thành phố nào?",
+  "Chương trình Hello World trong Java viết thế nào?",
+];
+
+/** Học viên có đủ thứ để chụp màn của học viên, dựng qua đúng API của UI. */
+async function stageLearner() {
+  const stamp = Date.now().toString(36);
+  const learner = {
+    email: `hocvien-anh-${stamp}@e2e.devpath.example`,
+    password: `mat-khau-tam-${stamp}-hoc-vien`,
+  };
+  const session = await client.register({ ...learner, full_name: "Trần Minh Anh" });
+  STAGE.sessions.push(session);
+  const { token } = session;
+
+  const course = await api("GET", `/courses/by-slug/${COURSE}`);
+  await api("POST", `/courses/${course.id}/enroll`, { token });
+  const lessons = await findLessons();
+
+  for (const [timestamp_s, content] of NOTES) {
+    await api("POST", `/lessons/${lessons["Vòng lặp for và range"]}/notes`, {
+      token,
+      data: { timestamp_s, content },
+    });
+  }
+
+  const thread = await api("POST", `/lessons/${lessons["Ép kiểu và những cái bẫy quen thuộc"]}/qa-threads`, {
+    token,
+    data: { title: QUESTION.title, body: QUESTION.body },
+  });
+  STAGE.threadIds.push(thread.id);
+  const teacher = await client.login(ACCOUNTS.instructor);
+  try {
+    await api("POST", `/qa-threads/${thread.id}/replies`, {
+      token: teacher.token,
+      data: { body: QUESTION.reply },
+    });
+  } finally {
+    await client.logout(teacher);
+  }
+
+  await api("POST", "/reports", {
+    token,
+    data: {
+      target_type: "course",
+      target_id: course.id,
+      reason: "other",
+      details: "Bài “Vòng lặp while và điều kiện dừng” bị lệch tiếng so với hình từ phút thứ 2.",
+    },
+  });
+
+  if (wants("13-hoc-vien-tro-giang-ai", "13b-hoc-vien-tro-giang-ai-tu-choi")) {
+    const chat = await api("POST", `/courses/${course.id}/chat-sessions`, { token });
+    for (const [index, question] of CHAT.entries()) {
+      if (index) await sleep(4_000); // cooldown 3 s mỗi người
+      log(`Gemini: trợ giảng ${index + 1}/${CHAT.length}`);
+      await ask(chat.id, question, token);
+    }
+  }
+
+  const paid = await api("GET", `/courses/by-slug/${PAID_COURSE}`);
+  await api("PUT", `/cart/courses/${paid.id}`, { token });
+  for (const slug of WISHED_COURSES) {
+    const wished = await api("GET", `/courses/by-slug/${slug}`);
+    await api("PUT", `/wishlist/courses/${wished.id}`, { token });
+  }
+
+  await client.logout(session);
+  STAGE.learner = learner;
+  ACCOUNTS.learner = learner;
+  log(`học viên tạm ${learner.email} đã sẵn sàng`);
+  return lessons;
 }
 
 // --- Từng vai ---------------------------------------------------------------
@@ -238,11 +400,17 @@ async function guest(browser) {
   await phone.close();
 }
 
+const LEARNER_SHOTS = ["10-hoc-vien-goi-y-cho-ban", "11-hoc-vien-video-ghi-chu", "11b-hoc-vien-ghi-chu-theo-moc", "12-hoc-vien-hoi-dap", "13-hoc-vien-tro-giang-ai", "13b-hoc-vien-tro-giang-ai-tu-choi", "14-hoc-vien-chuong-thong-bao", "15-hoc-vien-trang-thong-bao", "18-hoc-vien-nop-code-dang-cham", "19-hoc-vien-nop-code-sai", "20-hoc-vien-nop-code-dung", "21-hoc-vien-trang-hoc-375"];
+const SHOPPER_SHOTS = ["25-hoc-vien-gio-hang-ma-giam-gia", "26-hoc-vien-yeu-thich"];
+const STAGED_SHOTS = ["36-giang-vien-sinh-quiz-ai", "40-admin-hang-doi-duyet", "41-admin-trang-duyet", "16-hoc-vien-quiz-dang-lam", "17-hoc-vien-quiz-ket-qua"];
+// Màn của người khác nhưng cần dữ liệu của học viên tạm (câu hỏi, báo cáo).
+const NEEDS_LEARNER = [...LEARNER_SHOTS, ...SHOPPER_SHOTS, "16-hoc-vien-quiz-dang-lam", "17-hoc-vien-quiz-ket-qua", "34-giang-vien-hoi-dap", "35-giang-vien-chuong-thong-bao", "43-admin-bao-cao"];
+
 async function learner(browser) {
-  if (!wants("10-hoc-vien-goi-y-cho-ban", "11-hoc-vien-video-ghi-chu", "11b-hoc-vien-ghi-chu-theo-moc", "12-hoc-vien-hoi-dap", "13-hoc-vien-tro-giang-ai", "13b-hoc-vien-tro-giang-ai-tu-choi", "14-hoc-vien-chuong-thong-bao", "15-hoc-vien-trang-thong-bao", "16-hoc-vien-quiz-dang-lam", "17-hoc-vien-quiz-ket-qua", "18-hoc-vien-nop-code-dang-cham", "19-hoc-vien-nop-code-sai", "20-hoc-vien-nop-code-dung", "21-hoc-vien-trang-hoc-375")) return;
+  if (!wants(...LEARNER_SHOTS)) return;
   const context = await newContext(browser);
   const page = await signIn(context, ACCOUNTS.learner);
-  const lessons = await findLessons(page);
+  const lessons = await findLessons();
 
   await open(page, "/");
   await shot(page, "10-hoc-vien-goi-y-cho-ban", async (p) => {
@@ -264,19 +432,16 @@ async function learner(browser) {
     await scrollTo(p.getByRole("tab", { name: /Ghi chú/ }), 16);
   });
 
-  // Hỏi đáp: câu hỏi của chính hocvien07, có trả lời của giảng viên.
+  // Hỏi đáp: câu hỏi của chính học viên, có trả lời của giảng viên.
   await open(page, `/hoc/${COURSE}?bai=${lessons["Ép kiểu và những cái bẫy quen thuộc"]}`);
   await shot(page, "12-hoc-vien-hoi-dap", async (p) => {
     await p.getByRole("tab", { name: /Hỏi đáp/ }).click();
-    await p.getByText('int("3.5") báo lỗi nhưng int(3.5) thì không?').first().click();
+    await p.getByText(QUESTION.title).first().click();
     await p.waitForTimeout(1200);
-    await scrollTo(
-      p.getByRole("heading", { name: 'int("3.5") báo lỗi nhưng int(3.5) thì không?' }),
-      60,
-    );
+    await scrollTo(p.getByRole("heading", { name: QUESTION.title }), 60);
   });
 
-  // Trợ giảng AI: mở lại phiên demo gate 22/09 — không gọi Gemini. Hai câu
+  // Trợ giảng AI: mở lại phiên vừa hỏi ở stageLearner() qua lịch sử. Hai câu
   // trả lời có trích nguồn, rồi hai câu bị từ chối vì ngoài phạm vi.
   await open(page, `/hoc/${COURSE}?bai=${lessons["Đọc hiểu thông báo lỗi"]}`);
   await shot(page, "13-hoc-vien-tro-giang-ai", async (p) => {
@@ -299,19 +464,7 @@ async function learner(browser) {
   await open(page, "/thong-bao");
   await shot(page, "15-hoc-vien-trang-thong-bao");
 
-  // Quiz có giờ: bắt đầu, trả lời, nộp.
-  await open(page, `/hoc/${COURSE}?bai=${lessons["Kiểm tra: ép kiểu"]}`);
-  await shot(page, "16-hoc-vien-quiz-dang-lam", async (p) => {
-    await p.getByRole("button", { name: /Bắt đầu làm bài|Tiếp tục làm bài/ }).click();
-    await p.locator("fieldset").first().waitFor();
-    await answerQuiz(p, LEARNER_STATE.quizKey);
-    await p.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  });
-  await shot(page, "17-hoc-vien-quiz-ket-qua", async (p) => {
-    await p.getByRole("button", { name: "Nộp bài", exact: true }).click();
-    await p.waitForTimeout(2500);
-    await p.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
-  });
+  // Quiz (16, 17) chụp ở stagedCourse(): khóa Python của seed không có quiz.
 
   // Nộp code: một lần sai (đang chấm, rồi kết quả), một lần đúng.
   await open(page, `/hoc/${COURSE}?bai=${lessons["Bài tập: đếm số chẵn"]}`);
@@ -429,12 +582,10 @@ async function scrollChat(page, where) {
   await page.waitForTimeout(400);
 }
 
-async function findLessons(page) {
+async function findLessons(slug = COURSE) {
   // Mục lục là công khai: id từng bài, đọc qua API.
-  const course = await (await page.request.get(`${API}/api/v1/courses/by-slug/${COURSE}`)).json();
-  const curriculum = await (
-    await page.request.get(`${API}/api/v1/courses/${course.id}/curriculum`)
-  ).json();
+  const course = await api("GET", `/courses/by-slug/${slug}`);
+  const curriculum = await api("GET", `/courses/${course.id}/curriculum`);
   const lessons = {};
   for (const section of curriculum.sections) {
     for (const lesson of section.lessons) lessons[lesson.title] = lesson.id;
@@ -469,9 +620,9 @@ async function buyer(browser) {
 }
 
 async function shopper(browser) {
-  if (!wants("25-hoc-vien-gio-hang-ma-giam-gia", "26-hoc-vien-yeu-thich")) return;
+  if (!wants(...SHOPPER_SHOTS)) return;
   const context = await newContext(browser);
-  const page = await signIn(context, ACCOUNTS.shopper);
+  const page = await signIn(context, ACCOUNTS.learner);
 
   await open(page, "/gio-hang");
   await shot(page, "25-hoc-vien-gio-hang-ma-giam-gia", async (p) => {
@@ -495,7 +646,7 @@ async function instructor(browser) {
   await open(page, "/giang-day");
   await shot(page, "30-giang-vien-khoa-hoc");
 
-  const course = await (await page.request.get(`${API}/api/v1/courses/by-slug/${COURSE}`)).json();
+  const course = await api("GET", `/courses/by-slug/${COURSE}`);
   await open(page, `/giang-day/${course.id}`);
   await shot(page, "31-giang-vien-soan-noi-dung", async (p) => {
     await scrollTo(p.getByRole("button", { name: /Kéo để sắp xếp bài học/ }).first(), 160);
@@ -541,28 +692,29 @@ const GIT_ARTICLE = [
   "để hoàn tất việc gộp.",
 ].join("\n");
 
-/** Khóa học tạm của một giảng viên dùng một lần: sinh quiz AI rồi gửi duyệt. */
+/**
+ * Khóa học tạm của một giảng viên dùng một lần: sinh quiz AI, gửi duyệt,
+ * admin duyệt, rồi học viên tạm làm quiz đó.
+ */
 async function stagedCourse(browser) {
   if (process.env.SKIP_STAGE) return;
-  if (!wants("36-giang-vien-sinh-quiz-ai", "40-admin-hang-doi-duyet", "41-admin-trang-duyet")) return;
+  if (!wants(...STAGED_SHOTS)) return;
 
-  const request = (await browser.newContext()).request;
   const stamp = Date.now().toString(36);
   const teacher = {
     email: `giangvien-anh-${stamp}@e2e.devpath.example`,
     password: `mat-khau-tam-${stamp}-du-dai`,
   };
-  const registered = await api(request, "POST", "/auth/register", {
-    data: { ...teacher, full_name: "Lê Hoàng Nam" },
-  });
-  const token = registered.access_token;
-  await api(request, "POST", "/users/me/instructor", { token });
+  const registered = await client.register({ ...teacher, full_name: "Lê Hoàng Nam" });
+  STAGE.sessions.push(registered);
+  const token = registered.token;
+  await api("POST", "/users/me/instructor", { token });
 
-  const categories = await api(request, "GET", "/categories");
+  const categories = await api("GET", "/categories");
   const flat = categories.flatMap((c) => [c, ...(c.children ?? [])]);
   const category =
     flat.find((c) => /công cụ|devops|phát triển web|lập trình/i.test(c.name)) ?? flat[0];
-  const course = await api(request, "POST", "/courses", {
+  const course = await api("POST", "/courses", {
     token,
     data: {
       title: "Git cho người mới bắt đầu",
@@ -574,24 +726,24 @@ async function stagedCourse(browser) {
       price: 0,
     },
   });
-  const section = await api(request, "POST", `/courses/${course.id}/sections`, {
+  const section = await api("POST", `/courses/${course.id}/sections`, {
     token,
     data: { title: "Chương 1 — Commit và nhánh" },
   });
-  const article = await api(request, "POST", `/sections/${section.id}/lessons`, {
+  const article = await api("POST", `/sections/${section.id}/lessons`, {
     token,
     data: { title: "Commit, nhánh và gộp nhánh", type: "article", article_content: GIT_ARTICLE },
   });
-  const quizLesson = await api(request, "POST", `/sections/${section.id}/lessons`, {
+  const quizLesson = await api("POST", `/sections/${section.id}/lessons`, {
     token,
     data: { title: "Kiểm tra: Git cơ bản", type: "quiz" },
   });
-  const quiz = await api(request, "POST", `/lessons/${quizLesson.id}/quiz`, {
+  const quiz = await api("POST", `/lessons/${quizLesson.id}/quiz`, {
     token,
     data: { time_limit_s: 600, pass_score: 70 },
   });
   log("Gemini: sinh 5 câu hỏi từ bài đọc…");
-  const generated = await api(request, "POST", `/quizzes/${quiz.id}/generate`, {
+  const generated = await api("POST", `/quizzes/${quiz.id}/generate`, {
     token,
     data: { source_lesson_id: article.id, count: 5 },
   });
@@ -611,10 +763,10 @@ async function stagedCourse(browser) {
 
   // Duyệt hết câu nháp, xuất bản quiz, gửi khóa đi duyệt.
   for (const question of generated.questions) {
-    await api(request, "POST", `/quiz-questions/${question.id}/approve`, { token });
+    await api("POST", `/quiz-questions/${question.id}/approve`, { token });
   }
-  await api(request, "PATCH", `/quizzes/${quiz.id}`, { token, data: { is_published: true } });
-  await api(request, "POST", `/courses/${course.id}/submit`, { token });
+  await api("PATCH", `/quizzes/${quiz.id}`, { token, data: { is_published: true } });
+  await api("POST", `/courses/${course.id}/submit`, { token });
 
   const adminContext = await newContext(browser);
   const admin = await signIn(adminContext, ACCOUNTS.admin);
@@ -624,6 +776,43 @@ async function stagedCourse(browser) {
   await shot(admin, "41-admin-trang-duyet");
   await signOut(adminContext);
   await adminContext.close();
+
+  // Admin duyệt, học viên tạm ghi danh rồi làm quiz có giờ: bắt đầu, trả lời, nộp.
+  if (!wants("16-hoc-vien-quiz-dang-lam", "17-hoc-vien-quiz-ket-qua") || !ACCOUNTS.learner) return;
+  const reviewer = await client.login(ACCOUNTS.admin);
+  try {
+    await api("POST", `/admin/courses/${course.id}/approve`, { token: reviewer.token });
+  } finally {
+    await client.logout(reviewer);
+  }
+  const student = await client.login(ACCOUNTS.learner);
+  try {
+    await api("POST", `/courses/${course.id}/enroll`, { token: student.token });
+  } finally {
+    await client.logout(student);
+  }
+  const key = generated.questions.map((q) => ({
+    question: q.question,
+    options: q.options,
+    answer: q.options[q.correct_index],
+  }));
+
+  const learnerContext = await newContext(browser);
+  const learnerPage = await signIn(learnerContext, ACCOUNTS.learner);
+  await open(learnerPage, `/hoc/${course.slug}?bai=${quizLesson.id}`);
+  await shot(learnerPage, "16-hoc-vien-quiz-dang-lam", async (p) => {
+    await p.getByRole("button", { name: /Bắt đầu làm bài|Tiếp tục làm bài/ }).click();
+    await p.locator("fieldset").first().waitFor();
+    await answerQuiz(p, key);
+    await p.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  });
+  await shot(learnerPage, "17-hoc-vien-quiz-ket-qua", async (p) => {
+    await p.getByRole("button", { name: "Nộp bài", exact: true }).click();
+    await p.waitForTimeout(2500);
+    await p.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+  });
+  await signOut(learnerContext);
+  await learnerContext.close();
 }
 
 async function admin(browser) {
@@ -649,48 +838,29 @@ async function admin(browser) {
 }
 
 /**
- * Phiên API của giảng viên chủ khóa cho bài "Kiểm tra: ép kiểu": đọc đáp án
- * (để học viên trả lời đúng có chủ đích, trừ một câu), và tạm đặt giới hạn
- * thời gian — quiz seed không tính giờ, mà ảnh cần thấy đồng hồ. `restore()`
- * trả về đúng giá trị cũ.
+ * Dọn dữ liệu tạm: mọi thứ của tài khoản `@e2e.devpath.example` (purge_e2e),
+ * cộng thông báo `qa_question` câu hỏi tạm để lại cho giảng viên seed.
  */
-async function quizSession() {
-  const request = await playwrightRequest.newContext();
-  const token = await apiLogin(request, ACCOUNTS.instructor);
-  const course = await api(request, "GET", `/courses/by-slug/${COURSE}`);
-  const curriculum = await api(request, "GET", `/courses/${course.id}/curriculum`);
-  const lesson = curriculum.sections
-    .flatMap((s) => s.lessons)
-    .find((l) => l.title === "Kiểm tra: ép kiểu");
-  const quiz = await api(request, "GET", `/lessons/${lesson.id}/quiz`, { token });
-  const questions = await api(request, "GET", `/quizzes/${quiz.id}/questions`, { token });
-  const original = quiz.time_limit_s ?? null;
-  return {
-    key: questions.map((q) => ({
-      question: q.question,
-      options: q.options,
-      answer: q.options[q.correct_index],
-    })),
-    async limit(seconds) {
-      await api(request, "PATCH", `/quizzes/${quiz.id}`, { token, data: { time_limit_s: seconds } });
-    },
-    async restore() {
-      await api(request, "PATCH", `/quizzes/${quiz.id}`, { token, data: { time_limit_s: original } });
-      await api(request, "POST", "/auth/logout").catch(() => {});
-      await request.dispose();
-    },
-  };
-}
-
 function purgeStaged() {
-  if (process.env.SKIP_STAGE || process.env.KEEP_STAGE) return;
-  if (!wants("36-giang-vien-sinh-quiz-ai", "40-admin-hang-doi-duyet", "41-admin-trang-duyet")) return;
+  if (!STAGE.sessions.length) return;
+  if (process.env.KEEP_STAGE) {
+    log("KEEP_STAGE: chưa dọn — chạy tay `python -m scripts.purge_e2e`");
+    return;
+  }
+  for (const id of STAGE.threadIds) {
+    try {
+      const removed = sql(
+        `with gone as (delete from notifications where payload->>'thread_id' = '${id}' returning 1) select count(*) from gone`,
+      );
+      log(`đã xóa ${removed} thông báo của câu hỏi tạm`);
+    } catch (error) {
+      log(`CHƯA XÓA thông báo của câu hỏi ${id}:`, String(error).split("\n")[0]);
+    }
+  }
   try {
-    const output = execFileSync(
-      "docker",
-      ["compose", "-f", COMPOSE_FILE, "exec", "-T", "backend", "python", "-m", "scripts.purge_e2e"],
-      { encoding: "utf8" },
-    );
+    const output = execFileSync("docker", ["exec", container("backend"), "python", "-m", "scripts.purge_e2e"], {
+      encoding: "utf8",
+    });
     log("purge_e2e:", output.trim().split("\n").slice(-2).join(" | "));
   } catch (error) {
     log("purge_e2e hỏng — chạy tay `python -m scripts.purge_e2e`:", String(error).split("\n")[0]);
@@ -699,19 +869,16 @@ function purgeStaged() {
 
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
-  let quiz = null;
-  if (wants("16-hoc-vien-quiz-dang-lam", "17-hoc-vien-quiz-ket-qua")) {
-    try {
-      quiz = await quizSession();
-      LEARNER_STATE.quizKey = quiz.key;
-      await quiz.limit(600);
-    } catch (error) {
-      log("không mở được phiên giảng viên cho quiz:", String(error).split("\n")[0]);
-    }
-  }
 
-  const browser = await chromium.launch({ channel: CHANNEL || undefined });
+  const browser = await chromium.launch({ channel: CHANNEL || undefined, args: ROUTE.chromeArgs });
   try {
+    if (wants(...NEEDS_LEARNER)) {
+      await stageLearner().catch((error) => {
+        const message = String(error).split("\n")[0];
+        results.push({ name: "(dựng học viên tạm)", ok: false, error: message });
+        log("FAIL", "dựng học viên tạm:", message);
+      });
+    }
     for (const [role, run] of [
       ["khách", guest],
       ["học viên", learner],
@@ -730,9 +897,6 @@ async function main() {
     }
   } finally {
     await browser.close();
-    await quiz?.restore().catch((error) => {
-      log("CHƯA TRẢ LẠI giới hạn giờ của quiz:", String(error).split("\n")[0]);
-    });
     purgeStaged();
   }
 

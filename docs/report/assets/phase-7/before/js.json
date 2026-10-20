@@ -1,0 +1,129 @@
+{
+  "page": "/",
+  "scripts": 17,
+  "thirdParty": [],
+  "rawBytes": 705819,
+  "gzipBytes": 220672,
+  "transferBytes": 226462,
+  "files": [
+    {
+      "url": "/_next/static/chunks/310vm2bl3xxpt.js",
+      "transfer": 2270,
+      "decoded": 5364,
+      "raw": 5364,
+      "gzip": 1969
+    },
+    {
+      "url": "/_next/static/chunks/1d8durn3f0db4.js",
+      "transfer": 7913,
+      "decoded": 28907,
+      "raw": 28907,
+      "gzip": 7593
+    },
+    {
+      "url": "/_next/static/chunks/turbopack-3oy5-gcwc-k6-.js",
+      "transfer": 4131,
+      "decoded": 9652,
+      "raw": 9652,
+      "gzip": 3831
+    },
+    {
+      "url": "/_next/static/chunks/3fntmmi971322.js",
+      "transfer": 3961,
+      "decoded": 14377,
+      "raw": 14377,
+      "gzip": 3653
+    },
+    {
+      "url": "/_next/static/chunks/40ztt8zuy61vv.js",
+      "transfer": 9538,
+      "decoded": 30213,
+      "raw": 30213,
+      "gzip": 9227
+    },
+    {
+      "url": "/_next/static/chunks/34492936836s5.js",
+      "transfer": 5911,
+      "decoded": 14824,
+      "raw": 14824,
+      "gzip": 5608
+    },
+    {
+      "url": "/_next/static/chunks/04f94p8c7cwpw.js",
+      "transfer": 10102,
+      "decoded": 30426,
+      "raw": 30426,
+      "gzip": 9796
+    },
+    {
+      "url": "/_next/static/chunks/2axc3p_g0lskj.js",
+      "transfer": 45414,
+      "decoded": 165894,
+      "raw": 165894,
+      "gzip": 44985
+    },
+    {
+      "url": "/_next/static/chunks/30bqx7on-dp8b.js",
+      "transfer": 71927,
+      "decoded": 229156,
+      "raw": 229156,
+      "gzip": 71468
+    },
+    {
+      "url": "/_next/static/chunks/0dmoviro9cnf_.js",
+      "transfer": 11888,
+      "decoded": 31817,
+      "raw": 31817,
+      "gzip": 11583
+    },
+    {
+      "url": "/_next/static/chunks/1w5oakzw7rze_.js",
+      "transfer": 8332,
+      "decoded": 22852,
+      "raw": 22852,
+      "gzip": 8026
+    },
+    {
+      "url": "/_next/static/chunks/2bm5lhz2vi8-s.js",
+      "transfer": 13085,
+      "decoded": 35571,
+      "raw": 35571,
+      "gzip": 12776
+    },
+    {
+      "url": "/_next/static/chunks/2lkgpffywequh.js",
+      "transfer": 19274,
+      "decoded": 57664,
+      "raw": 57664,
+      "gzip": 18960
+    },
+    {
+      "url": "/_next/static/chunks/2q6lwlhx5ispc.js",
+      "transfer": 4784,
+      "decoded": 12474,
+      "raw": 12474,
+      "gzip": 4478
+    },
+    {
+      "url": "/_next/static/chunks/3q0bqd5p7m1rf.js",
+      "transfer": 1151,
+      "decoded": 851,
+      "raw": 851,
+      "gzip": 542
+    },
+    {
+      "url": "/_next/static/chunks/1wffmwqvkqye8.js",
+      "transfer": 4464,
+      "decoded": 10065,
+      "raw": 10065,
+      "gzip": 4161
+    },
+    {
+      "url": "/_next/static/chunks/3qw7lb6lzh9v-.js",
+      "transfer": 2317,
+      "decoded": 5712,
+      "raw": 5712,
+      "gzip": 2016
+    }
+  ]
+}

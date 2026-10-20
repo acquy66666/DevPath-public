@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Award,
   BarChart3,
   BookOpen,
   GraduationCap,
@@ -109,6 +110,14 @@ export function UserMenu({ user }: { user: User }) {
             <Link href="/giang-day/thong-ke">
               <BarChart3 aria-hidden />
               Thống kê giảng dạy
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {user.role === "instructor" ? (
+          <DropdownMenuItem asChild>
+            <Link href="/giang-day/cap-bac">
+              <Award aria-hidden />
+              Cấp giảng viên
             </Link>
           </DropdownMenuItem>
         ) : null}

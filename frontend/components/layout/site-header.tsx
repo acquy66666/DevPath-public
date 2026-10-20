@@ -19,7 +19,7 @@ export function SiteHeader() {
   const { user, status } = useAuth();
 
   return (
-    <header className="border-b">
+    <header className="border-b print:hidden">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
         <div className="flex items-center gap-2.5 sm:gap-6">
           <Link href="/" className="text-xl font-semibold tracking-tight sm:text-[1.575rem]">

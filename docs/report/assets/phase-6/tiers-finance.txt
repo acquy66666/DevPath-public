@@ -1,0 +1,64 @@
+Cấp bậc giảng viên & tài chính sàn — bằng chứng (20/10/2026, nhánh feature/instructor-tiers-finance)
+=============================================================================================
+
+Yêu cầu của user (20/10/2026)
+  - Giảng viên chỉ thấy số liệu khóa học / học viên, không thấy tiền.
+  - Xếp cấp giảng viên; cấp càng cao, hoa hồng càng tốt; admin xét nâng cấp.
+  - Admin: doanh thu theo mốc thời gian và theo giảng viên, xếp hạng từng khoản
+    mục, tính hoa hồng, lập check bill (bảng kê) cho từng giảng viên, lợi nhuận
+    giữ lại sau chi phí. Mọi trang xuất Excel.
+  - Dùng subagent nghiên cứu mô hình của các nền tảng lớn.
+
+Nghiên cứu: 3 subagent song song (chỉ số giảng viên; phân cấp + tỉ lệ chia;
+payout / P&L / thuế), tổng hợp + nguồn ở docs/thiet-ke-cap-bac-va-tai-chinh.md §2.
+
+Quyết định chính (chi tiết ở tài liệu thiết kế §3–§6)
+  - 5 cấp: Khởi hành 50% · Dẫn đường 55% · Mở lối 60% · Tiên phong 65% ·
+    Huyền thoại 70%. Hệ thống đề xuất, admin quyết định kèm lý do + ảnh chụp số liệu.
+  - Tỉ lệ chốt vào từng dòng bán lúc thanh toán (order_items.instructor_share_rate).
+  - Hoa hồng = floor((unit_price − discount) × tỉ lệ), phần dư thuộc sàn.
+  - Bảng kê theo tháng đã qua: mỗi dòng bán một lần, dồn kỳ, tối thiểu 200.000đ
+    (tháng 12 trả hết), thuế TNCN ước tính 10% khi một lần chi ≥ 5.000.000đ (NĐ 253/2026).
+  - Lãi lỗ: phí cổng ước tính 0,8% (biểu phí công khai Nam A Bank qua VNPAY, 15/06/2026).
+
+Migration
+  ad80b1df78a1: upgrade → downgrade → upgrade trên CSDL dev không lỗi;
+  `alembic check`: "No new upgrade operations detected."
+  Sau upgrade: 5 cấp seed; 40/40 dòng đã bán trên CSDL dev được gán 0,5000.
+
+Test backend (container dev, 20/10/2026)
+  tests/api/test_instructor_stats.py   38 passed
+  tests/api/test_instructor_tiers.py   19 passed
+  tests/api/test_finance.py            16 passed
+  tests/api/test_payouts.py + test_profit.py   20 passed
+  test_authorization_matrix + test_admin_stats + test_orders + test_notifications: 291 passed
+  Toàn bộ: 2448 passed, 2 skipped, 3 failed — ba ca đỏ cố định của container
+    (2 × test_storage_that_was_never_configured_answers_503, deploy.sh không mount
+    vào container); CI chạy được cả ba.
+
+Giảng viên không thấy tiền — kiểm bằng ba cách
+  1. test_nothing_an_instructor_reads_carries_money: duyệt mọi khóa của mọi phản hồi
+     overview / insights / courses / lessons tìm tên dính tiền (revenue, sales, price,
+     amount, paid, discount, commission, payout) và giá trị tiền; tiêu chí cấp dính
+     tiền trả value = threshold = null.
+  2. test_the_export_has_no_money_either: tệp Excel của giảng viên không có định
+     dạng ₫, không có chữ "doanh thu", "giá bán", "hoa hồng", "tiền".
+  3. capture.cjs: Chrome thật, trang /giang-day/thong-ke và /giang-day/cap-bac
+     không chứa "₫" hay số tiền dạng 1.234 đ.
+
+Excel
+  Tựa khóa học "=HYPERLINK(\"x\")" và "=1+1" được ghi thành ô chữ (data_type 's'),
+  không thành công thức — có test.
+
+Giao diện (Chrome thật qua Playwright, stack dev, 1360 px, tài khoản seed)
+  NODE_PATH=frontend/node_modules node docs/report/assets/phase-6/tiers-finance/capture.cjs
+  12 ảnh trong tiers-finance/:
+    01 tổng quan admin (+ nút Xuất Excel) · 02–03 doanh thu 30 ngày / 12 tháng theo
+    tháng · 04 xếp hạng · 05 cấp giảng viên (mở chi tiết) · 06 hộp thoại đổi cấp ·
+    07 thanh toán GV · 08 lợi nhuận · 12 bảng kê (lập nháp tháng 09/2026 trên dữ liệu
+    dev: 40 dòng, hoa hồng 9.580.800 ₫, thuế ước tính 958.080 ₫, thực chi 8.622.720 ₫ —
+    rồi xóa nháp, CSDL dev không đổi) · 09 thống kê giảng viên 12 tháng · 10 phễu
+    theo bài · 11 cấp giảng viên (phía giảng viên).
+  Kết quả: "Không có lỗi console, giảng viên không thấy số tiền nào."
+  Sau khi chạy: payout_statements = 0, payout_statement_lines = 0,
+  instructor_tier_changes = 0 trên CSDL dev.

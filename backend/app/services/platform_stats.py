@@ -7,9 +7,10 @@ figure is compared with the window of the same length just before.
 
 **Revenue** is what buyers paid the platform: `orders.total` of orders the
 gateway confirmed (`status = 'paid'`), dated by `paid_at`. The order total is
-already net of the coupon, so summing it is exact; the instructor dashboard
-has to split it per line only because an order can hold several instructors'
-courses. Gross, before any payout -- revenue sharing is future work.
+already net of the coupon, so summing it is exact; the finance pages split it
+per line only because an order can hold several instructors' courses. Gross,
+before instructors' shares -- those, and what the platform
+keeps, are on the finance pages (`services/finance.py`).
 
 **An active user** on a day is somebody who left a trace on that day, in any of
 the append-only records the platform already keeps:

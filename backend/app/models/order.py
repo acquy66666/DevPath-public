@@ -188,6 +188,12 @@ class OrderItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         Numeric(12, 2), nullable=False, server_default=text("0")
     )
 
+    #: The instructor's share of this line, copied from their tier at the
+    #: moment the order is paid (`orders._deliver`) -- NULL until then. Frozen
+    #: like the price: a promotion next month does not reprice this sale, and
+    #: an admin editing a tier's rate changes what is sold from then on only.
+    instructor_share_rate: Mapped[Decimal | None] = mapped_column(Numeric(5, 4))
+
     __table_args__ = (
         # No quantity, for the same reason the cart has none: a course cannot
         # be owned twice, so a second line would be the same sale twice.
@@ -195,6 +201,11 @@ class OrderItem(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         CheckConstraint("unit_price >= 0", name="ck_order_items_unit_price"),
         CheckConstraint(
             "discount >= 0 AND discount <= unit_price", name="ck_order_items_discount"
+        ),
+        CheckConstraint(
+            "instructor_share_rate IS NULL "
+            "OR (instructor_share_rate > 0 AND instructor_share_rate <= 1)",
+            name="ck_order_items_instructor_share_rate",
         ),
         # The instructor's revenue reads sales course by course; the unique
         # constraint above leads with `order_id` and cannot serve that.

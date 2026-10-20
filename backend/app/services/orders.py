@@ -59,6 +59,7 @@ from app.models import (
 from app.services import commerce as commerce_service
 from app.services import coupons as coupons_service
 from app.services import enrollments as enrollments_service
+from app.services import instructor_tiers as tiers_service
 from app.services import vnpay
 from app.services.commerce import EmptyCartError
 
@@ -437,12 +438,17 @@ async def _clear_purchased_lines(
 
 
 async def _deliver(session: AsyncSession, order: Order) -> None:
-    """Enrol the buyer in what the order holds, and take it out of their cart."""
-    course_ids = list(
-        await session.scalars(
-            select(OrderItem.course_id).where(OrderItem.order_id == order.id)
-        )
+    """Enrol the buyer in what the order holds, take it out of their cart, and
+    freeze each line's instructor share at the rate of the instructor's tier
+    now -- a promotion later does not reprice this sale."""
+    items = list(
+        await session.scalars(select(OrderItem).where(OrderItem.order_id == order.id))
     )
+    course_ids = [item.course_id for item in items]
+    rates = await tiers_service.share_rates(session, course_ids)
+    for item in items:
+        item.instructor_share_rate = rates[item.course_id]
+
     for course_id in course_ids:
         await enrollments_service.grant(
             session, course_id, order.user_id, source="purchase"

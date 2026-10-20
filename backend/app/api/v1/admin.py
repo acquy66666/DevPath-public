@@ -10,7 +10,7 @@ import uuid
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
 from app.core.deps import DbSession, require_role
 from app.models import User
@@ -58,6 +58,7 @@ from app.services import admin_coupons as coupons_service
 from app.services import admin_users as users_service
 from app.services import banners as banners_service
 from app.services import categories as categories_service
+from app.services import excel, exports
 from app.services import moderation as moderation_service
 from app.services import platform_stats as stats_service
 from app.services import reports as reports_service
@@ -95,6 +96,19 @@ async def get_platform_overview(
     """Revenue, orders, enrolments, sign-ups and active users for the period,
     bucket by bucket, against the period just before -- plus all-time totals."""
     return PlatformOverviewOut.model_validate(await stats_service.overview(session, period))
+
+
+@router.get("/stats/export.xlsx", response_class=Response)
+async def export_platform_overview(
+    _: Admin, session: DbSession, period: StatsPeriod = "30d"
+) -> Response:
+    """The overview page as an Excel workbook, with every hot course."""
+    overview = await stats_service.overview(session, period)
+    hot, _total = await stats_service.hot_courses(session, period, page=1, page_size=10_000)
+    return excel.response(
+        exports.platform_overview(overview, hot),
+        f"devpath_tong-quan_{overview.start:%Y%m%d}_{overview.end:%Y%m%d}.xlsx",
+    )
 
 
 @router.get("/stats/hot-courses", response_model=Page[HotCourseOut])

@@ -2,12 +2,17 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  Award,
   BookCheck,
   Flag,
   FolderTree,
   ImageIcon,
   LayoutDashboard,
+  LineChart,
+  PiggyBank,
+  Receipt,
   TicketPercent,
+  Trophy,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +35,12 @@ interface Tab {
 
 const TABS: Tab[] = [
   { href: "/quan-tri", label: "Tổng quan", icon: LayoutDashboard, count: () => 0 },
+  // Money lives here and nowhere an instructor can reach (20/10/2026).
+  { href: "/quan-tri/doanh-thu", label: "Doanh thu", icon: LineChart, count: () => 0 },
+  { href: "/quan-tri/xep-hang", label: "Xếp hạng", icon: Trophy, count: () => 0 },
+  { href: "/quan-tri/cap-giang-vien", label: "Cấp giảng viên", icon: Award, count: () => 0 },
+  { href: "/quan-tri/thanh-toan", label: "Thanh toán GV", icon: Receipt, count: () => 0 },
+  { href: "/quan-tri/loi-nhuan", label: "Lợi nhuận", icon: PiggyBank, count: () => 0 },
   { href: "/quan-tri/khoa-hoc", label: "Duyệt khóa học", icon: BookCheck, count: (s) => s.pending_courses },
   { href: "/quan-tri/bao-cao", label: "Báo cáo vi phạm", icon: Flag, count: (s) => s.pending_reports },
   { href: "/quan-tri/nguoi-dung", label: "Người dùng", icon: Users, count: () => 0 },
@@ -56,11 +67,12 @@ export function AdminNav() {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 print:hidden">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Quản trị</h1>
         <p className="text-sm text-muted-foreground">
-          Duyệt khóa học trước khi lên sàn, xử lý báo cáo vi phạm và quản lý tài khoản.
+          Doanh thu, cấp và thanh toán giảng viên, lợi nhuận; duyệt khóa học, xử lý báo cáo vi
+          phạm và quản lý tài khoản.
         </p>
       </div>
       <nav aria-label="Khu vực quản trị" className="-mx-4 overflow-x-auto px-4">

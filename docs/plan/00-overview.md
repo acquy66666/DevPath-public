@@ -10,6 +10,7 @@
 | [4 — AI Features](phase-4-ai-features.md) ⭐ | Recommender, chatbot RAG, sinh quiz | 9–10 | 19/10 → 01/11 | Chatbot trả lời có trích nguồn; precision@k đo được; quiz sinh được từ bài giảng |
 | [5 — Commerce & Admin](phase-5-commerce-admin.md) | Thanh toán, gamification, admin | 11–12 | 02/11 → 15/11 | Mua khóa học end-to-end qua VNPay sandbox; admin duyệt khóa học |
 | [6 — Hardening & Deploy](phase-6-hardening-deploy.md) | Kiểm thử, bảo mật, triển khai 0đ | 13 | 01/10 → … | **Đóng băng nghiệp vụ:** URL demo công khai chạy ổn định **trên tên miền thật**, E2E test xanh. Mốc giữa: **trình bày GVHD** trên tên miền thật qua tunnel 0đ |
+| [6.5 — Cấp bậc giảng viên & tài chính](phase-6-5-tiers-finance.md) | Giảng viên không thấy tiền; 5 cấp + hoa hồng; doanh thu, xếp hạng, bảng kê, lãi lỗ cho admin; xuất Excel mọi trang | chèn 20/10 | 20/10 → … | Test backend xanh; giảng viên không thấy số tiền nào (test + ảnh); CI xanh trên PR |
 | [7 — Nâng cấp UI/UX](phase-7-ui-ux-upgrade.md) | Design system (Claude Design), nhân vật linh vật + hoạt ảnh, thiết kế lại mọi màn | ~3 tuần sau mốc GVHD | tính lại | **Đóng băng giao diện:** design system khớp code; nhân vật đủ bản đồ phản ứng; CI xanh (E2E + hồi quy hình ảnh + axe); ảnh chương 4 chụp lại; tag `phase-7-done` |
 | [8 — Báo cáo & bảo vệ](phase-8-report.md) | Vẽ sơ đồ, viết báo cáo, slide, demo | 14 | 23/11 → 29/11 | Báo cáo hoàn chỉnh; slide + kịch bản demo đã tổng duyệt |
 
@@ -19,6 +20,7 @@
 2. **Không làm bước thanh toán thật qua cổng VNPay** (quét mã QR hoặc nhập thẻ test trên trang VNPay, rồi chờ IPN thật). Luồng mua vẫn chạy trên UI tới URL thanh toán đã ký; tiền được ghi nhận bằng IPN giả lập `scripts.simulate_vnpay_ipn`, đúng như gate Phase 5 và E2E. Báo cáo ghi rõ điều này.
 3. **Deploy 0đ để kịp trình bày với GVHD**: tên miền `.me` của Student Pack + Cloudflare named tunnel vào stack production chạy trên máy dev. Được URL cố định trên tên miền thật, nên bật được đăng nhập Google và CSP. Máy chủ thật (Azure for Students, dự phòng Oracle) vẫn là gate Phase 6.
 4. **Sau mốc trình bày GVHD: Phase 7 nâng cấp UI/UX** ([thiết kế](../ui-ux/thiet-ke-nang-cap-ui-ux.md)).
+5. **Chèn 20/10/2026 — Phase 6.5 cấp bậc giảng viên & tài chính** ([thiết kế](../thiet-ke-cap-bac-va-tai-chinh.md)). User tạm dừng các task theo tiến độ để làm phần này, nên Phase 7 bắt đầu sau khi nó xong.
 
 **Thứ tự phase không còn tuyệt đối.** Task Phase 6 chờ máy chủ thật không chặn Phase 7. Khi mở phiên: nếu task chưa tick đầu tiên của Phase 6 bị chặn bởi VPS **và** mục "Mốc trình bày GVHD" của Phase 6 đã tick, thì lấy task chưa tick đầu tiên của Phase 7.
 

@@ -4,7 +4,7 @@ import { StatsDashboard } from "@/components/instructor/stats/stats-dashboard";
 
 export const metadata: Metadata = {
   title: "Thống kê giảng dạy — DevPath",
-  description: "Doanh thu, học viên mới và tỉ lệ hoàn thành của các khóa học bạn dạy.",
+  description: "Học viên, mức độ học, kết quả và phản hồi của các khóa học bạn dạy.",
 };
 
 export default function InstructorStatsPage() {

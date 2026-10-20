@@ -1,6 +1,8 @@
+import uuid
 from datetime import datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Index, String, Text, text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Index, String, Text, text
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -31,6 +33,13 @@ class User(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     # Set by an admin; anything other than NULL blocks sign-in.
     locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    #: The instructor's tier, set only by an admin's decision
+    #: (`instructor_tier_changes`). NULL is the first tier -- where every
+    #: instructor starts -- so becoming one never has to set it.
+    instructor_tier_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("instructor_tiers.id", ondelete="RESTRICT")
+    )
 
     __table_args__ = (
         CheckConstraint(

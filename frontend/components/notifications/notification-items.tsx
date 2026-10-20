@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  Award,
   Bell,
   CircleCheck,
   CircleX,
@@ -90,6 +91,17 @@ export function describe(notification: AppNotification): Described {
         quote: p.course_title,
         tail: ` đã bị gỡ khỏi trang công khai: ${clip(p.reason)}`,
         href: `/giang-day/${p.course_id}`,
+      };
+    }
+    case "instructor_tier_changed": {
+      const p = notification.payload;
+      const up = p.to_rank > p.from_rank;
+      return {
+        icon: Award,
+        lead: up ? "Chúc mừng! Bạn đã lên cấp " : "Cấp giảng viên của bạn đổi thành ",
+        quote: p.to_tier,
+        tail: ` (nhận ${Math.round(Number(p.share_rate) * 100)}% mỗi lượt bán): ${clip(p.note)}`,
+        href: "/giang-day/cap-bac",
       };
     }
     default:

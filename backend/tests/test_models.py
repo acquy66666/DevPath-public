@@ -115,7 +115,32 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "banners",
         # Phase 6 -- the orphan sweeper's quarantine list.
         "orphan_objects",
+        # Phase 6.5 -- instructor tiers, payouts and the platform's costs.
+        "instructor_tiers",
+        "instructor_tier_changes",
+        "payout_statements",
+        "payout_statement_lines",
+        "platform_expenses",
     }
+
+
+def test_a_sale_is_billed_once_and_a_statement_adds_up() -> None:
+    from app.models import PayoutStatement, PayoutStatementLine
+
+    assert "uq_payout_statement_lines_order_item" in constraint_names(PayoutStatementLine)
+    assert {
+        "ck_payout_statements_split",
+        "ck_payout_statements_payable",
+        "ck_payout_statements_paid_evidence",
+        "ck_payout_statements_void_evidence",
+    } <= constraint_names(PayoutStatement)
+
+
+def test_a_sold_line_freezes_its_share_rate() -> None:
+    column = OrderItem.__table__.c.instructor_share_rate
+    assert column.nullable
+    assert (column.type.precision, column.type.scale) == (5, 4)
+    assert "ck_order_items_instructor_share_rate" in constraint_names(OrderItem)
 
 
 @pytest.mark.parametrize("model", [User, Category, Course])

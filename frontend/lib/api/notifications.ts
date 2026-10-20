@@ -35,6 +35,16 @@ export interface CourseApprovedPayload {
  * `course_rejected`: an admin sent your course back.
  * `course_taken_down`: an admin took your published course off the platform.
  */
+/** `instructor_tier_changed`: an admin moved you to another tier, with why. */
+export interface TierChangedPayload {
+  from_tier: string;
+  from_rank: number;
+  to_tier: string;
+  to_rank: number;
+  share_rate: string;
+  note: string;
+}
+
 export interface CourseDecisionPayload {
   course_id: string;
   course_title: string;
@@ -59,7 +69,8 @@ export type AppNotification =
   | (NotificationBase & { type: "qa_question"; payload: QaQuestionPayload })
   | (NotificationBase & { type: "course_approved"; payload: CourseApprovedPayload })
   | (NotificationBase & { type: "course_rejected"; payload: CourseDecisionPayload })
-  | (NotificationBase & { type: "course_taken_down"; payload: CourseDecisionPayload });
+  | (NotificationBase & { type: "course_taken_down"; payload: CourseDecisionPayload })
+  | (NotificationBase & { type: "instructor_tier_changed"; payload: TierChangedPayload });
 
 export function listNotifications(
   accessToken: string,

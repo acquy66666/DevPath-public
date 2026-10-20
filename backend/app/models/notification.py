@@ -36,12 +36,15 @@ NOTIFICATION_COURSE_APPROVED = "course_approved"
 NOTIFICATION_COURSE_REJECTED = "course_rejected"
 #: An admin took your published course off the platform after a report.
 NOTIFICATION_COURSE_TAKEN_DOWN = "course_taken_down"
+#: An admin moved you to another instructor tier, with the reason.
+NOTIFICATION_INSTRUCTOR_TIER_CHANGED = "instructor_tier_changed"
 NOTIFICATION_TYPES = (
     NOTIFICATION_QA_REPLY,
     NOTIFICATION_QA_QUESTION,
     NOTIFICATION_COURSE_APPROVED,
     NOTIFICATION_COURSE_REJECTED,
     NOTIFICATION_COURSE_TAKEN_DOWN,
+    NOTIFICATION_INSTRUCTOR_TIER_CHANGED,
 )
 
 

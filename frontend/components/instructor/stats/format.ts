@@ -85,3 +85,19 @@ export function change(current: number, previous: number): number | null {
   if (previous === 0) return null;
   return (current - previous) / previous;
 }
+
+const ONE_DECIMAL = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 1 });
+const RATING = new Intl.NumberFormat("vi-VN", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+});
+
+/** Stars out of five: "4,52 ★", or "—" with no reviews. */
+export function formatRating(value: number | null): string {
+  return value === null ? "—" : `${RATING.format(value)} ★`;
+}
+
+/** A median or an average that may be missing: "2,5 giờ", "—". */
+export function formatMeasure(value: number | null, unit: string): string {
+  return value === null ? "—" : `${ONE_DECIMAL.format(value)} ${unit}`;
+}

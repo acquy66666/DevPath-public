@@ -19,6 +19,7 @@ import {
 import { StatTile } from "@/components/instructor/stats/stat-tile";
 import { PeriodPicker } from "@/components/instructor/stats/stats-dashboard";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ExportButton } from "@/components/ui/export-button";
 import {
   Card,
   CardContent,
@@ -33,6 +34,7 @@ import {
   type PlatformOverview,
 } from "@/lib/api/admin";
 import { apiErrorMessage } from "@/lib/api/error-messages";
+import { overviewExportPath } from "@/lib/api/finance";
 import { STATS_PERIODS, type StatsPeriod } from "@/lib/api/instructor-stats";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { formatAmount } from "@/lib/format";
@@ -72,7 +74,10 @@ export function AdminDashboard() {
               : "Doanh thu, người dùng hoạt động và khóa học hot."}
           </p>
         </div>
-        <PeriodPicker value={period} onChange={setPeriod} />
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodPicker value={period} onChange={setPeriod} />
+          <ExportButton path={overviewExportPath(period)} filename="devpath_tong-quan.xlsx" />
+        </div>
       </div>
 
       {overview.isPending ? (

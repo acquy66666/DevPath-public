@@ -61,4 +61,4 @@ Thiết kế đầy đủ — nghiên cứu ba subagent, ngưỡng, công thức
   - 5 tệp mới/viết lại (`test_instructor_stats`, `test_instructor_tiers`, `test_finance`, `test_payouts`, `test_profit`): 93 ca;
   - toàn bộ trong container: 2.448 qua, 3 đỏ cố định của container (2 storage-503 + `deploy.sh` không mount).
 - [x] Ảnh 12 màn + kiểm không lỗi console, và giảng viên không thấy số tiền: `docs/report/assets/phase-6/tiers-finance/capture.cjs`.
-- [ ] CI xanh trên PR (gồm E2E luồng vàng).
+- [x] CI xanh trên PR #108 (6/6 check; backend 2.453 passed; E2E 1 passed ngay lượt đầu), merge 20/10/2026.

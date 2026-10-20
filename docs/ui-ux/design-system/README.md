@@ -34,11 +34,11 @@ Khi token đã vào `frontend/app/globals.css` (task "Nền"), **code thắng**:
 - **Chuyển động:** 6 thời lượng (90–600ms, cộng trần 2.400ms cho một lần phản ứng của nhân vật) và 4 đường cong; `ease-overshoot` chỉ dành cho ăn mừng.
 - **Số theo kiểu đang dùng trong code:** "80%" viết liền, "0,42 s", "499.000 ₫".
 
-## Giả định chờ user duyệt
+## Đã duyệt / còn là giả định
 
-- Bảng màu ngọc + nghệ và hue cụ thể. Đổi màu là sửa `palette.py` rồi chạy lại: tương phản được kiểm lại tự động.
-- Đề xuất đổi kích thước so với code: nút mặc định 32 → 36px, ô nhập 32 → 40px với chữ 16px, bo góc gốc 10px. Áp dụng ở task "Nền".
-- Font vẫn là Geist / Geist Mono / Noto Serif. Font chữ chính được chọn ở task kế; thang chữ giữ nguyên.
+- **User duyệt bảng màu ngọc + nghệ ngày 21/10/2026.** Đổi màu sau này vẫn đi qua `palette.py`, tương phản được kiểm lại tự động.
+- **Font chữ chính: Lexend** (21/10, task chọn font): so 7 ứng viên, lý do và số đo ở [`fonts.md`](fonts.md). Geist Mono và Noto Serif giữ nguyên. Thang chữ đổi ba line-height theo số đo của Lexend (display 52, h1 40, caption 18).
+- Giả định, áp dụng ở task "Nền": nút mặc định 32 → 36px, ô nhập 32 → 40px với chữ 16px, bo góc gốc 10px.
 - Chỉ có theme sáng (tài liệu thiết kế, mục 10). Tên token giữ nguyên để thêm theme `dark` sau.
 
 ## Chưa có trong artifact

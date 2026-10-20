@@ -7,7 +7,7 @@ import { Providers } from "./providers";
 // Vietnamese, so both of these are wanted before first paint -- without the
 // vietnamese subset each letter with a stacked mark (ồ, ễ, ậ) would come
 // from the fallback font, mid-word.
-const PRELOADED_FONTS = ["/fonts/geist-latin.woff2", "/fonts/geist-vietnamese.woff2"];
+const PRELOADED_FONTS = ["/fonts/lexend-latin.woff2", "/fonts/lexend-vietnamese.woff2"];
 
 export const metadata: Metadata = {
   // Every relative canonical and Open Graph URL below is resolved against this,

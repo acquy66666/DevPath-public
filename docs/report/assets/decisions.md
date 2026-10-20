@@ -800,3 +800,26 @@ Task đầu của Phase 7, "Tạo artifact Design System DevPath". Bằng chứn
 **Giữ tên token của shadcn cho lớp ngữ nghĩa.** `background`, `primary`, `muted`, `accent`, `border`, `input`, `ring`… giữ nguyên tên, chỉ đổi giá trị; token mới (`verdict-*`, `quiz-*`, `reward*`…) thêm cạnh đó. Như vậy task "Nền" thay `globals.css` mà không phải sửa class trong `components/ui/*`, và E2E (dựa vào role/name, không dựa vào màu) không bị ảnh hưởng.
 
 **Preview trong artifact là bản tĩnh** (HTML + `bundle.css` đọc token), không build bundle React của frontend. Preview đủ để duyệt màu và kích thước. Component thật đổi ở task "Nền", và lúc đó `globals.css` thắng nếu lệch artifact. Trình duyệt tích hợp chưa đăng nhập claude.ai, nên preview được kiểm trên máy bằng cách dựng lại `tokens.css` theo quy tắc của loại artifact rồi chụp bằng Playwright (`check/`): 11 preview × 2 bề rộng, 0 tràn ngang, 0 lỗi console.
+
+User duyệt bảng màu ngày 21/10/2026.
+
+## Lexend thay Geist làm font chữ chính (21/10/2026)
+
+Task "Chọn font có subset vietnamese" của Phase 7. Số đo và cách chạy lại: `docs/ui-ux/design-system/fonts.md`; ảnh: `docs/report/assets/phase-7/font/`.
+
+**Chọn bằng số đo trong Chrome thật, không bằng ấn tượng.** Bảy ứng viên có subset `vietnamese` trên Google Fonts, tải đúng tệp woff2 sẽ tự host, đo bốn thứ:
+- dấu chồng có trồi khỏi hộp dòng ở từng cỡ của thang chữ không;
+- "₫" so với chữ số;
+- bề rộng một câu tiếng Việt;
+- header khách ở 360px.
+
+Rồi chụp chữ khó ("ẩ ẫ ấ ầ ậ", "Ỗ Ữ Ẫ", "ỵ") ở 12/14px với DPR 1 của laptop thường.
+
+**Lexend, vì dấu đọc được ở cỡ nhỏ mà không bị cắt.**
+- Geist (đang dùng) và Manrope làm nhòe dấu chồng ở 12–14px; Geist còn vẽ "₫" chỉ bằng 0,73 chữ số.
+- Be Vietnam Pro có dấu rõ nhất nhưng trồi 1,7px khỏi dòng ở cỡ 14–16px: `truncate` cắt mất dấu ngã, "Ỗ" đọc thành "Ô". `line-clamp` còn để lộ dấu của dòng bị ẩn ở mép dưới khung, và không cách cắt nào trong 6 cách đã thử chặn được. Dùng font này sẽ phải tăng line-height toàn site hoặc chấp nhận lỗi đổi chữ.
+- Plus Jakarta Sans đặt dấu nặng của "ỵ" lệch sang phải.
+- Nunito gần dáng chữ tròn của Duolingo.
+- Lexend giữ mọi dấu trong dòng từ cỡ `title` trở xuống, và là một tệp variable 52 KB cho mọi độ đậm, thay vì 132 KB bốn tệp tĩnh.
+
+**Cái giá là bề rộng: Lexend rộng hơn Geist 6%.** Header khách ở 360px tràn 3,3px. Giữ nguyên bố cục, chỉ hạ cỡ chữ dưới `sm` (logo 19px, link 14px, nút 12px, khoảng 8px) để về đúng 345,0px như Geist. 8 trang công khai × 3 bề rộng không tràn, chạy vào `next dev` trên máy với dữ liệu thật của stack demo; trang cần đăng nhập để task "Nền" đo lại. Metric font dự phòng lấy bằng chính hàm `calculateSizeAdjustValues` của Next, hàm này tính lại đúng số Geist đang có, nên không phải bật lại `next/font/google` như cách lấy font cũ.

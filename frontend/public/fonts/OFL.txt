@@ -1,4 +1,7 @@
-Geist, Geist Mono:
+Lexend:
+Copyright 2018 The Lexend Project Authors (https://github.com/googlefonts/lexend), with Reserved Font Name “RevReading Lexend”.
+
+Geist Mono:
 Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
 
 Noto Serif:

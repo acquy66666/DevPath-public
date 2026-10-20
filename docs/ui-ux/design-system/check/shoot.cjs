@@ -23,11 +23,11 @@ const path = require("path");
         cw: document.documentElement.clientWidth,
         h: document.documentElement.scrollHeight,
         font: getComputedStyle(document.body).fontFamily,
-        geist: document.fonts.check('16px "Geist"'),
+        lexend: document.fonts.check('16px "Lexend"'),
       }));
       const name = f.replace(".html", "");
       await page.screenshot({ path: path.join(shots, `${name}-${width}.png`), fullPage: true });
-      console.log(`${width} ${name.padEnd(11)} h=${m.h} overflow=${m.sw > m.cw ? m.sw - m.cw : 0} geist=${m.geist} errors=${errors.length ? errors.join(" | ") : 0}`);
+      console.log(`${width} ${name.padEnd(11)} h=${m.h} overflow=${m.sw > m.cw ? m.sw - m.cw : 0} lexend=${m.lexend} errors=${errors.length ? errors.join(" | ") : 0}`);
     }
     await page.close();
   }

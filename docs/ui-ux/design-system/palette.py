@@ -375,7 +375,7 @@ for fam in ("jade", "turmeric", "green", "red", "amber", "rose", "violet", "blue
 TYPE = {
     "fonts": [],
     "families": {
-        "sans": '"Geist", "Segoe UI", system-ui, sans-serif',
+        "sans": '"Lexend", "Segoe UI", system-ui, sans-serif',
         "mono": '"Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace',
         "serif": '"Noto Serif", Georgia, serif',
     },
@@ -383,11 +383,11 @@ TYPE = {
         {
             "name": "Tiêu đề",
             "family": "sans",
-            "note": "Tiêu đề có dấu hai tầng cần line-height ≥ 1,2.",
+            "note": "Line-height đo bằng Lexend: dấu chồng của chữ thường luôn nằm trong dòng; chữ hoa (Ẫ, Ữ) trồi ≤ 3,4px ở display.",
             "styles": [
-                {"name": "display", "fontSize": "40px", "lineHeight": "48px", "fontWeight": 700, "letterSpacing": "-0.02em",
+                {"name": "display", "fontSize": "40px", "lineHeight": "52px", "fontWeight": 700, "letterSpacing": "-0.02em",
                  "sample": "Học lập trình theo lộ trình của bạn", "usage": "Mỗi trang tối đa một: hero trang chủ."},
-                {"name": "h1", "fontSize": "30px", "lineHeight": "38px", "fontWeight": 700, "letterSpacing": "-0.015em",
+                {"name": "h1", "fontSize": "30px", "lineHeight": "40px", "fontWeight": 700, "letterSpacing": "-0.015em",
                  "sample": "Luồng điều khiển trong Python", "usage": "Tiêu đề trang."},
                 {"name": "h2", "fontSize": "24px", "lineHeight": "32px", "fontWeight": 600, "letterSpacing": "-0.01em",
                  "sample": "Người học nói gì", "usage": "Tiêu đề mục trong trang."},
@@ -409,7 +409,7 @@ TYPE = {
                  "sample": "Chương trình chạy xong nhưng in ra khác kết quả mong đợi.", "usage": "Chữ mặc định."},
                 {"name": "body-sm", "fontSize": "14px", "lineHeight": "20px", "fontWeight": 400,
                  "sample": "Đạt từ 80% · 10 câu · 15 phút", "usage": "Giao diện dày: bảng, gợi ý dưới ô nhập, dòng thông tin."},
-                {"name": "caption", "fontSize": "12px", "lineHeight": "16px", "fontWeight": 500, "letterSpacing": "0.01em",
+                {"name": "caption", "fontSize": "12px", "lineHeight": "18px", "fontWeight": 500, "letterSpacing": "0.01em",
                  "sample": "Cập nhật 20/10/2026", "usage": "Thời gian, trục biểu đồ, chữ trong badge. Không bao giờ là một câu."},
                 {"name": "eyebrow", "fontSize": "12px", "lineHeight": "16px", "fontWeight": 600, "letterSpacing": "0.06em",
                  "sample": "KHÓA HỌC MỚI", "usage": "Nhãn viết hoa phía trên tiêu đề mục. Ngắn, không thành câu."},

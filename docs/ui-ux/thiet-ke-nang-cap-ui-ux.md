@@ -165,8 +165,8 @@ Nguyên tắc: **ưu tiên nguồn chính chủ**. Với skill cộng đồng, *
 | **react-best-practices** | `vercel-labs/agent-skills` · chính chủ | Hiệu năng React/Next khi thêm hoạt ảnh | |
 | **shadcn/ui** | `shadcn/ui` · chính chủ | Theming + CLI shadcn theo cấu hình dự án | `npx skills add shadcn/ui`. Lưu ý cũ: `shadcn add dialog` từng ghi đè `button.tsx` |
 | **ui-ux-pro-max** | `nextlevelbuilder/ui-ux-pro-max-skill` · MIT | Kho tra cứu: kiểu giao diện, bảng màu, cặp font, luật UX, checklist trước bàn giao | Cài qua `uipro-cli`. Dùng để tra, không để quyết thay |
-| **motion** | `pedronauck/skills` · cộng đồng | Motion: gesture, layout, `AnimatePresence`, SVG, spring | Bản dùng import `motion/react` (Motion v12+) |
-| **animation-principles** | `dylantarre/animation-principles` · cộng đồng | 12 nguyên lý hoạt hình cho bộ biểu cảm | |
+| **motion** | `pedronauck/skills` · cộng đồng | Motion: gesture, layout, `AnimatePresence`, SVG, spring | Bản dùng import `motion/react` (Motion v12+). **18/10: repo đã gỡ skill này; cài `bm629/agent-skills/motion-react` thay thế** ([README](README.md)) |
+| **animation-principles** | `dylantarre/animation-principles` · cộng đồng | 12 nguyên lý hoạt hình cho bộ biểu cảm | Repo có 144 skill; 18/10 cài 3: `character-appeal`, `education-learning`, `accessible-motion` |
 | **rive-web** / **rive** | `stevysmith/rive-skills`, `bowtiedswan/rive-skills` · cộng đồng | Chỉ khi chọn Rive ở spike 4.3 | |
 | **visual-testing** | `petrkindlmann/qa-skills` · cộng đồng | Baseline `toHaveScreenshot`, che vùng động | **Tránh** `manutej/luxor-claude-marketplace/playwright-visual-testing`: catalog ghi audit HIGH risk |
 | Skill a11y WCAG 2.2 | chọn sau audit | Rà truy cập | Hoặc tự dùng axe-core + Playwright, không cần skill |

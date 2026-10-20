@@ -1,0 +1,218 @@
+DevPath design system — contrast of every promised pair (WCAG 2.x)
+
+ok   15.92:1 (≥ 4.5) foreground #102029 on background #f8fafc — body text
+ok    5.70:1 (≥ 4.5) muted-foreground #556670 on background #f8fafc — secondary text
+ok    6.96:1 (≥ 4.5) link #066254 on background #f8fafc — link
+ok    7.42:1 (≥ 4.5) destructive-text #a01e23 on background #f8fafc — error text
+ok    9.16:1 (≥ 4.5) success-text #194f29 on background #f8fafc — success text
+ok    9.77:1 (≥ 4.5) warning-text #613700 on background #f8fafc — warning text
+ok    9.62:1 (≥ 4.5) info-text #10427b on background #f8fafc — info text
+ok    4.00:1 (≥ 3.0) input #6f7e88 on background #f8fafc — control border
+ok    5.11:1 (≥ 3.0) ring #007967 on background #f8fafc — focus ring
+ok   16.66:1 (≥ 4.5) foreground #102029 on card #ffffff — body text
+ok    5.96:1 (≥ 4.5) muted-foreground #556670 on card #ffffff — secondary text
+ok    7.28:1 (≥ 4.5) link #066254 on card #ffffff — link
+ok    7.76:1 (≥ 4.5) destructive-text #a01e23 on card #ffffff — error text
+ok    9.58:1 (≥ 4.5) success-text #194f29 on card #ffffff — success text
+ok   10.22:1 (≥ 4.5) warning-text #613700 on card #ffffff — warning text
+ok   10.06:1 (≥ 4.5) info-text #10427b on card #ffffff — info text
+ok    4.19:1 (≥ 3.0) input #6f7e88 on card #ffffff — control border
+ok    5.34:1 (≥ 3.0) ring #007967 on card #ffffff — focus ring
+ok   15.06:1 (≥ 4.5) foreground #102029 on muted #f0f4f7 — body text
+ok    5.39:1 (≥ 4.5) muted-foreground #556670 on muted #f0f4f7 — secondary text
+ok    6.59:1 (≥ 4.5) link #066254 on muted #f0f4f7 — link
+ok    7.02:1 (≥ 4.5) destructive-text #a01e23 on muted #f0f4f7 — error text
+ok    8.66:1 (≥ 4.5) success-text #194f29 on muted #f0f4f7 — success text
+ok    9.24:1 (≥ 4.5) warning-text #613700 on muted #f0f4f7 — warning text
+ok    9.10:1 (≥ 4.5) info-text #10427b on muted #f0f4f7 — info text
+ok    3.79:1 (≥ 3.0) input #6f7e88 on muted #f0f4f7 — control border
+ok    4.83:1 (≥ 3.0) ring #007967 on muted #f0f4f7 — focus ring
+ok    5.34:1 (≥ 4.5) primary-foreground #ffffff on primary #007967 — primary button
+ok    7.28:1 (≥ 4.5) primary-foreground #ffffff on primary-hover #066254 — primary button, hover
+ok    9.35:1 (≥ 4.5) secondary-foreground #074b40 on secondary #e7fbf6 — secondary button
+ok    8.53:1 (≥ 4.5) secondary-foreground #074b40 on secondary-hover #ccf5ea — secondary button, hover
+ok   13.70:1 (≥ 4.5) accent-foreground #102029 on accent #e3eaee — highlighted row
+ok    4.91:1 (≥ 4.5) muted-foreground #556670 on accent #e3eaee — secondary text in a highlighted row
+ok    5.71:1 (≥ 4.5) destructive-foreground #ffffff on destructive #c3292e — destructive button
+ok    7.11:1 (≥ 4.5) destructive-text #a01e23 on destructive-soft #fff2f1 — error alert
+ok    8.92:1 (≥ 4.5) success-text #194f29 on success-soft #e8fceb — success alert
+ok    9.43:1 (≥ 4.5) warning-text #613700 on warning-soft #fff4e9 — warning alert
+ok    9.26:1 (≥ 4.5) info-text #10427b on info-soft #f0f6ff — info alert
+ok    6.74:1 (≥ 4.5) reward-foreground #44320a on reward #f3b609 — XP chip
+ok   11.55:1 (≥ 4.5) reward-foreground #44320a on reward-soft #fff7e7 — achievements block
+ok    3.75:1 (≥ 3.0) reward-mark #a87d00 on card #ffffff — star / trophy icon
+ok    3.93:1 (≥ 3.0) streak #d85900 on card #ffffff — streak flame
+ok    7.53:1 (≥ 4.5) streak-text #913900 on card #ffffff — streak count
+ok    7.07:1 (≥ 4.5) streak-text #913900 on reward-soft #fff7e7 — streak count in the achievements block
+ok    3.75:1 (≥ 3.0) medal-gold #a87d00 on card #ffffff — medal icon
+ok    4.19:1 (≥ 3.0) medal-silver #6f7e88 on card #ffffff — medal icon
+ok    5.50:1 (≥ 3.0) medal-bronze #b24800 on card #ffffff — medal icon
+ok    4.89:1 (≥ 3.0) success #238142 on card #ffffff — success icon
+ok    3.78:1 (≥ 3.0) warning #be7100 on card #ffffff — warning icon
+ok    5.23:1 (≥ 3.0) info #1b6cc7 on card #ffffff — info icon
+ok    5.71:1 (≥ 3.0) destructive #c3292e on card #ffffff — danger icon
+ok    5.34:1 (≥ 3.0) ring #007967 on primary-foreground #ffffff — focus ring gap
+ok    8.92:1 (≥ 4.5) verdict-ac #194f29 on verdict-ac-soft #e8fceb — AC chip
+ok    9.58:1 (≥ 4.5) verdict-ac #194f29 on card #ffffff — AC text on card
+ok    4.89:1 (≥ 3.0) verdict-ac-solid #238142 on card #ffffff — AC dot
+ok    9.77:1 (≥ 4.5) verdict-wa #79191b on verdict-wa-soft #fff2f1 — WA chip
+ok   10.67:1 (≥ 4.5) verdict-wa #79191b on card #ffffff — WA text on card
+ok    5.71:1 (≥ 3.0) verdict-wa-solid #c3292e on card #ffffff — WA dot
+ok    9.43:1 (≥ 4.5) verdict-tle #613700 on verdict-tle-soft #fff4e9 — TLE chip
+ok   10.22:1 (≥ 4.5) verdict-tle #613700 on card #ffffff — TLE text on card
+ok    5.32:1 (≥ 3.0) verdict-tle-solid #9c5c00 on card #ffffff — TLE dot
+ok    9.79:1 (≥ 4.5) verdict-mle #6e204b on verdict-mle-soft #fff2f7 — MLE chip
+ok   10.65:1 (≥ 4.5) verdict-mle #6e204b on card #ffffff — MLE text on card
+ok    5.69:1 (≥ 3.0) verdict-mle-solid #b4327c on card #ffffff — MLE dot
+ok    9.63:1 (≥ 4.5) verdict-re #49317a on verdict-re-soft #f6f4ff — RE chip
+ok   10.48:1 (≥ 4.5) verdict-re #49317a on card #ffffff — RE text on card
+ok    5.56:1 (≥ 3.0) verdict-re-solid #7752c3 on card #ffffff — RE dot
+ok    9.26:1 (≥ 4.5) verdict-ce #10427b on verdict-ce-soft #f0f6ff — CE chip
+ok   10.06:1 (≥ 4.5) verdict-ce #10427b on card #ffffff — CE text on card
+ok    5.23:1 (≥ 3.0) verdict-ce-solid #1b6cc7 on card #ffffff — CE dot
+ok    6.91:1 (≥ 4.5) verdict-se #3e505a on verdict-se-soft #e3eaee — SE chip
+ok    8.40:1 (≥ 4.5) verdict-se #3e505a on card #ffffff — SE text on card
+ok    4.19:1 (≥ 3.0) verdict-se-solid #6f7e88 on card #ffffff — SE dot
+ok   11.55:1 (≥ 4.5) quiz-party #44320a on quiz-party-soft #fff7e7 — quiz party result
+ok   12.31:1 (≥ 4.5) quiz-party #44320a on card #ffffff — quiz party text on card
+ok    3.75:1 (≥ 3.0) quiz-party-solid #a87d00 on card #ffffff — quiz party ring
+ok    8.92:1 (≥ 4.5) quiz-proud #194f29 on quiz-proud-soft #e8fceb — quiz proud result
+ok    9.58:1 (≥ 4.5) quiz-proud #194f29 on card #ffffff — quiz proud text on card
+ok    3.43:1 (≥ 3.0) quiz-proud-solid #2e9e52 on card #ffffff — quiz proud ring
+ok    9.26:1 (≥ 4.5) quiz-cheer #10427b on quiz-cheer-soft #f0f6ff — quiz cheer result
+ok   10.06:1 (≥ 4.5) quiz-cheer #10427b on card #ffffff — quiz cheer text on card
+ok    3.66:1 (≥ 3.0) quiz-cheer-solid #4087de on card #ffffff — quiz cheer ring
+ok    9.63:1 (≥ 4.5) quiz-comfort #49317a on quiz-comfort-soft #f6f4ff — quiz comfort result
+ok   10.48:1 (≥ 4.5) quiz-comfort #49317a on card #ffffff — quiz comfort text on card
+ok    3.87:1 (≥ 3.0) quiz-comfort-solid #8f6edb on card #ffffff — quiz comfort ring
+ok    5.34:1 (≥ 3.0) chart-1 #007967 on card #ffffff — chart bar
+ok    3.75:1 (≥ 3.0) chart-2 #a87d00 on card #ffffff — chart bar
+ok    5.23:1 (≥ 3.0) chart-3 #1b6cc7 on card #ffffff — chart bar
+ok    4.01:1 (≥ 3.0) chart-4 #d14e95 on card #ffffff — chart bar
+ok    4.19:1 (≥ 3.0) chart-5 #6f7e88 on card #ffffff — chart bar
+ok    5.34:1 (≥ 4.5) slate-0 #ffffff on jade-600 #007967 — white on jade-600
+ok    4.89:1 (≥ 4.5) slate-0 #ffffff on green-600 #238142 — white on green-600
+ok    5.71:1 (≥ 4.5) slate-0 #ffffff on red-600 #c3292e — white on red-600
+ok    5.69:1 (≥ 4.5) slate-0 #ffffff on rose-600 #b4327c — white on rose-600
+ok    5.56:1 (≥ 4.5) slate-0 #ffffff on violet-600 #7752c3 — white on violet-600
+ok    5.23:1 (≥ 4.5) slate-0 #ffffff on blue-600 #1b6cc7 — white on blue-600
+ok    9.35:1 (≥ 4.5) jade-800 #074b40 on jade-50 #e7fbf6 — jade text on its soft ground
+ok    8.53:1 (≥ 4.5) jade-800 #074b40 on jade-100 #ccf5ea — jade text on its hover ground
+ok    7.28:1 (≥ 4.5) jade-700 #066254 on slate-0 #ffffff — jade-700 text on white
+ok    3.74:1 (≥ 3.0) jade-500 #039580 on slate-0 #ffffff — jade-500 mark on white
+ok    7.66:1 (≥ 4.5) turmeric-800 #664b07 on turmeric-50 #fff7e7 — turmeric text on its soft ground
+ok    7.02:1 (≥ 4.5) turmeric-800 #664b07 on turmeric-100 #ffecc8 — turmeric text on its hover ground
+ok    5.35:1 (≥ 4.5) turmeric-700 #896500 on slate-0 #ffffff — turmeric-700 text on white
+ok    8.92:1 (≥ 4.5) green-800 #194f29 on green-50 #e8fceb — green text on its soft ground
+ok    8.18:1 (≥ 4.5) green-800 #194f29 on green-100 #cff7d6 — green text on its hover ground
+ok    6.81:1 (≥ 4.5) green-700 #1d6835 on slate-0 #ffffff — green-700 text on white
+ok    3.43:1 (≥ 3.0) green-500 #2e9e52 on slate-0 #ffffff — green-500 mark on white
+ok    9.77:1 (≥ 4.5) red-800 #79191b on red-50 #fff2f1 — red text on its soft ground
+ok    8.80:1 (≥ 4.5) red-800 #79191b on red-100 #ffe3e0 — red text on its hover ground
+ok    7.76:1 (≥ 4.5) red-700 #a01e23 on slate-0 #ffffff — red-700 text on white
+ok    3.98:1 (≥ 3.0) red-500 #e24947 on slate-0 #ffffff — red-500 mark on white
+ok    9.43:1 (≥ 4.5) amber-800 #613700 on amber-50 #fff4e9 — amber text on its soft ground
+ok    8.44:1 (≥ 4.5) amber-800 #613700 on amber-100 #ffe5ce — amber text on its hover ground
+ok    7.33:1 (≥ 4.5) amber-700 #7e4a00 on slate-0 #ffffff — amber-700 text on white
+ok    9.79:1 (≥ 4.5) rose-800 #6e204b on rose-50 #fff2f7 — rose text on its soft ground
+ok    8.75:1 (≥ 4.5) rose-800 #6e204b on rose-100 #ffe1ee — rose text on its hover ground
+ok    7.79:1 (≥ 4.5) rose-700 #922764 on slate-0 #ffffff — rose-700 text on white
+ok    4.01:1 (≥ 3.0) rose-500 #d14e95 on slate-0 #ffffff — rose-500 mark on white
+ok    9.63:1 (≥ 4.5) violet-800 #49317a on violet-50 #f6f4ff — violet text on its soft ground
+ok    8.70:1 (≥ 4.5) violet-800 #49317a on violet-100 #ece7ff — violet text on its hover ground
+ok    7.65:1 (≥ 4.5) violet-700 #6040a1 on slate-0 #ffffff — violet-700 text on white
+ok    3.87:1 (≥ 3.0) violet-500 #8f6edb on slate-0 #ffffff — violet-500 mark on white
+ok    9.26:1 (≥ 4.5) blue-800 #10427b on blue-50 #f0f6ff — blue text on its soft ground
+ok    8.39:1 (≥ 4.5) blue-800 #10427b on blue-100 #ddecff — blue text on its hover ground
+ok    7.18:1 (≥ 4.5) blue-700 #1157a4 on slate-0 #ffffff — blue-700 text on white
+ok    3.66:1 (≥ 3.0) blue-500 #4087de on slate-0 #ffffff — blue-500 mark on white
+ok    9.62:1 (≥ 4.5) orange-800 #6f2a00 on orange-50 #fff3ee — orange text on its soft ground
+ok    8.64:1 (≥ 4.5) orange-800 #6f2a00 on orange-100 #ffe4d8 — orange text on its hover ground
+ok    7.53:1 (≥ 4.5) orange-700 #913900 on slate-0 #ffffff — orange-700 text on white
+ok    3.93:1 (≥ 3.0) orange-500 #d85900 on slate-0 #ffffff — orange-500 mark on white
+
+130 pairs, 0 below floor.
+
+Palette (OKLCH source → hex):
+  slate-0    oklch(1.0 0.0 235) → #ffffff
+  slate-25   oklch(0.985 0.003 235) → #f8fafc
+  slate-50   oklch(0.966 0.006 235) → #f0f4f7
+  slate-100  oklch(0.932 0.009 235) → #e3eaee
+  slate-200  oklch(0.885 0.012 235) → #d2dbe0
+  slate-300  oklch(0.8 0.016 235) → #b4c0c7
+  slate-400  oklch(0.7 0.02 235) → #93a1a9
+  slate-500  oklch(0.585 0.024 235) → #6f7e88
+  slate-600  oklch(0.5 0.026 235) → #556670
+  slate-700  oklch(0.42 0.028 235) → #3e505a
+  slate-800  oklch(0.33 0.028 235) → #273842
+  slate-900  oklch(0.235 0.028 235) → #102029
+  slate-950  oklch(0.18 0.025 235) → #06131b
+  jade-50   oklch(0.972 0.022 178) → #e7fbf6
+  jade-100  oklch(0.938 0.045 178) → #ccf5ea
+  jade-200  oklch(0.885 0.075 178) → #a3ead9
+  jade-300  oklch(0.8 0.1 178) → #6fd3be
+  jade-400  oklch(0.7 0.115 178) → #34b59e
+  jade-500  oklch(0.6 0.11 178) → #039580
+  jade-600  oklch(0.515 0.095 178) → #007967
+  jade-700  oklch(0.445 0.08 178) → #066254
+  jade-800  oklch(0.37 0.065 178) → #074b40
+  jade-900  oklch(0.29 0.05 178) → #05332b
+  turmeric-50   oklch(0.978 0.03 84) → #fff7e7
+  turmeric-100  oklch(0.95 0.07 84) → #ffecc8
+  turmeric-200  oklch(0.905 0.12 84) → #ffdb92
+  turmeric-300  oklch(0.86 0.155 84) → #ffc84c
+  turmeric-400  oklch(0.81 0.165 84) → #f3b609
+  turmeric-500  oklch(0.74 0.155 84) → #d8a100
+  turmeric-600  oklch(0.615 0.13 84) → #a87d00
+  turmeric-700  oklch(0.53 0.11 84) → #896500
+  turmeric-800  oklch(0.43 0.085 84) → #664b07
+  turmeric-900  oklch(0.33 0.06 84) → #44320a
+  green-50   oklch(0.972 0.03 150) → #e8fceb
+  green-100  oklch(0.938 0.06 150) → #cff7d6
+  green-200  oklch(0.885 0.1 150) → #a9ecb6
+  green-500  oklch(0.62 0.15 150) → #2e9e52
+  green-600  oklch(0.535 0.13 150) → #238142
+  green-700  oklch(0.46 0.11 150) → #1d6835
+  green-800  oklch(0.38 0.085 150) → #194f29
+  red-50   oklch(0.972 0.018 25) → #fff2f1
+  red-100  oklch(0.938 0.04 25) → #ffe3e0
+  red-200  oklch(0.885 0.07 25) → #ffcac5
+  red-500  oklch(0.62 0.19 25) → #e24947
+  red-600  oklch(0.535 0.19 25) → #c3292e
+  red-700  oklch(0.46 0.165 25) → #a01e23
+  red-800  oklch(0.38 0.13 25) → #79191b
+  amber-50   oklch(0.972 0.028 65) → #fff4e9
+  amber-100  oklch(0.938 0.065 65) → #ffe5ce
+  amber-200  oklch(0.885 0.11 65) → #ffcfa1
+  amber-500  oklch(0.62 0.16 65) → #be7100
+  amber-600  oklch(0.535 0.15 65) → #9c5c00
+  amber-700  oklch(0.46 0.125 65) → #7e4a00
+  amber-800  oklch(0.38 0.095 65) → #613700
+  rose-50   oklch(0.972 0.018 350) → #fff2f7
+  rose-100  oklch(0.938 0.04 350) → #ffe1ee
+  rose-200  oklch(0.885 0.075 350) → #ffc6e0
+  rose-500  oklch(0.62 0.18 350) → #d14e95
+  rose-600  oklch(0.535 0.18 350) → #b4327c
+  rose-700  oklch(0.46 0.155 350) → #922764
+  rose-800  oklch(0.38 0.12 350) → #6e204b
+  violet-50   oklch(0.972 0.02 295) → #f6f4ff
+  violet-100  oklch(0.938 0.045 295) → #ece7ff
+  violet-200  oklch(0.885 0.08 295) → #dbd2ff
+  violet-500  oklch(0.62 0.16 295) → #8f6edb
+  violet-600  oklch(0.535 0.17 295) → #7752c3
+  violet-700  oklch(0.46 0.15 295) → #6040a1
+  violet-800  oklch(0.38 0.12 295) → #49317a
+  blue-50   oklch(0.972 0.018 255) → #f0f6ff
+  blue-100  oklch(0.938 0.04 255) → #ddecff
+  blue-200  oklch(0.885 0.07 255) → #c0dcff
+  blue-500  oklch(0.62 0.15 255) → #4087de
+  blue-600  oklch(0.535 0.16 255) → #1b6cc7
+  blue-700  oklch(0.46 0.14 255) → #1157a4
+  blue-800  oklch(0.38 0.11 255) → #10427b
+  orange-50   oklch(0.972 0.022 45) → #fff3ee
+  orange-100  oklch(0.938 0.05 45) → #ffe4d8
+  orange-200  oklch(0.885 0.09 45) → #ffccb6
+  orange-500  oklch(0.62 0.18 45) → #d85900
+  orange-600  oklch(0.535 0.17 45) → #b24800
+  orange-700  oklch(0.46 0.15 45) → #913900
+  orange-800  oklch(0.38 0.11 45) → #6f2a00

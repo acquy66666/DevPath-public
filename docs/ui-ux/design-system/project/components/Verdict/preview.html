@@ -1,0 +1,62 @@
+<!-- @dsCard group="Trạng thái" height=470 subtitle="7 verdict: chip, dải kết quả, danh sách test và thanh tiến độ chấm" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Verdict</title></head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-ac" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></symbol>
+  <symbol id="i-tle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-mle" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></symbol>
+  <symbol id="i-re" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
+  <symbol id="i-ce" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
+  <symbol id="i-se" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></symbol>
+</svg>
+<div class="dp-stage">
+  <div class="dp-row">
+    <span class="dp-verdict dp-v-ac"><svg class="dp-icon" aria-hidden="true"><use href="#i-ac"/></svg><b>AC</b> Đúng</span>
+    <span class="dp-verdict dp-v-wa"><svg class="dp-icon" aria-hidden="true"><use href="#i-wa"/></svg><b>WA</b> Sai kết quả</span>
+    <span class="dp-verdict dp-v-tle"><svg class="dp-icon" aria-hidden="true"><use href="#i-tle"/></svg><b>TLE</b> Quá thời gian</span>
+    <span class="dp-verdict dp-v-mle"><svg class="dp-icon" aria-hidden="true"><use href="#i-mle"/></svg><b>MLE</b> Quá bộ nhớ</span>
+    <span class="dp-verdict dp-v-re"><svg class="dp-icon" aria-hidden="true"><use href="#i-re"/></svg><b>RE</b> Lỗi khi chạy</span>
+    <span class="dp-verdict dp-v-ce"><svg class="dp-icon" aria-hidden="true"><use href="#i-ce"/></svg><b>CE</b> Lỗi cú pháp</span>
+    <span class="dp-verdict dp-v-se"><svg class="dp-icon" aria-hidden="true"><use href="#i-se"/></svg><b>SE</b> Lỗi hệ thống</span>
+  </div>
+
+  <div class="dp-grid">
+    <div class="dp-result dp-v-ac">
+      <svg class="dp-icon" aria-hidden="true"><use href="#i-ac"/></svg>
+      <div class="dp-col">
+        <div class="h3">100/100 · Đúng</div>
+        <div class="body-sm">Chương trình in ra đúng kết quả mong đợi ở mọi test case.</div>
+      </div>
+    </div>
+    <div class="dp-result dp-v-se">
+      <svg class="dp-icon" aria-hidden="true"><use href="#i-se"/></svg>
+      <div class="dp-col">
+        <div class="h3">Lỗi hệ thống</div>
+        <div class="body-sm">Lỗi phía hệ thống chấm bài, không phải lỗi bài của bạn. Bài này chưa được chấm.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dp-col">
+    <div class="dp-row" style="justify-content:space-between">
+      <span class="title">Đang chấm</span>
+      <span class="code-sm dp-muted dp-num">test 7/10</span>
+    </div>
+    <div class="dp-track" role="progressbar" aria-label="Tiến độ chấm" aria-valuemin="0" aria-valuemax="10" aria-valuenow="7">
+      <span class="dp-dot-ac"></span><span class="dp-dot-ac"></span><span class="dp-dot-ac"></span><span class="dp-dot-ac"></span>
+      <span class="dp-dot-wa"></span><span class="dp-dot-ac"></span><span class="dp-dot-tle"></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="dp-tests">
+    <div><span class="dp-dot dp-dot-ac" aria-hidden="true"></span><span class="dp-num">#1</span><span class="dp-grow">Đúng</span><span class="dp-muted dp-num">0,04 s</span></div>
+    <div><span class="dp-dot dp-dot-wa" aria-hidden="true"></span><span class="dp-num">#5</span><span class="dp-grow" style="color:var(--verdict-wa)">Sai kết quả: mong đợi <code>15</code>, nhận <code>14</code></span><span class="dp-muted dp-num">0,05 s</span></div>
+    <div><span class="dp-dot dp-dot-tle" aria-hidden="true"></span><span class="dp-num">#7</span><span class="dp-grow" style="color:var(--verdict-tle)">Quá thời gian</span><span class="dp-muted dp-num">2,00 s</span></div>
+    <div><span class="dp-dot" aria-hidden="true"></span><span class="dp-num">#8</span><span class="dp-grow dp-muted">Chờ chấm</span><span class="dp-muted">—</span></div>
+  </div>
+</div>
+</body>
+</html>

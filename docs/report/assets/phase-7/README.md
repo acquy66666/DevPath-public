@@ -6,7 +6,7 @@ Chỉ mục **gate → tệp** của Phase 7 ([plan](../../../plan/phase-7-ui-ux
 
 | Gate đòi | Tệp | Trạng thái |
 |---|---|---|
-| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | — | chưa |
+| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | artifact + [`docs/ui-ux/design-system/`](../../../ui-ux/design-system/README.md), ảnh `design-system/` | artifact **có 21/10**; chưa vào `globals.css`; nhân vật chưa |
 | CI xanh: E2E "1 passed", hồi quy hình ảnh, axe; 0 tràn ngang 360/375/1440 px | — | chưa |
 | Ảnh trước/sau từng nhóm màn; 42 ảnh `capture.cjs` mới cho chương 4; model sheet + biểu cảm; GIF phản ứng; **bảng số đo Lighthouse/axe/JS trước/sau** | cột "trước": [`before.md`](before.md) + [`before/`](before/) | cột "trước" **có 20/10** |
 | Deploy bản mới lên URL demo, chạy lại luồng vàng ở đó | — | chưa |
@@ -19,4 +19,5 @@ Chỉ mục **gate → tệp** của Phase 7 ([plan](../../../plan/phase-7-ui-ux
 | `skills-audit/` | JSON audit skills.sh của từng skill cộng đồng trước khi cài (18/10); danh sách đã cài ở [`docs/ui-ux/README.md`](../../../ui-ux/README.md) | 4 — Công cụ |
 | [`before.md`](before.md) + `before/` | **Mốc "trước"** (20/10): bảng số đo (First Load JS, JS trang chủ, Lighthouse mobile 3 trang × 3 lượt, axe 12 trang), 42 ảnh `capture.cjs` + 12 ảnh màn Phase 6.5, cách chạy lại | 5 — Đánh giá (cột "trước"), 4 — ảnh giao diện cũ |
 | `measure.cjs` | Script đo JS/axe/Lighthouse, chạy lại với `LABEL=after` cho cột "sau" | 5 |
+| `design-system/` | Design system DevPath (21/10): ảnh 11 preview của artifact ở 960px (bìa, Button, Badge, Verdict, QuizResult, Card, FormField, Tabs, Alert, Dialog, Motion), Verdict ở 400px, Motion lúc đang chạy. Bảng 130 cặp tương phản ở [`docs/ui-ux/design-system/contrast.txt`](../../../ui-ux/design-system/contrast.txt) | 4 — Thiết kế giao diện; 5 — truy cập (tương phản) |
 | `stack.cjs` | Đường nội bộ tới stack demo (tên miền thật trỏ vào nginx 127.0.0.1) dùng chung cho các script đo/chụp | — |

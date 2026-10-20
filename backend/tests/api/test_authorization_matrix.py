@@ -561,6 +561,13 @@ RULES: dict[str, Rule] = {
     "GET /courses/me": Scoped("rival", secrets=("course_id",)),
     "GET /instructor/stats/overview": Scoped("rival", secrets=("course_id",)),
     "GET /instructor/stats/courses": Scoped("rival", secrets=("course_id",)),
+    "GET /instructor/stats/insights": Scoped("rival", secrets=("course_id",)),
+    "GET /instructor/stats/export.xlsx": Scoped("rival", secrets=("course_id",)),
+    "GET /instructor/tier": Scoped("rival", secrets=("course_id",)),
+    # One course, lesson by lesson: its own instructor only (learner: wrong role,
+    # rival: not their course -> 404).
+    "GET /instructor/stats/courses/{course_id}/lessons": Owned("teacher", AUTHORS),
+    "GET /instructor/stats/courses/{course_id}/lessons/export.xlsx": Owned("teacher", AUTHORS),
     "GET /instructor/qa-threads": Scoped(
         "rival", secrets=("thread_id",), query={"course_id": "{course_id}"}
     ),

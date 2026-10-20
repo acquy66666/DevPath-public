@@ -1,6 +1,6 @@
 """The admin's dashboard: the whole platform, and what each number means.
 
-The calendar is the instructor dashboard's (`services/instructor_stats.py`):
+The calendar is the shared one (`services/stats_calendar.py`):
 days and months on the Vietnamese calendar, "7 ngày" is today and the six
 days before it, "12 tháng" is whole months with this one filling up, and every
 figure is compared with the window of the same length just before.
@@ -59,7 +59,7 @@ from app.models import (
     User,
     XpEvent,
 )
-from app.services.instructor_stats import (
+from app.services.stats_calendar import (
     ZERO,
     Window,
     bucket_start,

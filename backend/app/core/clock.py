@@ -6,7 +6,7 @@ has had no daylight saving since 1975, so a fixed offset is the same as the
 named zone and needs no tz database on the host.
 
 SQL that groups by day spells the zone by name instead (`Asia/Ho_Chi_Minh`,
-see `services/instructor_stats.py`): inside `AT TIME ZONE`, Postgres reads the
+see `services/stats_calendar.py`): inside `AT TIME ZONE`, Postgres reads the
 string `'+07:00'` as POSIX, west of Greenwich.
 """
 

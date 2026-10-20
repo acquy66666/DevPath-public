@@ -1,0 +1,28 @@
+<!-- @dsCard group="Bố cục" height=150 subtitle="Tab dạng khay (trang học) và dạng gạch chân (bảng xếp hạng)" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Tabs</title></head>
+<body>
+<div class="dp-stage">
+  <div class="dp-tabs" role="tablist" aria-label="Dưới bài học">
+    <button class="dp-tab" role="tab" type="button" aria-selected="false">Ghi chú</button>
+    <button class="dp-tab" role="tab" type="button" aria-selected="true">Hỏi đáp</button>
+    <button class="dp-tab" role="tab" type="button" aria-selected="false">Trợ giảng AI</button>
+  </div>
+  <div class="dp-tabs-line" role="tablist" aria-label="Kỳ xếp hạng">
+    <button class="dp-tab-line" role="tab" type="button" aria-selected="true">Tuần này</button>
+    <button class="dp-tab-line" role="tab" type="button" aria-selected="false">Tháng này</button>
+    <button class="dp-tab-line" role="tab" type="button" aria-selected="false">Mọi thời gian</button>
+  </div>
+</div>
+<script>
+  document.querySelectorAll('[role="tablist"]').forEach(function (list) {
+    list.addEventListener('click', function (e) {
+      var tab = e.target.closest('[role="tab"]');
+      if (!tab) return;
+      list.querySelectorAll('[role="tab"]').forEach(function (t) { t.setAttribute('aria-selected', String(t === tab)); });
+    });
+  });
+</script>
+</body>
+</html>

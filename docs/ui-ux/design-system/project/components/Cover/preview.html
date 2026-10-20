@@ -1,0 +1,51 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>DevPath</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--background); color: var(--foreground); font-family: var(--font-sans); overflow: hidden; }
+  .cover { position: relative; height: 288px; overflow: hidden; }
+  .art { position: absolute; top: 0; left: 480px; width: 480px; height: 288px; overflow: hidden; }
+  .art svg { display: block; width: 480px; height: 288px; }
+  .brand { fill: var(--primary); }
+  .reward { fill: var(--reward); }
+  .tint { fill: var(--jade-100); }
+  .deep { fill: var(--foreground); }
+  .blk { rx: var(--radius-lg); }
+  .route { fill: none; stroke: var(--turmeric-300); stroke-width: var(--space-2); stroke-linecap: round; stroke-linejoin: round; }
+  .stop { fill: var(--turmeric-300); }
+  .goal { fill: var(--foreground); }
+  .words { position: absolute; left: var(--space-6); bottom: var(--space-6); max-width: 440px; }
+  .name { margin: 0; font-size: 100px; line-height: .92; font-weight: 700; letter-spacing: -0.03em; color: var(--foreground); }
+  .tag { margin: var(--space-3) 0 0 4px; font-size: 14px; line-height: 20px; color: var(--muted-foreground); }
+</style>
+</head>
+<body>
+<div class="cover">
+  <div class="art" aria-hidden="true">
+    <svg viewBox="0 0 480 288" width="480" height="288">
+      <!--
+        blocks      primary (jade-600) 144×280 slab bled off the top, the largest · foreground ink 192×192 bled off the right · jade-100 tint 112×136 · reward (turmeric-400) 112×80, the smallest — ≈35% of 960×288
+        arrangement one tall jade slab with satellites; bottoms on one line space-6 above the edge; space-4 gutters
+        pattern     literal motif, the path: one route of straight runs and radius-xl quarter-turns in turmeric-300, starting in the jade slab, crossing the ink, arriving in the reward block — the name is "the path", and nghệ only ever means "you earned this"
+        scales      sides in space-4 (16) multiples; gutters space-4; block corners radius-lg; route turns radius-xl; route width space-2; stops r = space-2
+      -->
+      <rect class="brand blk" x="16" y="-16" width="144" height="280" rx="14"/>
+      <rect class="reward blk" x="176" y="32" width="112" height="80" rx="14"/>
+      <rect class="tint blk" x="176" y="128" width="112" height="136" rx="14"/>
+      <rect class="deep blk" x="304" y="72" width="192" height="192" rx="14"/>
+      <path class="route" d="M 88 244 V 212 A 20 20 0 0 1 108 192 H 372 A 20 20 0 0 0 392 172 V 68 A 20 20 0 0 0 372 48 H 236"/>
+      <circle class="stop" cx="88" cy="244" r="8"/>
+      <circle class="goal" cx="236" cy="48" r="8"/>
+    </svg>
+  </div>
+  <div class="words">
+    <p class="name">DevPath</p>
+    <p class="tag">Học lập trình bằng tiếng Việt, nộp code là được chấm ngay.</p>
+  </div>
+</div>
+</body>
+</html>

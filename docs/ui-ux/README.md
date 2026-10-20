@@ -2,6 +2,7 @@
 
 - [thiet-ke-nang-cap-ui-ux.md](thiet-ke-nang-cap-ui-ux.md): làm gì và vì sao. Đọc trước mọi task Phase 7.
 - Kế hoạch có checkbox: [`docs/plan/phase-7-ui-ux-upgrade.md`](../plan/phase-7-ui-ux-upgrade.md).
+- [design-system/](design-system/README.md): design system DevPath (artifact Claude Design + bản trong repo). Mọi token sinh từ `design-system/palette.py`.
 
 ## Skill đã cài cho Phase 7 (18/10/2026)
 

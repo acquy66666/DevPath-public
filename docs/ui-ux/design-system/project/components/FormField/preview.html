@@ -1,0 +1,34 @@
+<!-- @dsCard group="Biểu mẫu" height=452 subtitle="Label, Input, Textarea, NativeSelect và lời báo lỗi theo form-field.tsx" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>FormField</title></head>
+<body>
+<div class="dp-stage">
+  <div class="dp-grid" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr))">
+    <div class="dp-field">
+      <label class="dp-label" for="ff-email">Email</label>
+      <input class="dp-input" id="ff-email" type="email" placeholder="ban@vidu.vn" aria-describedby="ff-email-help">
+      <span class="dp-help" id="ff-email-help">Dùng để đăng nhập và nhận chứng chỉ.</span>
+    </div>
+    <div class="dp-field">
+      <label class="dp-label" for="ff-pass">Mật khẩu</label>
+      <input class="dp-input" id="ff-pass" type="password" value="abc12" aria-invalid="true" aria-describedby="ff-pass-err">
+      <span class="dp-error" id="ff-pass-err"><svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>Mật khẩu cần ít nhất 8 ký tự.</span>
+    </div>
+    <div class="dp-field">
+      <label class="dp-label" for="ff-level">Trình độ</label>
+      <select class="dp-select" id="ff-level"><option>Mới bắt đầu</option><option>Trung bình</option><option>Nâng cao</option></select>
+    </div>
+    <div class="dp-field">
+      <label class="dp-label" for="ff-code">Mã giảm giá</label>
+      <input class="dp-input" id="ff-code" value="CHAOMUNG50" disabled>
+      <span class="dp-help">Đã áp dụng cho đơn này.</span>
+    </div>
+  </div>
+  <div class="dp-field">
+    <label class="dp-label" for="ff-q">Câu hỏi của bạn</label>
+    <textarea class="dp-textarea" id="ff-q" placeholder="Mô tả chỗ bạn bị kẹt, dán đoạn code nếu cần."></textarea>
+  </div>
+</div>
+</body>
+</html>

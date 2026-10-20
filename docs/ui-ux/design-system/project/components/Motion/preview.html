@@ -1,0 +1,56 @@
+<!-- @dsCard group="Nền tảng" height=372 page subtitle="Token chuyển động chạy thật: bấm Phát để so các đường cong" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>Motion</title>
+<style>
+  .lane-row { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: var(--space-3); align-items: center; }
+  .lane-row .dp-col { gap: 0; }
+  @media (max-width: 480px) { .lane-row { grid-template-columns: minmax(0, 1fr); gap: var(--space-1); } }
+</style>
+</head>
+<body>
+<div class="dp-stage">
+  <div class="dp-row" style="justify-content:space-between">
+    <span class="body-sm dp-muted" id="mo-note">Mỗi làn là một cặp thời lượng + đường cong dùng trong app.</span>
+    <button class="dp-btn dp-btn-secondary dp-btn-sm" type="button" id="mo-play">Phát</button>
+  </div>
+  <div class="lane-row">
+    <div class="dp-col"><span class="title">Tab, công tắc</span><span class="code-sm dp-muted">duration-base · ease-standard</span></div>
+    <div class="dp-lane"><span class="dp-puck" style="transition: transform var(--duration-base) var(--ease-standard)"></span></div>
+  </div>
+  <div class="lane-row">
+    <div class="dp-col"><span class="title">Dialog, toast vào</span><span class="code-sm dp-muted">duration-slow · ease-enter</span></div>
+    <div class="dp-lane"><span class="dp-puck" style="transition: transform var(--duration-slow) var(--ease-enter)"></span></div>
+  </div>
+  <div class="lane-row">
+    <div class="dp-col"><span class="title">Đi ra</span><span class="code-sm dp-muted">220ms · ease-exit</span></div>
+    <div class="dp-lane"><span class="dp-puck" style="transition: transform var(--duration-base) var(--ease-exit)"></span></div>
+  </div>
+  <div class="lane-row">
+    <div class="dp-col"><span class="title">Tiến độ, đếm XP</span><span class="code-sm dp-muted">duration-progress · ease-standard</span></div>
+    <div class="dp-lane"><span class="dp-puck" style="transition: transform var(--duration-progress) var(--ease-standard)"></span></div>
+  </div>
+  <div class="lane-row">
+    <div class="dp-col"><span class="title">Ăn mừng</span><span class="code-sm dp-muted">duration-slow · ease-overshoot</span></div>
+    <div class="dp-lane"><span class="dp-puck dp-puck-reward" style="transition: transform var(--duration-slow) var(--ease-overshoot)"></span></div>
+  </div>
+</div>
+<script>
+  (function () {
+    var lanes = document.querySelectorAll('.dp-lane');
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) {
+      document.getElementById('mo-note').textContent = 'Máy này bật giảm chuyển động: chấm nhảy thẳng tới đích, không trượt.';
+    }
+    function size() { lanes.forEach(function (l) { l.style.setProperty('--lane', l.clientWidth + 'px'); }); }
+    size();
+    window.addEventListener('resize', size);
+    document.getElementById('mo-play').addEventListener('click', function () {
+      var on = !lanes[0].hasAttribute('data-run');
+      lanes.forEach(function (l) { if (on) l.setAttribute('data-run', ''); else l.removeAttribute('data-run'); });
+      this.textContent = on ? 'Về đầu' : 'Phát';
+    });
+  })();
+</script>
+</body>
+</html>

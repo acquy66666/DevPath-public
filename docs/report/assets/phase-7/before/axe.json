@@ -1,0 +1,136 @@
+{
+  "axe": "4.13.0",
+  "pages": [
+    {
+      "url": "/",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 1
+    },
+    {
+      "url": "/khoa-hoc",
+      "byImpact": {
+        "moderate": 1
+      },
+      "violations": [
+        {
+          "id": "heading-order",
+          "impact": "moderate",
+          "help": "Heading levels should only increase by one",
+          "tags": [
+            "cat.semantics",
+            "best-practice"
+          ],
+          "nodes": 1,
+          "sample": [
+            "li:nth-child(1) > .group.hover\\:bg-muted\\/40.focus-visible\\:outline-none > .flex-1.p-4.flex-col > h3"
+          ]
+        }
+      ],
+      "incomplete": 0
+    },
+    {
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 0
+    },
+    {
+      "url": "/bang-xep-hang",
+      "byImpact": {
+        "critical": 1
+      },
+      "violations": [
+        {
+          "id": "aria-valid-attr-value",
+          "impact": "critical",
+          "help": "ARIA attributes must conform to valid values",
+          "tags": [
+            "cat.aria",
+            "wcag2a",
+            "wcag412",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "RGAAv4",
+            "RGAA-7.1.1"
+          ],
+          "nodes": 1,
+          "sample": [
+            "#radix-_R_tbsnqbtb_-trigger-week"
+          ]
+        }
+      ],
+      "incomplete": 0
+    },
+    {
+      "url": "/cert/DP2A3F94DXGRVCXN",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 0
+    },
+    {
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 1
+    },
+    {
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a361fbf9-15ed-4bf4-8544-3a407a70a15d",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 1
+    },
+    {
+      "url": "/khoa-hoc-cua-toi",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 0
+    },
+    {
+      "url": "/gio-hang",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 0
+    },
+    {
+      "url": "/ho-so",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 0
+    },
+    {
+      "url": "/giang-day/thong-ke",
+      "byImpact": {
+        "critical": 1
+      },
+      "violations": [
+        {
+          "id": "aria-required-attr",
+          "impact": "critical",
+          "help": "Required ARIA attributes must be provided",
+          "tags": [
+            "cat.aria",
+            "wcag2a",
+            "wcag412",
+            "EN-301-549",
+            "EN-9.4.1.2",
+            "RGAAv4",
+            "RGAA-7.1.1"
+          ],
+          "nodes": 2,
+          "sample": [
+            ".align-top:nth-child(3) > .py-3:nth-child(5) > .gap-2.items-center.flex > .h-1\\.5.w-16[aria-label=\"Tỉ lệ hoàn thành\"]",
+            ".align-top:nth-child(3) > .py-3:nth-child(6) > .gap-2.items-center.flex > .h-1\\.5.w-16[aria-label=\"Tiến độ trung bình\"]"
+          ]
+        }
+      ],
+      "incomplete": 0
+    },
+    {
+      "url": "/quan-tri",
+      "byImpact": {},
+      "violations": [],
+      "incomplete": 1
+    }
+  ]
+}

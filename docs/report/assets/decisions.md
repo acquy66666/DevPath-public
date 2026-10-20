@@ -776,3 +776,13 @@ Task tách từ `phase-6/nul-byte-verdict.txt` mục 6. Bằng chứng: `docs/re
 **IPN của VNPay cũng theo luật chung** — route này trả HTTP 200 cho mọi kết quả và ghi `payment_events` cả với callback sai chữ ký. Query có NUL giờ nhận 422 và không được ghi. Trước đây nó cũng không ghi được (500 ngay ở câu `SELECT` đơn hàng), còn VNPay thì không bao giờ gửi NUL: tham số của nó là số, mã và chữ đã mã hóa URL.
 
 **Không gỡ validator `NoNul` của phân hệ chấm bài (PR #95)** — hai lớp không xung đột: luật chung trả lời trước, cùng mã 422. Gỡ đi thì PR này phải sửa file của một PR đang chờ merge, mà không được thêm gì.
+
+## Cách đo mốc trước/sau của Phase 7 (20/10/2026)
+
+Task "Đo và chụp *trước*" của Phase 7. Bằng chứng: `docs/report/assets/phase-7/before.md`.
+
+**Đo trên stack production của máy dev, qua nginx nội bộ, không qua Cloudflare** — cùng bản build, nginx, TLS, HTTP/2 và tên miền thật với người dùng, nhưng Chrome và Node trỏ `devpath-01.me` vào `127.0.0.1` (`phase-7/stack.cjs`). Mật khẩu tài khoản seed không rời máy; độ trễ Internet và tunnel (đổi theo giờ) không lẫn vào phép so trước/sau; beacon RUM do edge Cloudflare chèn không bị tính là JS của DevPath. Cái giá: số đo không gồm chặng Internet, nên đây là phép so hai giao diện, không phải trải nghiệm của một người dùng cụ thể.
+
+**Lighthouse tự mở Chrome mỗi lượt, 3 lượt, lấy lượt giữa** — gắn Lighthouse vào Chrome mà Playwright đang điều khiển thì tab đứng im (Playwright tự gắn vào mọi tab mới); nối rồi ngắt Playwright thì ra `NO_NAVSTART`. Chrome riêng còn cho cache trống mỗi lượt, đúng cách đo chuẩn. Trang học cần đăng nhập nhận cookie phiên qua `--extra-headers`, mỗi lượt một phiên mới vì refresh token xoay vòng. Một lượt trên ba có thể lệch xa (CLS trang chủ 0,178 so với 0,001), nên bảng giữ cả khoảng min–max.
+
+**Script chụp ảnh tự dựng dữ liệu bằng tài khoản dùng một lần, không dựa vào seed cộng đồng** — tài khoản hocvien07/25 của `seed_interactions` + `seed_community` đã gỡ khỏi CSDL từ 06/10, và quiz khóa Python chỉ có trên CSDL dev. Giờ `capture.cjs` dựng học viên, câu hỏi, ghi chú, phiên trợ giảng, giỏ hàng và một khóa có quiz qua đúng API của UI, rồi `purge_e2e` ở cuối; chạy được trên mọi stack có bốn khóa thật, kể cả lúc chụp bộ "sau" cho chương 4. Đổi lại, mỗi lượt tốn 5 lần gọi Gemini (4 câu trợ giảng, 1 lần sinh quiz).

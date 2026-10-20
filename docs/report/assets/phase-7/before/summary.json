@@ -1,0 +1,328 @@
+{
+  "label": "before",
+  "base": "https://devpath-01.me",
+  "route": "devpath-01.me → 127.0.0.1 (nginx trên máy dev)",
+  "commit": "59f1039",
+  "at": "2026-10-20T16:03:44.332Z",
+  "lighthouse": "lighthouse@13.5.0",
+  "buildId": "7ye3d-tGAcSK3VP-x7zAL",
+  "firstLoadJs": {
+    "/hoc/[slug]": {
+      "rawBytes": 917260,
+      "gzipBytes": 280405
+    },
+    "/khoa-hoc/[slug]": {
+      "rawBytes": 707621,
+      "gzipBytes": 219657
+    },
+    "/": {
+      "rawBytes": 689191,
+      "gzipBytes": 213953
+    }
+  },
+  "js": 220672,
+  "lighthouse_runs": [
+    {
+      "name": "trang-chu",
+      "url": "/",
+      "run": 1,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/",
+      "performance": 0.85,
+      "accessibility": 0.96,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 3010.317,
+      "cls": 0.17807018893867055,
+      "tbtMs": 128,
+      "fcpMs": 1060.317,
+      "siMs": 1508.5824315642908
+    },
+    {
+      "name": "trang-chu",
+      "url": "/",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/",
+      "performance": 0.96,
+      "accessibility": 0.96,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2557.35,
+      "cls": 0.0006902700118327433,
+      "tbtMs": 96,
+      "fcpMs": 1057.35,
+      "siMs": 1057.35
+    },
+    {
+      "name": "trang-chu",
+      "url": "/",
+      "run": 3,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/",
+      "performance": 0.96,
+      "accessibility": 0.96,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2556.9120000000003,
+      "cls": 0.0006902700118327433,
+      "tbtMs": 98,
+      "fcpMs": 1056.912,
+      "siMs": 1056.912
+    },
+    {
+      "name": "chi-tiet-khoa-hoc",
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "run": 1,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "performance": 0.94,
+      "accessibility": 1,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2711.9315,
+      "cls": 0.001500110605425334,
+      "tbtMs": 175,
+      "fcpMs": 1211.9315000000001,
+      "siMs": 1211.9315000000001
+    },
+    {
+      "name": "chi-tiet-khoa-hoc",
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "performance": 0.95,
+      "accessibility": 1,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2557.339,
+      "cls": 0.001500110605425334,
+      "tbtMs": 177,
+      "fcpMs": 1207.339,
+      "siMs": 1207.339
+    },
+    {
+      "name": "chi-tiet-khoa-hoc",
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "run": 3,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "performance": 0.96,
+      "accessibility": 1,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2554.7165,
+      "cls": 0.001500110605425334,
+      "tbtMs": 119,
+      "fcpMs": 1204.7165,
+      "siMs": 1204.7165
+    },
+    {
+      "name": "trang-hoc",
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "run": 1,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "performance": 0.9,
+      "accessibility": 0.95,
+      "bestPractices": 1,
+      "seo": 0.6,
+      "signedIn": true,
+      "viaCloudflare": false,
+      "lcpMs": 3386.4815,
+      "cls": 0.002305429090711492,
+      "tbtMs": 113.5,
+      "fcpMs": 1061.4814999999999,
+      "siMs": 3015.0068035818786
+    },
+    {
+      "name": "trang-hoc",
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "performance": 0.91,
+      "accessibility": 0.95,
+      "bestPractices": 1,
+      "seo": 0.6,
+      "signedIn": true,
+      "viaCloudflare": false,
+      "lcpMs": 3306.9645,
+      "cls": 0.002305429090711492,
+      "tbtMs": 96.5,
+      "fcpMs": 1056.9645,
+      "siMs": 2975.6504994417546
+    },
+    {
+      "name": "trang-hoc",
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "run": 3,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "performance": 0.91,
+      "accessibility": 0.95,
+      "bestPractices": 1,
+      "seo": 0.6,
+      "signedIn": true,
+      "viaCloudflare": false,
+      "lcpMs": 3384.51,
+      "cls": 0.002305429090711492,
+      "tbtMs": 90,
+      "fcpMs": 1059.51,
+      "siMs": 2898.07366053028
+    }
+  ],
+  "lighthouse_median": [
+    {
+      "name": "trang-chu",
+      "url": "/",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/",
+      "performance": 0.96,
+      "accessibility": 0.96,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2557.35,
+      "cls": 0.0006902700118327433,
+      "tbtMs": 96,
+      "fcpMs": 1057.35,
+      "siMs": 1057.35
+    },
+    {
+      "name": "chi-tiet-khoa-hoc",
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "performance": 0.95,
+      "accessibility": 1,
+      "bestPractices": 0.96,
+      "seo": 1,
+      "signedIn": false,
+      "viaCloudflare": false,
+      "lcpMs": 2557.339,
+      "cls": 0.001500110605425334,
+      "tbtMs": 177,
+      "fcpMs": 1207.339,
+      "siMs": 1207.339
+    },
+    {
+      "name": "trang-hoc",
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "run": 2,
+      "lighthouse": "13.5.0",
+      "formFactor": "mobile",
+      "throttling": "simulate",
+      "finalUrl": "https://devpath-01.me/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "performance": 0.91,
+      "accessibility": 0.95,
+      "bestPractices": 1,
+      "seo": 0.6,
+      "signedIn": true,
+      "viaCloudflare": false,
+      "lcpMs": 3306.9645,
+      "cls": 0.002305429090711492,
+      "tbtMs": 96.5,
+      "fcpMs": 1056.9645,
+      "siMs": 2975.6504994417546
+    }
+  ],
+  "axe": [
+    {
+      "url": "/",
+      "rules": []
+    },
+    {
+      "url": "/khoa-hoc",
+      "moderate": 1,
+      "rules": [
+        "heading-order(moderate)"
+      ]
+    },
+    {
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "rules": []
+    },
+    {
+      "url": "/bang-xep-hang",
+      "critical": 1,
+      "rules": [
+        "aria-valid-attr-value(critical)"
+      ]
+    },
+    {
+      "url": "/cert/<mã>",
+      "rules": []
+    },
+    {
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=fd9ea912-e12d-4af5-aa7a-5020d49e25d0",
+      "rules": []
+    },
+    {
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a361fbf9-15ed-4bf4-8544-3a407a70a15d",
+      "rules": []
+    },
+    {
+      "url": "/khoa-hoc-cua-toi",
+      "rules": []
+    },
+    {
+      "url": "/gio-hang",
+      "rules": []
+    },
+    {
+      "url": "/ho-so",
+      "rules": []
+    },
+    {
+      "url": "/giang-day/thong-ke",
+      "critical": 1,
+      "rules": [
+        "aria-required-attr(critical)"
+      ]
+    },
+    {
+      "url": "/quan-tri",
+      "rules": []
+    }
+  ],
+  "purged": "Đã gỡ 1 tài khoản, 0 khóa học, 0 đơn hàng và 0 chứng chỉ do bộ E2E để lại; bảng xếp hạng đã dựng lại."
+}

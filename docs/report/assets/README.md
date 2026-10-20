@@ -29,6 +29,8 @@ Tệp này ghi **lượt rà soát kho** theo gate cuối Phase 6 ("mở `docs/r
 | 6 | URL demo chạy trên VPS | — | **chưa** — chờ VPS |
 | 6 | Bảng tổng hợp test | **`phase-6/test-summary.md`** | **thêm 05/10** |
 | 6 | Rà soát lần cuối toàn bộ kho | tệp này | lượt 1 xong 05/10; lượt cuối sau VPS |
+| 7 | Số đo Lighthouse/axe/dung lượng JS trước và sau | **`phase-7/before.md`** + `phase-7/before/` (cột "trước", 20/10) | "trước" có; "sau" ở gate Phase 7 (`measure.cjs`, `LABEL=after`) |
+| 7 | Ảnh trước/sau từng nhóm màn; chạy lại `capture.cjs` | `phase-7/before/ui/` (42 ảnh, 20/10, giao diện cũ trên `main` sau Phase 6.5) + `before/tiers-finance/` (12 màn Phase 6.5) | "trước" có; bộ "sau" **thay** `phase-6/ui/` cho chương 4 |
 
 ## 2. Chương 5 (Kiểm thử & đánh giá) cần gì → tệp
 
@@ -43,6 +45,7 @@ Tệp này ghi **lượt rà soát kho** theo gate cuối Phase 6 ("mở `docs/r
 | Sinh quiz | `phase-4/quiz-generation.txt` (60 câu chấm tay), `quiz-demo.txt` | |
 | E2E | `phase-6/e2e-golden-flow.txt` | |
 | Hiệu năng | `phase-6/load-test.md`, `phase-4/hnsw-index.txt`, `phase-6/sse-through-nginx.txt` | |
+| Giao diện: hiệu năng web + truy cập (trước/sau Phase 7) | `phase-7/before.md` (First Load JS, Lighthouse mobile 3 trang × 3 lượt, axe 12 trang) | "trước" 20/10: cả 3 trang LCP > 2,5 s, 2 lỗi axe critical; "sau" chờ gate Phase 7 |
 | Kết quả triển khai VPS | — | **chưa** — có tổng duyệt prod trên máy dev (`phase-2/`, `monitoring.txt`, `db-backup-restore.txt`, `rustfs-compose.txt`) |
 
 ## 3. Phát hiện của lượt rà 05/10

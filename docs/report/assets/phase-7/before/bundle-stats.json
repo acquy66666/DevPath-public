@@ -1,0 +1,229 @@
+{
+  "next": "16.3.1",
+  "buildId": "7ye3d-tGAcSK3VP-x7zAL",
+  "note": "First Load JS (Next writeRouteBundleStats) trên .next của container frontend; gzip mức 9",
+  "routes": [
+    {
+      "route": "/hoc/[slug]",
+      "chunks": 18,
+      "rawBytes": 917260,
+      "gzipBytes": 280405
+    },
+    {
+      "route": "/giang-day/hoi-dap",
+      "chunks": 18,
+      "rawBytes": 836615,
+      "gzipBytes": 258694
+    },
+    {
+      "route": "/quan-tri/khoa-hoc/[courseId]",
+      "chunks": 17,
+      "rawBytes": 830615,
+      "gzipBytes": 256330
+    },
+    {
+      "route": "/giang-day/[courseId]",
+      "chunks": 17,
+      "rawBytes": 816112,
+      "gzipBytes": 249598
+    },
+    {
+      "route": "/quan-tri",
+      "chunks": 17,
+      "rawBytes": 753551,
+      "gzipBytes": 232803
+    },
+    {
+      "route": "/quan-tri/thanh-toan/[statementId]",
+      "chunks": 16,
+      "rawBytes": 740813,
+      "gzipBytes": 227865
+    },
+    {
+      "route": "/quan-tri/cap-giang-vien",
+      "chunks": 16,
+      "rawBytes": 731222,
+      "gzipBytes": 226290
+    },
+    {
+      "route": "/quan-tri/loi-nhuan",
+      "chunks": 16,
+      "rawBytes": 729081,
+      "gzipBytes": 225773
+    },
+    {
+      "route": "/giang-day/thong-ke",
+      "chunks": 16,
+      "rawBytes": 728038,
+      "gzipBytes": 224946
+    },
+    {
+      "route": "/quan-tri/doanh-thu",
+      "chunks": 16,
+      "rawBytes": 722085,
+      "gzipBytes": 223461
+    },
+    {
+      "route": "/quan-tri/ma-giam-gia",
+      "chunks": 16,
+      "rawBytes": 720573,
+      "gzipBytes": 223440
+    },
+    {
+      "route": "/quan-tri/thanh-toan",
+      "chunks": 16,
+      "rawBytes": 718606,
+      "gzipBytes": 222586
+    },
+    {
+      "route": "/quan-tri/banner",
+      "chunks": 16,
+      "rawBytes": 717349,
+      "gzipBytes": 222859
+    },
+    {
+      "route": "/dang-ky",
+      "chunks": 16,
+      "rawBytes": 714175,
+      "gzipBytes": 223452
+    },
+    {
+      "route": "/dang-nhap",
+      "chunks": 16,
+      "rawBytes": 713917,
+      "gzipBytes": 223357
+    },
+    {
+      "route": "/quan-tri/xep-hang",
+      "chunks": 16,
+      "rawBytes": 711288,
+      "gzipBytes": 220920
+    },
+    {
+      "route": "/quan-tri/bao-cao",
+      "chunks": 16,
+      "rawBytes": 709980,
+      "gzipBytes": 220354
+    },
+    {
+      "route": "/khoa-hoc/[slug]",
+      "chunks": 16,
+      "rawBytes": 707621,
+      "gzipBytes": 219657
+    },
+    {
+      "route": "/quan-tri/danh-muc",
+      "chunks": 16,
+      "rawBytes": 705013,
+      "gzipBytes": 218693
+    },
+    {
+      "route": "/quan-tri/nguoi-dung",
+      "chunks": 16,
+      "rawBytes": 703905,
+      "gzipBytes": 218399
+    },
+    {
+      "route": "/quan-tri/khoa-hoc",
+      "chunks": 16,
+      "rawBytes": 702855,
+      "gzipBytes": 218323
+    },
+    {
+      "route": "/khoa-hoc-cua-toi",
+      "chunks": 14,
+      "rawBytes": 694446,
+      "gzipBytes": 215209
+    },
+    {
+      "route": "/gio-hang",
+      "chunks": 14,
+      "rawBytes": 693264,
+      "gzipBytes": 214907
+    },
+    {
+      "route": "/giang-day/cap-bac",
+      "chunks": 16,
+      "rawBytes": 691794,
+      "gzipBytes": 215153
+    },
+    {
+      "route": "/ho-so",
+      "chunks": 14,
+      "rawBytes": 691669,
+      "gzipBytes": 214462
+    },
+    {
+      "route": "/bang-xep-hang",
+      "chunks": 14,
+      "rawBytes": 690376,
+      "gzipBytes": 214324
+    },
+    {
+      "route": "/giang-day/moi",
+      "chunks": 16,
+      "rawBytes": 689649,
+      "gzipBytes": 214643
+    },
+    {
+      "route": "/yeu-thich",
+      "chunks": 14,
+      "rawBytes": 689352,
+      "gzipBytes": 213663
+    },
+    {
+      "route": "/",
+      "chunks": 14,
+      "rawBytes": 689191,
+      "gzipBytes": 213953
+    },
+    {
+      "route": "/giang-day",
+      "chunks": 16,
+      "rawBytes": 688996,
+      "gzipBytes": 214166
+    },
+    {
+      "route": "/thong-bao",
+      "chunks": 14,
+      "rawBytes": 687733,
+      "gzipBytes": 213481
+    },
+    {
+      "route": "/thanh-toan/ket-qua",
+      "chunks": 14,
+      "rawBytes": 686905,
+      "gzipBytes": 213066
+    },
+    {
+      "route": "/tro-thanh-giang-vien",
+      "chunks": 14,
+      "rawBytes": 683758,
+      "gzipBytes": 211997
+    },
+    {
+      "route": "/khoa-hoc",
+      "chunks": 15,
+      "rawBytes": 678447,
+      "gzipBytes": 210561
+    },
+    {
+      "route": "/cert/[code]",
+      "chunks": 14,
+      "rawBytes": 677559,
+      "gzipBytes": 210008
+    },
+    {
+      "route": "/_not-found",
+      "chunks": 13,
+      "rawBytes": 676717,
+      "gzipBytes": 209475
+    },
+    {
+      "route": "/chinh-sach-bao-mat",
+      "chunks": 13,
+      "rawBytes": 676717,
+      "gzipBytes": 209475
+    }
+  ]
+}

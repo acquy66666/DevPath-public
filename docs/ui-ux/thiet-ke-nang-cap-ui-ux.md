@@ -81,7 +81,14 @@ Claude nghĩ nhiều hướng rồi bỏ những hướng đụng phản mục t
 | **Rive** (state machine + runtime `@rive-app/canvas`) | Nhân vật phản ứng theo state machine, mượt, tệp nhỏ. Đúng loại công cụ dành cho linh vật tương tác | Phải dựng trong Rive Editor (người làm tay). Runtime WASM: kiểm CSP. Thêm một công cụ ngoài repo |
 | **Lottie** (After Effects → JSON) | Phổ biến nhất | Chỉ phát lại, tương tác phải tự code. Cần After Effects |
 
-**(giả định)** v1 dùng **SVG + Motion**: không phụ thuộc kỹ năng hoạt hình của ai, và mọi thứ nằm trong repo nên chạy lại được. Nếu user muốn tự làm trong Rive Editor thì spike ở đầu phase so hai bản cùng một trạng thái ("celebrate"): dung lượng tải, CPU, CSP, công làm.
+~~**(giả định)** v1 dùng **SVG + Motion**: không phụ thuộc kỹ năng hoạt hình của ai, và mọi thứ nằm trong repo nên chạy lại được. Nếu user muốn tự làm trong Rive Editor thì spike ở đầu phase so hai bản cùng một trạng thái ("celebrate"): dung lượng tải, CPU, CSP, công làm.~~
+
+**Đã chốt 21/10/2026: SVG + `motion/react-mini`.** User chọn không làm Rive. Spike so ba cách chạy cùng phản ứng `celebrate`: CSS keyframes, `motion/react-mini` và `motion/react` đầy đủ. Kết quả:
+- `mini` thêm 5,3 KB gzip và 11 % CPU so với CSS.
+- Motion đầy đủ thêm 25,6 KB và 51 % CPU. Nó chạy transform của SVG bằng JS, và tự đặt `transform-box: fill-box`, làm sai điểm xoay.
+- Cả ba đều 0 vi phạm CSP và đứng yên khi `reduce`.
+
+Số đo: [`animation-spike.md`](../report/assets/phase-7/animation-spike.md).
 
 ## 5. Bản đồ phản ứng — nhân vật gắn vào sự kiện thật
 
@@ -179,7 +186,7 @@ Theo thứ tự quan trọng:
 
 1. **Ngày bảo vệ / hạn nộp báo cáo.** Nó quyết định Phase 7 dài 2 hay 3 tuần, và nhóm màn nào bị cắt nếu thiếu thời gian (cắt từ nhóm 10 ngược lên).
 2. ~~**Hướng nhân vật và tên** (mục 4.1).~~ Đã chốt 21/10/2026: hướng A, tắc kè “bắt bug”, tên Naomi.
-3. **Rive hay chỉ code** (mục 4.3): user có muốn tự làm hoạt ảnh trong Rive Editor không.
+3. ~~**Rive hay chỉ code** (mục 4.3).~~ Đã chốt 21/10/2026: chỉ code, không Rive; spike chọn `motion/react-mini`.
 4. **Dark mode**: làm trọn (mọi màn hai theme, có nút đổi) hay chỉ theme sáng. **(giả định)**: chỉ theme sáng, token tối giữ sẵn cho sau.
 
 ## 11. Để lại cho người làm
@@ -187,4 +194,4 @@ Theo thứ tự quan trọng:
 - Tên token, cấu trúc thư mục `components/mascot/`, cách chia variant Motion.
 - Ngưỡng quiz chính xác (80/50) nếu dữ liệu demo cho thấy chỗ khác hợp hơn.
 - Font cụ thể: chọn từ các font có subset `vietnamese` đầy đủ, ví dụ Be Vietnam Pro, Nunito, Lexend cho chữ, JetBrains Mono cho code, sau khi chụp thử chữ có dấu hai tầng.
-- Có cần `motion` trên server component không (dùng `motion/react-client` theo tài liệu Motion v12) hay gói mọi hoạt ảnh trong client component.
+- ~~Có cần `motion` trên server component không (dùng `motion/react-client` theo tài liệu Motion v12) hay gói mọi hoạt ảnh trong client component.~~ Không cần (spike 21/10): server render tư thế tĩnh của mood, client component thêm chuyển động bằng `useAnimate` của `motion/react-mini` sau hydrate.

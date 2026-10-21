@@ -1,0 +1,2275 @@
+{
+  "date": "2026-10-21T10:14:05.119Z",
+  "commit": "084c22c",
+  "motion": "14.2.0",
+  "next": "16.3.1",
+  "chrome": "155.0.8059.85",
+  "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; font-src 'self' data:; connect-src 'self' https:; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+  "choreography": {
+    "note": "Naomi celebrate (verdict AC 100/100): bắt được bug, nhảy mừng, confetti nhỏ. One source for every variant: run.cjs turns it into CSS keyframes, the mini and full Motion variants read it at runtime. Times are fractions of each track; ease names are design-system tokens (tokens.json → easing); origins are drawing coordinates (viewBox 0 0 200 200, the layer's own user space).",
+    "mood": "celebrate",
+    "swapAtMs": 2400,
+    "swapMs": 220,
+    "swapEase": "ease-standard",
+    "tracks": [
+      {
+        "layer": "jump",
+        "origin": [
+          100,
+          190
+        ],
+        "delay": 0,
+        "duration": 1400,
+        "times": [
+          0,
+          0.15,
+          0.5,
+          0.78,
+          1
+        ],
+        "ease": [
+          "ease-standard",
+          "ease-enter",
+          "ease-exit",
+          "ease-overshoot"
+        ],
+        "y": [
+          0,
+          0,
+          -30,
+          0,
+          0
+        ],
+        "scaleX": [
+          1,
+          1.06,
+          0.96,
+          1.05,
+          1
+        ],
+        "scaleY": [
+          1,
+          0.92,
+          1.06,
+          0.94,
+          1
+        ]
+      },
+      {
+        "layer": "shadow",
+        "origin": [
+          100,
+          194
+        ],
+        "delay": 0,
+        "duration": 1400,
+        "times": [
+          0,
+          0.15,
+          0.5,
+          0.78,
+          1
+        ],
+        "ease": [
+          "ease-standard",
+          "ease-enter",
+          "ease-exit",
+          "ease-overshoot"
+        ],
+        "scaleX": [
+          1,
+          1.04,
+          0.6,
+          1.06,
+          1
+        ],
+        "scaleY": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "opacity": [
+          1,
+          1,
+          0.55,
+          1,
+          1
+        ]
+      },
+      {
+        "layer": "tail",
+        "origin": [
+          116,
+          166
+        ],
+        "delay": 150,
+        "duration": 1500,
+        "times": [
+          0,
+          0.25,
+          0.5,
+          0.75,
+          1
+        ],
+        "ease": [
+          "ease-standard",
+          "ease-standard",
+          "ease-standard",
+          "ease-standard"
+        ],
+        "rotate": [
+          0,
+          6,
+          -5,
+          3,
+          0
+        ]
+      },
+      {
+        "layer": "arm-left",
+        "origin": [
+          126,
+          126
+        ],
+        "delay": 350,
+        "duration": 1500,
+        "times": [
+          0,
+          0.2,
+          0.4,
+          0.6,
+          0.8,
+          1
+        ],
+        "ease": [
+          "ease-standard",
+          "ease-standard",
+          "ease-standard",
+          "ease-standard",
+          "ease-standard"
+        ],
+        "rotate": [
+          0,
+          -16,
+          10,
+          -10,
+          5,
+          0
+        ]
+      },
+      {
+        "layer": "spark",
+        "origin": "center",
+        "delay": 250,
+        "stagger": 120,
+        "duration": 1600,
+        "times": [
+          0,
+          0.25,
+          0.4,
+          0.8,
+          1
+        ],
+        "ease": [
+          "ease-overshoot",
+          "ease-standard",
+          "ease-standard",
+          "ease-exit"
+        ],
+        "scale": [
+          0,
+          1.3,
+          1,
+          1,
+          0
+        ],
+        "rotate": [
+          0,
+          45,
+          60,
+          80,
+          90
+        ],
+        "opacity": [
+          0,
+          1,
+          1,
+          1,
+          0
+        ]
+      }
+    ]
+  },
+  "firstLoad": {
+    "static": {
+      "chunks": 14,
+      "rawBytes": 677454,
+      "gzipBytes": 209950,
+      "files": [
+        "3fntmmi971322.js",
+        "40ztt8zuy61vv.js",
+        "34492936836s5.js",
+        "04f94p8c7cwpw.js",
+        "0dmoviro9cnf_.js",
+        "1w5oakzw7rze_.js",
+        "06kmjge4gasmu.js",
+        "2bm5lhz2vi8-s.js",
+        "3j09iz2fmx53d.js",
+        "310vm2bl3xxpt.js",
+        "1d8durn3f0db4.js",
+        "2g71f63ne1gdy.js",
+        "2axc3p_g0lskj.js",
+        "turbopack-07p91_qzuijh0.js"
+      ]
+    },
+    "css": {
+      "chunks": 14,
+      "rawBytes": 677454,
+      "gzipBytes": 209950,
+      "files": [
+        "3fntmmi971322.js",
+        "40ztt8zuy61vv.js",
+        "34492936836s5.js",
+        "04f94p8c7cwpw.js",
+        "0dmoviro9cnf_.js",
+        "1w5oakzw7rze_.js",
+        "06kmjge4gasmu.js",
+        "2bm5lhz2vi8-s.js",
+        "3j09iz2fmx53d.js",
+        "310vm2bl3xxpt.js",
+        "1d8durn3f0db4.js",
+        "2g71f63ne1gdy.js",
+        "2axc3p_g0lskj.js",
+        "turbopack-07p91_qzuijh0.js"
+      ]
+    },
+    "mini": {
+      "chunks": 14,
+      "rawBytes": 691688,
+      "gzipBytes": 215331,
+      "files": [
+        "3fntmmi971322.js",
+        "40ztt8zuy61vv.js",
+        "34492936836s5.js",
+        "04f94p8c7cwpw.js",
+        "0dmoviro9cnf_.js",
+        "1w5oakzw7rze_.js",
+        "06kmjge4gasmu.js",
+        "2bm5lhz2vi8-s.js",
+        "0ql48_o42ulop.js",
+        "310vm2bl3xxpt.js",
+        "1d8durn3f0db4.js",
+        "2g71f63ne1gdy.js",
+        "2axc3p_g0lskj.js",
+        "turbopack-07p91_qzuijh0.js"
+      ]
+    },
+    "motion": {
+      "chunks": 15,
+      "rawBytes": 747898,
+      "gzipBytes": 236134,
+      "files": [
+        "3fntmmi971322.js",
+        "40ztt8zuy61vv.js",
+        "34492936836s5.js",
+        "04f94p8c7cwpw.js",
+        "0dmoviro9cnf_.js",
+        "1w5oakzw7rze_.js",
+        "06kmjge4gasmu.js",
+        "2bm5lhz2vi8-s.js",
+        "0mnlv2o2fthyz.js",
+        "20i_-gnsly11k.js",
+        "310vm2bl3xxpt.js",
+        "1d8durn3f0db4.js",
+        "2g71f63ne1gdy.js",
+        "2axc3p_g0lskj.js",
+        "turbopack-07p91_qzuijh0.js"
+      ]
+    }
+  },
+  "transfer": {
+    "static": {
+      "js": {
+        "files": 14,
+        "raw": 677454,
+        "gzip": 209950
+      },
+      "css": {
+        "files": 2,
+        "raw": 93082,
+        "gzip": 16671
+      },
+      "files": [
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/2biuseyzuqj20.css",
+          "raw": 604,
+          "gzip": 237
+        },
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/1jff1zjmyfnw3.css",
+          "raw": 92478,
+          "gzip": 16434
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "raw": 5364,
+          "gzip": 1969
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1d8durn3f0db4.js",
+          "raw": 28907,
+          "gzip": 7593
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/turbopack-07p91_qzuijh0.js",
+          "raw": 9652,
+          "gzip": 3830
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3fntmmi971322.js",
+          "raw": 14377,
+          "gzip": 3653
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/40ztt8zuy61vv.js",
+          "raw": 30213,
+          "gzip": 9227
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/34492936836s5.js",
+          "raw": 14824,
+          "gzip": 5608
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2g71f63ne1gdy.js",
+          "raw": 229156,
+          "gzip": 71469
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2axc3p_g0lskj.js",
+          "raw": 165894,
+          "gzip": 44985
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/04f94p8c7cwpw.js",
+          "raw": 30426,
+          "gzip": 9796
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0dmoviro9cnf_.js",
+          "raw": 31817,
+          "gzip": 11583
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1w5oakzw7rze_.js",
+          "raw": 22852,
+          "gzip": 8026
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3j09iz2fmx53d.js",
+          "raw": 723,
+          "gzip": 475
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2bm5lhz2vi8-s.js",
+          "raw": 35571,
+          "gzip": 12776
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/06kmjge4gasmu.js",
+          "raw": 57678,
+          "gzip": 18960
+        }
+      ],
+      "violations": [],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "css": {
+      "js": {
+        "files": 14,
+        "raw": 677454,
+        "gzip": 209950
+      },
+      "css": {
+        "files": 3,
+        "raw": 95886,
+        "gzip": 17241
+      },
+      "files": [
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/2biuseyzuqj20.css",
+          "raw": 604,
+          "gzip": 237
+        },
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/2-22t4f3fp_5w.css",
+          "raw": 2804,
+          "gzip": 570
+        },
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/1jff1zjmyfnw3.css",
+          "raw": 92478,
+          "gzip": 16434
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "raw": 5364,
+          "gzip": 1969
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1d8durn3f0db4.js",
+          "raw": 28907,
+          "gzip": 7593
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/turbopack-07p91_qzuijh0.js",
+          "raw": 9652,
+          "gzip": 3830
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3fntmmi971322.js",
+          "raw": 14377,
+          "gzip": 3653
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/34492936836s5.js",
+          "raw": 14824,
+          "gzip": 5608
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/40ztt8zuy61vv.js",
+          "raw": 30213,
+          "gzip": 9227
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2axc3p_g0lskj.js",
+          "raw": 165894,
+          "gzip": 44985
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/04f94p8c7cwpw.js",
+          "raw": 30426,
+          "gzip": 9796
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0dmoviro9cnf_.js",
+          "raw": 31817,
+          "gzip": 11583
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1w5oakzw7rze_.js",
+          "raw": 22852,
+          "gzip": 8026
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2g71f63ne1gdy.js",
+          "raw": 229156,
+          "gzip": 71469
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3j09iz2fmx53d.js",
+          "raw": 723,
+          "gzip": 475
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/06kmjge4gasmu.js",
+          "raw": 57678,
+          "gzip": 18960
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2bm5lhz2vi8-s.js",
+          "raw": 35571,
+          "gzip": 12776
+        }
+      ],
+      "violations": [],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "mini": {
+      "js": {
+        "files": 14,
+        "raw": 691688,
+        "gzip": 215331
+      },
+      "css": {
+        "files": 2,
+        "raw": 93082,
+        "gzip": 16671
+      },
+      "files": [
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/2biuseyzuqj20.css",
+          "raw": 604,
+          "gzip": 237
+        },
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/1jff1zjmyfnw3.css",
+          "raw": 92478,
+          "gzip": 16434
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "raw": 5364,
+          "gzip": 1969
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1d8durn3f0db4.js",
+          "raw": 28907,
+          "gzip": 7593
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/turbopack-07p91_qzuijh0.js",
+          "raw": 9652,
+          "gzip": 3830
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3fntmmi971322.js",
+          "raw": 14377,
+          "gzip": 3653
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/40ztt8zuy61vv.js",
+          "raw": 30213,
+          "gzip": 9227
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/34492936836s5.js",
+          "raw": 14824,
+          "gzip": 5608
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2axc3p_g0lskj.js",
+          "raw": 165894,
+          "gzip": 44985
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/04f94p8c7cwpw.js",
+          "raw": 30426,
+          "gzip": 9796
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0dmoviro9cnf_.js",
+          "raw": 31817,
+          "gzip": 11583
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2g71f63ne1gdy.js",
+          "raw": 229156,
+          "gzip": 71469
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1w5oakzw7rze_.js",
+          "raw": 22852,
+          "gzip": 8026
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2bm5lhz2vi8-s.js",
+          "raw": 35571,
+          "gzip": 12776
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/06kmjge4gasmu.js",
+          "raw": 57678,
+          "gzip": 18960
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0ql48_o42ulop.js",
+          "raw": 14957,
+          "gzip": 5856
+        }
+      ],
+      "violations": [],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "motion": {
+      "js": {
+        "files": 15,
+        "raw": 747898,
+        "gzip": 236134
+      },
+      "css": {
+        "files": 2,
+        "raw": 93082,
+        "gzip": 16671
+      },
+      "files": [
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/1jff1zjmyfnw3.css",
+          "raw": 92478,
+          "gzip": 16434
+        },
+        {
+          "type": "stylesheet",
+          "url": "/_next/static/chunks/2biuseyzuqj20.css",
+          "raw": 604,
+          "gzip": 237
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "raw": 5364,
+          "gzip": 1969
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1d8durn3f0db4.js",
+          "raw": 28907,
+          "gzip": 7593
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/turbopack-07p91_qzuijh0.js",
+          "raw": 9652,
+          "gzip": 3830
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/3fntmmi971322.js",
+          "raw": 14377,
+          "gzip": 3653
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/40ztt8zuy61vv.js",
+          "raw": 30213,
+          "gzip": 9227
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/34492936836s5.js",
+          "raw": 14824,
+          "gzip": 5608
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2axc3p_g0lskj.js",
+          "raw": 165894,
+          "gzip": 44985
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/04f94p8c7cwpw.js",
+          "raw": 30426,
+          "gzip": 9796
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0dmoviro9cnf_.js",
+          "raw": 31817,
+          "gzip": 11583
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2g71f63ne1gdy.js",
+          "raw": 229156,
+          "gzip": 71469
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/1w5oakzw7rze_.js",
+          "raw": 22852,
+          "gzip": 8026
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/0mnlv2o2fthyz.js",
+          "raw": 11643,
+          "gzip": 4667
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/06kmjge4gasmu.js",
+          "raw": 57678,
+          "gzip": 18960
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/2bm5lhz2vi8-s.js",
+          "raw": 35571,
+          "gzip": 12776
+        },
+        {
+          "type": "script",
+          "url": "/_next/static/chunks/20i_-gnsly11k.js",
+          "raw": 59524,
+          "gzip": 21992
+        }
+      ],
+      "violations": [],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    }
+  },
+  "inspect": {
+    "css": {
+      "animations": [
+        {
+          "type": "CSSAnimation",
+          "target": "celebrate",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "shadow",
+          "props": [
+            "opacity",
+            "scale"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "spark",
+          "props": [
+            "opacity",
+            "rotate",
+            "scale"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "spark",
+          "props": [
+            "opacity",
+            "rotate",
+            "scale"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "spark",
+          "props": [
+            "opacity",
+            "rotate",
+            "scale"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "jump",
+          "props": [
+            "translate",
+            "scale"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "tail",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "arm-left",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "CSSAnimation",
+          "target": "rest",
+          "props": [
+            "opacity"
+          ]
+        }
+      ],
+      "jump": {
+        "inline": null,
+        "transformBox": "view-box",
+        "transformOrigin": "100px 190px",
+        "transform": "none",
+        "rotate": "none"
+      },
+      "arm": {
+        "inline": null,
+        "transformBox": "view-box",
+        "transformOrigin": "126px 126px",
+        "transform": "none",
+        "rotate": "7.62551deg"
+      },
+      "shoulder": {
+        "left": 149.1,
+        "bottom": 302.7
+      }
+    },
+    "mini": {
+      "animations": [
+        {
+          "type": "Animation",
+          "target": "jump",
+          "props": [
+            "translate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "jump",
+          "props": [
+            "scale"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "shadow",
+          "props": [
+            "scale"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "shadow",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "tail",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "arm-left",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "scale"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "scale"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "scale"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "rotate"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "celebrate",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "rest",
+          "props": [
+            "opacity"
+          ]
+        }
+      ],
+      "jump": {
+        "inline": null,
+        "transformBox": "view-box",
+        "transformOrigin": "100px 190px",
+        "transform": "none",
+        "rotate": "none"
+      },
+      "arm": {
+        "inline": null,
+        "transformBox": "view-box",
+        "transformOrigin": "126px 126px",
+        "transform": "none",
+        "rotate": "6.8233deg"
+      },
+      "shoulder": {
+        "left": 149,
+        "bottom": 301.6
+      }
+    },
+    "motion": {
+      "animations": [
+        {
+          "type": "Animation",
+          "target": "shadow",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "spark",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "celebrate",
+          "props": [
+            "opacity"
+          ]
+        },
+        {
+          "type": "Animation",
+          "target": "rest",
+          "props": [
+            "opacity"
+          ]
+        }
+      ],
+      "jump": {
+        "inline": "transform-box: view-box; transform: translateY(-28.629px) scaleX(0.964113) scaleY(1.05452);",
+        "transformBox": "view-box",
+        "transformOrigin": "100px 190px",
+        "transform": "matrix(0.964113, 0, 0, 1.05452, 0, -28.629)",
+        "rotate": "none"
+      },
+      "arm": {
+        "inline": "transform-box: view-box; transform: rotate(7.37306deg);",
+        "transformBox": "view-box",
+        "transformOrigin": "126px 126px",
+        "transform": "matrix(0.991732, 0.128329, -0.128329, 0.991732, 0, 0)",
+        "rotate": "none"
+      },
+      "shoulder": {
+        "left": 149.1,
+        "bottom": 302.3
+      }
+    }
+  },
+  "reduced": {
+    "css": {
+      "samples": 29,
+      "anyRunning": false,
+      "anyMoved": false,
+      "celebrateAlwaysShown": true,
+      "restNeverShown": true,
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "mini": {
+      "samples": 29,
+      "anyRunning": false,
+      "anyMoved": false,
+      "celebrateAlwaysShown": true,
+      "restNeverShown": true,
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "motion": {
+      "samples": 29,
+      "anyRunning": false,
+      "anyMoved": false,
+      "celebrateAlwaysShown": true,
+      "restNeverShown": true,
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    }
+  },
+  "cpu": {
+    "static@1x": {
+      "rate": 1,
+      "median": {
+        "task": 54.09,
+        "script": 9.15,
+        "style": 1.85,
+        "layout": 0.32,
+        "styleCount": 1,
+        "frames": 180,
+        "p95": 16.8,
+        "max": 17,
+        "over25": 0
+      },
+      "idle": {
+        "task": 55.85,
+        "script": 6.52,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 54.09,
+          "script": 9.35,
+          "style": 1.95,
+          "layout": 0.32,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 53.52,
+          "script": 10.26,
+          "style": 1.53,
+          "layout": 0.26,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 54.52,
+          "script": 8.96,
+          "style": 1.92,
+          "layout": 0.3,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 52.54,
+          "script": 8.99,
+          "style": 2.37,
+          "layout": 0.33,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 55.02,
+          "script": 9.15,
+          "style": 1.85,
+          "layout": 0.34,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 55.08,
+          "script": 9.39,
+          "style": 1.7,
+          "layout": 0.42,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 50.42,
+          "script": 9,
+          "style": 1.21,
+          "layout": 0.2,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 55.85,
+          "script": 6.75,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 56.16,
+          "script": 6.52,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 46.33,
+          "script": 6.43,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17.1,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "css@1x": {
+      "rate": 1,
+      "median": {
+        "task": 168.54,
+        "script": 9.46,
+        "style": 23.73,
+        "layout": 9.61,
+        "styleCount": 142,
+        "frames": 180,
+        "p95": 16.8,
+        "max": 17,
+        "over25": 0
+      },
+      "idle": {
+        "task": 58.76,
+        "script": 6.63,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 162.72,
+          "script": 11.15,
+          "style": 24.99,
+          "layout": 9.14,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 167.87,
+          "script": 11.33,
+          "style": 23.44,
+          "layout": 9.43,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 168.54,
+          "script": 9.34,
+          "style": 23.22,
+          "layout": 9.61,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 169.5,
+          "script": 9.46,
+          "style": 23.73,
+          "layout": 9.86,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 162.8,
+          "script": 8.97,
+          "style": 23.11,
+          "layout": 9.48,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 178.55,
+          "script": 10.67,
+          "style": 24.21,
+          "layout": 9.97,
+          "styleCount": 141,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 170.45,
+          "script": 9.22,
+          "style": 24.98,
+          "layout": 9.81,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 71.3,
+          "script": 6.78,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 58.76,
+          "script": 6.63,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 46.66,
+          "script": 6.39,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17.2,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "mini@1x": {
+      "rate": 1,
+      "median": {
+        "task": 181.15,
+        "script": 11.74,
+        "style": 26.51,
+        "layout": 10.25,
+        "styleCount": 142,
+        "frames": 180,
+        "p95": 16.8,
+        "max": 17.1,
+        "over25": 0
+      },
+      "idle": {
+        "task": 53.04,
+        "script": 6.91,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 190.93,
+          "script": 13.22,
+          "style": 27.04,
+          "layout": 10.67,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 176.37,
+          "script": 11.74,
+          "style": 24.44,
+          "layout": 9.46,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.6,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 191.91,
+          "script": 10.98,
+          "style": 26.51,
+          "layout": 10.86,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 186.27,
+          "script": 13.54,
+          "style": 26.56,
+          "layout": 10.25,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 181.15,
+          "script": 9.39,
+          "style": 27.77,
+          "layout": 10.06,
+          "styleCount": 141,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 174.56,
+          "script": 11.29,
+          "style": 24.45,
+          "layout": 9.94,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 180.43,
+          "script": 11.83,
+          "style": 24.82,
+          "layout": 10.26,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 84.73,
+          "script": 6.91,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 53.04,
+          "script": 6.56,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 49.24,
+          "script": 6.99,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "motion@1x": {
+      "rate": 1,
+      "median": {
+        "task": 227.31,
+        "script": 29.35,
+        "style": 59.97,
+        "layout": 9.6,
+        "styleCount": 141,
+        "frames": 180,
+        "p95": 16.8,
+        "max": 16.9,
+        "over25": 0
+      },
+      "idle": {
+        "task": 63.37,
+        "script": 7.18,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 220.85,
+          "script": 29.94,
+          "style": 58.95,
+          "layout": 9.31,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 235.54,
+          "script": 29.16,
+          "style": 61.89,
+          "layout": 9.87,
+          "styleCount": 141,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 230,
+          "script": 29.92,
+          "style": 61.3,
+          "layout": 9.84,
+          "styleCount": 141,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 221.92,
+          "script": 29.35,
+          "style": 59.4,
+          "layout": 8.91,
+          "styleCount": 140,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.3,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 227.31,
+          "script": 28.27,
+          "style": 59.97,
+          "layout": 9.6,
+          "styleCount": 141,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 222.5,
+          "script": 26.8,
+          "style": 58.68,
+          "layout": 9.47,
+          "styleCount": 140,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 240.74,
+          "script": 31.33,
+          "style": 63.98,
+          "layout": 10.12,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 82.71,
+          "script": 7.18,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.1,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 63.37,
+          "script": 7.2,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17.7,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 47.08,
+          "script": 6.61,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.9,
+          "max": 17,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "static@4x": {
+      "rate": 4,
+      "median": {
+        "task": 74.27,
+        "script": 13.19,
+        "style": 3.49,
+        "layout": 0.64,
+        "styleCount": 1,
+        "frames": 179,
+        "p95": 16.8,
+        "max": 33.3,
+        "over25": 1
+      },
+      "idle": {
+        "task": 68.85,
+        "script": 9.64,
+        "style": 0,
+        "frames": 181
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 75.41,
+          "script": 12.66,
+          "style": 2.52,
+          "layout": 0.46,
+          "styleCount": 1,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": true,
+          "task": 75.28,
+          "script": 14.48,
+          "style": 2.43,
+          "layout": 0.73,
+          "styleCount": 1,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 72.96,
+          "script": 13.45,
+          "style": 3.49,
+          "layout": 0.63,
+          "styleCount": 1,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 76.36,
+          "script": 13.19,
+          "style": 2.65,
+          "layout": 0.64,
+          "styleCount": 1,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.2,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 73.27,
+          "script": 13.56,
+          "style": 3.72,
+          "layout": 0.67,
+          "styleCount": 1,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 74.27,
+          "script": 13.09,
+          "style": 4.09,
+          "layout": 1.13,
+          "styleCount": 1,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 49.9,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 72.68,
+          "script": 12.98,
+          "style": 3.83,
+          "layout": 0.61,
+          "styleCount": 1,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 33.4,
+          "over25": 1
+        },
+        {
+          "click": false,
+          "task": 71.11,
+          "script": 8.86,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 181,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 66.09,
+          "script": 9.64,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 181,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 68.85,
+          "script": 10.04,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 181,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "css@4x": {
+      "rate": 4,
+      "median": {
+        "task": 234.42,
+        "script": 12.16,
+        "style": 35.02,
+        "layout": 11.56,
+        "styleCount": 142,
+        "frames": 179,
+        "p95": 16.8,
+        "max": 49.9,
+        "over25": 1
+      },
+      "idle": {
+        "task": 67.95,
+        "script": 8.5,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 243.85,
+          "script": 14.92,
+          "style": 36,
+          "layout": 12.11,
+          "styleCount": 142,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.4,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 223.37,
+          "script": 11.8,
+          "style": 33.06,
+          "layout": 11.42,
+          "styleCount": 142,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 33.2,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 234.16,
+          "script": 13.2,
+          "style": 35.02,
+          "layout": 11.26,
+          "styleCount": 142,
+          "frames": 178,
+          "p95": 16.9,
+          "max": 50,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 230.03,
+          "script": 13.22,
+          "style": 33.34,
+          "layout": 11.56,
+          "styleCount": 142,
+          "frames": 179,
+          "p95": 16.9,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 234.42,
+          "script": 11.78,
+          "style": 33.82,
+          "layout": 11.32,
+          "styleCount": 141,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 49.9,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 242.62,
+          "script": 11.92,
+          "style": 36.99,
+          "layout": 11.83,
+          "styleCount": 142,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 50.1,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 241.92,
+          "script": 12.16,
+          "style": 37.59,
+          "layout": 12.08,
+          "styleCount": 142,
+          "frames": 177,
+          "p95": 16.8,
+          "max": 50.1,
+          "over25": 1
+        },
+        {
+          "click": false,
+          "task": 84.27,
+          "script": 8.2,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 67.95,
+          "script": 8.63,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 61.3,
+          "script": 8.5,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 181,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "mini@4x": {
+      "rate": 4,
+      "median": {
+        "task": 252.02,
+        "script": 15.22,
+        "style": 37.6,
+        "layout": 12.39,
+        "styleCount": 142,
+        "frames": 178,
+        "p95": 16.8,
+        "max": 50,
+        "over25": 1
+      },
+      "idle": {
+        "task": 58.74,
+        "script": 8.78,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 252.02,
+          "script": 15.22,
+          "style": 37.6,
+          "layout": 12.39,
+          "styleCount": 142,
+          "frames": 177,
+          "p95": 16.8,
+          "max": 66.6,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 257.74,
+          "script": 15.68,
+          "style": 38.16,
+          "layout": 12.74,
+          "styleCount": 141,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 50,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 256.21,
+          "script": 14.25,
+          "style": 39.04,
+          "layout": 12.08,
+          "styleCount": 142,
+          "frames": 179,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 247.16,
+          "script": 14.29,
+          "style": 36.86,
+          "layout": 12.53,
+          "styleCount": 142,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 50,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 264.1,
+          "script": 15.56,
+          "style": 40.8,
+          "layout": 13.72,
+          "styleCount": 142,
+          "frames": 177,
+          "p95": 16.8,
+          "max": 66.7,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 238.49,
+          "script": 16.11,
+          "style": 37.27,
+          "layout": 11.41,
+          "styleCount": 142,
+          "frames": 176,
+          "p95": 16.8,
+          "max": 83.4,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 233.78,
+          "script": 14.17,
+          "style": 33.36,
+          "layout": 11.86,
+          "styleCount": 141,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 2
+        },
+        {
+          "click": false,
+          "task": 87.6,
+          "script": 8.78,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 58.2,
+          "script": 8.84,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 17,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 58.74,
+          "script": 8.61,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    "motion@4x": {
+      "rate": 4,
+      "median": {
+        "task": 315.63,
+        "script": 34.93,
+        "style": 94.91,
+        "layout": 11.83,
+        "styleCount": 139,
+        "frames": 177,
+        "p95": 16.8,
+        "max": 50,
+        "over25": 2
+      },
+      "idle": {
+        "task": 61.6,
+        "script": 8.24,
+        "style": 0,
+        "frames": 180
+      },
+      "runs": [
+        {
+          "click": true,
+          "task": 315.63,
+          "script": 34.93,
+          "style": 97.37,
+          "layout": 12.22,
+          "styleCount": 140,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 50.1,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 321.26,
+          "script": 37.91,
+          "style": 95.71,
+          "layout": 11.94,
+          "styleCount": 136,
+          "frames": 174,
+          "p95": 16.8,
+          "max": 66.6,
+          "over25": 4
+        },
+        {
+          "click": true,
+          "task": 304.98,
+          "script": 34.18,
+          "style": 89.91,
+          "layout": 11.83,
+          "styleCount": 139,
+          "frames": 177,
+          "p95": 16.8,
+          "max": 49.9,
+          "over25": 2
+        },
+        {
+          "click": true,
+          "task": 309.17,
+          "script": 34.2,
+          "style": 93.51,
+          "layout": 11.84,
+          "styleCount": 139,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 33.4,
+          "over25": 2
+        },
+        {
+          "click": true,
+          "task": 317.81,
+          "script": 35.9,
+          "style": 99.02,
+          "layout": 11.73,
+          "styleCount": 139,
+          "frames": 177,
+          "p95": 16.8,
+          "max": 50,
+          "over25": 1
+        },
+        {
+          "click": true,
+          "task": 316.04,
+          "script": 35.49,
+          "style": 94.91,
+          "layout": 11.48,
+          "styleCount": 137,
+          "frames": 175,
+          "p95": 16.9,
+          "max": 66.7,
+          "over25": 3
+        },
+        {
+          "click": true,
+          "task": 299.21,
+          "script": 32.42,
+          "style": 87.2,
+          "layout": 11.62,
+          "styleCount": 140,
+          "frames": 178,
+          "p95": 16.8,
+          "max": 33.3,
+          "over25": 1
+        },
+        {
+          "click": false,
+          "task": 88.9,
+          "script": 8.11,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 61.6,
+          "script": 8.74,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.8,
+          "over25": 0
+        },
+        {
+          "click": false,
+          "task": 58.06,
+          "script": 8.24,
+          "style": 0,
+          "layout": 0,
+          "styleCount": 0,
+          "frames": 180,
+          "p95": 16.8,
+          "max": 16.9,
+          "over25": 0
+        }
+      ],
+      "problems": [
+        "console: Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    }
+  },
+  "effort": {
+    "note": "Số dòng mã (bỏ dòng trống + chú thích). Phần chung (khung, SVG bọc lớp, CSS điểm xoay) mọi biến thể đều cần.",
+    "shared": {
+      "naomi-frame.tsx": 25,
+      "spikeCss()": 13,
+      "celebrateMarkup()": 17
+    },
+    "css": {
+      "keyframesCss()": 33
+    },
+    "mini": {
+      "naomi-mini.tsx": 37,
+      "tracks.ts": 22
+    },
+    "motion": {
+      "naomi-motion.tsx": 32,
+      "tracks.ts": 22
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "note": "Naomi celebrate (verdict AC 100/100): bắt được bug, nhảy mừng, confetti nhỏ. One source for every variant: run.cjs turns it into CSS keyframes, the mini and full Motion variants read it at runtime. Times are fractions of each track; ease names are design-system tokens (tokens.json → easing); origins are drawing coordinates (viewBox 0 0 200 200, the layer's own user space).",
+  "mood": "celebrate",
+  "swapAtMs": 2400,
+  "swapMs": 220,
+  "swapEase": "ease-standard",
+  "tracks": [
+    {
+      "layer": "jump",
+      "origin": [100, 190],
+      "delay": 0,
+      "duration": 1400,
+      "times": [0, 0.15, 0.5, 0.78, 1],
+      "ease": ["ease-standard", "ease-enter", "ease-exit", "ease-overshoot"],
+      "y": [0, 0, -30, 0, 0],
+      "scaleX": [1, 1.06, 0.96, 1.05, 1],
+      "scaleY": [1, 0.92, 1.06, 0.94, 1]
+    },
+    {
+      "layer": "shadow",
+      "origin": [100, 194],
+      "delay": 0,
+      "duration": 1400,
+      "times": [0, 0.15, 0.5, 0.78, 1],
+      "ease": ["ease-standard", "ease-enter", "ease-exit", "ease-overshoot"],
+      "scaleX": [1, 1.04, 0.6, 1.06, 1],
+      "scaleY": [1, 1, 1, 1, 1],
+      "opacity": [1, 1, 0.55, 1, 1]
+    },
+    {
+      "layer": "tail",
+      "origin": [116, 166],
+      "delay": 150,
+      "duration": 1500,
+      "times": [0, 0.25, 0.5, 0.75, 1],
+      "ease": ["ease-standard", "ease-standard", "ease-standard", "ease-standard"],
+      "rotate": [0, 6, -5, 3, 0]
+    },
+    {
+      "layer": "arm-left",
+      "origin": [126, 126],
+      "delay": 350,
+      "duration": 1500,
+      "times": [0, 0.2, 0.4, 0.6, 0.8, 1],
+      "ease": ["ease-standard", "ease-standard", "ease-standard", "ease-standard", "ease-standard"],
+      "rotate": [0, -16, 10, -10, 5, 0]
+    },
+    {
+      "layer": "spark",
+      "origin": "center",
+      "delay": 250,
+      "stagger": 120,
+      "duration": 1600,
+      "times": [0, 0.25, 0.4, 0.8, 1],
+      "ease": ["ease-overshoot", "ease-standard", "ease-standard", "ease-exit"],
+      "scale": [0, 1.3, 1, 1, 0],
+      "rotate": [0, 45, 60, 80, 90],
+      "opacity": [0, 1, 1, 1, 0]
+    }
+  ]
+}

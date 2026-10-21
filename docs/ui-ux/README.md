@@ -53,7 +53,7 @@ Mỗi skill bị vá có một khối "DevPath local patch" ở đầu, và danh
 - **`dylantarre/animation-principles`**: repo có 144 skill. Chỉ lấy 3 skill sát việc nhất: `character-appeal` (nhân vật), `education-learning` (bối cảnh học tập), `accessible-motion` (giảm chuyển động).
 - **`manutej/luxor-claude-marketplace/playwright-visual-testing`**: không cài, như plan dặn. Audit 18/10: Snyk warn MEDIUM (1 issue), Runlayer warn MEDIUM (5/5 file); catalog từng ghi HIGH.
 - **`brand-guidelines`** (`anthropics/skills`): chưa cài. Nó là khuôn để viết skill `devpath-ui` ở cuối Phase 7; đọc thẳng từ repo lúc làm task đó.
-- **Skill Rive** (`stevysmith/rive-skills`, `bowtiedswan/rive-skills`): chỉ cài nếu spike hoạt ảnh chọn Rive.
+- **Skill Rive** (`stevysmith/rive-skills`, `bowtiedswan/rive-skills`): không cài — user chốt 21/10 không làm Rive, spike chọn `motion/react-mini` ([`animation-spike.md`](../report/assets/phase-7/animation-spike.md)).
 
 ### Cập nhật hay gỡ
 

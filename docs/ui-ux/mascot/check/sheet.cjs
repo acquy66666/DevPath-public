@@ -1,17 +1,21 @@
-// Contact sheet of every mascot SVG in ../directions: each drawing at 200, 64
-// and 32 px plus its silhouette, on the page background of the design system.
+// Contact sheet of every mascot SVG in a folder (default ../directions): each
+// drawing at 200, 64 and 32 px plus its silhouette, on the page background of
+// the design system.
 //
-//   NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/sheet.cjs [filter]
+//   NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/sheet.cjs [filter] [--dir naomi/moods]
 //
-// Writes docs/ui-ux/mascot/check/out/sheet[-filter].png. Chrome from the
-// Playwright channel; no network, no app stack.
+// --dir is relative to docs/ui-ux/mascot. Writes check/out/sheet[-dir][-filter].png.
+// Chrome from the Playwright channel; no network, no app stack.
 const fs = require("fs");
 const path = require("path");
 const { chromium } = require("playwright");
 
-const dir = path.join(__dirname, "..", "directions");
+const args = process.argv.slice(2);
+const dirAt = args.indexOf("--dir");
+const dirName = dirAt >= 0 ? args.splice(dirAt, 2)[1] : "directions";
+const dir = path.join(__dirname, "..", dirName);
 const out = path.join(__dirname, "out");
-const filter = process.argv[2] || "";
+const filter = args[0] || "";
 
 const files = fs
   .readdirSync(dir)
@@ -49,7 +53,8 @@ const html = `<!doctype html><meta charset="utf-8"><style>
   const page = await browser.newPage({ viewport: { width: 1400, height: 400 }, deviceScaleFactor: Number(process.env.SCALE || 1) });
   await page.setContent(html);
   await page.waitForFunction(() => [...document.images].every((i) => i.complete));
-  const file = path.join(out, `sheet${filter ? "-" + filter : ""}.png`);
+  const slug = dirName === "directions" ? "" : "-" + dirName.replace(/[\/]+/g, "-");
+  const file = path.join(out, `sheet${slug}${filter ? "-" + filter : ""}.png`);
   await page.screenshot({ path: file, fullPage: true });
   await browser.close();
   console.log(file, files.length, "drawings");

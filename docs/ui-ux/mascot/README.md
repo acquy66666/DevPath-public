@@ -1,11 +1,69 @@
-# Linh vật DevPath — ba hướng (21/10/2026)
+# Linh vật DevPath — Naomi
 
-Task Phase 7 "Phác ba hướng nhân vật cạnh nhau trên một artifact Design" ([plan](../../plan/phase-7-ui-ux-upgrade.md), [tài liệu thiết kế mục 4–5](../thiet-ke-nang-cap-ui-ux.md)).
+Nhân vật là **Naomi**, tắc kè “bắt bug” (hướng A, user chọn và đặt tên ngày 21/10/2026). Thư mục này giữ hai task Phase 7 ([plan](../../plan/phase-7-ui-ux-upgrade.md), [tài liệu thiết kế mục 4–5](../thiet-ke-nang-cap-ui-ux.md)): phác ba hướng, rồi model sheet + bộ biểu cảm của Naomi.
 
-- **Artifact Design:** [Linh vật DevPath](https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8). Có 5 artboard: tổng quan, ba hướng, kiểm với Duo. Design system DevPath được cài vào canvas.
-- **User chọn 21/10/2026: hướng A, tắc kè “bắt bug”, tên Naomi.** Claude đã đề xuất A. Tên Naomi là của user, không nằm trong ba tên gợi ý (Kè, Sùng, Bít). Canvas giữ nguyên cả ba hướng làm hồ sơ của lần chọn.
+- **Artifact Design:** [Linh vật DevPath](https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8). 7 artboard: tổng quan, ba hướng, kiểm với Duo (hồ sơ lần chọn), rồi **Naomi · model sheet** và **Naomi · bộ biểu cảm**. Design system DevPath được cài vào canvas.
+- **User chọn 21/10/2026: hướng A, tắc kè “bắt bug”, tên Naomi.** Claude đã đề xuất A. Tên Naomi là của user, không nằm trong ba tên gợi ý (Kè, Sùng, Bít).
 
-## Ba hướng
+## Naomi: model sheet và bộ biểu cảm (21/10/2026)
+
+Mọi hình sinh từ một script, [`naomi/build.cjs`](naomi/build.cjs), ghép từ cùng một bộ bộ phận (đầu, mắt, mí, miệng, tay, chân, đuôi, đạo cụ). Sửa một bộ phận là mọi mood đổi theo, và tệp nào cũng có cùng bộ lớp. **SVG trong `naomi/` là đầu ra: sửa script, đừng sửa SVG.** Màu gọi bằng tên token và tra trong `tokens.json` của design system; tên không phải token thì build dừng.
+
+| Tệp | Nội dung |
+|---|---|
+| `naomi/views/naomi-{front,three-quarter,side}.svg` | Model sheet: nhìn thẳng, ba phần tư (quay ~30° sang trái người xem), nghiêng (hướng trái) |
+| `naomi/sheet/naomi-turnaround.svg` | Ba góc cạnh nhau trên 4 đường gióng: đỉnh đầu 37,5 · mắt 66 · cằm 126,5 · mặt đất 199,5 |
+| `naomi/moods/naomi-<mood>.svg` | 30 hình: `rest` + 24 mood của mục 5 + 5 đạo cụ empty state (`empty-cart`, `empty-courses`, `empty-notifications`, `empty-notes`, `empty-search`) |
+| `naomi/layers/naomi-partial-<lớp>.svg` | Tư thế `partial` tách từng lớp, cho hình lớp trên model sheet |
+| `naomi/naomi.json` | Danh sách mood → sự kiện, nơi dùng, nhãn `aria-label`, tệp; đường gióng. Component `<Mascot>` đọc được từ đây |
+
+**Tỉ lệ** (khung 200 × 200): Naomi cao 162, đầu 89 (55 %, khoảng 1,8 đầu), đầu rộng 127 gấp 1,7 lần thân (75). Nét viền 4,5 chỉ ở mép ngoài.
+
+**Bảng màu của Naomi:** thân/đầu/tay/chân/đuôi `jade-500`, bụng `jade-100`, đốm `jade-700`, nét viền + con ngươi + miệng `jade-900`, mống mắt `turmeric-300`, lòng trắng mắt `slate-0`, lưỡi `rose-500`, má hồng `rose-200`, bóng `slate-100`. Đạo cụ mang màu của sự kiện: TLE hổ phách, MLE hồng, RE tím, CE lam, SE xám, quiz theo bốn mức, lửa chuỗi ngày `orange-500` (`streak`).
+
+### Lớp
+
+Gốc `<svg>` có `shadow` (bóng, đứng yên khi nhảy), `scene` (đạo cụ trên sàn: đồng hồ cát, bục, con bọ bay…) và `naomi`. Trong `naomi`, từ sau ra trước: `fx-back`, `tail`, `feet`, `body`, `props`, `arm-right`, `arm-left`, `head`, `eyes`, `eyelids`, `mouth`, `props-head`, `fx`. Mọi lớp luôn có mặt, rỗng thì là `<g id="…"/>`, nên component điều khiển theo tên mà không cần biết mood.
+
+- `right`/`left` là của Naomi: tay phải của Naomi ở bên trái người xem khi nhìn thẳng.
+- Lớp con có tên: `tail-spots`, `foot-right`/`foot-left`, `belly`, `body-spots`, `arm-*-limb`, `arm-*-hand`, `arm-*-held` (đồ cầm tay, đi theo tay khi làm hoạt ảnh), `head-shape`, `head-spots`, `nostrils`, `cheeks`, `eye-right`/`eye-left`, `lid-right`/`lid-left`.
+- Tay đổi chỗ được mà không đổi tên: sau thân (`behind`, góc nghiêng), sau đạo cụ (`back`: laptop, sợi dây), mặc định sau đầu, hoặc trước mặt (`front`: gãi đầu, chống cằm, che miệng ngáp).
+- Đầu, mắt, mí, miệng, mũ dùng chung một `transform` khi nghiêng đầu.
+- Id trùng nhau giữa các tệp. Dùng bằng `<img>` thì không sao; nhúng nhiều SVG thẳng vào một trang thì component phải đổi id (task component).
+
+### Luật đã kiểm bằng máy
+
+[`check/naomi.cjs`](check/naomi.cjs) đọc mọi tệp trong `naomi/views` và `naomi/moods`, thoát 1 nếu một luật hỏng. Bản chạy: `docs/report/assets/phase-7/naomi/check.txt`.
+
+1. Mọi màu là token; không `<style>`, `<text>`, `<image>`, `url(#…)` (ảnh tải lên artifact bị lọc `<style>`, và `<img>` không có font).
+2. Đủ bộ lớp, id không trùng trong một tệp.
+3. **Màu nghệ không tô miệng, tay, chân, đuôi, thân hay đầu.** Được ở mắt (mống mắt), đạo cụ, hiệu ứng và đồ cầm tay. Bản chạy liệt kê nghệ nằm ở đâu: `turmeric-300` ở `eyes`, `props-head`, `scene`; `turmeric-400` ở `props-head`, `scene`.
+4. Mọi màu trên thân cách mọi màu của Duo ít nhất ΔE 0,10 (OKLab). Gần nhất là `jade-500` với Wing Overlay, ΔE 0,190.
+5. Không vẽ ra ngoài khung 200 × 200 (vẽ lại với lề 20, đếm pixel ngoài khung).
+6. **Đuôi xoắn và đốm phải lộ ra:** tô riêng lớp đó màu hồng sen, lấy số pixel còn thấy trong hình đầy đủ chia cho số pixel khi vẽ lớp đó một mình. Ngưỡng: đuôi ≥ 60 %, đốm đầu ≥ 50 %, đốm đuôi ≥ 50 % ở mọi hình; đốm thân ≥ 50 % ở ba góc (ở mood, đạo cụ được phép che bụng). Kết quả 21/10: đuôi thấp nhất 60 % (`stuffed`), đốm đầu 83 % (`three-quarter`), đốm đuôi 75 %, đốm thân ở ba góc 61 % (`side`).
+
+Lần chạy đầu, luật 5–6 bắt được 11 lỗi thật: ngón chân góc nghiêng và ¾ tràn đáy khung, mũ tiệc tràn đỉnh, biển “đang sửa” và túi hàng che gần nửa đuôi, mũ tốt nghiệp che 92 % đốm đầu, tay ở tư thế nghỉ che 61 % đốm thân.
+
+### Bài học khi vẽ
+
+- Tay của Naomi ngắn (khoảng 35–45 đơn vị). Giơ tay lên cao thì bàn tay nấp sau đầu: nắm tay cổ vũ, đuốc, vẫy tay đều phải đưa ra ngang, ra ngoài bướu mắt (x > 163).
+- Tay trái được vẽ bằng cách lật tay phải, và đồ cầm tay lật theo. Dấu tích, thẻ, chữ không được lật: viết thẳng tọa độ (`mirror: false`).
+- Đạo cụ to (biển, túi, sách) đặt lệch sang bên không có đuôi.
+- Mắt `happy` (^ ^) đọc ấm hơn mí trễ cho `comfort`; mí trễ cộng mí dưới đọc thành chán.
+- Góc nghiêng: bướu của mắt xa ló sau đỉnh đầu trông như cái mũ, đã bỏ. Mắt tắc kè nằm hai bên đầu nên nhìn nghiêng vẫn thấy tròn một mắt.
+
+### Chạy lại
+
+```bash
+node docs/ui-ux/mascot/naomi/build.cjs
+NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/naomi.cjs docs/report/assets/phase-7/naomi/check.txt
+NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/sheet.cjs --dir naomi/moods
+NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/boards.cjs docs/report/assets/phase-7/naomi/boards
+```
+
+`build.cjs` chạy lại ra đúng từng byte cũ. Đổi hình thì tải lại SVG lên canvas (mục "Sửa một hình rồi đăng lại" bên dưới); `canvas/assets.json` ghi id ↔ tệp, đường dẫn tính từ thư mục này.
+
+## Ba hướng (hồ sơ lần chọn, 21/10/2026)
 
 | | **A · Tắc kè “bắt bug” — đã chọn, tên Naomi** | B · Chim Lạc “đường bay” | C · Robot màn hình |
 |---|---|---|---|
@@ -41,11 +99,13 @@ Mã màu của Duo lấy từ trang thương hiệu chính thức của Duolingo
 
 | Tệp | Nội dung |
 |---|---|
-| `directions/*.svg` | 12 hình (3 hướng × 4 trạng thái), viewBox 200 × 200. Đây là nguồn chân lý |
-| `canvas/project/` | Bản trong repo của canvas: `canvas.json` + 5 tệp `.dc.html`. `project/ds/devpath/tokens.json` do server chép thẳng từ artifact design system nên không có ở đây |
-| `canvas/assets.json` | Id ảnh trên artifact (`/_blob/<id>`) ↔ tệp SVG |
-| `check/sheet.cjs` | Bảng kiểm: mỗi hình ở 200/64/32 px + hình bóng. `SCALE=2` để soi nét |
-| `check/boards.cjs` | Dựng lại 5 artboard trên máy, không cần mạng: ảnh lấy từ `directions/`, Lexend tự host của frontend. Kiểm nội dung khít khung, không tràn ngang; thoát 1 nếu có artboard hỏng |
+| `directions/*.svg` | 12 hình (3 hướng × 4 trạng thái), viewBox 200 × 200, vẽ tay. `gecko-*.svg` là điểm xuất phát của Naomi |
+| `canvas/project/` | Bản trong repo của canvas: `canvas.json` + 7 tệp `.dc.html`. `project/ds/devpath/tokens.json` do server chép thẳng từ artifact design system nên không có ở đây |
+| `canvas/assets.json` | Id ảnh trên artifact (`/_blob/<id>`) ↔ tệp SVG, đường dẫn tính từ `docs/ui-ux/mascot` |
+| `check/sheet.cjs` | Bảng kiểm: mỗi hình ở 200/64/32 px + hình bóng. `--dir naomi/moods` cho thư mục khác `directions/`, `SCALE=2` để soi nét |
+| `check/naomi.cjs` | Sáu luật của Naomi (mục trên) |
+| `check/boards.cjs` | Dựng lại 7 artboard trên máy, không cần mạng: ảnh lấy theo `canvas/assets.json`, Lexend tự host của frontend. Kiểm nội dung khít khung, không tràn ngang; thoát 1 nếu có artboard hỏng |
+| `canvas/make_moods_board.py` | Sinh artboard “Naomi · bộ biểu cảm” từ `naomi/naomi.json` + `assets.json`: tải lại hình thì chạy lại, không sửa 30 id bằng tay |
 | `check/duo_distance.py` | Đo ΔE OKLab giữa bảng màu nhân vật và màu Duo |
 
 Chạy từ gốc repo:
@@ -56,13 +116,8 @@ NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/boards.cjs docs/rep
 python -I docs/ui-ux/mascot/check/duo_distance.py
 ```
 
-## Bước sau: model sheet của Naomi
-
-- Model sheet (chính diện, ¾, nghiêng) + đủ các `mood` ở mục 5 của tài liệu thiết kế, xuất phát từ bốn hình `gecko-*.svg`. Giữ đốm và đuôi xoắn ở mọi góc, vì nhìn thẳng mà thiếu chúng là thành ếch.
-- Cập nhật mục "Nhân vật linh vật" trong README của design system (bản trong repo và artifact cùng lúc): hướng đã chọn, tên, luật màu nghệ không tô mỏ/chân/bàn chân.
-
 ## Sửa một hình rồi đăng lại
 
-1. Sửa SVG trong `directions/`, chạy `sheet.cjs` để xem.
+1. Sửa SVG trong `directions/` (Naomi: sửa `naomi/build.cjs` rồi chạy nó), chạy `sheet.cjs` để xem (Naomi: thêm `check/naomi.cjs`).
 2. Tải lại hình lên artifact (Artifact `publish` với `asset: true`). Hình mới có id mới: đổi id trong các artboard dùng nó và trong `assets.json`.
 3. Chạy `boards.cjs`, rồi publish các artboard đã đổi với `root` = `docs/ui-ux/mascot/canvas`. Chỉ gửi `canvas.json` khi đổi bố cục.

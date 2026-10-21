@@ -1,25 +1,83 @@
 {
   "v": 3,
-  "createdOnFiles": { "v": 1, "at": "2026-10-21T03:14:18Z" },
-  "title": "Linh vật DevPath",
-  "launch": { "view": "canvas" },
-  "pages": [],
+  "attachments": {},
   "boards": {
-    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 960, "title": "Tổng quan — ba hướng" },
-    "Gecko.dc.html": { "x": 0, "y": 1080, "w": 1200, "h": 1200, "title": "A · Tắc kè “bắt bug”" },
-    "Lac.dc.html": { "x": 1280, "y": 1080, "w": 1200, "h": 1200, "title": "B · Chim Lạc" },
-    "Robot.dc.html": { "x": 2560, "y": 1080, "w": 1200, "h": 1200, "title": "C · Robot màn hình" },
-    "Duo.dc.html": { "x": 0, "y": 2400, "w": 1200, "h": 880, "title": "Kiểm với Duo" }
+    "Duo.dc.html": {
+      "h": 880,
+      "title": "Kiểm với Duo",
+      "w": 1200,
+      "x": 0,
+      "y": 2400
+    },
+    "Gecko.dc.html": {
+      "h": 1200,
+      "title": "A · Tắc kè “bắt bug”",
+      "w": 1200,
+      "x": 0,
+      "y": 1080
+    },
+    "Lac.dc.html": {
+      "h": 1200,
+      "title": "B · Chim Lạc",
+      "w": 1200,
+      "x": 1280,
+      "y": 1080
+    },
+    "Main.dc.html": {
+      "h": 960,
+      "title": "Tổng quan — ba hướng",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Robot.dc.html": {
+      "h": 1200,
+      "title": "C · Robot màn hình",
+      "w": 1200,
+      "x": 2560,
+      "y": 1080
+    },
+    "Naomi.dc.html": {
+      "h": 1880,
+      "title": "Naomi · model sheet",
+      "w": 1440,
+      "x": 0,
+      "y": 3400
+    },
+    "NaomiMoods.dc.html": {
+      "h": 1300,
+      "title": "Naomi · bộ biểu cảm",
+      "w": 1440,
+      "x": 1520,
+      "y": 3400
+    }
   },
-  "order": ["Main.dc.html", "Gecko.dc.html", "Lac.dc.html", "Robot.dc.html", "Duo.dc.html"],
-  "notes": {},
+  "createdOnFiles": {
+    "at": "2026-10-21T03:14:18Z",
+    "v": 1
+  },
   "designSystems": [
     {
-      "title": "DevPath",
-      "namespace": "devpath",
       "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
-      "version": "1792551335-5af5",
-      "copiedAt": "2026-10-21T03:14:18Z"
+      "copiedAt": "2026-10-21T03:14:18Z",
+      "namespace": "devpath",
+      "title": "DevPath",
+      "version": "1792551335-5af5"
     }
-  ]
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "Gecko.dc.html",
+    "Lac.dc.html",
+    "Robot.dc.html",
+    "Duo.dc.html",
+    "Naomi.dc.html",
+    "NaomiMoods.dc.html"
+  ],
+  "pages": [],
+  "title": "Linh vật DevPath"
 }

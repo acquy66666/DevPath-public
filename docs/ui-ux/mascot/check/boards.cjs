@@ -1,6 +1,6 @@
 // Render the canvas artboards (../canvas/project/*.dc.html) the way they are
 // drawn on the artifact, but entirely offline: /_blob/<id> is answered with the
-// SVG from ../directions (map in ../canvas/assets.json), Google Fonts with the
+// SVG it was uploaded from (map in ../canvas/assets.json, paths relative to docs/ui-ux/mascot), Google Fonts with the
 // self-hosted Lexend of the frontend, support.js with nothing (the boards hold
 // no {{holes}}, so the runtime adds nothing to what is checked here).
 //
@@ -15,7 +15,7 @@ const { chromium } = require("playwright");
 const repo = path.join(__dirname, "..", "..", "..", "..");
 const canvas = path.join(__dirname, "..", "canvas");
 const project = path.join(canvas, "project");
-const directions = path.join(__dirname, "..", "directions");
+const mascot = path.join(__dirname, "..");
 const fontsDir = path.join(repo, "frontend", "public", "fonts");
 const outDir = path.resolve(process.argv[2] || path.join(__dirname, "out", "boards"));
 
@@ -39,7 +39,7 @@ const fontCss = (fs.readFileSync(path.join(repo, "frontend", "app", "fonts.css")
       const url = route.request().url();
       const blob = url.match(/\/_blob\/([0-9a-f]{32})/);
       if (blob) {
-        return route.fulfill({ contentType: "image/svg+xml", body: fs.readFileSync(path.join(directions, assets[blob[1]])) });
+        return route.fulfill({ contentType: "image/svg+xml", body: fs.readFileSync(path.join(mascot, assets[blob[1]])) });
       }
       if (url.startsWith("https://fonts.googleapis.com/")) return route.fulfill({ contentType: "text/css", body: fontCss });
       if (url.startsWith("https://fonts.local/")) {

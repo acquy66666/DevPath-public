@@ -1,0 +1,51 @@
+Naomi — kiểm 2026-10-21 (check/naomi.cjs)
+Ngưỡng: đuôi lộ ≥ 60 %, đốm đầu/đuôi lộ ≥ 50 %, đốm thân ≥ 50 % (ba góc), màu thân cách Duo ≥ ΔE 0.1
+
+tệp                                      màu  lớp  tràn    đuôi  đốm đầu  đốm đuôi  đốm thân
+ok   views/naomi-front.svg                 7   30     0    68 %    100 %      75 %     100 %
+ok   views/naomi-side.svg                  7   29     0    85 %    100 %     100 %      61 %
+ok   views/naomi-three-quarter.svg         7   30     0    87 %     83 %     100 %      94 %
+ok   moods/naomi-answer.svg               11   31     0    64 %    100 %      75 %      36 %
+ok   moods/naomi-celebrate.svg             9   32     0    74 %    100 %     100 %     100 %
+ok   moods/naomi-cheer.svg                 9   30     0    65 %    100 %      84 %     100 %
+ok   moods/naomi-comfort.svg               7   32     0    77 %    100 %     100 %       0 %
+ok   moods/naomi-dizzy.svg                 9   30     0    69 %    100 %      86 %     100 %
+ok   moods/naomi-empty-cart.svg            9   31     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-empty-courses.svg         9   31     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-empty-notes.svg           9   32     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-empty-notifications.svg    9   31     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-empty-search.svg          9   31     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-empty.svg                 7   30     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-fire.svg                 12   33     0    66 %    100 %      88 %     100 %
+ok   moods/naomi-grading.svg              11   36     0    67 %    100 %      91 %      12 %
+ok   moods/naomi-graduate.svg             11   33     0    68 %     86 %      75 %     100 %
+ok   moods/naomi-levelup.svg               8   32     0    72 %    100 %     100 %     100 %
+ok   moods/naomi-lost.svg                  9   34     0    64 %    100 %      91 %       0 %
+ok   moods/naomi-oops.svg                 10   31     0    72 %    100 %     100 %      48 %
+ok   moods/naomi-paid.svg                  9   32     0    67 %    100 %      94 %     100 %
+ok   moods/naomi-partial.svg               9   32     0    68 %    100 %      75 %     100 %
+ok   moods/naomi-party.svg                13   32     0    72 %    100 %     100 %     100 %
+ok   moods/naomi-proud.svg                 7   31     0    65 %    100 %      97 %     100 %
+ok   moods/naomi-rest.svg                  7   30     0    68 %    100 %      75 %     100 %
+ok   moods/naomi-sad.svg                  10   33     0    67 %    100 %      75 %     100 %
+ok   moods/naomi-sleepy.svg               10   31     0    68 %    100 %      75 %     100 %
+ok   moods/naomi-sorry.svg                 9   35     0    76 %    100 %     100 %       0 %
+ok   moods/naomi-startled.svg             10   31     0    72 %    100 %     100 %     100 %
+ok   moods/naomi-stuffed.svg               7   31     0    60 %    100 %      93 %       0 %
+ok   moods/naomi-tangled.svg              11   32     0    64 %     97 %      75 %      16 %
+ok   moods/naomi-thinking.svg              8   33     0    66 %    100 %      75 %     100 %
+ok   moods/naomi-wave.svg                  9   31     0    72 %    100 %     100 %     100 %
+
+Màu nghệ dùng ở đâu (luật: không tô miệng, tay, chân, đuôi, thân, đầu):
+  turmeric-300   eyes, props-head, scene
+  turmeric-400   props-head, scene
+
+Màu trên thân Naomi và màu Duo gần nhất (ΔE OKLab, phải ≥ 0.1):
+  ok   jade-100     #ccf5ea  gần Beak Upper       ΔE 0.202
+  ok   jade-500     #039580  gần Wing Overlay     ΔE 0.190
+  ok   jade-700     #066254  gần Wing Overlay     ΔE 0.315
+  ok   jade-900     #05332b  gần Wing Overlay     ΔE 0.461
+  ok   rose-200     #ffc6e0  gần Beak Upper       ΔE 0.198
+  ok   rose-500     #d14e95  gần Beak Lower/Feet  ΔE 0.242
+
+Không lỗi.

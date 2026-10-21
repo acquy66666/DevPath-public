@@ -91,7 +91,14 @@ Token: `duration-instant` 90ms · `duration-fast` 150ms · `duration-base` 220ms
 
 ## Nhân vật linh vật
 
-Nhân vật chưa được chọn; ba hướng (tắc kè "bắt bug", chim Lạc, robot màn hình) được phác ở task sau. Màu đã dành sẵn: thân `jade-500`, bụng/mảng sáng `jade-100`, nét viền `jade-900`, điểm nhấn `turmeric-300`. Nhân vật xuất hiện ở trang học viên theo bản đồ phản ứng (verdict, quiz, chuỗi ngày, chứng chỉ, 404, empty state). Ở khu giảng viên và admin chỉ ở empty state và lời chào. Nhân vật không giống Duo của Duolingo về loài, màu và dáng.
+Nhân vật là **Naomi**, tắc kè "bắt bug" (hướng A trong ba hướng đã phác; user chọn ngày 21/10/2026 và đặt tên). Tắc kè ăn côn trùng, tức là bắt bug: bài AC là bắt được con bọ, bài WA là để nó bay mất. Model sheet ba góc và bộ biểu cảm nằm trên canvas [Linh vật DevPath](https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8).
+
+- **Bảng màu của Naomi:** thân, đầu, tay, chân, đuôi `jade-500`; bụng `jade-100`; đốm `jade-700`; nét viền, con ngươi, miệng `jade-900`; mống mắt `turmeric-300`; lòng trắng mắt `slate-0`; lưỡi `rose-500`; má hồng `rose-200`; bóng dưới chân `slate-100`.
+- **Màu nghệ không tô miệng, tay, chân, bàn chân, đuôi hay thân.** `turmeric-300` cách màu mỏ của Duo (Duolingo) chỉ ΔE 0,028, gần như trùng. Trên người Naomi, nghệ chỉ có ở mống mắt. Ngoài người, nghệ vẫn theo luật phần thưởng: sao lấp lánh khi AC, mũ tiệc khi quiz 100%, tua mũ tốt nghiệp.
+- **Góc nào cũng có đốm và đuôi xoắn.** Nhìn thẳng mà thiếu hai thứ đó thì tắc kè thành con ếch.
+- Đạo cụ mang màu của sự kiện: TLE hổ phách, MLE hồng, RE tím, CE lam, SE xám, quiz theo bốn mức, lửa chuỗi ngày `streak`.
+- Naomi xuất hiện ở trang học viên theo bản đồ phản ứng: verdict, quiz, chuỗi ngày, chứng chỉ, 404, empty state, trợ giảng AI, thanh toán. Ở khu giảng viên và admin chỉ ở empty state và lời chào. Mỗi sự kiện phản ứng một lần, tối đa `duration-mascot`, rồi về tư thế nghỉ `rest`. Với `prefers-reduced-motion` chỉ hiện hình tĩnh.
+- Mỗi hình là SVG có cùng bộ lớp đặt tên (`tail`, `body`, `arm-left`, `head`, `eyes`, `eyelids`, `mouth`, `props`, `fx`…), chỉ dùng thuộc tính trình bày, không `<style>`, không chữ.
 
 ## Không làm
 

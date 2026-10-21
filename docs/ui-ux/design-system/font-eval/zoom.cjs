@@ -1,0 +1,10 @@
+const { chromium } = require("playwright"); const path = require("path"); const { pathToFileURL } = require("url");
+(async () => { const b = await chromium.launch({ channel: "chrome" });
+  const p = await b.newPage({ viewport: { width: 720, height: 420 }, deviceScaleFactor: 5 });
+  await p.goto(pathToFileURL(path.join(__dirname, "clip.html")).href);
+  await p.evaluate(() => Promise.all(["Be Vietnam Pro","Geist"].flatMap((f) => [400,600].map((w) => document.fonts.load(w + ' 16px "' + f + '"', "Ẫa")))));
+  const cells = await p.$$(".c > div:last-child");
+  await cells[6].screenshot({ path: path.join(__dirname, "shots", "zoom-bvp-14-20.png") });
+  await cells[7].screenshot({ path: path.join(__dirname, "shots", "zoom-bvp-14-20-pad.png") });
+  await cells[8].screenshot({ path: path.join(__dirname, "shots", "zoom-bvp-16-24.png") });
+  await b.close(); })();

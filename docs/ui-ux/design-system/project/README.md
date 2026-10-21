@@ -49,9 +49,10 @@ Mọi cặp chữ/nền nêu trong ghi chú của token đạt **4.5:1**. Viền
 
 ## Chữ
 
-- Họ chữ: `sans` cho mọi thứ, `mono` cho code, mã verdict và số đo; `serif` chỉ cho trang chứng chỉ. Font đang là Geist / Geist Mono / Noto Serif, tự host qua `app/fonts.css` với subset `vietnamese`. Font chữ chính sẽ được chọn lại ở task kế tiếp của Phase 7; thang chữ dưới đây giữ nguyên khi đổi font.
+- Họ chữ: `sans` = **Lexend** cho mọi thứ; `mono` = Geist Mono cho code, mã verdict và số đo; `serif` = Noto Serif chỉ cho trang chứng chỉ. Cả ba tự host qua `app/fonts.css`, có subset `vietnamese`. Lexend là font variable 400–700, chỉ dùng bốn độ đậm 400 (chữ), 500 (caption, nút trong code cũ), 600 (tiêu đề nhỏ, nút, nhãn), 700 (display, h1).
+- Vì sao Lexend: dấu chồng ở cỡ 12–14px vẫn tách được "ẩ" với "ẫ"; ký hiệu "₫" cao bằng chữ số (Geist vẽ nó chỉ bằng 0,73); mọi dấu của chữ thường nằm trong dòng ở mọi cỡ của thang. Lexend rộng hơn Geist ~6%: chỗ chật (header ở 360px, thanh tab, bảng) phải đo lại khi đổi chữ.
 - Thang: `display` (hero, một lần mỗi trang) → `h1` (tiêu đề trang) → `h2` → `h3` → `title` (tiêu đề card) → `body-lg` (bài đọc) → `body` (mặc định 16px) → `body-sm` (bảng, gợi ý) → `caption` → `eyebrow` (nhãn viết hoa). Code: `code`, `code-sm`. Số lớn: `numeral`.
-- **Tiếng Việt có dấu hai tầng** ("Luồng", "Người", "ưở"): tiêu đề có line-height ≥ 1,2, nội dung ≥ 1,4. Không dùng `leading-none` cho chữ có dấu. Không cắt chiều cao dòng bằng `overflow: hidden`.
+- **Tiếng Việt có dấu hai tầng** ("Luồng", "Người", "ưở"): line-height của thang đã đo để dấu của chữ thường không trồi khỏi dòng (display 40/52, h1 30/40, caption 12/18). Không hạ line-height dưới thang, không dùng `leading-none` cho chữ có dấu. Chữ nằm trong khung cắt (`truncate`, `line-clamp`, `overflow: hidden`) chỉ dùng kiểu từ `h3` trở xuống: ở đó cả dấu của chữ hoa cũng nằm trong dòng.
 - Bài đọc dùng `body-lg`, tối đa ~70 ký tự mỗi dòng.
 - Mọi cột số, đồng hồ quiz, XP và tiền dùng `font-variant-numeric: tabular-nums`.
 - Tiêu đề dùng `text-wrap: balance`.

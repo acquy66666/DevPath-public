@@ -21,13 +21,16 @@ export function SiteHeader() {
   return (
     <header className="border-b print:hidden">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <div className="flex items-center gap-2.5 sm:gap-6">
-          <Link href="/" className="text-xl font-semibold tracking-tight sm:text-[1.575rem]">
+        {/* Below `sm` the guest header measures 345px with Lexend (logo 19px,
+            link 14px, buttons 12px, gap 8px), leaving the same 15px a 360px
+            phone had with Geist; the old sizes overflowed it by 3px. */}
+        <div className="flex items-center gap-2 sm:gap-6">
+          <Link href="/" className="text-[1.1875rem] font-semibold tracking-tight sm:text-[1.575rem]">
             Dev<span className="text-muted-foreground">Path</span>
           </Link>
           <Link
             href="/khoa-hoc"
-            className="text-[0.9375rem] whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground sm:text-[1.225rem]"
+            className="text-sm whitespace-nowrap text-muted-foreground transition-colors hover:text-foreground sm:text-[1.225rem]"
           >
             Khóa học
           </Link>
@@ -50,14 +53,14 @@ export function SiteHeader() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-9 px-2 sm:h-10 sm:px-4 sm:text-[1.12rem]"
+                className="h-9 px-2 text-xs sm:h-10 sm:px-4 sm:text-[1.12rem]"
                 asChild
               >
                 <Link href="/dang-nhap">Đăng nhập</Link>
               </Button>
               <Button
                 size="sm"
-                className="h-9 px-3 sm:h-10 sm:px-4 sm:text-[1.12rem]"
+                className="h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-[1.12rem]"
                 asChild
               >
                 <Link href="/dang-ky">Đăng ký</Link>

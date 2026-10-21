@@ -1,0 +1,17 @@
+{
+  "note": "Asset ids of the uploaded SVGs on https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8 (the artboards say /_blob/<id>), mapped to their source in ../directions. Changing a drawing means uploading it again and repointing the artboards to the new id.",
+  "assets": {
+    "e895d20b214efe590d8e65bd5849c0c2": "gecko-rest.svg",
+    "297e7a1d139e2a41706667b7f9877600": "gecko-celebrate.svg",
+    "e666aaba39b3fcd0f1dbc2fad9327909": "gecko-partial.svg",
+    "47cbadb0909d1f7bdf096f9e77d2403e": "gecko-lost.svg",
+    "20d15816fff5f9b332b83eb5f09d24d8": "lac-rest.svg",
+    "313a84f4d769885866284b5873aa0b0d": "lac-celebrate.svg",
+    "15286685cb5fffa87d91470d7a69aeac": "lac-partial.svg",
+    "0a1f7aad1ad10ac97155a9eb1b755d3d": "lac-lost.svg",
+    "7c9e5ec6144491f5871c4d9e440ab728": "robot-rest.svg",
+    "a128e3b3ca4a555a05e866e2bc404620": "robot-celebrate.svg",
+    "96a0930c855199bdf9dcd432371b1012": "robot-partial.svg",
+    "0cae6f52fe9b82a6292d39389e100001": "robot-lost.svg"
+  }
+}

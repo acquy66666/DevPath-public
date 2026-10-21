@@ -823,3 +823,15 @@ Rồi chụp chữ khó ("ẩ ẫ ấ ầ ậ", "Ỗ Ữ Ẫ", "ỵ") ở 12/14p
 - Lexend giữ mọi dấu trong dòng từ cỡ `title` trở xuống, và là một tệp variable 52 KB cho mọi độ đậm, thay vì 132 KB bốn tệp tĩnh.
 
 **Cái giá là bề rộng: Lexend rộng hơn Geist 6%.** Header khách ở 360px tràn 3,3px. Giữ nguyên bố cục, chỉ hạ cỡ chữ dưới `sm` (logo 19px, link 14px, nút 12px, khoảng 8px) để về đúng 345,0px như Geist. 8 trang công khai × 3 bề rộng không tràn, chạy vào `next dev` trên máy với dữ liệu thật của stack demo; trang cần đăng nhập để task "Nền" đo lại. Metric font dự phòng lấy bằng chính hàm `calculateSizeAdjustValues` của Next, hàm này tính lại đúng số Geist đang có, nên không phải bật lại `next/font/google` như cách lấy font cũ.
+
+## Ba hướng linh vật, kiểm Duo bằng số đo (21/10/2026)
+
+Task "Phác ba hướng nhân vật" của Phase 7. Nguồn: `docs/ui-ux/mascot/` (12 SVG, canvas, script kiểm), artifact Design "Linh vật DevPath", ảnh ở `docs/report/assets/phase-7/mascot-directions/`.
+
+**So cho công bằng: chung bảng màu, chung nét, chung bốn trạng thái.** Cả ba hướng dùng bảng màu dành sẵn cho nhân vật trong design system, cùng nét viền `jade-900`, cùng vẽ `rest`, `celebrate` (AC), `partial` (WA), `lost` (404). Mỗi hướng có một artboard riêng: hình bóng, cỡ 24–64px, nhân vật đặt trong giao diện thật (dòng verdict AC, trang 404), điểm mạnh và rủi ro. Như vậy người chọn so ý tưởng, không so tay nghề của từng bản vẽ.
+
+**"Không giống Duo" được kiểm bằng số, không bằng mắt.** Mã màu của Duo lấy từ trang thương hiệu chính thức của Duolingo, đo ΔE trong OKLab. Thân `jade-500` cách thân Duo 0,22, cách mọi màu xanh của Duo ít nhất 0,19 (mức vừa thấy khác là ≈ 0,02). Nhưng phép đo bắt được một điều mắt không để ý: `turmeric-300`, màu nhấn đã dành cho nhân vật, cách mỏ của Duo chỉ 0,028. Từ đó có luật: **màu nghệ không tô mỏ, chân hay bàn chân của nhân vật.** Chim Lạc vì thế có thân `jade-100` và mỏ `jade-700`. Đây là hướng duy nhất lệch bảng màu dành sẵn, và vẫn là chim.
+
+**Claude đề xuất hướng A (tắc kè), user chọn.** Ẩn dụ "bắt bug" biến AC và WA thành hai cảnh của cùng một chuyện (bắt được con bọ / con bọ bay mất), gắn nhân vật vào đúng điểm nhấn số 1 của khóa luận. Robot đọc rõ nhất ở cỡ nhỏ nhưng ít bản sắc. Chim Lạc có bản sắc Việt nhưng gần Duo nhất về loài.
+
+**Artboard được kiểm trên máy, không qua trình duyệt đăng nhập claude.ai.** `check/boards.cjs` mở từng `.dc.html` bằng Chrome, trả ảnh `/_blob/<id>` bằng chính tệp SVG trong repo và font bằng Lexend tự host. Lượt đầu bắt được ba artboard dài hơn khung 4–46px và một hàng ảnh tràn ngang 16px. Đã sửa, cả năm artboard khít khung.

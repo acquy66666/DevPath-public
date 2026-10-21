@@ -6,7 +6,7 @@ Chỉ mục **gate → tệp** của Phase 7 ([plan](../../../plan/phase-7-ui-ux
 
 | Gate đòi | Tệp | Trạng thái |
 |---|---|---|
-| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | artifact + [`docs/ui-ux/design-system/`](../../../ui-ux/design-system/README.md), ảnh `design-system/` | artifact **có 21/10**; chưa vào `globals.css`; nhân vật chưa |
+| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | artifact + [`docs/ui-ux/design-system/`](../../../ui-ux/design-system/README.md), ảnh `design-system/` | artifact **có 21/10**; chưa vào `globals.css`; nhân vật: ba hướng phác 21/10 (`mascot-directions/`), chờ chọn |
 | CI xanh: E2E "1 passed", hồi quy hình ảnh, axe; 0 tràn ngang 360/375/1440 px | — | chưa |
 | Ảnh trước/sau từng nhóm màn; 42 ảnh `capture.cjs` mới cho chương 4; model sheet + biểu cảm; GIF phản ứng; **bảng số đo Lighthouse/axe/JS trước/sau** | cột "trước": [`before.md`](before.md) + [`before/`](before/) | cột "trước" **có 20/10** |
 | Deploy bản mới lên URL demo, chạy lại luồng vàng ở đó | — | chưa |
@@ -21,4 +21,5 @@ Chỉ mục **gate → tệp** của Phase 7 ([plan](../../../plan/phase-7-ui-ux
 | `measure.cjs` | Script đo JS/axe/Lighthouse, chạy lại với `LABEL=after` cho cột "sau" | 5 |
 | `design-system/` | Design system DevPath (21/10): ảnh 11 preview của artifact ở 960px (bìa, Button, Badge, Verdict, QuizResult, Card, FormField, Tabs, Alert, Dialog, Motion), Verdict ở 400px, Motion lúc đang chạy. Bảng 130 cặp tương phản ở [`docs/ui-ux/design-system/contrast.txt`](../../../ui-ux/design-system/contrast.txt) | 4 — Thiết kế giao diện; 5 — truy cập (tương phản) |
 | `font/` | Chọn font chữ chính (21/10): 7 ứng viên phóng to với chữ khó + "₫" (`closeup.png`), cỡ 12/14px ở DPR 1 (`small-3x.png`), Be Vietnam Pro bị `truncate` cắt dấu và cách thêm lề (`zoom-bvp-14-20*.png`, `clipfix2.png`), header khách 360px (`header-360.png`), specimen 4 font, app thật với Lexend (`app-*.png`). Bảng số đo: [`docs/ui-ux/design-system/fonts.md`](../../../ui-ux/design-system/fonts.md) | 4 — Thiết kế giao diện (tiếng Việt); 5 — truy cập |
+| `mascot-directions/` | Ba hướng linh vật (21/10): 5 artboard của canvas dựng lại trên máy (`Main.png` tổng quan, `Gecko.png`, `Lac.png`, `Robot.png`, `Duo.png` kiểm với Duo), bảng 12 hình ở 200/64/32 px + hình bóng (`sheet-12-drawings@2x.png`), khoảng cách màu tới Duo (`duo-distance.txt`). Nguồn và cách chạy lại: [`docs/ui-ux/mascot/`](../../../ui-ux/mascot/README.md) | 4 — Thiết kế giao diện (nhân vật) |
 | `stack.cjs` | Đường nội bộ tới stack demo (tên miền thật trỏ vào nginx 127.0.0.1) dùng chung cho các script đo/chụp | — |

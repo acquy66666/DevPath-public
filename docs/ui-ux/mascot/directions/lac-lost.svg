@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Chim Lạc cầm bản đồ ngược, lạc đường">
+  <g id="legs" fill="none" stroke="#05332b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M88 152 L84 186 M84 186 L96 189 M84 186 L74 189 M84 186 L88 193"/>
+    <path d="M104 152 L108 186 M108 186 L120 189 M108 186 L98 189 M108 186 L112 193"/>
+  </g>
+  <g id="tail" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round">
+    <path d="M60 114 C44 102 26 94 10 94 C22 104 38 116 54 126 Z"/>
+    <path d="M56 124 C40 120 22 122 6 130 C22 134 40 136 56 134 Z"/>
+    <path d="M58 132 C44 138 30 148 18 162 C34 156 48 148 62 140 Z"/>
+    <circle cx="22" cy="129.5" r="3" fill="#ccf5ea" stroke="none"/>
+  </g>
+  <g id="crest" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round">
+    <path d="M116 60 C104 48 90 42 76 42 C88 50 100 58 110 66 Z"/>
+    <path d="M124 52 C114 34 100 22 86 20 C96 30 106 42 116 56 Z"/>
+    <path d="M133 48 C129 28 121 14 109 8 C115 20 119 34 123 50 Z"/>
+  </g>
+  <g id="body">
+    <g fill="#05332b" stroke="#05332b" stroke-width="9" stroke-linejoin="round">
+      <ellipse cx="92" cy="128" rx="42" ry="30" transform="rotate(-12 92 128)"/>
+      <ellipse cx="120" cy="104" rx="15" ry="22" transform="rotate(30 120 104)"/>
+      <circle cx="136" cy="74" r="31"/>
+    </g>
+    <g fill="#ccf5ea">
+      <ellipse cx="92" cy="128" rx="42" ry="30" transform="rotate(-12 92 128)"/>
+      <ellipse cx="120" cy="104" rx="15" ry="22" transform="rotate(30 120 104)"/>
+      <circle cx="136" cy="74" r="31"/>
+    </g>
+  </g>
+  <g id="beak">
+    <path d="M163 62 C176 68 188 78 198 92 C186 88 172 86 164 86 Z" fill="#066254" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M165 77 C176 80 185 84 194 89" fill="none" stroke="#05332b" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g id="eye">
+    <circle cx="145" cy="70" r="15" fill="#039580" stroke="#05332b" stroke-width="3"/>
+    <circle cx="145" cy="70" r="10.5" fill="#ffffff"/>
+    <circle cx="144" cy="75" r="6.2" fill="#05332b"/>
+    <circle cx="147" cy="72" r="2" fill="#ffffff"/>
+  </g>
+  <g id="map">
+    <path d="M104 104 L121 108 L138 104 L156 108 L156 142 L138 138 L121 142 L104 138 Z" fill="#ffffff" stroke="#05332b" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M121 108 L121 142 M138 104 L138 138" stroke="#b4c0c7" stroke-width="2" fill="none"/>
+    <path d="M110 132 C118 124 126 132 134 124 C140 118 146 124 150 118" stroke="#039580" stroke-width="2.5" stroke-dasharray="3 3" stroke-linecap="round" fill="none"/>
+    <path d="M146 112 L152 118 M152 112 L146 118" stroke="#e24947" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="0" y="0" transform="translate(126 112) rotate(180)" font-family="Lexend, system-ui, sans-serif" font-size="6" font-weight="700" fill="#556670" text-anchor="middle">BẢN ĐỒ</text>
+  </g>
+  <g id="wing">
+    <path d="M70 120 C84 108 108 112 120 126 C124 130 124 136 120 138 C116 134 110 136 106 132 C100 138 92 136 88 132 C80 132 72 128 70 120 Z" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="90" cy="122" r="5.5" fill="none" stroke="#ccf5ea" stroke-width="2.5"/>
+    <circle cx="90" cy="122" r="1.8" fill="#ccf5ea"/>
+  </g>
+  <g id="question" fill="none" stroke="#066254" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M172 14 C172 4 190 4 190 14 C190 22 181 23 181 31"/>
+    <circle cx="181" cy="41" r="3.4" fill="#066254" stroke="none"/>
+  </g>
+</svg>

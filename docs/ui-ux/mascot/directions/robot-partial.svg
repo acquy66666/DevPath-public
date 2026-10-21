@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Robot màn hình gãi đầu, nheo một mắt">
+  <g id="antenna">
+    <path d="M100 38 L100 21" stroke="#05332b" stroke-width="4.5" stroke-linecap="round"/>
+    <circle cx="100" cy="15" r="7" fill="#ffc84c" stroke="#05332b" stroke-width="3.5"/>
+  </g>
+  <g id="ears" fill="#ccf5ea" stroke="#05332b" stroke-width="3.5">
+    <circle cx="45" cy="78" r="9"/>
+    <circle cx="155" cy="78" r="9"/>
+  </g>
+  <rect id="neck" x="90" y="112" width="20" height="12" fill="#066254" stroke="#05332b" stroke-width="3"/>
+  <g id="legs" fill="#066254" stroke="#05332b" stroke-width="3.5">
+    <rect x="82" y="166" width="12" height="16"/>
+    <rect x="106" y="166" width="12" height="16"/>
+  </g>
+  <g id="feet" fill="#039580" stroke="#05332b" stroke-width="3.5">
+    <rect x="70" y="178" width="30" height="13" rx="6.5"/>
+    <rect x="100" y="178" width="30" height="13" rx="6.5"/>
+  </g>
+  <g id="body">
+    <rect x="66" y="120" width="68" height="52" rx="16" fill="#039580" stroke="#05332b" stroke-width="4.5"/>
+    <rect x="80" y="131" width="40" height="28" rx="7" fill="#ccf5ea" stroke="#05332b" stroke-width="2.5"/>
+    <path d="M93 139 L88 145 L93 151 M98 153 L102 137 M107 139 L112 145 L107 151" fill="none" stroke="#066254" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g id="arms" fill="none" stroke-linecap="round">
+    <path d="M68 134 C56 140 50 150 48 158" stroke="#05332b" stroke-width="15"/>
+    <path d="M68 134 C56 140 50 150 48 158" stroke="#039580" stroke-width="7"/>
+  </g>
+  <circle id="hand-left" cx="48" cy="163" r="8" fill="#ccf5ea" stroke="#05332b" stroke-width="3.5"/>
+  <g id="head">
+    <rect x="46" y="36" width="108" height="82" rx="24" fill="#039580" stroke="#05332b" stroke-width="4.5"/>
+    <rect x="58" y="47" width="84" height="60" rx="14" fill="#05332b"/>
+    <path d="M66 62 Q68 54 76 53" fill="none" stroke="#ffffff" stroke-opacity="0.3" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <g id="face">
+    <rect x="74" y="64" width="14" height="20" rx="5" fill="#6fd3be"/>
+    <rect x="73" y="56" width="16" height="4" rx="2" transform="rotate(-10 81 58)" fill="#6fd3be"/>
+    <rect x="112" y="72" width="14" height="5" rx="2.5" fill="#6fd3be"/>
+    <path d="M88 95 L94 91 L100 95 L106 91 L112 95" fill="none" stroke="#6fd3be" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <g id="arm-scratch" fill="none" stroke-linecap="round">
+    <path d="M132 134 C150 130 162 118 163 106" stroke="#05332b" stroke-width="15"/>
+    <path d="M132 134 C150 130 162 118 163 106" stroke="#039580" stroke-width="7"/>
+  </g>
+  <circle id="hand-scratch" cx="162" cy="100" r="8" fill="#ccf5ea" stroke="#05332b" stroke-width="3.5"/>
+  <path id="sweat" d="M32 46 C26 56 26 62 32 62 C38 62 38 56 32 46 Z" fill="#c0dcff" stroke="#05332b" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

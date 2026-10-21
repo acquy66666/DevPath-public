@@ -1,0 +1,97 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Tắc kè gãi đầu, con bọ bay mất">
+  <g id="bug-trail" fill="none" stroke="#05332b" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="0.5 6">
+    <path d="M150 40 C156 26 166 36 172 26"/>
+  </g>
+  <g id="bug" transform="translate(182 18) rotate(24)">
+    <ellipse cx="-9" cy="-3" rx="8" ry="4.5" transform="rotate(-30 -9 -3)" fill="#ffffff" stroke="#05332b" stroke-width="2"/>
+    <ellipse cx="9" cy="-3" rx="8" ry="4.5" transform="rotate(30 9 -3)" fill="#ffffff" stroke="#05332b" stroke-width="2"/>
+    <circle cx="0" cy="-8" r="5" fill="#05332b"/>
+    <circle cx="0" cy="1" r="9" fill="#e24947" stroke="#05332b" stroke-width="2.5"/>
+    <path d="M0 -8 L0 10" stroke="#05332b" stroke-width="2"/>
+    <circle cx="-4.5" cy="-1" r="1.8" fill="#05332b"/><circle cx="4.5" cy="-1" r="1.8" fill="#05332b"/>
+    <circle cx="-4" cy="5" r="1.8" fill="#05332b"/><circle cx="4" cy="5" r="1.8" fill="#05332b"/>
+  </g>
+  <g id="tail" fill="none" stroke-linejoin="round">
+    <path d="M116 166 C130 174 146 172 160 172 C174.4 172 186 160.4 186 146 C186 131.6 174.4 120 160 120 C145.6 120 134 131.6 134 146" stroke="#05332b" stroke-width="20" stroke-linecap="butt"/>
+    <path d="M116 166 C130 174 146 172 160 172 C174.4 172 186 160.4 186 146 C186 131.6 174.4 120 160 120 C145.6 120 134 131.6 134 146" stroke="#039580" stroke-width="11" stroke-linecap="butt"/>
+    <path d="M134 146 C134 156 141 162 149 162 C156 162 160 156 157 151" stroke="#05332b" stroke-width="16" stroke-linecap="round"/>
+    <path d="M134 146 C134 156 141 162 149 162 C156 162 160 156 157 151" stroke="#039580" stroke-width="7.5" stroke-linecap="round"/>
+    <circle cx="186" cy="146" r="2.8" fill="#066254"/>
+    <circle cx="180" cy="129" r="2.5" fill="#066254"/>
+    <circle cx="164" cy="120.5" r="2.3" fill="#066254"/>
+    <circle cx="146" cy="171" r="2.5" fill="#066254"/>
+  </g>
+  <g id="feet">
+    <g fill="#05332b" stroke="#05332b" stroke-width="9">
+      <circle cx="66" cy="184" r="5"/><circle cx="75" cy="190" r="5"/><circle cx="87" cy="189" r="5"/>
+      <circle cx="113" cy="189" r="5"/><circle cx="125" cy="190" r="5"/><circle cx="134" cy="184" r="5"/>
+      <ellipse cx="80" cy="180" rx="14" ry="8"/><ellipse cx="120" cy="180" rx="14" ry="8"/>
+    </g>
+    <g fill="#039580">
+      <circle cx="66" cy="184" r="5"/><circle cx="75" cy="190" r="5"/><circle cx="87" cy="189" r="5"/>
+      <circle cx="113" cy="189" r="5"/><circle cx="125" cy="190" r="5"/><circle cx="134" cy="184" r="5"/>
+      <ellipse cx="80" cy="180" rx="14" ry="8"/><ellipse cx="120" cy="180" rx="14" ry="8"/>
+    </g>
+  </g>
+  <g id="body">
+    <path d="M72 120 C62 150 66 178 100 179 C134 178 138 150 128 120 Z" fill="#039580" stroke="#05332b" stroke-width="4.5" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="158" rx="19" ry="17" fill="#ccf5ea"/>
+    <circle cx="78" cy="140" r="3" fill="#066254"/>
+    <circle cx="123" cy="146" r="3.4" fill="#066254"/>
+    <circle cx="119" cy="131" r="2.2" fill="#066254"/>
+  </g>
+  <g id="arms" fill="none" stroke-linecap="round">
+    <path d="M126 128 C130 140 134 150 137 158" stroke="#05332b" stroke-width="17"/>
+    <path d="M126 128 C130 140 134 150 137 158" stroke="#039580" stroke-width="8"/>
+  </g>
+  <g id="hands">
+    <g fill="#05332b" stroke="#05332b" stroke-width="7">
+      <circle cx="147" cy="160" r="4.2"/><circle cx="144" cy="169" r="4.2"/><circle cx="136" cy="172" r="4.2"/><circle cx="129" cy="167" r="4.2"/>
+    </g>
+    <g fill="#039580">
+      <circle cx="147" cy="160" r="4.2"/><circle cx="144" cy="169" r="4.2"/><circle cx="136" cy="172" r="4.2"/><circle cx="129" cy="167" r="4.2"/>
+    </g>
+  </g>
+  <g id="head">
+    <g fill="#05332b" stroke="#05332b" stroke-width="9" stroke-linejoin="round">
+      <ellipse cx="100" cy="82" rx="58" ry="40"/><circle cx="62" cy="66" r="21"/><circle cx="138" cy="66" r="21"/>
+    </g>
+    <g fill="#039580">
+      <ellipse cx="100" cy="82" rx="58" ry="40"/><circle cx="62" cy="66" r="21"/><circle cx="138" cy="66" r="21"/>
+    </g>
+    <circle cx="100" cy="52" r="4.4" fill="#066254"/>
+    <circle cx="88" cy="58" r="2.6" fill="#066254"/>
+    <circle cx="113" cy="57" r="3" fill="#066254"/>
+    <circle cx="102" cy="64" r="2" fill="#066254"/>
+  </g>
+  <g id="eyes">
+    <circle cx="62" cy="66" r="15.5" fill="#ffffff" stroke="#05332b" stroke-width="3"/>
+    <circle cx="138" cy="66" r="15.5" fill="#ffffff" stroke="#05332b" stroke-width="3"/>
+    <circle cx="66" cy="68" r="11" fill="#ffc84c"/>
+    <circle cx="142" cy="68" r="11" fill="#ffc84c"/>
+    <ellipse cx="68" cy="69" rx="5.2" ry="8.5" fill="#05332b"/>
+    <ellipse cx="144" cy="69" rx="5.2" ry="8.5" fill="#05332b"/>
+    <circle cx="71" cy="66" r="2.6" fill="#ffffff"/>
+    <circle cx="147" cy="66" r="2.6" fill="#ffffff"/>
+    <path d="M47 62 A15.5 15.5 0 0 1 77 62 Z" fill="#039580" stroke="#05332b" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M123 62 A15.5 15.5 0 0 1 153 62 Z" fill="#039580" stroke="#05332b" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+  <g id="face" fill="none" stroke="#05332b" stroke-linecap="round">
+    <circle cx="94" cy="84" r="1.6" fill="#05332b" stroke="none"/>
+    <circle cx="106" cy="84" r="1.6" fill="#05332b" stroke="none"/>
+    <path d="M84 104 C89 99 94 107 100 103 C106 99 111 107 116 102" stroke-width="4"/>
+  </g>
+  <g id="arm-scratch" fill="none" stroke-linecap="round">
+    <path d="M74 128 C54 128 40 116 38 100" stroke="#05332b" stroke-width="17"/>
+    <path d="M74 128 C54 128 40 116 38 100" stroke="#039580" stroke-width="8"/>
+  </g>
+  <g id="hand-scratch">
+    <g fill="#05332b" stroke="#05332b" stroke-width="7">
+      <circle cx="33" cy="96" r="4.2"/><circle cx="35" cy="87" r="4.2"/><circle cx="42" cy="82" r="4.2"/><circle cx="48" cy="88" r="4.2"/>
+    </g>
+    <g fill="#039580">
+      <circle cx="33" cy="96" r="4.2"/><circle cx="35" cy="87" r="4.2"/><circle cx="42" cy="82" r="4.2"/><circle cx="48" cy="88" r="4.2"/>
+    </g>
+  </g>
+  <path id="sweat" d="M30 52 C24 62 24 68 30 68 C36 68 36 62 30 52 Z" fill="#c0dcff" stroke="#05332b" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

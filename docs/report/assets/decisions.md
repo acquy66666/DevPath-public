@@ -856,3 +856,27 @@ Bốn điều component phải làm theo, từ spike:
 - Điểm xoay dùng `transform-box: view-box` + toạ độ bản vẽ.
 - `<svg>` cần `overflow: visible`, vì cú nhảy vượt `viewBox`.
 - Lớp gọi bằng `data-layer` thay cho `id`, vì hai bản vẽ trên một trang thì trùng id.
+
+## Component Naomi: Web Animations trực tiếp, giữ dáng sau phản ứng (21/10/2026)
+
+Task "Component `components/mascot/`" của Phase 7. Số đo, ảnh và cách chạy lại: `docs/report/assets/phase-7/mascot.md` + `mascot/` (`capture.cjs`, `results.json`, `frames/`).
+
+**Gọi thẳng Web Animations API, không thêm gói `motion`.** Spike chọn `motion/react-mini`, nhưng `mini` chỉ là một lớp mỏng trên chính API này. Mọi lý do spike nêu để chọn nó (dừng phản ứng cũ, chờ `.finished`, khung hình theo prop, biên đạo trong TypeScript) đều có sẵn trong API gốc: đường cong cho từng đoạn (`easing` trong keyframe), `finished`, `cancel()`, và `translate`/`rotate`/`scale` tách riêng mà trình duyệt áp cho SVG. Vì vậy component chạy đúng cơ chế spike đã đo CPU, mà không thêm 5,3 KB và không thêm dependency. Gọi trực tiếp còn cho chọn `fill` cho từng track. Track bắt đầu khác bản vẽ (ngôi sao từ scale 0) thì giữ khung đầu trong lúc chờ (`backwards`). Track bắt đầu từ bản vẽ thì không giữ, vì nếu giữ nó sẽ che track trước trên cùng thuộc tính. Lần thử đầu đã gặp đúng chuyện này với hai cú nhảy nối nhau. Đổi lại phải tự làm phần `mini` vốn làm hộ: đọc `--ease-*` từ `globals.css` (WAAPI không nhận `var()` trong `easing`) và đặt `transform-box`/`transform-origin` trước khi chạy.
+
+**Hết phản ứng, Naomi giữ dáng của mood. Chỉ `wave` về `rest`.** Spike và `naomi.json` từng cho mọi phản ứng mờ chéo về `rest`. Ảnh khung hình cho thấy làm vậy xóa mất bối cảnh: `levelup` mất cái bục và Naomi to vọt từ 0,78 lên 1, `sad` mất ngọn nến, `graduate` mất mũ. Thêm hai lý do:
+- người bật giảm chuyển động chỉ thấy tư thế tĩnh của mood, nên nếu người khác thấy hình cuối là `rest` thì hình cuối phụ thuộc vào việc có xem hoạt ảnh hay không;
+- tài liệu thiết kế (mục 5) cho trang mở lại kết quả cũ hiện "tư thế tĩnh tương ứng", tức đúng hình mà người vừa nhận verdict thấy sau phản ứng.
+
+"Về tư thế nghỉ" trong plan được hiểu là đứng yên sau ≤ 2,4 s. `wave` là cử chỉ chào, không phải trạng thái, và được vẽ cùng cỡ, cùng chỗ với `rest`, nên mờ chéo không giật. Test khóa danh sách này.
+
+**Màu là `var(--color-<token>)`, khai ở khối `[data-mascot]` trong `globals.css`.** Bảng màu design system chưa vào `@theme` (task "Nền"). Khai ở `:root` thì các tên `slate-100`, `red-500`, `green-600` sẽ đè màu mặc định của Tailwind trên cả site trước khi task đó đổi component. Khối này phải xóa khi bảng màu vào `@theme`. Test so khối đó với `tokens.json`.
+
+**Tư thế tĩnh do máy chủ render, mỗi mood một chunk.**
+- Trình duyệt đọc bản vẽ bằng `use()` từ một `import()` có cache. Promise tự ghi `status`/`value`, nên hình đã tải render đồng bộ.
+- Máy chủ đọc đồng bộ từ `art/server.ts`, nằm sau `typeof window === "undefined"` (Next thay bằng hằng lúc build). Nhờ vậy không lần render nào phải chờ chunk, kể cả request đầu sau khi khởi động. Phép đo xác nhận bundle trình duyệt không chứa module đó.
+- `useDeferredValue` giữ hình cũ tới khi hình mới tải xong, nên đổi mood (grading → verdict) không chớp trống.
+- Phản ứng chỉ chạy khi Naomi đã lên màn hình (IntersectionObserver). Đó là phần "tải lười".
+- Một chunk hình lỗi chỉ làm Naomi biến mất, không làm sập trang (error boundary riêng).
+- Hẹn giờ dự phòng (`endsAt + 1 s`) đưa Naomi về tư thế tĩnh nếu animation bị dừng hay hủy từ bên ngoài. Chrome không báo `finished` cho animation đang dừng bị tua quá điểm cuối; lúc chụp khung hình, component từng kẹt ở "đang phản ứng" vì chuyện này.
+
+Giới hạn còn lại: React tách một boundary đã xong ra cuối luồng HTML khi phần HTML trước nó vượt 12.800 byte (`progressiveChunkSize`). Hình khi đó hiện bằng một script inline trước hydrate, nên trình duyệt tắt JS không thấy nó. Trang đo có một Naomi sau một đoạn HTML ngắn, và hình nằm ngay trong HTML. Trang `/dev/naomi` có 32 hình, và cả 32 bị tách ra cuối. Khi gắn Naomi vào trang thật (404, empty state), đo lại trên trang đó.

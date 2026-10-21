@@ -1,0 +1,430 @@
+{
+  "measuredAt": "2026-10-21T15:28:25.345Z",
+  "moods": 30,
+  "firstLoad": {
+    "khong": {
+      "chunks": 13,
+      "gzipBytes": 210419
+    },
+    "co": {
+      "chunks": 14,
+      "gzipBytes": 216909
+    },
+    "deltaGzipKB": 6.3
+  },
+  "artChunks": {
+    "perMood": {
+      "stuffed": {
+        "file": "0-ds52r3krtvx.js",
+        "gzipBytes": 1374
+      },
+      "wave": {
+        "file": "03a63hhb6b22m.js",
+        "gzipBytes": 1464
+      },
+      "answer": {
+        "file": "03n039iblajq9.js",
+        "gzipBytes": 1674
+      },
+      "rest": {
+        "file": "0v1lqot7q22rx.js",
+        "gzipBytes": 1283
+      },
+      "startled": {
+        "file": "0xgc2ku7wae76.js",
+        "gzipBytes": 1558
+      },
+      "celebrate": {
+        "file": "15fhxd4lovoqj.js",
+        "gzipBytes": 1635
+      },
+      "grading": {
+        "file": "1a7ymhhmniivr.js",
+        "gzipBytes": 1637
+      },
+      "cheer": {
+        "file": "1aqiu6qoajzd-.js",
+        "gzipBytes": 1396
+      },
+      "empty-search": {
+        "file": "1baohm_eq0yeb.js",
+        "gzipBytes": 1434
+      },
+      "graduate": {
+        "file": "1e8z55ku4kii-.js",
+        "gzipBytes": 1629
+      },
+      "party": {
+        "file": "1f3n12kgjzymb.js",
+        "gzipBytes": 1719
+      },
+      "thinking": {
+        "file": "1i9zs0fevbeop.js",
+        "gzipBytes": 1489
+      },
+      "tangled": {
+        "file": "1qazv2-g6pkm6.js",
+        "gzipBytes": 1658
+      },
+      "fire": {
+        "file": "1uy7na48ybwdd.js",
+        "gzipBytes": 1586
+      },
+      "empty": {
+        "file": "1vfvoea2yd9zn.js",
+        "gzipBytes": 1346
+      },
+      "oops": {
+        "file": "1woid6t1n64o4.js",
+        "gzipBytes": 1474
+      },
+      "proud": {
+        "file": "25kb7ifilnuo-.js",
+        "gzipBytes": 1405
+      },
+      "sad": {
+        "file": "27hr3behdd9j-.js",
+        "gzipBytes": 1622
+      },
+      "dizzy": {
+        "file": "2bopw314lkaf9.js",
+        "gzipBytes": 2099
+      },
+      "paid": {
+        "file": "2fd173xzw2jae.js",
+        "gzipBytes": 1527
+      },
+      "levelup": {
+        "file": "2k1x_apgw_ruh.js",
+        "gzipBytes": 1561
+      },
+      "comfort": {
+        "file": "2_f7-04a_83us.js",
+        "gzipBytes": 1377
+      },
+      "empty-cart": {
+        "file": "3-n9em4n647cg.js",
+        "gzipBytes": 1490
+      },
+      "empty-courses": {
+        "file": "31xrxmhwnvh9g.js",
+        "gzipBytes": 1488
+      },
+      "sleepy": {
+        "file": "34ol_4fmdpg6y.js",
+        "gzipBytes": 1619
+      },
+      "empty-notes": {
+        "file": "35p248t7fqeu5.js",
+        "gzipBytes": 1509
+      },
+      "sorry": {
+        "file": "3d9scpmp8ob11.js",
+        "gzipBytes": 1639
+      },
+      "empty-notifications": {
+        "file": "3o-f5icgb3w5i.js",
+        "gzipBytes": 1511
+      },
+      "partial": {
+        "file": "3o4m246hsyeom.js",
+        "gzipBytes": 1633
+      },
+      "lost": {
+        "file": "3zqf2jynk3kpl.js",
+        "gzipBytes": 1588
+      }
+    },
+    "minKB": 1.3,
+    "medianKB": 1.5,
+    "maxKB": 2
+  },
+  "serverHtml": {
+    "first": {
+      "status": 200,
+      "drawings": 1,
+      "streamedBoundaries": 0
+    },
+    "second": {
+      "status": 200,
+      "drawings": 1,
+      "streamedBoundaries": 0
+    },
+    "preview": {
+      "status": 200,
+      "drawings": 32,
+      "streamedBoundaries": 32
+    }
+  },
+  "transfer": {
+    "khong": {
+      "scripts": 13,
+      "gzipBytes": 210419,
+      "artChunks": 0,
+      "phaseAfter": null
+    },
+    "co": {
+      "scripts": 15,
+      "gzipBytes": 218497,
+      "artChunks": 1,
+      "phaseAfter": "still"
+    },
+    "deltaGzipKB": 7.9
+  },
+  "reactions": {
+    "rows": {
+      "rest": {
+        "startMs": 86,
+        "reactionMs": 826,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "grading": {
+        "startMs": 64,
+        "reactionMs": 1052,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "celebrate": {
+        "startMs": 81,
+        "reactionMs": 1864,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "partial": {
+        "startMs": 94,
+        "reactionMs": 1375,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "sleepy": {
+        "startMs": 93,
+        "reactionMs": 1617,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "stuffed": {
+        "startMs": 90,
+        "reactionMs": 1329,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "dizzy": {
+        "startMs": 98,
+        "reactionMs": 1816,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "tangled": {
+        "startMs": 90,
+        "reactionMs": 1248,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "sorry": {
+        "startMs": 95,
+        "reactionMs": 1044,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "party": {
+        "startMs": 72,
+        "reactionMs": 1316,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "proud": {
+        "startMs": 85,
+        "reactionMs": 1196,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "cheer": {
+        "startMs": 90,
+        "reactionMs": 1213,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "comfort": {
+        "startMs": 92,
+        "reactionMs": 1617,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "startled": {
+        "startMs": 94,
+        "reactionMs": 816,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "fire": {
+        "startMs": 72,
+        "reactionMs": 1433,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "sad": {
+        "startMs": 81,
+        "reactionMs": 1828,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "levelup": {
+        "startMs": 95,
+        "reactionMs": 1411,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "graduate": {
+        "startMs": 82,
+        "reactionMs": 1614,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "lost": {
+        "startMs": 74,
+        "reactionMs": 1816,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty": {
+        "startMs": 69,
+        "reactionMs": 866,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty-cart": {
+        "startMs": 98,
+        "reactionMs": 867,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty-courses": {
+        "startMs": 85,
+        "reactionMs": 864,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty-notifications": {
+        "startMs": 80,
+        "reactionMs": 1315,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty-notes": {
+        "startMs": 82,
+        "reactionMs": 863,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "empty-search": {
+        "startMs": 81,
+        "reactionMs": 865,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "thinking": {
+        "startMs": 73,
+        "reactionMs": 1216,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "answer": {
+        "startMs": 84,
+        "reactionMs": 1011,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "wave": {
+        "startMs": 84,
+        "reactionMs": 2246,
+        "phaseAfter": "settled",
+        "animationsAfter": 0
+      },
+      "paid": {
+        "startMs": 99,
+        "reactionMs": 1306,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      },
+      "oops": {
+        "startMs": 93,
+        "reactionMs": 1138,
+        "phaseAfter": "still",
+        "animationsAfter": 0
+      }
+    },
+    "violations": [],
+    "problems": []
+  },
+  "reducedMotion": {
+    "anyAnimation": false,
+    "anyLayerMoved": false,
+    "phases": [
+      "still"
+    ],
+    "moodsChanged": 0,
+    "problems": []
+  },
+  "lazy": {
+    "firstOnScreen": "playing",
+    "lastBeforeScroll": "still",
+    "lastAfterScroll": "playing"
+  },
+  "clickThrough": {
+    "elementAtMascotCentre": "under",
+    "buttonTextAfterTwoClicks": "Đã bấm 2 lần"
+  },
+  "recovery": {
+    "recoveredAfterMs": 2852,
+    "phase": "still"
+  },
+  "gradingFlow": {
+    "samples": [
+      {
+        "mood": "grading",
+        "lit": 0
+      },
+      {
+        "mood": "grading",
+        "lit": 0
+      },
+      {
+        "mood": "grading",
+        "lit": 1
+      },
+      {
+        "mood": "grading",
+        "lit": 2
+      },
+      {
+        "mood": "grading",
+        "lit": 3
+      },
+      {
+        "mood": "grading",
+        "lit": 3
+      },
+      {
+        "mood": "grading",
+        "lit": 4
+      },
+      {
+        "mood": "grading",
+        "lit": 5
+      },
+      {
+        "mood": "celebrate",
+        "lit": 0
+      }
+    ],
+    "end": {
+      "mood": "celebrate",
+      "phase": "still"
+    },
+    "accessible": {
+      "role": "img",
+      "label": "Naomi nhảy lên, giơ con bọ vừa bắt được"
+    }
+  }
+}

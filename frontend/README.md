@@ -202,13 +202,30 @@ E2E_CHROME_CHANNEL=chrome npm run test:e2e     # E2E Playwright, chạy vào sta
   - Mỗi lượt đăng ký 2 tài khoản và đăng nhập admin 1 lần: chạy liên tục nhiều lần sẽ chạm giới hạn đăng ký 50/giờ/IP hoặc đăng nhập 10/15 phút/email của admin.
   - CI chạy job riêng "E2E — golden flow": dựng cả stack compose, build image sandbox, seed, cài Chromium của Playwright.
 
+## Linh vật Naomi (Phase 7)
+
+```tsx
+<Mascot mood="celebrate" event={submission.id} />            // verdict vừa tới: phản ứng một lần
+<Mascot mood="celebrate" />                                   // mở lại lịch sử: tư thế tĩnh
+<Mascot mood="grading" event={submission.id} progress={k / n} />
+<Mascot mood="lost" size="lg" event />                        // trang vừa mở (404, empty state)
+```
+
+- `components/mascot/mascot.tsx`. Tư thế tĩnh là markup SVG máy chủ render sẵn. Phản ứng chạy bằng Web Animations, chỉ khi Naomi đã lên màn hình (IntersectionObserver) và không bật `prefers-reduced-motion`. Mỗi `event` (mã bài nộp, mã lượt làm quiz…) chỉ phản ứng một lần; render lại hay polling không làm phát lại. Hết phản ứng, Naomi giữ dáng của mood. Riêng `wave` hạ tay về `rest` (lý do ở `Settle` trong `lib/mascot/choreography.ts`).
+- Mặc định là trang trí (`aria-hidden`): chữ bên cạnh mới mang nghĩa. `label` (chuỗi, hoặc `true` để dùng mô tả của mood) khi chỉ có Naomi nói điều đó. `pointer-events: none`, nên đè lên nút cũng không chặn bấm.
+- Mỗi mood là một chunk riêng (`components/mascot/art/`, **sinh bởi `docs/ui-ux/mascot/naomi/build.cjs`, đừng sửa tay**). Đổi mood lúc chạy thì hình cũ vẫn hiện tới khi hình mới tải xong. Biết trước mood sắp cần thì gọi `preloadMascot(...)` (ví dụ các verdict khi bắt đầu chấm).
+- Biên đạo ở `lib/mascot/choreography.ts`, toạ độ theo bản vẽ 200 × 200. `npm test` kiểm nó với chính bản vẽ.
+- Màu đọc `var(--color-<token>)`, khai trong `app/globals.css` ở khối `[data-mascot]` cho tới khi bảng màu vào `@theme`. Đường cong lấy từ `--ease-*`.
+- Xem mọi mood ở `/dev/naomi` (chỉ dev; bản production trả 404 trừ khi build với `MASCOT_PREVIEW=1`). Số đo và ảnh: `docs/report/assets/phase-7/mascot.md`.
+
 ## Cấu trúc
 
 ```
 app/
 ├── (marketing)/     Trang public: home, danh sách + chi tiết khóa học (SSR, SEO)
 ├── (learn)/         Player, quiz, code editor (client-heavy) — Phase 2+
-└── (dashboard)/     Khu vực giảng viên /giang-day và quản trị /quan-tri (mỗi khu một gate)
+├── (dashboard)/     Khu vực giảng viên /giang-day và quản trị /quan-tri (mỗi khu một gate)
+└── (dev)/           Trang chỉ cho dev: /dev/naomi xem trước linh vật (production trả 404)
 components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea, markdown
 components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
@@ -218,7 +235,9 @@ components/chat/       trợ giảng AI trong trang học (Phase 4)
 components/commerce/   giỏ hàng, yêu thích, mã giảm giá, kết quả thanh toán (Phase 5)
 components/admin/      khu quản trị: duyệt khóa học, báo cáo, người dùng (Phase 5)
 components/reports/    nút + hộp thoại báo cáo vi phạm (Phase 5)
+components/mascot/     linh vật Naomi: <Mascot>, bản vẽ sinh từ build.cjs (Phase 7)
 lib/chat/            đọc luồng SSE, biến [n] thành link (hàm thuần)
+lib/mascot/          danh sách mood, biên đạo, keyframe (hàm thuần, có test)
 lib/api/             API client typed, 1 file mỗi domain
 lib/curriculum/      biến đổi cây mục lục (hàm thuần)
 lib/grading/         giới hạn tài nguyên, chép tay từ model backend

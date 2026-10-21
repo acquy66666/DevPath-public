@@ -6,7 +6,7 @@ Chỉ mục **gate → tệp** của Phase 7 ([plan](../../../plan/phase-7-ui-ux
 
 | Gate đòi | Tệp | Trạng thái |
 |---|---|---|
-| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | artifact + [`docs/ui-ux/design-system/`](../../../ui-ux/design-system/README.md), ảnh `design-system/` | artifact **có 21/10**; chưa vào `globals.css`; nhân vật: ba hướng phác 21/10 (`mascot-directions/`), chờ chọn |
+| Design system khớp `globals.css`; nhân vật đủ mọi `mood`, có tư thế tĩnh | artifact + [`docs/ui-ux/design-system/`](../../../ui-ux/design-system/README.md), ảnh `design-system/` | artifact **có 21/10**; chưa vào `globals.css`; nhân vật: ba hướng phác 21/10 (`mascot-directions/`), user chọn A — tắc kè Naomi; model sheet chưa |
 | CI xanh: E2E "1 passed", hồi quy hình ảnh, axe; 0 tràn ngang 360/375/1440 px | — | chưa |
 | Ảnh trước/sau từng nhóm màn; 42 ảnh `capture.cjs` mới cho chương 4; model sheet + biểu cảm; GIF phản ứng; **bảng số đo Lighthouse/axe/JS trước/sau** | cột "trước": [`before.md`](before.md) + [`before/`](before/) | cột "trước" **có 20/10** |
 | Deploy bản mới lên URL demo, chạy lại luồng vàng ở đó | — | chưa |

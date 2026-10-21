@@ -3,11 +3,11 @@
 Task Phase 7 "Phác ba hướng nhân vật cạnh nhau trên một artifact Design" ([plan](../../plan/phase-7-ui-ux-upgrade.md), [tài liệu thiết kế mục 4–5](../thiet-ke-nang-cap-ui-ux.md)).
 
 - **Artifact Design:** [Linh vật DevPath](https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8). Có 5 artboard: tổng quan, ba hướng, kiểm với Duo. Design system DevPath được cài vào canvas.
-- **Trạng thái:** chờ user chọn hướng và đặt tên. Claude đề xuất **A, tên Kè**. Nếu task kế tiếp (model sheet) mở ra mà chưa có lựa chọn thì làm theo giả định này và ghi rõ.
+- **User chọn 21/10/2026: hướng A, tắc kè “bắt bug”, tên Naomi.** Claude đã đề xuất A. Tên Naomi là của user, không nằm trong ba tên gợi ý (Kè, Sùng, Bít). Canvas giữ nguyên cả ba hướng làm hồ sơ của lần chọn.
 
 ## Ba hướng
 
-| | A · Tắc kè “bắt bug” (đề xuất) | B · Chim Lạc “đường bay” | C · Robot màn hình |
+| | **A · Tắc kè “bắt bug” — đã chọn, tên Naomi** | B · Chim Lạc “đường bay” | C · Robot màn hình |
 |---|---|---|---|
 | Ý | Tắc kè ăn côn trùng = bắt bug. AC là bắt được con bọ, WA là con bọ bay mất | Chim Lạc trên trống đồng, nhìn nghiêng, vòng tròn đồng tâm trên cánh | Mặt là màn hình, cảm xúc bằng mắt pixel, đèn ăng-ten |
 | Mạnh | Ẩn dụ khớp tính năng chấm code; AC/WA là hai cảnh của cùng một chuyện | Bản sắc Việt rõ nhất; tên "Lạc" chơi chữ được ở trang 404 | Đọc rõ nhất ở 24px; hoạt ảnh rẻ nhất; màn hình hiện được "test 3/10" |
@@ -55,6 +55,11 @@ NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/sheet.cjs [gecko|la
 NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/boards.cjs docs/report/assets/phase-7/mascot-directions
 python -I docs/ui-ux/mascot/check/duo_distance.py
 ```
+
+## Bước sau: model sheet của Naomi
+
+- Model sheet (chính diện, ¾, nghiêng) + đủ các `mood` ở mục 5 của tài liệu thiết kế, xuất phát từ bốn hình `gecko-*.svg`. Giữ đốm và đuôi xoắn ở mọi góc, vì nhìn thẳng mà thiếu chúng là thành ếch.
+- Cập nhật mục "Nhân vật linh vật" trong README của design system (bản trong repo và artifact cùng lúc): hướng đã chọn, tên, luật màu nghệ không tô mỏ/chân/bàn chân.
 
 ## Sửa một hình rồi đăng lại
 

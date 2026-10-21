@@ -29,7 +29,19 @@ Gốc `<svg>` có `shadow` (bóng, đứng yên khi nhảy), `scene` (đạo c�
 - Lớp con có tên: `tail-spots`, `foot-right`/`foot-left`, `belly`, `body-spots`, `arm-*-limb`, `arm-*-hand`, `arm-*-held` (đồ cầm tay, đi theo tay khi làm hoạt ảnh), `head-shape`, `head-spots`, `nostrils`, `cheeks`, `eye-right`/`eye-left`, `lid-right`/`lid-left`.
 - Tay đổi chỗ được mà không đổi tên: sau thân (`behind`, góc nghiêng), sau đạo cụ (`back`: laptop, sợi dây), mặc định sau đầu, hoặc trước mặt (`front`: gãi đầu, chống cằm, che miệng ngáp).
 - Đầu, mắt, mí, miệng, mũ dùng chung một `transform` khi nghiêng đầu.
-- Id trùng nhau giữa các tệp. Dùng bằng `<img>` thì không sao; nhúng nhiều SVG thẳng vào một trang thì component phải đổi id (task component).
+- Id trùng nhau giữa các tệp. Dùng bằng `<img>` thì không sao. Bản vẽ cho web (mục dưới) gọi lớp bằng `data-layer` nên một trang có nhiều Naomi vẫn đúng.
+
+### Trên web: component `<Mascot>` (21/10/2026)
+
+`build.cjs` sinh thêm một bản vẽ cho mỗi mood vào frontend, từ cùng bộ phận. Các SVG trong `naomi/` vẫn ra đúng từng byte cũ.
+
+| Tệp sinh ra | Khác bản ảnh ở chỗ |
+|---|---|
+| `frontend/components/mascot/art/<mood>.ts` | Một dòng, một module cho mỗi mood (trang chỉ tải mood nó dùng). Màu là `var(--color-<token>)`. Lớp gọi bằng `data-layer`, không `id`. Lớp nào có `transform` đặt chỗ thì transform đó dời vào một `<g>` con, vì transform của CSS **thay** thuộc tính chứ không cộng vào. Mảnh nhỏ chuyển động riêng (ngôi sao, giọt mồ hôi, chữ Z, con bọ…) được bọc `<g data-part>`. `aria-hidden`, `overflow="visible"` |
+| `frontend/components/mascot/art/index.ts` | `import()` từng mood, để bundler tách chunk |
+| `frontend/lib/mascot/moods.ts` | Danh sách mood, nhãn, điểm neo (chân và tâm bóng, tính từ transform của tư thế), bảng màu các bản vẽ đọc |
+
+Biên đạo (ai chuyển động, quanh điểm nào, bao lâu) viết tay ở `frontend/lib/mascot/choreography.ts`, không ở `build.cjs`. `npm test` (`lib/mascot/mascot.test.ts`) kiểm biên đạo với chính bản vẽ: tên lớp có thật, phản ứng ≤ `duration-mascot`, mọi mảnh về đúng chỗ của bản vẽ khi hết, không hai track tranh một thuộc tính hay một điểm xoay, bảng màu trong `globals.css` khớp `tokens.json`. Cách dùng component và số đo: [`docs/report/assets/phase-7/mascot.md`](../../report/assets/phase-7/mascot.md).
 
 ### Luật đã kiểm bằng máy
 
@@ -61,7 +73,7 @@ NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/sheet.cjs --dir nao
 NODE_PATH=frontend/node_modules node docs/ui-ux/mascot/check/boards.cjs docs/report/assets/phase-7/naomi/boards
 ```
 
-`build.cjs` chạy lại ra đúng từng byte cũ. Đổi hình thì tải lại SVG lên canvas (mục "Sửa một hình rồi đăng lại" bên dưới); `canvas/assets.json` ghi id ↔ tệp, đường dẫn tính từ thư mục này.
+`build.cjs` chạy lại ra đúng từng byte cũ, cả SVG lẫn bản vẽ web trong `frontend/`. Đổi hình thì chạy thêm `npm test` trong `frontend/` (biên đạo có thể gọi tới lớp vừa đổi tên), rồi tải lại SVG lên canvas (mục "Sửa một hình rồi đăng lại" bên dưới); `canvas/assets.json` ghi id ↔ tệp, đường dẫn tính từ thư mục này.
 
 ## Ba hướng (hồ sơ lần chọn, 21/10/2026)
 

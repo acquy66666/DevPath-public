@@ -120,6 +120,53 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Motion curves of the design system (docs/ui-ux/design-system, tokens.json
+   → easing). `static`: emitted even when no utility uses them, because the
+   mascot reads them from script (components/mascot/play.ts). */
+@theme static {
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-enter: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-overshoot: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Naomi's colours: the design-system tokens her drawings read as
+   var(--color-<name>) (components/mascot/art). Scoped to the mascot because
+   the palette is not in @theme yet, and names like slate-100 would override
+   Tailwind's own across the site. When the task "Nền" brings the palette into
+   @theme, delete this block. lib/mascot/mascot.test.ts keeps it equal to
+   tokens.json. */
+[data-mascot] {
+  --color-amber-500: #be7100;
+  --color-amber-600: #9c5c00;
+  --color-blue-200: #c0dcff;
+  --color-blue-500: #4087de;
+  --color-green-500: #2e9e52;
+  --color-green-600: #238142;
+  --color-jade-100: #ccf5ea;
+  --color-jade-300: #6fd3be;
+  --color-jade-500: #039580;
+  --color-jade-600: #007967;
+  --color-jade-700: #066254;
+  --color-jade-800: #074b40;
+  --color-jade-900: #05332b;
+  --color-orange-200: #ffccb6;
+  --color-orange-500: #d85900;
+  --color-red-500: #e24947;
+  --color-rose-200: #ffc6e0;
+  --color-rose-500: #d14e95;
+  --color-slate-0: #ffffff;
+  --color-slate-50: #f0f4f7;
+  --color-slate-100: #e3eaee;
+  --color-slate-300: #b4c0c7;
+  --color-slate-500: #6f7e88;
+  --color-slate-700: #3e505a;
+  --color-turmeric-300: #ffc84c;
+  --color-turmeric-400: #f3b609;
+  --color-violet-200: #dbd2ff;
+  --color-violet-500: #8f6edb;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

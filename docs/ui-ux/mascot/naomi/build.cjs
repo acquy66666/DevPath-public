@@ -22,9 +22,17 @@ const HEX = Object.fromEntries(
     .color.tokens.filter((t) => /^#[0-9a-f]{6}$/i.test(t.value))
     .map((t) => [t.name, t.value.toLowerCase()])
 );
+// Two outputs from the same parts. The SVG files under docs/ are images (hex
+// colours, `id` per layer). The web drawings for components/mascot (WEB) name
+// colours as CSS variables, so the page's tokens paint them, and call layers by
+// `data-layer`: a page can hold two Naomis, and ids must be unique on a page.
+let WEB = false;
+const USED = new Set(); // colour tokens the web drawings read
 const C = (name) => {
   if (!HEX[name]) throw new Error(`not a colour token: ${name}`);
-  return HEX[name];
+  if (!WEB) return HEX[name];
+  USED.add(name);
+  return `var(--color-${name})`;
 };
 
 // Naomi's own palette, by role.
@@ -49,7 +57,19 @@ function el(tag, attrs = {}, kids) {
   const inner = kids === undefined ? "" : [].concat(kids).flat(Infinity).filter(Boolean).join("");
   return inner ? `<${tag}${a}>${inner}</${tag}>` : `<${tag}${a}/>`;
 }
-const g = (id, kids, attrs = {}) => el("g", { id, ...attrs }, kids);
+// A named element. On the web a CSS transform replaces the SVG `transform`
+// attribute instead of adding to it, so a named group never carries one there:
+// its placement moves to an inner group and the name stays free to animate.
+function named(tag, id, attrs = {}, kids) {
+  if (!WEB) return el(tag, { id, ...attrs }, kids);
+  if (tag !== "g" || !attrs.transform) return el(tag, { "data-layer": id, ...attrs }, kids);
+  const { transform, ...rest } = attrs;
+  return el("g", { "data-layer": id, ...rest }, [el("g", { transform }, kids === undefined ? [] : kids)]);
+}
+const g = (id, kids, attrs = {}) => named("g", id, attrs, kids);
+// A small piece the component moves on its own (a sparkle, a drop, a Z). The
+// images have no wrapper; on the web it is a group with nothing on it to move.
+const part = (name, kids) => (WEB ? el("g", { "data-part": name }, kids) : kids);
 const P = (pts) => pts.map(([x, y]) => `${num(x)} ${num(y)}`).join(" ");
 
 // A shape is [tag, attrs] so the same geometry can be drawn twice.
@@ -85,7 +105,7 @@ function mirrorD(d) {
 // ---------------------------------------------------------------- props and effects
 const SPARKLE = "M0 -9 C1 -3 3 -1 9 0 C3 1 1 3 0 9 C-1 3 -3 1 -9 0 C-3 -1 -1 -3 0 -9 Z";
 const sparkle = (x, y, s = 1, color = "turmeric-300") =>
-  el("path", { d: SPARKLE, transform: `translate(${num(x)} ${num(y)}) scale(${s})`, fill: C(color), stroke: C(INK), "stroke-width": num(1.8 / s), "stroke-linejoin": "round" });
+  part("spark", el("path", { d: SPARKLE, transform: `translate(${num(x)} ${num(y)}) scale(${s})`, fill: C(color), stroke: C(INK), "stroke-width": num(1.8 / s), "stroke-linejoin": "round" }));
 function starPath(cx, cy, R, r, rot = -90, n = 5) {
   const pts = [];
   for (let i = 0; i < n * 2; i++) {
@@ -98,10 +118,10 @@ function starPath(cx, cy, R, r, rot = -90, n = 5) {
 const star = (cx, cy, R, color, sw = 1.6) =>
   el("path", { d: starPath(cx, cy, R, R * 0.48), fill: C(color), stroke: C(INK), "stroke-width": sw, "stroke-linejoin": "round" });
 const drop = (x, y, s = 1, color = SWEAT) =>
-  el("path", { d: "M0 -8 C-5 0 -5 6 0 6 C5 6 5 0 0 -8 Z", transform: `translate(${num(x)} ${num(y)}) scale(${s})`, fill: C(color), stroke: C(INK), "stroke-width": num(2.4 / s), "stroke-linejoin": "round" });
+  part("drop", el("path", { d: "M0 -8 C-5 0 -5 6 0 6 C5 6 5 0 0 -8 Z", transform: `translate(${num(x)} ${num(y)}) scale(${s})`, fill: C(color), stroke: C(INK), "stroke-width": num(2.4 / s), "stroke-linejoin": "round" }));
 const heartPath = "M0 9 C-14 0 -12 -11 -5 -11 C-2 -11 0 -9 0 -6 C0 -9 2 -11 5 -11 C12 -11 14 0 0 9 Z";
 function bug(x, y, rot = 0, { wings = false } = {}) {
-  return el("g", { transform: `translate(${x} ${y}) rotate(${rot})` }, [
+  return part("bug", el("g", { transform: `translate(${x} ${y}) rotate(${rot})` }, [
     wings && el("ellipse", { cx: -9, cy: -3, rx: 8, ry: 4.5, transform: "rotate(-30 -9 -3)", fill: C(WHITE), stroke: C(INK), "stroke-width": 2 }),
     wings && el("ellipse", { cx: 9, cy: -3, rx: 8, ry: 4.5, transform: "rotate(30 9 -3)", fill: C(WHITE), stroke: C(INK), "stroke-width": 2 }),
     !wings && line("M-8 -2 L-13 -5 M-9 3 L-14 3 M8 -2 L13 -5 M9 3 L14 3", INK, 2),
@@ -110,11 +130,11 @@ function bug(x, y, rot = 0, { wings = false } = {}) {
     el("circle", { cx: 0, cy: 1, r: 9, fill: C("red-500"), stroke: C(INK), "stroke-width": 2.5 }),
     line("M0 -8 L0 10", INK, 2),
     dots([[-4.5, -1, 1.8], [4.5, -1, 1.8], [-4, 5, 1.8], [4, 5, 1.8]], INK),
-  ]);
+  ]));
 }
 // The letter Z as strokes (no text in the drawings: an <img> SVG has no fonts).
-const zed = (x, y, s, color = "slate-500") => line(`M${x} ${y} L${x + 8 * s} ${y} L${x} ${y + 8 * s} L${x + 8 * s} ${y + 8 * s}`, color, 2.4);
-const motion = (d) => line(d, INK, 2.5);
+const zed = (x, y, s, color = "slate-500") => part("zed", line(`M${x} ${y} L${x + 8 * s} ${y} L${x} ${y + 8 * s} L${x + 8 * s} ${y + 8 * s}`, color, 2.4));
+const motion = (d) => part("whoosh", line(d, INK, 2.5));
 
 // ---------------------------------------------------------------- the body, front
 // Naomi's right side is on the viewer's left when she faces us. `right`/`left`
@@ -141,7 +161,7 @@ function foot(id, [cx, cy], side, { rot = 0, toes = [[-14, 4], [-5, 10], [7, 9]]
 const feetFront = (o = {}) => [foot("foot-right", o.right || [80, 180], "right", o.rightOpt), foot("foot-left", o.left || [120, 180], "left", o.leftOpt)];
 
 function bodyFront({ d = BODY_D, belly = [100, 158, 19, 17], spots = BODY_SPOTS } = {}) {
-  return [solid([shape(d)], SKIN), el("ellipse", { id: "belly", cx: belly[0], cy: belly[1], rx: belly[2], ry: belly[3], fill: C(BELLY) }), g("body-spots", dots(spots))];
+  return [solid([shape(d)], SKIN), named("ellipse", "belly", { cx: belly[0], cy: belly[1], rx: belly[2], ry: belly[3], fill: C(BELLY) }), g("body-spots", dots(spots))];
 }
 
 function headFront({ extra = [], spots = HEAD_SPOTS, nostrils = [[94, 84], [106, 84]], cheeks = false } = {}) {
@@ -408,6 +428,44 @@ class Pose {
       "",
     ].join("\n");
   }
+  // The drawing for components/mascot: one line, decorative (the component
+  // carries the label), allowed to spill out of the viewBox when Naomi jumps.
+  renderWeb(mood) {
+    const kids = (n) => [].concat(this.L[n]).flat(Infinity).filter(Boolean);
+    const layers = this.order().map((n) => named("g", n, { transform: HEAD_LAYERS.has(n) ? this.headT : undefined }, kids(n)));
+    const sh = this.shadow;
+    return el("svg", { xmlns: "http://www.w3.org/2000/svg", viewBox: "0 0 200 200", width: "100%", height: "100%", overflow: "visible", "aria-hidden": "true", focusable: "false", "data-mood": mood }, [
+      sh ? named("ellipse", "shadow", { cx: sh.cx, cy: sh.cy, rx: sh.rx, ry: sh.ry, fill: C(SHADOW) }) : named("g", "shadow"),
+      named("g", "scene", {}, [].concat(this.scene).flat(Infinity).filter(Boolean)),
+      named("g", "naomi", { transform: this.naomi }, layers),
+    ]);
+  }
+  // Where the component pivots the whole character and its shadow, in the
+  // coordinates of the <svg>: her feet (drawing point 100,190) moved by the
+  // pose's own transform, and the centre of the shadow.
+  anchors() {
+    const sh = this.shadow;
+    return { ground: applyTransform(this.naomi, [100, 190]), shadow: sh ? [sh.cx, sh.cy] : null };
+  }
+}
+
+// Apply an SVG transform list (translate / scale / rotate only) to a point.
+function applyTransform(list, [x, y]) {
+  if (!list) return [x, y];
+  const ops = [...list.matchAll(/(translate|scale|rotate)\(([^)]*)\)/g)].map((m) => [m[1], m[2].trim().split(/[\s,]+/).map(Number)]);
+  if (ops.map((o) => `${o[0]}(${o[1].join(" ")})`).join(" ") !== list.replace(/\s+/g, " ").trim()) throw new Error(`transform not understood: ${list}`);
+  // The rightmost operation applies first.
+  for (const [op, a] of ops.reverse()) {
+    if (op === "translate") [x, y] = [x + a[0], y + (a[1] ?? 0)];
+    else if (op === "scale") [x, y] = [x * a[0], y * (a[1] ?? a[0])];
+    else {
+      const [deg, cx = 0, cy = 0] = a;
+      const r = (deg * Math.PI) / 180;
+      const dx = x - cx, dy = y - cy;
+      [x, y] = [cx + dx * Math.cos(r) - dy * Math.sin(r), cy + dx * Math.sin(r) + dy * Math.cos(r)];
+    }
+  }
+  return [Math.round(x * 100) / 100, Math.round(y * 100) / 100];
 }
 
 // ---------------------------------------------------------------- the moods
@@ -417,12 +475,14 @@ function mood(name, event, where, label, build) {
   MOODS.push({ name, event, where, label, build });
 }
 
-mood("rest", "Tư thế nghỉ — về đây sau mỗi phản ứng", "Mọi nơi có nhân vật", "Naomi ngồi nghỉ, mỉm cười", () => new Pose());
+mood("rest", "Tư thế nghỉ — lúc chờ, và sau cái vẫy tay của wave (mood khác giữ dáng của mình)", "Mọi nơi có nhân vật", "Naomi ngồi nghỉ, mỉm cười", () => new Pose());
 
 mood("grading", "Đang chấm, WebSocket báo “test k/n”", "Trang nộp bài", "Naomi gõ laptop, thanh tiến độ chấm bài", () => {
   const p = new Pose().eyes("open", { look: [0, 4.5], lid: { h: -5, a: 0 } }).set("mouth", mouth("focus"));
   p.arms({ d: "M74 128 C72 136 74 142 82 148", wrist: [82, 148], dir: 60 }, "back");
-  const seg = [0, 1, 2, 3, 4].map((i) => el("rect", { x: 70 + i * 12.4, y: 165, width: 9.6, height: 5.5, rx: 2.75, fill: C(i < 3 ? "green-600" : "slate-300") }));
+  // Five segments, three lit in the drawing. On the web the component lights
+  // them from the test count (`data-seg`), using these two colours.
+  const seg = [0, 1, 2, 3, 4].map((i) => el("rect", { x: 70 + i * 12.4, y: 165, width: 9.6, height: 5.5, rx: 2.75, fill: C(i < 3 ? "green-600" : "slate-300"), "data-seg": WEB ? i : undefined }));
   p.set("props", [
     g("laptop-base", solid([rect(50, 178, 100, 9, 4.5)], "slate-300", 7)),
     g("laptop-lid", solid([rect(58, 134, 84, 46, 7)], "slate-100", 7)),
@@ -447,7 +507,7 @@ mood("celebrate", "Verdict AC 100/100", "Trang nộp bài", "Naomi nhảy lên, 
 mood("partial", "AC một phần / WA", "Trang nộp bài", "Naomi gãi đầu nhìn con bọ bay mất", () => {
   const p = new Pose().eyes("open", { look: [4, 2], lid: { h: -4, a: 0 } }).set("mouth", mouth("wavy"));
   p.arm("right", { d: "M74 128 C54 128 40 116 38 100", wrist: [38, 100], dir: -100 }, "front");
-  p.scene = [line("M148 46 C154 34 162 42 168 34", INK, 2.2, { "stroke-dasharray": "0.5 6" }), bug(178, 26, 24, { wings: true })];
+  p.scene = [part("trail", line("M148 46 C154 34 162 42 168 34", INK, 2.2, { "stroke-dasharray": "0.5 6" })), bug(178, 26, 24, { wings: true })];
   p.set("fx", [drop(30, 60)]);
   return p;
 });
@@ -473,7 +533,7 @@ mood("stuffed", "Verdict MLE (quá bộ nhớ)", "Trang nộp bài", "Naomi bụ
   p.set("body", bodyFront({ d: "M68 118 C42 140 46 184 100 184 C154 184 158 140 132 118 Z", belly: [100, 160, 30, 21], spots: [[66, 140, 3], [134, 146, 3.4], [126, 128, 2.2]] }));
   p.set("feet", feetFront({ right: [76, 179], left: [124, 179] }));
   p.arms({ d: "M70 128 C60 138 64 152 76 158", wrist: [76, 158], dir: 20 });
-  p.set("fx", [line("M30 150 L40 152 M32 162 L42 160 M34 140 L42 144", "rose-500", 3), line("M170 150 L160 152 M168 162 L158 160 M166 140 L158 144", "rose-500", 3)]);
+  p.set("fx", [part("puff", line("M30 150 L40 152 M32 162 L42 160 M34 140 L42 144", "rose-500", 3)), part("puff", line("M170 150 L160 152 M168 162 L158 160 M166 140 L158 144", "rose-500", 3))]);
   return p;
 });
 
@@ -485,9 +545,9 @@ mood("dizzy", "Verdict RE (lỗi khi chạy)", "Trang nộp bài", "Naomi choán
   p.arm("left", { d: "M74 128 C68 142 66 152 68 160", wrist: [68, 160], dir: 80 });
   p.set("props-head", [
     el("ellipse", { cx: 100, cy: 34, rx: 46, ry: 9, fill: "none", stroke: C(INK), "stroke-width": 1.8, "stroke-dasharray": "3 5" }),
-    star(58, 32, 8, "violet-500"),
-    star(128, 25, 6.5, "violet-500"),
-    star(146, 40, 5, "violet-200"),
+    part("star", star(58, 32, 8, "violet-500")),
+    part("star", star(128, 25, 6.5, "violet-500")),
+    part("star", star(146, 40, 5, "violet-200")),
   ]);
   return p;
 });
@@ -504,7 +564,7 @@ mood("tangled", "Verdict CE (lỗi cú pháp)", "Trang nộp bài", "Naomi rối
     g("cord", limb("M58 132 C80 120 120 154 142 136 C150 128 140 118 128 126 C110 140 70 150 64 166 C60 178 92 182 110 168 C126 156 150 160 150 176", 4, "blue-500", "round", 6)),
     g("plug", solid([rect(146, 176, 10, 12, 2)], "slate-300", 5)),
   ]);
-  p.set("fx", [line("M150 30 C156 22 164 34 170 26 C176 18 182 30 188 22", "blue-500", 3), drop(170, 74, 0.8)]);
+  p.set("fx", [part("squiggle", line("M150 30 C156 22 164 34 170 26 C176 18 182 30 188 22", "blue-500", 3)), drop(170, 74, 0.8)]);
   return p;
 });
 
@@ -536,7 +596,7 @@ mood("party", "Quiz 100 %", "Kết quả quiz", "Naomi đội mũ tiệc, pháo 
     ...solid([circle(86, 14, 4.5)], "jade-500", 5),
   ]));
   const bits = [[16, 30, "jade-300", 0], [40, 14, "rose-500", 30], [150, 12, "blue-500", -20], [178, 40, "turmeric-400", 15], [182, 88, "violet-500", 40], [18, 96, "turmeric-400", -30], [160, 70, "jade-300", 60], [132, 18, "turmeric-300", 10]];
-  p.scene = bits.map(([x, y, c, r]) => el("rect", { x: x - 3.5, y: y - 2, width: 7, height: 4, rx: 1, transform: `rotate(${r} ${x} ${y})`, fill: C(c), stroke: C(INK), "stroke-width": 1.4 }));
+  p.scene = bits.map(([x, y, c, r]) => part("confetti", el("rect", { x: x - 3.5, y: y - 2, width: 7, height: 4, rx: 1, transform: `rotate(${r} ${x} ${y})`, fill: C(c), stroke: C(INK), "stroke-width": 1.4 })));
   return p;
 });
 
@@ -552,7 +612,7 @@ mood("proud", "Quiz ≥ 80 %", "Kết quả quiz", "Naomi chống nạnh, ngẩn
 mood("cheer", "Quiz 50–79 %", "Kết quả quiz", "Naomi giơ nắm tay cổ vũ", () => {
   const p = new Pose().eyes("open", { look: [2, -1], sparkle: true }).set("mouth", mouth("open"));
   p.arm("left", { d: "M74 128 C54 128 40 118 34 104", wrist: [34, 104], hand: "fist", dir: -90 });
-  p.set("fx", [line("M160 80 L156 70 M174 76 L178 66 M186 90 L195 86", "blue-500", 3)]);
+  p.set("fx", [part("whoosh", line("M160 80 L156 70 M174 76 L178 66 M186 90 L195 86", "blue-500", 3))]);
   return p;
 });
 
@@ -578,7 +638,7 @@ mood("startled", "Quiz hết giờ", "Kết quả quiz", "Naomi giật mình nh�
     line("M22 184 L18 190 M40 184 L44 190", INK, 3),
     motion("M8 156 C4 162 4 170 8 176 M54 156 C58 162 58 170 54 176"),
   ]);
-  p.set("fx", [line("M100 18 L100 30", "amber-600", 4.5), el("circle", { cx: 100, cy: 38, r: 2.6, fill: C("amber-600") }), line("M114 20 L111 31", "amber-600", 4), el("circle", { cx: 109.5, cy: 38, r: 2.3, fill: C("amber-600") })]);
+  p.set("fx", part("bang", [line("M100 18 L100 30", "amber-600", 4.5), el("circle", { cx: 100, cy: 38, r: 2.6, fill: C("amber-600") }), line("M114 20 L111 31", "amber-600", 4), el("circle", { cx: 109.5, cy: 38, r: 2.3, fill: C("amber-600") })]));
   return p;
 });
 
@@ -593,7 +653,7 @@ mood("fire", "Chuỗi ngày học còn giữ", "Khối thành tích /khoa-hoc-cu
     d: "M126 128 C150 126 166 112 170 96",
     wrist: [170, 96],
     dir: -80,
-    held: [...limb("M166 114 L178 66", 5, "slate-500", "round", 6), ...solid([shape("M170 66 L186 66 L184 74 L172 74 Z")], "slate-300", 5), el("g", { transform: "translate(14 2)" }, flame)],
+    held: [...limb("M166 114 L178 66", 5, "slate-500", "round", 6), ...solid([shape("M170 66 L186 66 L184 74 L172 74 Z")], "slate-300", 5), part("flame", el("g", { transform: "translate(14 2)" }, flame))],
   });
   p.arm("right", { d: "M74 128 C64 138 62 148 64 154", wrist: [64, 154], hand: "fist", dir: 90 });
   return p;
@@ -609,7 +669,7 @@ mood("sad", "Chuỗi ngày vừa mất", "Khối thành tích /khoa-hoc-cua-toi"
     ...solid([rect(17, 156, 14, 28, 3)], WHITE, 5),
     line("M24 156 L24 150", INK, 2),
     el("circle", { cx: 24, cy: 149, r: 2.4, fill: C("orange-500") }),
-    line("M24 144 C18 136 30 128 24 118 C20 110 26 104 24 96", "slate-300", 2.6),
+    part("smoke", line("M24 144 C18 136 30 128 24 118 C20 110 26 104 24 96", "slate-300", 2.6)),
   ]);
   p.set("fx", [drop(66, 88, 0.7)]);
   return p;
@@ -633,7 +693,7 @@ mood("levelup", "Lên hạng trên bảng xếp hạng", "/bang-xep-hang", "Naom
 mood("graduate", "Nhận chứng chỉ", "Trang học khi hoàn thành, /cert/[code]", "Naomi đội mũ tốt nghiệp, cầm bằng", () => {
   const p = new Pose().eyes("happy").set("mouth", mouth("small"));
   p.set("head", headFront({ cheeks: true }));
-  p.set("props-head", el("g", { id: "mortarboard", transform: "translate(-12 -10) rotate(-14 100 40)" }, [
+  p.set("props-head", named("g", "mortarboard", { transform: "translate(-12 -10) rotate(-14 100 40)" }, [
     ...solid([shape("M76 52 C78 42 122 42 124 52 L124 58 C110 62 90 62 76 58 Z")], INK, 4),
     ...solid([shape("M54 40 L100 24 L146 40 L100 56 Z")], "jade-800", 4),
     el("circle", { cx: 100, cy: 40, r: 3, fill: C("turmeric-400"), stroke: C(INK), "stroke-width": 1.5 }),
@@ -666,7 +726,8 @@ mood("lost", "Trang 404", "app/not-found.tsx + 404 khóa học, chứng chỉ", 
   return p;
 });
 
-// Empty states: one waiting pose; the prop says which list is empty.
+// Empty states: one waiting pose; the prop says which list is empty. Props are
+// functions so each output (image or web) draws them with its own colours.
 function emptyPose() {
   const p = new Pose().eyes("open", { look: [-3, 2] }).set("mouth", mouth("small"));
   p.naomi = "translate(16 19.4) scale(0.9)";
@@ -676,32 +737,32 @@ function emptyPose() {
   return p;
 }
 const EMPTY_PROPS = {
-  cart: ["Giỏ hàng trống", "Naomi cạnh giỏ hàng trống", [
+  cart: ["Giỏ hàng trống", "Naomi cạnh giỏ hàng trống", () => [
     line("M6 134 L14 134 L20 146", INK, 3.4),
     el("path", { d: "M18 146 L62 146 L56 172 L24 172 Z", fill: C(WHITE), stroke: C(INK), "stroke-width": 3.4, "stroke-linejoin": "round" }),
     line("M32 150 L34 168 M46 150 L44 168 M21 158 L59 158", "slate-300", 2),
     ...solid([circle(28, 184, 4.5), circle(52, 184, 4.5)], "slate-500", 5),
     line("M24 172 L22 178 L58 178", INK, 3.4),
   ]],
-  courses: ["Chưa có khóa học", "Naomi cạnh cuốn sách đóng", [
+  courses: ["Chưa có khóa học", "Naomi cạnh cuốn sách đóng", () => [
     ...solid([rect(18, 132, 40, 52, 4)], "jade-600", 6),
     el("rect", { x: 22, y: 136, width: 32, height: 44, rx: 2, fill: "none", stroke: C("jade-300"), "stroke-width": 2 }),
     line("M32 152 L27 158 L32 164 M44 152 L49 158 L44 164", WHITE, 2.6),
     el("path", { d: "M46 132 L46 146 L50 142 L54 146 L54 132 Z", fill: C("jade-300"), stroke: C(INK), "stroke-width": 1.6, "stroke-linejoin": "round" }),
   ]],
-  notifications: ["Chưa có thông báo", "Naomi cạnh cái chuông đang ngủ", [
+  notifications: ["Chưa có thông báo", "Naomi cạnh cái chuông đang ngủ", () => [
     ...solid([shape("M20 172 C24 166 22 150 26 142 C30 132 50 132 54 142 C58 150 56 166 60 172 Z")], WHITE, 6),
     ...solid([circle(40, 178, 5)], "slate-300", 5),
     ...solid([circle(40, 130, 3.4)], "slate-300", 4),
     zed(8, 122, 0.8), zed(18, 108, 0.6),
   ]],
-  notes: ["Chưa có ghi chú", "Naomi cạnh sổ ghi chú trống và cây bút", [
+  notes: ["Chưa có ghi chú", "Naomi cạnh sổ ghi chú trống và cây bút", () => [
     ...solid([rect(14, 134, 42, 52, 4)], WHITE, 6),
     line("M22 150 L48 150 M22 160 L48 160 M22 170 L40 170", "slate-300", 2),
     line("M20 134 L20 128 M30 134 L30 128 M40 134 L40 128 M50 134 L50 128", INK, 2.6),
     g("pencil", [...limb("M56 186 L64 146", 5, "jade-300", "butt", 5), el("path", { d: "M53.5 186.5 L58.5 187.5 L55 194 Z", fill: C(INK) })]),
   ]],
-  search: ["Tìm không ra", "Naomi cạnh cái kính lúp không thấy gì", [
+  search: ["Tìm không ra", "Naomi cạnh cái kính lúp không thấy gì", () => [
     ...limb("M46 168 L60 186", 6, "slate-500", "round", 6),
     el("circle", { cx: 34, cy: 152, r: 17, fill: C("slate-50"), stroke: C(INK), "stroke-width": 4.5 }),
     line("M26 144 C30 140 36 140 40 142", WHITE, 3),
@@ -711,7 +772,7 @@ mood("empty", "Danh sách trống (đạo cụ theo chỗ)", "Mọi empty state"
 for (const [key, [event, label, prop]] of Object.entries(EMPTY_PROPS)) {
   mood(`empty-${key}`, event, "Empty state", label, () => {
     const p = emptyPose();
-    p.scene = g(`prop-${key}`, prop);
+    p.scene = g(`prop-${key}`, prop());
     return p;
   });
 }
@@ -721,10 +782,9 @@ mood("thinking", "Trợ giảng AI đang trả lời (stream)", "Tab “Trợ gi
   p.headT = "rotate(5 100 122)";
   p.arm("right", { d: "M74 128 C60 136 66 124 76 114", wrist: [76, 114], dir: -40 }, "front");
   p.set("fx", g("thought", [
-    ...solid([circle(150, 40, 3.2)], WHITE, 4),
-    ...solid([circle(160, 28, 4.6)], WHITE, 4),
-    ...solid([ellipse(178, 14, 16, 11)], WHITE, 5),
-    dots([[171, 14, 2.2], [178, 14, 2.2], [185, 14, 2.2]], "jade-600"),
+    part("bubble", solid([circle(150, 40, 3.2)], WHITE, 4)),
+    part("bubble", solid([circle(160, 28, 4.6)], WHITE, 4)),
+    part("bubble", [...solid([ellipse(178, 14, 16, 11)], WHITE, 5), dots([[171, 14, 2.2], [178, 14, 2.2], [185, 14, 2.2]], "jade-600")]),
   ]));
   return p;
 });
@@ -762,7 +822,7 @@ mood("paid", "Thanh toán thành công", "/thanh-toan/ket-qua", "Naomi giơ túi
     d: "M74 126 C56 126 42 114 36 100",
     wrist: [36, 100],
     dir: -95,
-    held: [line("M16 104 C16 84 34 84 34 104", INK, 3.4), ...solid([shape("M8 102 L42 102 L45 138 L5 138 Z")], "jade-100", 6), line("M15 120 L22 127 L35 112", "green-600", 4)],
+    held: [line("M16 104 C16 84 34 84 34 104", INK, 3.4), ...solid([shape("M8 102 L42 102 L45 138 L5 138 Z")], "jade-100", 6), part("tick", line("M15 120 L22 127 L35 112", "green-600", 4))],
   });
   p.arm("left", { d: "M74 126 C56 126 42 118 36 104", wrist: [36, 104], dir: -115 });
   p.scene = [sparkle(178, 58, 0.8, "jade-300"), sparkle(60, 22, 0.6, "jade-300")];
@@ -780,8 +840,7 @@ mood("oops", "Thanh toán thất bại", "/thanh-toan/ket-qua", "Naomi ngơ ngá
     held: [...solid([rect(84, 134, 44, 28, 4, [-10, 106, 148])], WHITE, 5), el("rect", { x: 84, y: 140, width: 44, height: 6, transform: "rotate(-10 106 148)", fill: C("jade-600") }), el("rect", { x: 89, y: 150, width: 9, height: 7, rx: 1.5, transform: "rotate(-10 106 148)", fill: C("slate-300") })],
   });
   p.set("fx", [
-    ...solid([circle(140, 124, 9)], "red-500", 4),
-    line("M136 120 L144 128 M144 120 L136 128", WHITE, 2.8),
+    part("cross", [...solid([circle(140, 124, 9)], "red-500", 4), line("M136 120 L144 128 M144 120 L136 128", WHITE, 2.8)]),
     drop(36, 58),
   ]);
   return p;
@@ -840,7 +899,7 @@ function viewSide() {
   ]);
   p.set("body", [
     solid([shape("M82 118 C68 148 72 178 104 179 C134 178 138 148 124 118 Z")], SKIN),
-    el("path", { id: "belly", d: "M82 136 C72 150 72 168 84 176 C92 168 94 148 88 136 Z", fill: C(BELLY) }),
+    named("path", "belly", { d: "M82 136 C72 150 72 168 84 176 C92 168 94 148 88 136 Z", fill: C(BELLY) }),
     g("body-spots", dots([[124, 136, 3], [128, 152, 2.6], [120, 166, 2.2], [114, 126, 2]])),
   ]);
   p.arm("right", { d: "M92 128 C86 140 80 148 74 154", wrist: [74, 154], dir: 140 }, "behind");
@@ -917,4 +976,88 @@ for (const n of ["shadow", "scene", ...exploded.order()]) {
   manifest.layers.push({ layer: n, file: `layers/${file}` });
 }
 fs.writeFileSync(path.join(HERE, "naomi.json"), JSON.stringify(manifest, null, 2) + "\n");
-console.log(`${manifest.views.length} views, ${manifest.moods.length} moods, ${manifest.layers.length} layers of ${EXPLODE}`);
+
+// ---------------------------------------------------------------- web drawings
+// frontend/components/mascot/art/<mood>.ts: one module per mood, so a page
+// downloads only the moods it shows. frontend/lib/mascot/moods.ts: the mood
+// list, labels, pivots and the palette the drawings read.
+WEB = true;
+const FRONTEND = path.join(REPO, "frontend");
+const ART = path.join(FRONTEND, "components", "mascot", "art");
+const HEADER = "// Generated by docs/ui-ux/mascot/naomi/build.cjs. Edit the script, not this file.\n";
+fs.mkdirSync(ART, { recursive: true });
+for (const f of fs.readdirSync(ART)) if (f.endsWith(".ts")) fs.unlinkSync(path.join(ART, f));
+// `index` and `server` are the two loaders; a mood by either name would clash.
+for (const m of MOODS) if (m.name === "index" || m.name === "server") throw new Error(`mood name ${m.name} is taken by a loader file`);
+const meta = [];
+for (const m of MOODS) {
+  const pose = m.build();
+  const svg = pose.renderWeb(m.name);
+  if (/['\\\n]/.test(svg)) throw new Error(`${m.name}: the web drawing must fit in a single-quoted line`);
+  if (/ id="/.test(svg) || /data-layer="[^"]*" transform=/.test(svg)) throw new Error(`${m.name}: a named layer kept an id or a transform`);
+  fs.writeFileSync(path.join(ART, `${m.name}.ts`), `${HEADER}const svg = '${svg}';\n\nexport default svg;\n`);
+  meta.push({ mood: m.name, label: m.label, ...pose.anchors() });
+}
+const q = JSON.stringify;
+fs.writeFileSync(
+  path.join(ART, "index.ts"),
+  [
+    HEADER,
+    "/** One chunk per mood: `import()` with a literal path, so the bundler splits them. */",
+    "export const ART = {",
+    ...MOODS.map((m) => `  ${q(m.name)}: () => import(${q(`./${m.name}`)}),`),
+    "} as const;",
+    "",
+  ].join("\n")
+);
+const ident = (name) => name.replace(/-(\w)/g, (_, c) => c.toUpperCase());
+fs.writeFileSync(
+  path.join(ART, "server.ts"),
+  [
+    HEADER,
+    "// Every drawing, synchronously: for server rendering only. The component",
+    "// reaches this module behind `typeof window === \"undefined\"`, which Next",
+    "// replaces at build time, so the browser bundle never contains it.",
+    ...MOODS.map((m) => `import ${ident(m.name)} from ${q(`./${m.name}`)};`),
+    "",
+    "export const ART_SYNC = {",
+    ...MOODS.map((m) => `  ${q(m.name)}: ${ident(m.name)},`),
+    "} as const;",
+    "",
+  ].join("\n")
+);
+const palette =Object.fromEntries([...USED].sort().map((n) => [n, HEX[n]]));
+fs.mkdirSync(path.join(FRONTEND, "lib", "mascot"), { recursive: true });
+fs.writeFileSync(
+  path.join(FRONTEND, "lib", "mascot", "moods.ts"),
+  [
+    HEADER,
+    "export const MOODS = [",
+    ...meta.map((m) => `  ${q(m.mood)},`),
+    "] as const;",
+    "",
+    "export type Mood = (typeof MOODS)[number];",
+    "",
+    "export type MoodMeta = {",
+    "  /** What the drawing shows, for a mascot that carries meaning (role=\"img\"). */",
+    "  label: string;",
+    "  /** Her feet in <svg> coordinates: the pivot for jumps and sways. */",
+    "  ground: readonly [number, number];",
+    "  /** Centre of the shadow under her feet, in <svg> coordinates. */",
+    "  shadow: readonly [number, number] | null;",
+    "};",
+    "",
+    "export const MOOD_META: Record<Mood, MoodMeta> = {",
+    ...meta.map((m) => `  ${q(m.mood)}: { label: ${q(m.label)}, ground: [${m.ground.join(", ")}], shadow: ${m.shadow ? `[${m.shadow.join(", ")}]` : "null"} },`),
+    "};",
+    "",
+    "/** Design-system colours the drawings read as `var(--color-<name>)`, with their values in tokens.json. */",
+    "export const PALETTE: Record<string, string> = {",
+    ...Object.entries(palette).map(([n, v]) => `  ${q(n)}: ${q(v)},`),
+    "};",
+    "",
+  ].join("\n")
+);
+WEB = false;
+
+console.log(`${manifest.views.length} views, ${manifest.moods.length} moods, ${manifest.layers.length} layers of ${EXPLODE}; ${meta.length} web drawings, ${Object.keys(palette).length} colours`);

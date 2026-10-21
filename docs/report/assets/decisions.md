@@ -835,3 +835,24 @@ Task "Phác ba hướng nhân vật" của Phase 7. Nguồn: `docs/ui-ux/mascot/
 **Claude đề xuất hướng A (tắc kè), user chọn A và đặt tên Naomi (21/10/2026).** Ẩn dụ "bắt bug" biến AC và WA thành hai cảnh của cùng một chuyện (bắt được con bọ / con bọ bay mất), gắn nhân vật vào đúng điểm nhấn số 1 của khóa luận. Robot đọc rõ nhất ở cỡ nhỏ nhưng ít bản sắc. Chim Lạc có bản sắc Việt nhưng gần Duo nhất về loài. Tên Naomi không nằm trong ba tên Claude gợi ý (Kè, Sùng, Bít).
 
 **Artboard được kiểm trên máy, không qua trình duyệt đăng nhập claude.ai.** `check/boards.cjs` mở từng `.dc.html` bằng Chrome, trả ảnh `/_blob/<id>` bằng chính tệp SVG trong repo và font bằng Lexend tự host. Lượt đầu bắt được ba artboard dài hơn khung 4–46px và một hàng ảnh tràn ngang 16px. Đã sửa, cả năm artboard khít khung.
+
+## Hoạt ảnh Naomi bằng motion/react-mini (21/10/2026)
+
+Task "Spike công nghệ hoạt ảnh" của Phase 7. Số đo, ảnh và cách chạy lại: `docs/report/assets/phase-7/animation-spike.md` + `animation-spike/` (`run.cjs`, `results.json`, `frames/contact-sheet.png`).
+
+**User chốt không làm Rive (21/10/2026)**, nên spike so ba cách chạy cùng một phản ứng `celebrate` trên cùng một SVG thay vì so Motion với Rive: CSS `@keyframes`, `motion/react-mini` (WAAPI) và `motion/react` đầy đủ. Cả ba đọc một tệp biên đạo duy nhất, và được đo trên bản build production của chính frontend: Chrome thật, chuỗi CSP production gắn vào từng trang, so với một bản SVG tĩnh trong cùng khung. Thư mục spike bị xóa khỏi app sau khi đo.
+
+**Chọn `motion/react-mini` cho component `<Mascot />`; `motion/react` đầy đủ chưa vào dự án.**
+- **Motion đầy đủ:** +25,6 KB gzip (một nửa ngân sách 50 KB của phase), +51 % CPU so với CSS cho mỗi phản ứng (173 so với 114,5 ms ở 1×).
+  - Transform của phần tử SVG chạy bằng JS, ghi style từng khung, chứ không lên WAAPI.
+  - Nó còn tự ghi `transform-box: fill-box`, làm sai mọi điểm xoay viết bằng toạ độ bản vẽ. Lượt đầu, vai Naomi trôi 17 px.
+- **`mini`:** +5,3 KB, +11 % CPU so với CSS, không bẫy nào. Đổi lại, component điều khiển được lúc chạy: dừng phản ứng cũ khi sự kiện mới tới, chờ `.finished`, lấy khung hình từ prop (`grading` theo "test k/n"), giữ biên đạo trong TypeScript.
+- **CSS thuần:** 0 KB JS. Vẫn là đường lui nếu ngân sách cạn: cùng dữ liệu biên đạo sinh được `@keyframes`.
+
+Ba cách đều 0 vi phạm CSP, đứng yên đúng nghĩa khi `prefers-reduced-motion: reduce`, và không rớt khung ở 1× lẫn 4×. Phần lớn chi phí là Chrome vẽ lại SVG trên luồng chính: transform của phần tử con trong SVG không lên compositor, nên cách nào cũng phải trả phần đó. Vì thế phản ứng phải ngắn, và hình lặp (`thinking`, `grading`) nên nhẹ.
+
+Bốn điều component phải làm theo, từ spike:
+- Transform của CSS **thay** thuộc tính `transform` của SVG, nên `build.cjs` phải sinh `<g>` bọc ngoài cho lớp nào có transform đặt chỗ.
+- Điểm xoay dùng `transform-box: view-box` + toạ độ bản vẽ.
+- `<svg>` cần `overflow: visible`, vì cú nhảy vượt `viewBox`.
+- Lớp gọi bằng `data-layer` thay cho `id`, vì hai bản vẽ trên một trang thì trùng id.

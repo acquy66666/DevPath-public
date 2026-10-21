@@ -1,0 +1,62 @@
+▲ Next.js 16.3.1 (Turbopack)
+✓ Running next.config.ts took 27ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.1s
+  Running TypeScript ...
+  Finished TypeScript in 2.3s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/37) ...
+  Generating static pages using 15 workers (9/37) 
+  Generating static pages using 15 workers (18/37) 
+  Generating static pages using 15 workers (27/37) 
+✓ Generating static pages using 15 workers (37/37) in 690ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ○ /bang-xep-hang
+├ ƒ /cert/[code]
+├ ○ /chinh-sach-bao-mat
+├ ƒ /dang-ky
+├ ƒ /dang-nhap
+├ ○ /giang-day
+├ ƒ /giang-day/[courseId]
+├ ○ /giang-day/cap-bac
+├ ƒ /giang-day/hoi-dap
+├ ○ /giang-day/moi
+├ ○ /giang-day/thong-ke
+├ ○ /gio-hang
+├ ○ /ho-so
+├ ƒ /hoc/[slug]
+├ ƒ /khoa-hoc
+├ ○ /khoa-hoc-cua-toi
+├ ƒ /khoa-hoc/[slug]
+├ ○ /quan-tri
+├ ○ /quan-tri/banner
+├ ○ /quan-tri/bao-cao
+├ ○ /quan-tri/cap-giang-vien
+├ ○ /quan-tri/danh-muc
+├ ○ /quan-tri/doanh-thu
+├ ○ /quan-tri/khoa-hoc
+├ ƒ /quan-tri/khoa-hoc/[courseId]
+├ ○ /quan-tri/loi-nhuan
+├ ○ /quan-tri/ma-giam-gia
+├ ○ /quan-tri/nguoi-dung
+├ ○ /quan-tri/thanh-toan
+├ ƒ /quan-tri/thanh-toan/[statementId]
+├ ○ /quan-tri/xep-hang
+├ ○ /spike-naomi/css
+├ ○ /spike-naomi/mini
+├ ○ /spike-naomi/motion
+├ ○ /spike-naomi/static
+├ ƒ /thanh-toan/ket-qua
+├ ○ /thong-bao
+├ ○ /tro-thanh-giang-vien
+└ ○ /yeu-thich
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

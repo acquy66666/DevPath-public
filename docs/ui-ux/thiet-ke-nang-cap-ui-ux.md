@@ -64,7 +64,7 @@ Claude nghĩ nhiều hướng rồi bỏ những hướng đụng phản mục t
 | B. Chim Lạc "đường bay" | Chim Lạc trên trống đồng, cách điệu tối giản, bay theo một "path" | Gắn tên DevPath (con đường) với nét văn hóa Việt, khác biệt trước hội đồng | Vẫn là chim, dễ bị so với Duo. Hình tượng văn hóa cần vẽ trang trọng, khó làm hài hước |
 | C. Robot màn hình "Pi" | Robot nhỏ, mặt là màn hình, biểu cảm bằng mắt pixel | Dễ vẽ, dễ hoạt ảnh nhất (đổi mắt là đổi cảm xúc), hợp chủ đề code | Phổ biến, ít ấm áp, ít bản sắc |
 
-**Đề xuất của Claude: hướng A**, vì ẩn dụ "bắt bug" gắn thẳng với tính năng chấm code (điểm nhấn ⭐ số 1): AC = bắt được bug. Tên chưa đặt (mục 10). Hướng cuối do user chọn trong buổi Claude Design đầu tiên, nơi cả ba được phác cạnh nhau.
+**Đề xuất của Claude: hướng A**, vì ẩn dụ "bắt bug" gắn thẳng với tính năng chấm code (điểm nhấn ⭐ số 1): AC = bắt được bug. Hướng cuối do user chọn trong buổi Claude Design đầu tiên, nơi cả ba được phác cạnh nhau. **Đã chốt 21/10/2026: hướng A, tên Naomi** (user đặt). Model sheet và bộ biểu cảm: [`docs/ui-ux/mascot/`](mascot/README.md).
 
 ### 4.2 Sản phẩm đầu ra của nhân vật
 
@@ -178,7 +178,7 @@ Nguồn đã đọc: [anthropics/skills — tổng quan](https://codenote.net/en
 Theo thứ tự quan trọng:
 
 1. **Ngày bảo vệ / hạn nộp báo cáo.** Nó quyết định Phase 7 dài 2 hay 3 tuần, và nhóm màn nào bị cắt nếu thiếu thời gian (cắt từ nhóm 10 ngược lên).
-2. **Hướng nhân vật và tên** (mục 4.1). Có thể để tới buổi Claude Design đầu tiên.
+2. ~~**Hướng nhân vật và tên** (mục 4.1).~~ Đã chốt 21/10/2026: hướng A, tắc kè “bắt bug”, tên Naomi.
 3. **Rive hay chỉ code** (mục 4.3): user có muốn tự làm hoạt ảnh trong Rive Editor không.
 4. **Dark mode**: làm trọn (mọi màn hai theme, có nút đổi) hay chỉ theme sáng. **(giả định)**: chỉ theme sáng, token tối giữ sẵn cho sau.
 

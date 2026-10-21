@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Chim Lạc, tư thế nghỉ">
+  <g id="legs" fill="none" stroke="#05332b" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M88 152 L84 186 M84 186 L96 189 M84 186 L74 189 M84 186 L88 193"/>
+    <path d="M104 152 L108 186 M108 186 L120 189 M108 186 L98 189 M108 186 L112 193"/>
+  </g>
+  <g id="tail" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round">
+    <path d="M60 114 C44 102 26 94 10 94 C22 104 38 116 54 126 Z"/>
+    <path d="M56 124 C40 120 22 122 6 130 C22 134 40 136 56 134 Z"/>
+    <path d="M58 132 C44 138 30 148 18 162 C34 156 48 148 62 140 Z"/>
+    <circle cx="22" cy="129.5" r="3" fill="#ccf5ea" stroke="none"/>
+  </g>
+  <g id="crest" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round">
+    <path d="M116 60 C104 48 90 42 76 42 C88 50 100 58 110 66 Z"/>
+    <path d="M124 52 C114 34 100 22 86 20 C96 30 106 42 116 56 Z"/>
+    <path d="M133 48 C129 28 121 14 109 8 C115 20 119 34 123 50 Z"/>
+  </g>
+  <g id="body">
+    <g fill="#05332b" stroke="#05332b" stroke-width="9" stroke-linejoin="round">
+      <ellipse cx="92" cy="128" rx="42" ry="30" transform="rotate(-12 92 128)"/>
+      <ellipse cx="120" cy="104" rx="15" ry="22" transform="rotate(30 120 104)"/>
+      <circle cx="136" cy="74" r="31"/>
+    </g>
+    <g fill="#ccf5ea">
+      <ellipse cx="92" cy="128" rx="42" ry="30" transform="rotate(-12 92 128)"/>
+      <ellipse cx="120" cy="104" rx="15" ry="22" transform="rotate(30 120 104)"/>
+      <circle cx="136" cy="74" r="31"/>
+    </g>
+  </g>
+  <g id="wing">
+    <path d="M124 118 C114 104 86 102 64 114 C58 122 56 132 58 140 C66 136 74 140 80 136 C86 142 96 140 102 136 C112 136 122 128 124 118 Z" fill="#039580" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round"/>
+    <circle cx="100" cy="121" r="6.5" fill="none" stroke="#ccf5ea" stroke-width="2.5"/>
+    <circle cx="100" cy="121" r="2" fill="#ccf5ea"/>
+  </g>
+  <g id="beak">
+    <path d="M163 62 C176 68 188 78 198 92 C186 88 172 86 164 86 Z" fill="#066254" stroke="#05332b" stroke-width="3.5" stroke-linejoin="round"/>
+    <path d="M165 77 C176 80 185 84 194 89" fill="none" stroke="#05332b" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g id="eye">
+    <circle cx="145" cy="70" r="15" fill="#039580" stroke="#05332b" stroke-width="3"/>
+    <circle cx="145" cy="70" r="10.5" fill="#ffffff"/>
+    <circle cx="147" cy="70" r="6.2" fill="#05332b"/>
+    <circle cx="150" cy="66" r="2.3" fill="#ffffff"/>
+  </g>
+</svg>

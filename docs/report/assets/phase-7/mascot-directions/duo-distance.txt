@@ -1,0 +1,27 @@
+# Khoang cach mau giua bang mau nhan vat DevPath va Duo (Duolingo)
+# Chay: python -I docs/ui-ux/mascot/check/duo_distance.py  (21/10/2026)
+# Ma mau Duo: design.duolingo.com/identity/color, doc 21/10/2026
+# Delta E OK = khoang cach Euclid trong OKLab; ~2 (x100) la vua thay khac
+
+OKLCH  L     C     h
+Feather Green (than)                 #58CC02  0.748 0.229  137.6
+Mask Green (mang sang)               #89E219  0.824 0.226  132.6
+Wing Overlay (canh)                  #43C000  0.710 0.225  139.3
+Beak Upper (mo tren)                 #FFC200  0.846 0.173   85.6
+Beak Lower/Feet (mo duoi, chan)      #F49000  0.743 0.169   63.4
+jade-500 (than A, C)                 #039580  0.600 0.110  178.0
+jade-300 (mat pixel C, dom sang)     #6fd3be  0.800 0.100  178.2
+jade-100 (bung A, than B)            #ccf5ea  0.938 0.045  177.2
+jade-700 (dom A, mo B)               #066254  0.445 0.080  178.2
+jade-900 (net, man hinh C)           #05332b  0.289 0.050  177.9
+turmeric-300 (mong mat A, den C)     #ffc84c  0.861 0.150   84.2
+red-500 (con bo cua A)               #e24947  0.621 0.190   25.2
+
+Delta E OK (x100): toi than Duo (Feather Green) va toi mau Duo gan nhat
+jade-500 (than A, C)               than= 21.9  gan nhat: Wing Overlay (canh)              dE= 19.0  dHue= 38.7
+jade-300 (mat pixel C, dom sang)   than= 17.5  gan nhat: Mask Green (mang sang)           dE= 17.3  dHue= 45.6
+jade-100 (bung A, than B)          than= 27.4  gan nhat: Beak Upper (mo tren)             dE= 20.2  dHue= 91.7
+jade-700 (dom A, mo B)             than= 35.0  gan nhat: Wing Overlay (canh)              dE= 31.5  dHue= 38.9
+jade-900 (net, man hinh C)         than= 49.8  gan nhat: Wing Overlay (canh)              dE= 46.1  dHue= 38.6
+turmeric-300 (mong mat A, den C)   than= 21.6  gan nhat: Beak Upper (mo tren)             dE=  2.8  dHue=  1.4
+red-500 (con bo cua A)             than= 37.1  gan nhat: Beak Lower/Feet (mo duoi, chan)  dE= 17.1  dHue= 38.2

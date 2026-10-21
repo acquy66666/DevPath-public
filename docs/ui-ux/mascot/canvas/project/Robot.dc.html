@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hướng C — Robot màn hình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="width: 1200px; height: 1200px; box-sizing: border-box; padding: 48px; background: #f8fafc; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <header style="display: flex; flex-direction: column; gap: 8px; max-width: 860px">
+    <div style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; color: #556670">HƯỚNG C</div>
+    <h1 style="margin: 0; font-size: 30px; line-height: 40px; font-weight: 700; letter-spacing: -0.015em">Robot màn hình</h1>
+    <p style="margin: 0; font-size: 18px; line-height: 30px; color: #273842">Robot nhỏ, mặt là màn hình, cảm xúc bằng mắt pixel. Đèn ăng-ten màu nghệ sáng lên khi có thưởng. Dễ vẽ và dễ làm hoạt ảnh nhất: đổi hình trên màn hình là đổi cảm xúc, thân gần như đứng yên.</p>
+  </header>
+
+  <div style="display: grid; grid-template-columns: 440px minmax(0, 1fr); gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 24px; min-width: 0">
+      <figure style="margin: 0; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 10px">
+        <div style="background: #f0f4f7; border-radius: 10px; height: 340px; display: flex; align-items: center; justify-content: center">
+          <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="320" height="320" alt="Robot màu ngọc đứng nghỉ, mặt màn hình mỉm cười">
+        </div>
+        <figcaption style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670"><code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace">rest</code> · tư thế nghỉ, nhân vật về đây sau mỗi phản ứng</figcaption>
+      </figure>
+      <section style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Tên gợi ý</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; color: #273842">
+          <li><strong style="font-weight: 600; color: #102029">Pi</strong> · tên tạm trong tài liệu thiết kế; ngắn, quen với người học code</li>
+          <li><strong style="font-weight: 600; color: #102029">Bo</strong> · từ “rô-bô”, dễ gọi</li>
+          <li><strong style="font-weight: 600; color: #102029">Bin</strong> · từ “binary”, nhưng tiếng Anh “bin” là thùng rác</li>
+        </ul>
+      </section>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 24px; min-width: 0">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <figure style="margin: 0; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="background: #f0f4f7; border-radius: 10px; height: 190px; display: flex; align-items: center; justify-content: center">
+            <img src="/_blob/a128e3b3ca4a555a05e866e2bc404620" width="176" height="176" alt="Robot giơ hai tay, mắt cười, đèn ăng-ten sáng">
+          </div>
+          <figcaption style="display: flex; flex-direction: column; gap: 2px">
+            <code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 12px; line-height: 18px; color: #066254">celebrate</code>
+            <span style="font-size: 14px; line-height: 20px">AC 100/100: giơ tay, đèn ăng-ten sáng</span>
+          </figcaption>
+        </figure>
+        <figure style="margin: 0; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="background: #f0f4f7; border-radius: 10px; height: 190px; display: flex; align-items: center; justify-content: center">
+            <img src="/_blob/96a0930c855199bdf9dcd432371b1012" width="176" height="176" alt="Robot nheo một mắt, gãi đầu">
+          </div>
+          <figcaption style="display: flex; flex-direction: column; gap: 2px">
+            <code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 12px; line-height: 18px; color: #066254">partial</code>
+            <span style="font-size: 14px; line-height: 20px">WA: nheo một mắt, gãi đầu</span>
+          </figcaption>
+        </figure>
+        <figure style="margin: 0; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+          <div style="background: #f0f4f7; border-radius: 10px; height: 190px; display: flex; align-items: center; justify-content: center">
+            <img src="/_blob/0cae6f52fe9b82a6292d39389e100001" width="176" height="176" alt="Robot cầm bản đồ ngược">
+          </div>
+          <figcaption style="display: flex; flex-direction: column; gap: 2px">
+            <code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 12px; line-height: 18px; color: #066254">lost</code>
+            <span style="font-size: 14px; line-height: 20px">404: cầm bản đồ ngược</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <section style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Trong giao diện</h2>
+        <div style="display: flex; align-items: center; gap: 14px; border: 1px solid #e3eaee; border-radius: 10px; padding: 12px 16px">
+          <img src="/_blob/a128e3b3ca4a555a05e866e2bc404620" width="64" height="64" alt="">
+          <span style="display: inline-flex; align-items: center; gap: 6px; background: #e8fceb; color: #194f29; border-radius: 9999px; padding: 3px 12px 3px 8px; font-size: 14px; line-height: 20px; font-weight: 600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#238142" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+            <span style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace">AC</span> Đúng
+          </span>
+          <span style="font-size: 14px; line-height: 20px; color: #556670; font-variant-numeric: tabular-nums">100/100 · 10/10 test · 0,42 s</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 20px; border: 1px solid #e3eaee; border-radius: 10px; padding: 12px 16px">
+          <img src="/_blob/0cae6f52fe9b82a6292d39389e100001" width="104" height="104" alt="">
+          <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+            <h3 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Không tìm thấy trang này</h3>
+            <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Đường dẫn có thể đã đổi, hoặc khóa học đã được gỡ.</p>
+            <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer">Về trang chủ</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <section style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; min-width: 0">
+      <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Hình bóng và cỡ nhỏ</h2>
+      <div style="display: flex; align-items: flex-end; gap: 12px">
+        <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="72" height="72" alt="Hình bóng robot" style="filter: brightness(0)">
+        <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="64" height="64" alt="">
+        <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="48" height="48" alt="">
+        <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="32" height="32" alt="">
+        <img src="/_blob/7c9e5ec6144491f5871c4d9e440ab728" width="24" height="24" alt="">
+      </div>
+      <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Hình bóng · 64 · 48 · 32 · 24px. Rõ nhất ở 24px trong ba hướng, nhưng hình bóng chung chung: robot nào cũng có đầu vuông và ăng-ten.</p>
+    </section>
+    <section style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+      <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Điểm mạnh</h2>
+      <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; color: #273842">
+        <li>Đọc rõ ở cỡ nhỏ: avatar trợ giảng, chuông thông báo.</li>
+        <li>Hoạt ảnh rẻ: mood là hình trên màn hình.</li>
+        <li>Màn hình hiện được chữ: “test 3/10” khi đang chấm, “404”.</li>
+        <li>Không có nguy cơ giống Duo.</li>
+      </ul>
+    </section>
+    <section style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; min-width: 0">
+      <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Rủi ro</h2>
+      <ul style="margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 20px; color: #273842">
+        <li>Phổ biến: robot là linh vật mặc định của đồ công nghệ, ít bản sắc.</li>
+        <li>Lạnh hơn hai hướng kia, khó tạo cảm giác ấm cho người mới học.</li>
+        <li>Không có câu chuyện riêng như “bắt bug” hay “Lạc”.</li>
+      </ul>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

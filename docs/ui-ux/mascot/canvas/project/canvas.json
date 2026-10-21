@@ -1,0 +1,25 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-21T03:14:18Z" },
+  "title": "Linh vật DevPath",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 960, "title": "Tổng quan — ba hướng" },
+    "Gecko.dc.html": { "x": 0, "y": 1080, "w": 1200, "h": 1200, "title": "A · Tắc kè “bắt bug”" },
+    "Lac.dc.html": { "x": 1280, "y": 1080, "w": 1200, "h": 1200, "title": "B · Chim Lạc" },
+    "Robot.dc.html": { "x": 2560, "y": 1080, "w": 1200, "h": 1200, "title": "C · Robot màn hình" },
+    "Duo.dc.html": { "x": 0, "y": 2400, "w": 1200, "h": 880, "title": "Kiểm với Duo" }
+  },
+  "order": ["Main.dc.html", "Gecko.dc.html", "Lac.dc.html", "Robot.dc.html", "Duo.dc.html"],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": "1792551335-5af5",
+      "copiedAt": "2026-10-21T03:14:18Z"
+    }
+  ]
+}

@@ -1,0 +1,957 @@
+{
+  "base": "http://localhost:3000",
+  "hold_ms": 1200,
+  "at": "2026-10-22T05:01:04.489Z",
+  "data": {
+    "slug": "python-co-ban-cho-nguoi-moi-bat-dau",
+    "article": "a9381ddb-048d-4514-a0af-182bd183e658",
+    "courseId": "1fcef1d9-cf34-4ecf-89c1-e98af369aac9"
+  },
+  "results": [
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc",
+      "cls": 0.0002,
+      "shifts": [
+        {
+          "value": 0.0002361660343792867,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→44px y10→10"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "cls": 0.0015,
+      "shifts": [
+        {
+          "value": 0.00007288789893046982,
+          "sources": [
+            "#text",
+            "a.inline-flex.h-10.items-center 40→40px y12→12",
+            "div.flex.items-center.gap-1.5 20→20px y311→311"
+          ]
+        },
+        {
+          "value": 0.001404941176844886,
+          "sources": [
+            "dl.space-y-1.5.border-t.pt-4 115→115px y448.875→472.875",
+            "div.border-t.pt-2 37→37px y579.875→603.875",
+            "div.flex.shrink-0.items-center 44→44px y10→10"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc",
+      "cls": 0.001,
+      "shifts": [
+        {
+          "value": 0.0010161615181149748,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→32px y14→16"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "cls": 0.0186,
+      "shifts": [
+        {
+          "value": 0.017595719381688465,
+          "sources": [
+            "aside.lg:sticky.lg:top-8.lg:col-start-2 285→313px y527→499",
+            "dl.flex.flex-wrap.items-center 48→48px y375→347",
+            "div.flex.items-center.gap-3 48→48px y439→411"
+          ]
+        },
+        {
+          "value": 0.0010161615181149748,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→32px y14→16"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/",
+      "cls": 0.1606,
+      "shifts": [
+        {
+          "value": 0.15561032744984568,
+          "sources": [
+            "section.max-w-2xl 246→246px y123→598.890625",
+            "footer.border-t.bg-card.print:hidden 91→0px y809→0"
+          ]
+        },
+        {
+          "value": 0.004958504801097393,
+          "sources": [
+            "section.space-y-4 11.109375→0px y888.890625→0",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/khoa-hoc-cua-toi",
+      "cls": 0.2112,
+      "shifts": [
+        {
+          "value": 0.03826172839506173,
+          "sources": [
+            "div.grid.gap-5.sm:grid-cols-2 288→288px y165→309",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.09316435185185185,
+          "sources": [
+            "div.grid.gap-5.sm:grid-cols-2 288→288px y309→550",
+            "footer.border-t.bg-card.print:hidden 186→22px y714→878"
+          ]
+        },
+        {
+          "value": 0.0797503331565072,
+          "sources": [
+            "div.space-y-6 288→262px y550→638",
+            "p.mt-3.border-t.pt-3 45→45px y448→536",
+            "footer.border-t.bg-card.print:hidden 22→0px y878→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/gio-hang",
+      "cls": 0.0005,
+      "shifts": [
+        {
+          "value": 0.00046389531893004115,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/yeu-thich",
+      "cls": 0.0005,
+      "shifts": [
+        {
+          "value": 0.00046389531893004115,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/thong-bao",
+      "cls": 0.0005,
+      "shifts": [
+        {
+          "value": 0.00046389531893004115,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/ho-so",
+      "cls": 0.0517,
+      "shifts": [
+        {
+          "value": 0.05173816872427984,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/bang-xep-hang",
+      "cls": 0.0005,
+      "shifts": [
+        {
+          "value": 0.00046389531893004115,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "cls": 0.0034,
+      "shifts": [
+        {
+          "value": 0.00007302678112139917,
+          "sources": [
+            "#text",
+            "a.inline-flex.h-10.items-center 40→40px y12→12",
+            "div.flex.items-center.gap-1.5 20→20px y311→311"
+          ]
+        },
+        {
+          "value": 0.000028709296499914267,
+          "sources": [
+            "#text",
+            "dd. 20→20px y465.875→465.875"
+          ]
+        },
+        {
+          "value": 0.0026901070551617156,
+          "sources": [
+            "dl.space-y-1.5.border-t.pt-4 115→115px y448.875→492.875",
+            "div.border-t.pt-2 37→37px y579.875→623.875",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.0005664330418381344,
+          "sources": [
+            "dl.space-y-1.5.border-t.pt-4 115→115px y492.875→472.875",
+            "div.border-t.pt-2 37→37px y623.875→603.875"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658",
+      "cls": 0.001,
+      "shifts": [
+        {
+          "value": 0.00046389531893004115,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.000497093822337963,
+          "sources": [
+            "#text",
+            "#text"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/",
+      "cls": 0.0964,
+      "shifts": [
+        {
+          "value": 0.09640394088669951,
+          "sources": [
+            "section.space-y-4 69.1875→0px y742.8125→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/khoa-hoc-cua-toi",
+      "cls": 0.4414,
+      "shifts": [
+        {
+          "value": 0.11783005330550769,
+          "sources": [
+            "div.grid.gap-5.sm:grid-cols-2 647→519px y165→293",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.22247265160523189,
+          "sources": [
+            "div.grid.gap-5.sm:grid-cols-2 519→210px y293→602"
+          ]
+        },
+        {
+          "value": 0.10107102817345726,
+          "sources": [
+            "div.grid.gap-5.sm:grid-cols-2 210→0px y602→0",
+            "p.mt-3.border-t.pt-3 93→93px y452→700"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/gio-hang",
+      "cls": 0.0004,
+      "shifts": [
+        {
+          "value": 0.00041408430197287005,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/yeu-thich",
+      "cls": 0.2176,
+      "shifts": [
+        {
+          "value": 0.00041408430197287005,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.217170399669975,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 0→258px y0→554"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/thong-bao",
+      "cls": 0.0253,
+      "shifts": [
+        {
+          "value": 0.0002993031710306001,
+          "sources": [
+            "#text"
+          ]
+        },
+        {
+          "value": 0.012843383726855784,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→227px y554→585",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.012130238540124731,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 227→258px y585→554"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/ho-so",
+      "cls": 0.0728,
+      "shifts": [
+        {
+          "value": 0.07276354679802956,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 103→0px y709→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/bang-xep-hang",
+      "cls": 0.0417,
+      "shifts": [
+        {
+          "value": 0.00041408430197287005,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.04131379067679391,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 107→227px y705→585"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "cls": 0.018,
+      "shifts": [
+        {
+          "value": 0.017595719381688465,
+          "sources": [
+            "aside.lg:sticky.lg:top-8.lg:col-start-2 285→313px y527→499",
+            "dl.flex.flex-wrap.items-center 48→48px y375→347",
+            "div.flex.items-center.gap-3 48→48px y439→411"
+          ]
+        },
+        {
+          "value": 0.00041408430197287005,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658",
+      "cls": 0.0036,
+      "shifts": [
+        {
+          "value": 0.00041408430197287005,
+          "sources": [
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.0031837644689266913,
+          "sources": [
+            "#text",
+            "#text"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day",
+      "cls": 0.0006,
+      "shifts": [
+        {
+          "value": 0.0005742171424897119,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/thong-ke",
+      "cls": 0.0691,
+      "shifts": [
+        {
+          "value": 0.01282711066100823,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→115px y714→785",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.04382047325102881,
+          "sources": [
+            "div.space-y-6 520→520px y217→319",
+            "footer.border-t.bg-card.print:hidden 115→13px y785→887"
+          ]
+        },
+        {
+          "value": 0.012428240740740741,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 13→0px y887→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/hoi-dap",
+      "cls": 0.0009,
+      "shifts": [
+        {
+          "value": 0.0005742171424897119,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.00032454561042524006,
+          "sources": [
+            "label.flex.items-center.gap-2 20→20px y247→247"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/cap-bac",
+      "cls": 0.0696,
+      "shifts": [
+        {
+          "value": 0.0005742171424897119,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.0690324074074074,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+      "cls": 0.1411,
+      "shifts": [
+        {
+          "value": 0.03049960133744856,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.11063483796296297,
+          "sources": [
+            "div.group/card.flex.flex-col 241→0px y659→0",
+            "form.space-y-2 46→0px y568→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day",
+      "cls": 0.0659,
+      "shifts": [
+        {
+          "value": 0.049302021403091555,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→139px y554→673",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.01656191608629183,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 139→195px y673→617"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/thong-ke",
+      "cls": 0.449,
+      "shifts": [
+        {
+          "value": 0.33641379310344827,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.10542726912405867,
+          "sources": [
+            "div.space-y-6 481→323px y331→489"
+          ]
+        },
+        {
+          "value": 0.007127407443357842,
+          "sources": [
+            "a.flex.flex-wrap.items-center 134→134px y331→311",
+            "div.flex.flex-wrap.items-center 82→82px y229→209"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/hoi-dap",
+      "cls": 0.1044,
+      "shifts": [
+        {
+          "value": 0.06753134024120945,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→95px y554→717",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.03686420442136427,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 95→197px y717→615",
+            "select.min-w-0.rounded-md.border 46→46px y255→255",
+            "label.text-sm.text-muted-foreground 20→40px y267→257"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/cap-bac",
+      "cls": 0.3166,
+      "shifts": [
+        {
+          "value": 0.007457448615593681,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→251px y554→561",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.3091133004926108,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 251→0px y561→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+      "cls": 0.2509,
+      "shifts": [
+        {
+          "value": 0.15039188041447255,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.10052873563218391,
+          "sources": [
+            "div.group/card.flex.flex-col 47→0px y765→0",
+            "form.space-y-2 46→0px y674→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri",
+      "cls": 0.0745,
+      "shifts": [
+        {
+          "value": 0.03759297410836762,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.036893827160493824,
+          "sources": [
+            "div.group/card.flex.flex-col 241→0px y659→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/khoa-hoc",
+      "cls": 0.0004,
+      "shifts": [
+        {
+          "value": 0.0003944109546467764,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/bao-cao",
+      "cls": 0.0343,
+      "shifts": [
+        {
+          "value": 0.017523418209876542,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→69px y714→831",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.016791666666666667,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 69→186px y831→714"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/nguoi-dung",
+      "cls": 0.2071,
+      "shifts": [
+        {
+          "value": 0.0003944109546467764,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.20666666666666667,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/danh-muc",
+      "cls": 0.0341,
+      "shifts": [
+        {
+          "value": 0.00944504752872085,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→137px y714→763",
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.024630401234567903,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 137→0px y763→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/ma-giam-gia",
+      "cls": 0.0556,
+      "shifts": [
+        {
+          "value": 0.0003944109546467764,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.05439351851851852,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→0px y714→0"
+          ]
+        },
+        {
+          "value": 0.0007850025318287036,
+          "sources": [
+            "span.group/badge.inline-flex.h-5.5 22→22px y667→667",
+            "span.group/badge.inline-flex.h-5.5 22→22px y361→361",
+            "span.group/badge.inline-flex.h-5.5 22→22px y871→871"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/banner",
+      "cls": 0.0071,
+      "shifts": [
+        {
+          "value": 0.0003944109546467764,
+          "sources": [
+            "div.flex.shrink-0.items-center 44→40px y10→12"
+          ]
+        },
+        {
+          "value": 0.00674537037037037,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 186→139px y714→761"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri",
+      "cls": 0.2452,
+      "shifts": [
+        {
+          "value": 0.24236708000679463,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.0028547162027712392,
+          "sources": [
+            "div.flex.flex-wrap.items-center 82→82px y355→335"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/khoa-hoc",
+      "cls": 0.1006,
+      "shifts": [
+        {
+          "value": 0.0716743672498726,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→85px y554→727",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.028928753427649303,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 85→187px y727→625"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/bao-cao",
+      "cls": 0.2206,
+      "shifts": [
+        {
+          "value": 0.15039188041447255,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.0702304108325851,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 0→169px y0→643"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/nguoi-dung",
+      "cls": 0.2156,
+      "shifts": [
+        {
+          "value": 0.05178783760828945,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→133px y554→679",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.16379310344827586,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 133→0px y679→0"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/danh-muc",
+      "cls": 0.1197,
+      "shifts": [
+        {
+          "value": 0.1197334805503652,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/ma-giam-gia",
+      "cls": 0.1359,
+      "shifts": [
+        {
+          "value": 0.10481858331917784,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→5px y554→807",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        },
+        {
+          "value": 0.006157635467980296,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 5→0px y807→0"
+          ]
+        },
+        {
+          "value": 0.024965968068261787,
+          "sources": [
+            "p.text-xs.text-muted-foreground 32→32px y760→730",
+            "li. 0→29px y0→783",
+            "p.text-sm.break-words.text-muted-foreground 20→20px y736→706"
+          ]
+        }
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/banner",
+      "cls": 0.1098,
+      "shifts": [
+        {
+          "value": 0.10979021572957363,
+          "sources": [
+            "footer.border-t.bg-card.print:hidden 258→0px y554→0",
+            "div.flex.shrink-0.items-center 36→40px y14→12"
+          ]
+        }
+      ]
+    }
+  ]
+}

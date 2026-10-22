@@ -208,15 +208,32 @@ E2E_CHROME_CHANNEL=chrome npm run test:e2e     # E2E Playwright, chạy vào sta
 <Mascot mood="celebrate" event={submission.id} />            // verdict vừa tới: phản ứng một lần
 <Mascot mood="celebrate" />                                   // mở lại lịch sử: tư thế tĩnh
 <Mascot mood="grading" event={submission.id} progress={k / n} />
-<Mascot mood="lost" size="lg" event />                        // trang vừa mở (404, empty state)
+<Mascot mood="lost" size="lg" />                              // 404, lỗi, empty state: luôn tĩnh
 ```
 
 - `components/mascot/mascot.tsx`. Tư thế tĩnh là markup SVG máy chủ render sẵn. Phản ứng chạy bằng Web Animations, chỉ khi Naomi đã lên màn hình (IntersectionObserver) và không bật `prefers-reduced-motion`. Mỗi `event` (mã bài nộp, mã lượt làm quiz…) chỉ phản ứng một lần; render lại hay polling không làm phát lại. Hết phản ứng, Naomi giữ dáng của mood. Riêng `wave` hạ tay về `rest` (lý do ở `Settle` trong `lib/mascot/choreography.ts`).
 - Mặc định là trang trí (`aria-hidden`): chữ bên cạnh mới mang nghĩa. `label` (chuỗi, hoặc `true` để dùng mô tả của mood) khi chỉ có Naomi nói điều đó. `pointer-events: none`, nên đè lên nút cũng không chặn bấm.
 - Mỗi mood là một chunk riêng (`components/mascot/art/`, **sinh bởi `docs/ui-ux/mascot/naomi/build.cjs`, đừng sửa tay**). Đổi mood lúc chạy thì hình cũ vẫn hiện tới khi hình mới tải xong. Biết trước mood sắp cần thì gọi `preloadMascot(...)` (ví dụ các verdict khi bắt đầu chấm).
 - Biên đạo ở `lib/mascot/choreography.ts`, toạ độ theo bản vẽ 200 × 200. `npm test` kiểm nó với chính bản vẽ.
-- Màu đọc `var(--color-<token>)`, khai trong `app/globals.css` ở khối `[data-mascot]` cho tới khi bảng màu vào `@theme`. Đường cong lấy từ `--ease-*`.
+- Màu đọc `var(--color-<token>)` từ bảng màu ở `@theme static` của `app/globals.css`. Đường cong lấy từ `--ease-*`.
 - Xem mọi mood ở `/dev/naomi` (chỉ dev; bản production trả 404 trừ khi build với `MASCOT_PREVIEW=1`). Số đo và ảnh: `docs/report/assets/phase-7/mascot.md`.
+
+## Trạng thái toàn site: 404, lỗi, đang tải, rỗng (Phase 7)
+
+| Trạng thái | Dùng | Naomi |
+|---|---|---|
+| 404 (`not-found.tsx`) | `<StatePanel mood="lost" code="404" title actions>` | `lost`, cầm bản đồ ngược |
+| Lỗi (`error.tsx`, `global-error.tsx`) | `<StatePanel mood="sorry" …>` + nút "Thử lại" gọi `retry` | `sorry`, cầm biển "đang sửa". Khu giảng viên/admin: `mood={null}` |
+| Rỗng | `<EmptyState mood title description action size />` | `empty` hoặc `empty-cart`/`-courses`/`-notifications`/`-notes`/`-search` |
+| Đang tải | `Skeleton`, `SkeletonText`, `SkeletonInline`, `SkeletonRegion` | không |
+
+- Ba component ở `components/ui/` (`state-panel`, `empty-state`, `skeleton`). Naomi ở đây luôn **tĩnh** (không truyền `event`): trang 404 hay danh sách rỗng không phải sự kiện vừa xảy ra.
+- **`retry`, không `reset`**: từ Next 16.3, `retry()` tải lại segment rồi mới render; `reset()` chỉ render lại cái đang có, nên lỗi tới từ máy chủ (backend không trả lời) bấm "Thử lại" mãi vẫn hỏng.
+- **Mỗi màn một Naomi**: hai chỗ rỗng trên cùng màn thì Naomi ở chỗ chính, chỗ phụ là một dòng chữ (ví dụ "XP gần đây" trên `/khoa-hoc-cua-toi`). Dòng "chưa có …" nằm trong một thẻ có dữ liệu khác (từng ô xếp hạng, danh mục con, bảng con) giữ chữ.
+- `EmptyState` cỡ `lg` cho trang học viên (Naomi 128 px), `md` cho tab, thẻ và khu làm việc (80 px), `sm` cho dropdown (64 px). Naomi đứng cạnh chữ khi khung rộng từ 448 px: container query, nên cùng một danh sách đúng cả trên laptop lẫn điện thoại.
+- **Skeleton đúng kích thước nội dung thật**: dựng lại khung thật (thẻ, padding, số dòng, chiều cao dòng theo thang chữ) chứ không đặt một khối xám ước lượng. Nhãn tĩnh hiện thật, chỉ số liệu là thanh xám (khối thành tích). Khu giảng viên có một skeleton mỗi màn (`components/instructor/instructor-skeletons.tsx`) dùng chung cho `loading.tsx`, cổng đăng nhập và chính trang; danh sách ở khu làm việc chừa chỗ cao tối thiểu 75 % màn hình, để footer (luôn bám đáy màn hình) không hiện ra rồi bị đẩy đi. Đo bằng CLS khi giữ API 1,2 s: `docs/report/assets/phase-7/site-states/shift.cjs`.
+- `lib/design/site-states.test.ts` (trong `npm test`) đỏ khi một `not-found.tsx` thiếu `lost`, một `error.tsx` dùng `reset` hoặc sai nhân vật theo khu, có `<Mascot>` trong `components/admin|instructor`, có `animate-pulse` tự vẽ, hoặc có `loading.tsx` ở `khoa-hoc/` hay `khoa-hoc/[slug]/` (biến 404 của khóa chưa xuất bản thành 200).
+- Xem mọi 404, lỗi, skeleton cạnh nhau ở `/dev/trang-thai` (chỉ dev). Ảnh trước/sau: `docs/report/assets/phase-7/site-states.md`.
 
 ## Cấu trúc
 
@@ -225,8 +242,8 @@ app/
 ├── (marketing)/     Trang public: home, danh sách + chi tiết khóa học (SSR, SEO)
 ├── (learn)/         Player, quiz, code editor (client-heavy) — Phase 2+
 ├── (dashboard)/     Khu vực giảng viên /giang-day và quản trị /quan-tri (mỗi khu một gate)
-└── (dev)/           Trang chỉ cho dev: /dev/naomi xem trước linh vật (production trả 404)
-components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea, markdown
+└── (dev)/           Trang chỉ cho dev: /dev/naomi (linh vật), /dev/trang-thai (404, lỗi, skeleton); production trả 404
+components/ui/       shadcn/ui (generated, hạn chế sửa tay) + form-field, native-select, textarea, markdown, skeleton, empty-state, state-panel
 components/layout/   site-header, site-footer
 components/instructor/ danh sách khóa học, form tạo/sửa, trạng thái
 components/curriculum/ trình soạn mục lục (kéo-thả)

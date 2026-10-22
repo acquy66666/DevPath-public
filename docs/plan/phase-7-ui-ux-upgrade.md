@@ -46,7 +46,14 @@ Thiết kế đầy đủ, gồm lý do, phản mục tiêu, bản đồ phản 
   - **Kiểm:** `npm test` 26/26, lint + tsc sạch, build không mạng xanh, E2E 1 passed.
   - **Artifact design system:** bản 12, thêm 4 preview.
   - Bằng chứng: [`foundation.md`](../report/assets/phase-7/foundation.md)
-- [ ] Trạng thái toàn site: `app/not-found.tsx` + 2 trang 404 riêng (khóa học, chứng chỉ) có nhân vật `lost`; `error.tsx` có `sorry`; skeleton loading theo design system; mọi empty state có nhân vật + đạo cụ
+- [x] Trạng thái toàn site: `app/not-found.tsx` + 2 trang 404 riêng (khóa học, chứng chỉ) có nhân vật `lost`; `error.tsx` có `sorry`; skeleton loading theo design system; mọi empty state có nhân vật + đạo cụ — xong 22/10:
+  - **Component** (`components/ui/`): `StatePanel` (404, lỗi), `EmptyState` (cỡ `lg`/`md`/`sm`, container query), `Skeleton`/`SkeletonText`/`SkeletonInline`/`SkeletonRegion`. Naomi luôn tĩnh ở ba chỗ này.
+  - **404 + lỗi:** 3 trang 404 có `lost`. 6 trang lỗi phía học viên có `sorry`, cộng `global-error.tsx` mới (trước đó lỗi ở root layout ra trang tiếng Anh của Next). 2 trang lỗi khu giảng viên/admin không có nhân vật.
+  - **Lỗi tìm ra:** cả 8 `error.tsx` dùng `reset`, nên "Thử lại" không chữa được lỗi từ máy chủ (Next 16.3 có `retry`). Thử thật bằng cách dừng backend: `retry` đưa trang về, đối chứng `reset` kẹt 60 s.
+  - **Empty state:** 28 chỗ có Naomi + đạo cụ (`empty-cart`/`-courses`/`-notifications`/`-notes`/`-search`/`empty`). Mỗi màn một Naomi. Dòng "chưa có" nằm trong một thẻ có dữ liệu khác thì giữ chữ.
+  - **Skeleton:** 76 chỗ tự vẽ thành khung thật của nội dung. Khu giảng viên có một skeleton mỗi màn, dùng chung cho `loading.tsx`, cổng đăng nhập và trang. CLS khi skeleton nhường chỗ (46 lượt xem, API giữ 1,2 s): tổng **4,397 → 0,802**, lượt ≥ 0,1 **17 → 2** (cả hai ở trình soạn khóa học, danh sách chương dài không biết trước).
+  - **Kiểm:** `npm test` 31/31 (5 test mới chặn hồi quy các luật trên), lint + tsc sạch, build không mạng xanh, E2E 1 passed, tràn ngang 0/132.
+  - Bằng chứng + ảnh trước/sau (56 + 56): [`site-states.md`](../report/assets/phase-7/site-states.md)
 
 ## Thiết kế lại theo nhóm màn
 

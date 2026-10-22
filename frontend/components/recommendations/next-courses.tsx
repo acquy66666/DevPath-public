@@ -36,7 +36,7 @@ export function NextCourses({
   });
 
   if (query.isPending) {
-    return <CourseBlockSkeleton title={TITLE} count={LIMIT} columns={3} />;
+    return <CourseBlockSkeleton title={TITLE} count={LIMIT} columns={3} described />;
   }
   if (query.isError || query.data.items.length === 0) return null;
 

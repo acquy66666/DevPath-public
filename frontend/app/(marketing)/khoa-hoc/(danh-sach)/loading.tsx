@@ -3,9 +3,9 @@ import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton
 
 /**
  * The catalogue fetches courses and categories on the server, so the browser
- * would otherwise sit on the previous page until both answer. Same heading,
- * same filter grid (search, four selects, the button row), same card grid, so
- * the real page lands where the grey one was instead of shoving it around.
+ * would otherwise sit on the previous page until both answer. Same head on
+ * `card` (title, search box, topic pills), same result line, same card grid,
+ * so the real page lands where the grey one was instead of shoving it around.
  *
  * It lives in the `(danh-sach)` group, not in `khoa-hoc/` itself, because a
  * `loading.tsx` wraps every segment below it: one level up it also wrapped
@@ -14,20 +14,38 @@ import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton
  */
 export default function Loading() {
   return (
-    <SkeletonRegion label="Đang tải danh sách khóa học…" className="mx-auto max-w-6xl px-4 py-10">
-      <header className="mb-6 space-y-2">
-        <SkeletonText size="h1" className="h-9 w-44" />
-        <SkeletonText className="w-64" />
-      </header>
+    <SkeletonRegion label="Đang tải danh sách khóa học…">
+      <div className="border-b bg-card">
+        <div className="mx-auto max-w-6xl space-y-5 px-4 pt-10 pb-6">
+          <div className="space-y-1.5">
+            <SkeletonText size="h1" className="w-40" />
+            <SkeletonText className="w-[min(26rem,100%)]" />
+          </div>
+          <div className="flex max-w-3xl gap-2">
+            <Skeleton className="h-12 flex-1" />
+            <Skeleton className="h-12 w-20" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {[18, 30, 21, 21, 38, 18, 26, 37, 58].map((width, index) => (
+              <Skeleton key={index} className="h-9 rounded-full" style={{ width: `${width * 4}px` }} />
+            ))}
+          </div>
+        </div>
+      </div>
 
-      <div className="space-y-8">
-        <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end">
-          <Field className="col-span-2 lg:col-span-1" />
-          <Field />
-          <Field />
-          <Field />
-          <Field />
-          <Skeleton className="col-span-2 h-9 w-24 lg:col-span-1" />
+      <div className="mx-auto max-w-6xl space-y-6 px-4 pt-6 pb-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <SkeletonText className="w-32" />
+          {/* The "Bộ lọc" button on a phone, three selects from md. */}
+          <Skeleton className="h-9 w-28 md:hidden" />
+          <div className="hidden gap-3 md:flex">
+            {[0, 1, 2].map((field) => (
+              <div key={field} className="w-44 space-y-1.5">
+                <SkeletonText size="body-sm" className="w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            ))}
+          </div>
         </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((card) => (
@@ -38,15 +56,5 @@ export default function Loading() {
         </ul>
       </div>
     </SkeletonRegion>
-  );
-}
-
-/** A label over a control, 6px apart, like FormField. */
-function Field({ className }: { className?: string }) {
-  return (
-    <div className={className}>
-      <SkeletonText size="body-sm" className="w-20" />
-      <Skeleton className="mt-1.5 h-10 w-full" />
-    </div>
   );
 }

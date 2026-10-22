@@ -306,7 +306,7 @@ export function ChatPanel({
     // below the fold, and the first thing a reader had to do was scroll.
     <section
       aria-label="Trợ giảng AI"
-      className="flex h-[34rem] flex-col overflow-hidden rounded-xl border lg:h-[calc(100dvh-14rem)] lg:min-h-[28rem]"
+      className="flex h-[34rem] flex-col overflow-hidden rounded-lg border lg:h-[calc(100dvh-14rem)] lg:min-h-[28rem]"
     >
       <header className="flex items-center gap-1 border-b px-2 py-1.5">
         {view === "history" ? (
@@ -495,7 +495,7 @@ export function ChatPanel({
 function Question({ text }: { text: string }) {
   return (
     <li className="flex justify-end">
-      <p className="ml-8 rounded-2xl rounded-br-sm bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
+      <p className="ml-8 rounded-xl rounded-br-sm bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
         {text}
       </p>
     </li>
@@ -547,7 +547,7 @@ function LiveAnswer({
       ) : null}
 
       {turn.phase === "failed" || turn.phase === "stopped" ? (
-        <div className="space-y-2 rounded-lg border border-dashed p-2.5 text-sm">
+        <div className="space-y-2 rounded-md border border-dashed p-2.5 text-sm">
           <p className={turn.phase === "failed" ? "text-destructive" : "text-muted-foreground"}>
             {turn.phase === "failed"
               ? turn.error
@@ -617,7 +617,7 @@ function EmptyState({
               key={suggestion}
               type="button"
               onClick={() => onAsk(suggestion)}
-              className="block w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+              className="block w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
             >
               {suggestion}
             </button>
@@ -634,7 +634,7 @@ function EmptyState({
                 <button
                   type="button"
                   onClick={() => onOpen(session.id)}
-                  className="flex w-full items-baseline gap-2 rounded-lg px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+                  className="flex w-full items-baseline gap-2 rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted"
                 >
                   <span className="min-w-0 flex-1 truncate">{session.title}</span>
                   <span className="shrink-0 text-xs text-muted-foreground">
@@ -658,7 +658,7 @@ function EmptyState({
 function ConversationSkeleton() {
   return (
     <div className="space-y-5" aria-hidden>
-      <div className="ml-auto h-9 w-2/3 animate-pulse rounded-2xl bg-muted" />
+      <div className="ml-auto h-9 w-2/3 animate-pulse rounded-xl bg-muted" />
       <div className="space-y-2">
         <div className="h-3 w-full animate-pulse rounded bg-muted" />
         <div className="h-3 w-5/6 animate-pulse rounded bg-muted" />
@@ -672,7 +672,7 @@ function HistorySkeleton() {
   return (
     <div className="space-y-2 p-3" aria-hidden>
       {[0, 1, 2].map((row) => (
-        <div key={row} className="h-10 animate-pulse rounded-lg bg-muted" />
+        <div key={row} className="h-10 animate-pulse rounded-md bg-muted" />
       ))}
     </div>
   );

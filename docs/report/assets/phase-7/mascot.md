@@ -17,7 +17,7 @@ Task "Component `components/mascot/`" của [Phase 7](../../../plan/phase-7-ui-u
 | 30 bản vẽ web, mỗi mood một chunk, sinh từ cùng bộ phận với model sheet: màu `var(--color-*)`, lớp `data-layer`, mảnh `data-part`. Các SVG trong `docs/` vẫn ra đúng từng byte cũ | `frontend/components/mascot/art/` ← `docs/ui-ux/mascot/naomi/build.cjs` |
 | Biên đạo 30 mood: 14 động tác dùng chung (nhảy, nhún, nghiêng đầu, chớp mắt, vung tay, vẫy đuôi, mảnh bật ra…), toạ độ theo bản vẽ 200 × 200 | `frontend/lib/mascot/choreography.ts`, `keyframes.ts` |
 | 10 test: tên lớp có trong bản vẽ, phản ứng ≤ `duration-mascot`, mọi mảnh về đúng chỗ khi hết, không hai track tranh một thuộc tính hay một điểm xoay, chỉ `wave` về `rest`, màu và đường cong khớp `tokens.json`. Thử làm hỏng 4 kiểu (quá giờ, sai tên, tranh thuộc tính, không về chỗ): cả 4 đều đỏ | `frontend/lib/mascot/mascot.test.ts` |
-| Token: 4 đường cong `--ease-*` (`@theme static`), bảng màu 28 token của Naomi ở khối `[data-mascot]` (xóa khi task "Nền" đưa palette vào `@theme`) | `frontend/app/globals.css` |
+| Token: 4 đường cong `--ease-*` (`@theme static`), bảng màu 28 token của Naomi ở khối `[data-mascot]` (đã xóa ở task "Nền" 22/10/2026: Naomi giờ đọc palette chung trong `@theme static`) | `frontend/app/globals.css` |
 | Trang xem trước mọi mood + luồng chấm bài thu nhỏ + ô thử bấm xuyên. Chỉ có ở dev, bản production trả 404 trừ khi build với `MASCOT_PREVIEW=1` | `frontend/app/(dev)/dev/naomi/` |
 
 ## Cách đo

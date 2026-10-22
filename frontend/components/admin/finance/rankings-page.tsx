@@ -78,7 +78,7 @@ export function RankingsPage() {
         <ExportButton path={rankingsPath(range, "/export.xlsx")} filename="devpath_xep-hang.xlsx" />
       </div>
 
-      <div className="rounded-xl border p-4">
+      <div className="rounded-lg border p-4">
         <DateRangePicker value={range} onChange={setRange} />
       </div>
 

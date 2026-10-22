@@ -73,7 +73,7 @@ export function QuestionForm({
 
   return (
     <form
-      className="space-y-4 rounded-lg border p-4"
+      className="space-y-4 rounded-md border p-4"
       onSubmit={(event) => {
         event.preventDefault();
         save.mutate();

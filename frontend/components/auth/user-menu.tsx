@@ -50,15 +50,15 @@ export function UserMenu({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2 px-2 text-[1.12rem] h-10">
-          <UserAvatar user={user} className="size-10 text-sm" />
+        <Button variant="ghost" size="sm" className="h-10 gap-2 px-1 text-base sm:px-2" aria-label={`Tài khoản: ${user.full_name}`}>
+          <UserAvatar user={user} className="size-8 text-sm" />
           <span className="hidden max-w-32 truncate sm:inline">{user.full_name}</span>
         </Button>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
-          <span className="block truncate font-medium">{user.full_name}</span>
+          <span className="block truncate font-semibold text-foreground">{user.full_name}</span>
           <span className="block truncate text-xs text-muted-foreground">{user.email}</span>
           <span className="mt-1 block text-xs text-muted-foreground">
             {ROLE_LABELS[user.role]}

@@ -45,7 +45,7 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
   });
 
   if (status === "loading") {
-    return <div className="h-9 w-full animate-pulse rounded-lg bg-muted" aria-hidden />;
+    return <div className="h-9 w-full animate-pulse rounded-md bg-muted" aria-hidden />;
   }
 
   if (owns) {

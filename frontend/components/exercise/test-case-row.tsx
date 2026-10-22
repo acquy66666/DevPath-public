@@ -61,7 +61,7 @@ export function TestCaseRow({
   });
 
   return (
-    <li className="rounded-lg border bg-background">
+    <li className="rounded-md border bg-background">
       <div className="flex flex-wrap items-center gap-2 p-2">
         <span className="w-6 shrink-0 text-center text-sm text-muted-foreground">
           {index + 1}

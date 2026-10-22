@@ -111,7 +111,7 @@ export function CartView() {
   });
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />;
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
   }
 
   if (status === "anonymous") {
@@ -141,12 +141,12 @@ export function CartView() {
   }
 
   if (!cart.data) {
-    return <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />;
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
   }
 
   if (cart.data.items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-12 text-center">
+      <div className="rounded-lg border border-dashed p-12 text-center">
         <ShoppingCart className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
         <p className="font-medium">Giỏ hàng đang trống</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -175,7 +175,7 @@ export function CartView() {
 
         <p className="text-muted-foreground">{cart.data.items.length} khóa học</p>
 
-        <ul className="divide-y rounded-xl border">
+        <ul className="divide-y rounded-lg border">
           {cart.data.items.map((item) => (
             <li key={item.course.id}>
               <CartRow
@@ -337,7 +337,7 @@ function CartRow({
         <CourseCover
           thumbnailUrl={course.thumbnail_url}
           colorKey={course.id}
-          className="w-24 rounded-lg sm:w-40"
+          className="w-24 rounded-md sm:w-40"
           iconClassName="size-6"
         />
       </Link>

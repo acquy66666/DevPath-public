@@ -47,7 +47,7 @@ export function CourseBlockSkeleton({
       <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
       <div className={gridClass(columns)}>
         {Array.from({ length: count }, (_, index) => (
-          <div key={index} className="h-72 animate-pulse rounded-xl border bg-muted/40" />
+          <div key={index} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
         ))}
       </div>
     </section>

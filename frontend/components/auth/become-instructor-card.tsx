@@ -40,7 +40,7 @@ export function BecomeInstructorCard() {
   });
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />;
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
   }
 
   if (user === null) {

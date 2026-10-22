@@ -88,7 +88,7 @@ export function TestCaseManager({ exerciseId }: { exerciseId: string }) {
       ) : null}
 
       {query.isPending ? (
-        <div className="h-20 animate-pulse rounded-lg bg-muted/40" />
+        <div className="h-20 animate-pulse rounded-md bg-muted/40" />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
@@ -221,7 +221,7 @@ function AddTestCaseForm({ exerciseId }: { exerciseId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-lg border p-3" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-3 rounded-md border p-3" noValidate>
       {create.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(create.error)}</AlertDescription>

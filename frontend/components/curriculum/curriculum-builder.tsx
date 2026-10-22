@@ -213,7 +213,7 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
             {[0, 1].map((row) => (
               <div
                 key={row}
-                className="h-28 animate-pulse rounded-xl border bg-muted/40"
+                className="h-28 animate-pulse rounded-lg border bg-muted/40"
               />
             ))}
           </div>
@@ -258,14 +258,14 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
 
             <DragOverlay>
               {activeSection ? (
-                <div className="rounded-xl border bg-card px-4 py-3 shadow-lg">
+                <div className="rounded-lg border bg-card px-4 py-3 shadow-lg">
                   <p className="font-medium">{activeSection.title}</p>
                   <p className="text-xs text-muted-foreground">
                     {activeSection.lessons.length} bài học
                   </p>
                 </div>
               ) : activeLesson ? (
-                <div className="rounded-lg border bg-card px-3 py-2 text-sm shadow-lg">
+                <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-lg">
                   {activeLesson.title}
                 </div>
               ) : null}
@@ -281,8 +281,8 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
 
 function EmptyCurriculum() {
   return (
-    <div className="rounded-xl border border-dashed px-4 py-10 text-center">
-      <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-lg bg-muted">
+    <div className="rounded-lg border border-dashed px-4 py-10 text-center">
+      <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-md bg-muted">
         <ListTree className="size-5 text-muted-foreground" aria-hidden />
       </div>
       <p className="font-medium">Chưa có chương nào</p>

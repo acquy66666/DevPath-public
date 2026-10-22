@@ -70,7 +70,7 @@ export function AddLessonForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-lg border p-2" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-2" noValidate>
       {create.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(create.error)}</AlertDescription>

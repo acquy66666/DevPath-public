@@ -52,7 +52,7 @@ export function ChatHistory({
         {sessions.map((session) => (
           <li key={session.id}>
             {confirming === session.id ? (
-              <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
                 <p className="text-sm">Xóa cuộc trò chuyện này cùng mọi tin nhắn trong đó?</p>
                 <div className="flex gap-2">
                   <Button
@@ -74,7 +74,7 @@ export function ChatHistory({
             ) : (
               <div
                 className={cn(
-                  "group flex items-center gap-1 rounded-lg transition-colors hover:bg-muted",
+                  "group flex items-center gap-1 rounded-md transition-colors hover:bg-muted",
                   session.id === currentId && "bg-muted",
                 )}
               >

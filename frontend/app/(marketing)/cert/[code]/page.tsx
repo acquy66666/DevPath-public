@@ -83,7 +83,7 @@ export default async function CertificatePage({
           crossOrigin="anonymous"
         />
       ))}
-      <div className="flex items-start gap-3 rounded-xl border border-emerald-600/30 bg-emerald-50 p-4 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
+      <div className="flex items-start gap-3 rounded-lg border border-emerald-600/30 bg-emerald-50 p-4 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100">
         <BadgeCheck className="mt-0.5 size-5 shrink-0" aria-hidden />
         <div>
           <p className="font-semibold">Chứng chỉ hợp lệ</p>
@@ -96,7 +96,7 @@ export default async function CertificatePage({
 
       <section
         aria-label="Nội dung chứng chỉ"
-        className="mt-6 rounded-2xl border-4 border-double border-primary/60 bg-card px-6 py-10 text-center sm:px-12"
+        className="mt-6 rounded-xl border-4 border-double border-primary/60 bg-card px-6 py-10 text-center sm:px-12"
       >
         <p className="text-sm font-semibold tracking-wide text-primary">DevPath</p>
         <p className="mt-6 text-xs tracking-[0.3em] text-muted-foreground">

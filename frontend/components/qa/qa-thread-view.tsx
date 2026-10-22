@@ -164,7 +164,7 @@ export function QaThreadView({
     return (
       <div className="space-y-3">
         {back}
-        <div className="h-40 animate-pulse rounded-lg bg-muted/50" aria-hidden />
+        <div className="h-40 animate-pulse rounded-md bg-muted/50" aria-hidden />
       </div>
     );
   }
@@ -347,7 +347,7 @@ export function QaThreadView({
             <li
               key={reply.id}
               className={cn(
-                "space-y-2 rounded-lg border p-3",
+                "space-y-2 rounded-md border p-3",
                 // The answer the reader is most likely looking for stands out
                 // from the discussion around it.
                 reply.is_instructor_reply && "border-primary/40 bg-primary/5",

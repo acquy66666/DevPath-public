@@ -17,8 +17,8 @@
   },
   "lastChange": {
     "by": "Claude",
-    "at": "2026-10-21T09:24:00Z",
+    "at": "2026-10-22T03:46:24Z",
     "via": "Claude Code",
-    "note": "Nhân vật linh vật: Naomi, tắc kè “bắt bug” (hướng A, user chọn 21/10). Bảng màu riêng của Naomi; màu nghệ không tô miệng, tay, chân, đuôi hay thân."
+    "note": "Task “Nền”: token đã vào frontend/app/globals.css (code thắng). Thêm preview DropdownMenu, Pager, Markdown, ExportButton; README các component ghi phần đã vào code; ô nhập vô hiệu dùng viền border-strong."
   }
 }

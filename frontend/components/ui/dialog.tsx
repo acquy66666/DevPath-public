@@ -6,6 +6,12 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Design system, component Dialog. Written by hand: `shadcn add dialog`
+// rewrites button.tsx and adds an npm package called `cn` -- do not run it.
+//
+// In: fade + 0.96 → 1 over duration-slow on ease-enter. Out: ease-exit, about
+// 70% as long. With reduced motion only the fade is left.
+
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
@@ -32,7 +38,7 @@ function DialogOverlay({
     <DialogPrimitive.Overlay
       data-slot="dialog-overlay"
       className={cn(
-        "fixed inset-0 z-50 bg-black/40 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
+        "fixed inset-0 z-50 bg-overlay data-open:animate-in data-open:fade-in-0 data-open:duration-slow data-open:ease-enter data-closed:animate-out data-closed:fade-out-0 data-closed:duration-base data-closed:ease-exit",
         className
       )}
       {...props}
@@ -43,9 +49,12 @@ function DialogOverlay({
 function DialogContent({
   className,
   children,
+  size = "default",
   showCloseButton = true,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  /** `default` 440px for a confirmation; `form` 560px for a short form. */
+  size?: "default" | "form"
   showCloseButton?: boolean
 }) {
   return (
@@ -53,8 +62,11 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-size={size}
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-5 text-popover-foreground shadow-lg ring-1 ring-foreground/10 duration-100 outline-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+          "fixed top-1/2 left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 overflow-y-auto rounded-xl bg-popover p-6 text-popover-foreground shadow-lg",
+          size === "form" ? "max-w-140" : "max-w-110",
+          "data-open:animate-in data-open:fade-in-0 data-open:duration-slow data-open:ease-enter motion-safe:data-open:zoom-in-96 data-closed:animate-out data-closed:fade-out-0 data-closed:duration-base data-closed:ease-exit motion-safe:data-closed:zoom-out-96",
           className
         )}
         {...props}
@@ -63,9 +75,9 @@ function DialogContent({
         {showCloseButton ? (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute top-3 right-3 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="absolute top-4 right-4 inline-flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
           >
-            <XIcon className="size-4" />
+            <XIcon className="size-4" aria-hidden />
             <span className="sr-only">Đóng</span>
           </DialogPrimitive.Close>
         ) : null}
@@ -78,7 +90,7 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-1.5 pr-6", className)}
+      className={cn("flex flex-col gap-1.5 pr-8", className)}
       {...props}
     />
   )
@@ -88,7 +100,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-footer"
-      className={cn("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}
+      className={cn("flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end", className)}
       {...props}
     />
   )
@@ -101,7 +113,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-base leading-none font-medium", className)}
+      className={cn("text-h3", className)}
       {...props}
     />
   )

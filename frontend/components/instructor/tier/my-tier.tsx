@@ -56,7 +56,7 @@ export function MyTier() {
       </div>
 
       {query.isPending ? (
-        <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
@@ -66,7 +66,7 @@ export function MyTier() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-4">
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                   <Award className="size-6" aria-hidden />
                 </span>
                 <div>
@@ -94,7 +94,7 @@ export function MyTier() {
                   key={tier.id}
                   aria-current={here ? "step" : undefined}
                   className={cn(
-                    "rounded-xl border p-3 text-sm",
+                    "rounded-lg border p-3 text-sm",
                     here && "border-primary bg-primary/5",
                     passed && "bg-muted/40",
                   )}
@@ -175,7 +175,7 @@ export function MyTier() {
               ) : (
                 <ul className="space-y-3">
                   {query.data.history.map((change) => (
-                    <li key={change.created_at} className="rounded-lg border p-3 text-sm">
+                    <li key={change.created_at} className="rounded-md border p-3 text-sm">
                       <p className="font-medium">
                         {change.from_tier ?? query.data.ladder[0].name} → {change.to_tier}
                         <span className="ml-2 text-xs font-normal text-muted-foreground">

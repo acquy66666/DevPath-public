@@ -1,0 +1,34 @@
+<!-- @dsCard group="Hành động" height=330 subtitle="Menu tài khoản và menu điều hướng trên điện thoại (components/ui/dropdown-menu.tsx)" -->
+<!doctype html>
+<html lang="vi">
+<head><meta charset="utf-8"><title>DropdownMenu</title></head>
+<body>
+<div class="dp-stage">
+  <div class="dp-grid">
+    <div class="dp-col">
+      <button class="dp-btn dp-btn-ghost dp-btn-icon" type="button" aria-label="Mở menu điều hướng" aria-expanded="true" aria-haspopup="menu">
+        <svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+      </button>
+      <div class="dp-menu" role="menu" aria-label="Điều hướng">
+        <a class="dp-menu-item dp-menu-item-current" role="menuitem" href="#" aria-current="page">Khóa học</a>
+        <a class="dp-menu-item" role="menuitem" href="#">Bảng xếp hạng</a>
+      </div>
+    </div>
+    <div class="dp-col">
+      <button class="dp-btn dp-btn-ghost" type="button" aria-expanded="true" aria-haspopup="menu">
+        <span class="dp-avatar" aria-hidden="true">MA</span> Trần Minh Anh
+      </button>
+      <div class="dp-menu" role="menu" aria-label="Tài khoản">
+        <div class="dp-menu-label"><b>Trần Minh Anh</b><span>minhanh@example.com</span><span>Học viên</span></div>
+        <div class="dp-menu-sep" role="separator"></div>
+        <a class="dp-menu-item" role="menuitem" href="#"><svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>Khóa học của tôi</a>
+        <a class="dp-menu-item" role="menuitem" href="#" data-highlighted><svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>Bảng xếp hạng</a>
+        <a class="dp-menu-item" role="menuitem" href="#"><svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Yêu thích</a>
+        <div class="dp-menu-sep" role="separator"></div>
+        <a class="dp-menu-item" role="menuitem" href="#"><svg class="dp-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>Đăng xuất</a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

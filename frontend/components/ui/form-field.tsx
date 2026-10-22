@@ -1,5 +1,6 @@
 "use client";
 
+import { CircleAlert } from "lucide-react";
 import { useId } from "react";
 
 import { Input } from "@/components/ui/input";
@@ -20,10 +21,12 @@ interface FormFieldProps {
 }
 
 /**
- * One labelled input with its error line.
+ * One labelled input with its hint or error line: label, field and message
+ * 6px apart (design system, component FormField).
  *
  * `aria-describedby` and `aria-invalid` are what make the error reach a screen
- * reader -- red text alone only reaches people who can see it.
+ * reader -- red text alone only reaches people who can see it, which is also
+ * why the error carries an icon.
  */
 export function FormField({
   label,
@@ -42,7 +45,7 @@ export function FormField({
   const message = error ?? hint;
 
   return (
-    <div className="space-y-2">
+    <div className="flex min-w-0 flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input
         id={id}
@@ -56,12 +59,14 @@ export function FormField({
         disabled={disabled}
         autoFocus={autoFocus}
       />
-      {message ? (
-        <p
-          id={messageId}
-          className={error ? "text-sm text-destructive" : "text-sm text-muted-foreground"}
-        >
-          {message}
+      {error ? (
+        <p id={messageId} className="flex items-start gap-1.5 text-sm text-destructive-text">
+          <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>{error}</span>
+        </p>
+      ) : hint ? (
+        <p id={messageId} className="text-sm text-muted-foreground">
+          {hint}
         </p>
       ) : null}
     </div>

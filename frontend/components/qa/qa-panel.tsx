@@ -119,7 +119,7 @@ export function QaPanel({
       </div>
 
       {composing ? (
-        <form onSubmit={submit} className="space-y-2 rounded-lg border p-3">
+        <form onSubmit={submit} className="space-y-2 rounded-md border p-3">
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -175,13 +175,13 @@ export function QaPanel({
       {threads.isPending ? (
         <div className="space-y-3" aria-hidden>
           {[0, 1].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
+            <div key={row} className="h-24 animate-pulse rounded-md border bg-muted/40" />
           ))}
         </div>
       ) : null}
 
       {threads.data && threads.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-8 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-md border border-dashed px-4 py-8 text-center">
           <MessageCircleQuestion className="size-8 text-muted-foreground" aria-hidden />
           <p className="font-medium">Chưa có câu hỏi nào cho bài học này</p>
           <p className="text-sm text-muted-foreground">

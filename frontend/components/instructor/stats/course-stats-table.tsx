@@ -47,7 +47,7 @@ export function CourseStatsTable({
   });
 
   if (query.isPending) {
-    return <div className="h-48 animate-pulse rounded-lg bg-muted/40" />;
+    return <div className="h-48 animate-pulse rounded-md bg-muted/40" />;
   }
 
   if (query.isError) {
@@ -70,7 +70,7 @@ export function CourseStatsTable({
 
   return (
     <div className={cn("space-y-4 transition-opacity", query.isFetching && "opacity-60")}>
-      <div className="overflow-x-auto">
+      <div className="relative overflow-x-auto">
         <table className="w-full min-w-[920px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">

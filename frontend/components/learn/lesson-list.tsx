@@ -27,7 +27,7 @@ export function LessonList({
   onSelect: (lessonId: string) => void;
 }) {
   return (
-    <nav aria-label="Nội dung khóa học" className="overflow-hidden rounded-xl border">
+    <nav aria-label="Nội dung khóa học" className="overflow-hidden rounded-lg border">
       {curriculum.sections.map((section) => (
         <div key={section.id} className="border-b last:border-b-0">
           <p className="bg-muted/40 px-4 py-2.5 text-sm font-medium">{section.title}</p>

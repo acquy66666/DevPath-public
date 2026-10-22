@@ -115,7 +115,7 @@ function MyReviewForm({
   const busy = save.isPending || remove.isPending;
 
   return (
-    <form onSubmit={submit} className="space-y-3 rounded-xl border p-5">
+    <form onSubmit={submit} className="space-y-3 rounded-lg border p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="font-medium">
           {existing ? "Đánh giá của bạn" : "Viết đánh giá"}
@@ -257,7 +257,7 @@ export function CourseReviews({
       </div>
 
       {status === "loading" ? (
-        <div className="h-24 animate-pulse rounded-xl bg-muted" aria-hidden />
+        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
       ) : user === null ? (
         <p className="text-sm text-muted-foreground">
           <Link
@@ -269,7 +269,7 @@ export function CourseReviews({
           để viết đánh giá cho khóa học này.
         </p>
       ) : owns ? null : enrollment.isLoading ? (
-        <div className="h-24 animate-pulse rounded-xl bg-muted" aria-hidden />
+        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
       ) : !enrolled ? (
         <p className="text-sm text-muted-foreground">
           Đăng ký khóa học để viết đánh giá.
@@ -284,11 +284,11 @@ export function CourseReviews({
           onWritten={refresh}
         />
       ) : (
-        <div className="h-24 animate-pulse rounded-xl bg-muted" aria-hidden />
+        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
       )}
 
       {current.items.length === 0 ? (
-        <p className="rounded-xl border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
+        <p className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
           Chưa có đánh giá nào. Học xong rồi, bạn viết đánh giá đầu tiên nhé.
         </p>
       ) : (

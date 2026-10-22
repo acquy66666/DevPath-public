@@ -130,7 +130,7 @@ export function RevenuePage() {
         <ExportButton path={revenuePath(params, "/export.xlsx")} filename="devpath_doanh-thu.xlsx" />
       </div>
 
-      <div className="flex flex-wrap items-end gap-4 rounded-xl border p-4">
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
         <DateRangePicker value={range} onChange={setRange} />
         <div className="space-y-1">
           <Label htmlFor="granularity" className="text-xs">

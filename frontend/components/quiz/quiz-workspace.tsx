@@ -123,7 +123,7 @@ export function QuizWorkspace({
   }, [running, remaining, answers, hand]);
 
   if (quiz.isPending) {
-    return <div className="h-40 animate-pulse rounded-lg bg-muted" />;
+    return <div className="h-40 animate-pulse rounded-md bg-muted" />;
   }
 
   if (quiz.isError) {
@@ -152,7 +152,7 @@ export function QuizWorkspace({
 
   if (attempt === null) {
     return (
-      <section className="space-y-4 rounded-lg border p-5">
+      <section className="space-y-4 rounded-md border p-5">
         <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-lg font-semibold">Bài trắc nghiệm</h2>
           <Badge variant="secondary">
@@ -196,7 +196,7 @@ export function QuizWorkspace({
       <section className="space-y-4">
         <div
           className={cn(
-            "rounded-lg border p-5",
+            "rounded-md border p-5",
             attempt.passed ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5",
           )}
         >
@@ -212,7 +212,7 @@ export function QuizWorkspace({
 
         <ol className="space-y-4">
           {review.map((row, index) => (
-            <li key={row.id} className="rounded-lg border p-4">
+            <li key={row.id} className="rounded-md border p-4">
               <div className="flex items-start gap-2">
                 {row.is_correct ? (
                   <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
@@ -277,7 +277,7 @@ export function QuizWorkspace({
 
   return (
     <section className="space-y-4">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background/95 p-3 backdrop-blur">
+      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background/95 p-3 backdrop-blur">
         <p className="text-sm text-muted-foreground">
           Đã trả lời {answered}/{attempt.questions.length} câu
         </p>
@@ -297,7 +297,7 @@ export function QuizWorkspace({
 
       <ol className="space-y-4">
         {attempt.questions.map((question, index) => (
-          <li key={question.id} className="rounded-lg border p-4">
+          <li key={question.id} className="rounded-md border p-4">
             <fieldset>
               <legend className="font-medium">
                 Câu {index + 1}. {question.question}

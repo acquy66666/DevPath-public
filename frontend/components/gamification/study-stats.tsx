@@ -65,7 +65,7 @@ export function StudyStats() {
     return (
       <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-4" aria-hidden>
         {[0, 1, 2].map((tile) => (
-          <div key={tile} className="h-24 animate-pulse rounded-xl border bg-muted/40 sm:h-28" />
+          <div key={tile} className="h-24 animate-pulse rounded-lg border bg-muted/40 sm:h-28" />
         ))}
       </div>
     );
@@ -108,7 +108,7 @@ export function StudyStats() {
         />
       </div>
 
-      <div className="rounded-xl border bg-card p-4">
+      <div className="rounded-lg border bg-card p-4">
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-sm font-medium">XP gần đây</h3>
           <Link href="/bang-xep-hang" className="text-sm font-medium text-primary hover:underline">
@@ -185,7 +185,7 @@ function Tile({
     // A column with the number pushed to the bottom on a phone, where one label
     // wraps and the others do not and the three numbers should still line up.
     // From `sm` up the labels fit and a note may follow, so it stays at the top.
-    <div className="flex min-w-0 flex-col rounded-xl border bg-card p-3 sm:p-4">
+    <div className="flex min-w-0 flex-col rounded-lg border bg-card p-3 sm:p-4">
       <p className="flex flex-col items-start gap-1 text-xs text-muted-foreground sm:flex-row sm:items-center sm:gap-2 sm:text-sm">
         {icon}
         {label}

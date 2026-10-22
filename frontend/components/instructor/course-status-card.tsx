@@ -118,7 +118,7 @@ export function CourseStatusCard({ course }: { course: Course }) {
           ) : null}
         </div>
 
-        <div className="rounded-lg border border-destructive/30 p-4">
+        <div className="rounded-md border border-destructive/30 p-4">
           <p className="text-sm font-medium">Xóa khóa học</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Khóa học biến mất khỏi danh sách của bạn và khỏi trang công khai. Học viên

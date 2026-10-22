@@ -177,7 +177,7 @@ export function NotificationLink({
       href={describe(notification).href}
       onClick={() => onFollow(notification)}
       className={cn(
-        "flex w-full items-start gap-3 rounded-lg p-3 text-left text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+        "flex w-full items-start gap-3 rounded-md p-3 text-left text-sm transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
         notification.read_at === null && "bg-primary/5",
       )}
     >

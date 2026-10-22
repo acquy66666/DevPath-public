@@ -57,7 +57,7 @@ export function NaomiPreview() {
         {MOODS.map((mood) => {
           const { settle } = reactionFor(mood, MOOD_META[mood]);
           return (
-            <li key={mood} data-testid={`mood-${mood}`} className="flex flex-col items-center gap-2 rounded-lg border p-3">
+            <li key={mood} data-testid={`mood-${mood}`} className="flex flex-col items-center gap-2 rounded-md border p-3">
               {/* Room above her for a jump at size lg. */}
               <div className="flex h-64 w-full items-end justify-center">
                 <Mascot mood={mood} size={size} event={rounds[mood] ?? null} />
@@ -109,7 +109,7 @@ function GradingFlow() {
   };
 
   return (
-    <section className="mt-6 flex flex-wrap items-center gap-4 rounded-lg border p-4" data-testid="flow">
+    <section className="mt-6 flex flex-wrap items-center gap-4 rounded-md border p-4" data-testid="flow">
       <Mascot mood={mood} size="md" event={submission} progress={done / TESTS} label />
       <div className="space-y-2">
         <p className="text-sm">

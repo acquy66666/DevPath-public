@@ -110,7 +110,7 @@ export function TranscriptUpload({ lesson }: { lesson: Lesson }) {
         : null;
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-3 rounded-md border p-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium">Transcript cho trợ giảng AI</p>
         {format ? (

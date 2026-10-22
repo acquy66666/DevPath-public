@@ -20,7 +20,7 @@ Bản trong repo của artifact Claude Design **DevPath** (loại *Design System
 3. Kiểm preview: `python docs/ui-ux/design-system/check/build.py`, rồi `NODE_PATH=frontend/node_modules node docs/ui-ux/design-system/check/shoot.cjs`.
 4. Publish lại các tệp đã đổi lên artifact (tool Artifact, `root` = thư mục này). Index `project/design-system.json` gửi cuối cùng, sau khi đọc lại bản trên artifact, và chỉ đổi `lastChange`.
 
-Khi token đã vào `frontend/app/globals.css` (task "Nền"), **code thắng**: lệch thì sửa `palette.py` cho khớp code rồi publish lại.
+Từ task "Nền" (22/10/2026) token nằm trong `frontend/app/globals.css` và **code thắng**: lệch thì sửa `palette.py` cho khớp code rồi publish lại. `frontend/lib/design/tokens.test.ts` (chạy trong `npm test`) đỏ khi `globals.css` và `project/tokens.json` khác nhau ở bất kỳ token nào, và khi một tệp trong `components/ui/` gọi thẳng một bậc màu gốc (`bg-emerald-600`, `#hex`, `bg-black`) thay vì lớp ngữ nghĩa.
 
 ## Đã chốt, và lý do
 
@@ -38,12 +38,12 @@ Khi token đã vào `frontend/app/globals.css` (task "Nền"), **code thắng**:
 
 - **User duyệt bảng màu ngọc + nghệ ngày 21/10/2026.** Đổi màu sau này vẫn đi qua `palette.py`, tương phản được kiểm lại tự động.
 - **Font chữ chính: Lexend** (21/10, task chọn font): so 7 ứng viên, lý do và số đo ở [`fonts.md`](fonts.md). Geist Mono và Noto Serif giữ nguyên. Thang chữ đổi ba line-height theo số đo của Lexend (display 52, h1 40, caption 18).
-- Giả định, áp dụng ở task "Nền": nút mặc định 32 → 36px, ô nhập 32 → 40px với chữ 16px, bo góc gốc 10px.
+- Đã áp dụng ở task "Nền" (22/10/2026): nút mặc định 32 → 36px, ô nhập 32 → 40px với chữ 16px, bo góc gốc 10px. Thang bo góc giờ đúng tên token (`rounded-md` 10px, `rounded-lg` 14px, `rounded-xl` 20px); các màn cũ được đổi tên class lùi một bậc để giữ nguyên số pixel.
 - Chỉ có theme sáng (tài liệu thiết kế, mục 10). Tên token giữ nguyên để thêm theme `dark` sau.
 
 ## Chưa có trong artifact
 
-- Preview của `DropdownMenu`, `ExportButton`, `Markdown`, `Pager` (có trong `components/ui/*`), làm ở task "Nền". `Label`, `Textarea`, `NativeSelect` đã nằm trong preview `FormField`.
+- Mọi tệp trong `components/ui/*` đã có preview: `DropdownMenu`, `ExportButton`, `Markdown`, `Pager` thêm ở task "Nền" (22/10/2026); `Label`, `Textarea`, `NativeSelect` nằm trong preview `FormField`.
 - Preview là **bản tĩnh** (HTML + `bundle.css`), không phải component React thật: chưa build bundle của frontend vào artifact.
 - Logo dạng hình: DevPath chưa có, thương hiệu là chữ "Dev" + "Path".
-- Nhân vật linh vật: task sau. Màu đã dành sẵn trong brand book.
+- Bản vẽ nhân vật linh vật: Naomi có mục riêng trong brand book (bảng màu, luật màu nghệ), còn model sheet và bộ biểu cảm nằm ở canvas [Linh vật DevPath](https://claude.ai/artifact/LgYj69gDYUuze9geb8J7W8).

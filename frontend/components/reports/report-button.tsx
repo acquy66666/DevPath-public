@@ -78,7 +78,7 @@ export function ReportButton({
           {label}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent size="form">
         {/* Keyed by `open` so every opening starts from an empty form. */}
         {open ? <ReportForm key={String(open)} targetType={targetType} targetId={targetId} /> : null}
       </DialogContent>
@@ -177,7 +177,7 @@ function ReportForm({
           <label
             key={option.value}
             className={cn(
-              "flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors hover:bg-muted/50 has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+              "flex cursor-pointer items-start gap-3 rounded-md border p-3 text-sm transition-colors hover:bg-muted/50 has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
               reason === option.value && "border-primary bg-primary/5",
             )}
           >

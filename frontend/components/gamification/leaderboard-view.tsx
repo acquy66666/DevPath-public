@@ -120,14 +120,14 @@ export function LeaderboardView() {
         </Alert>
       ) : !board ? (
         <div className="space-y-2" aria-hidden>
-          <div className="h-16 animate-pulse rounded-xl border bg-muted/40" />
+          <div className="h-16 animate-pulse rounded-lg border bg-muted/40" />
           {[0, 1, 2, 3, 4].map((row) => (
-            <div key={row} className="h-14 animate-pulse rounded-lg bg-muted/40" />
+            <div key={row} className="h-14 animate-pulse rounded-md bg-muted/40" />
           ))}
         </div>
       ) : (
         <>
-          <div className="rounded-xl border bg-card p-4">
+          <div className="rounded-lg border bg-card p-4">
             <p className="text-xs text-muted-foreground">{periodCaption(board)}</p>
             {board.me ? (
               <p className="mt-1 text-lg font-semibold">
@@ -150,7 +150,7 @@ export function LeaderboardView() {
           </div>
 
           {board.items.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-10 text-center">
+            <div className="rounded-lg border border-dashed p-10 text-center">
               <p className="font-medium">Chưa ai có XP {phrase}</p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Người đầu tiên hoàn thành một bài học sẽ đứng đầu bảng.
@@ -159,7 +159,7 @@ export function LeaderboardView() {
           ) : (
             <ol
               className={cn(
-                "divide-y rounded-xl border bg-card",
+                "divide-y rounded-lg border bg-card",
                 query.isPlaceholderData && "opacity-60",
               )}
               aria-label={`Bảng xếp hạng ${phrase}`}

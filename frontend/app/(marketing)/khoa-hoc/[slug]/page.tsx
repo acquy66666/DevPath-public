@@ -212,7 +212,7 @@ export default async function CourseDetailPage({
         </header>
 
         <aside className="lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
-          <div className="overflow-hidden rounded-xl border">
+          <div className="overflow-hidden rounded-lg border">
             <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} />
 
             <div className="space-y-4 p-5">

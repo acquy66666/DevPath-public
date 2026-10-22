@@ -160,7 +160,7 @@ function UserRow({ user }: { user: AdminUser }) {
   const locked = user.locked_at !== null;
 
   return (
-    <div className="space-y-2 rounded-xl border p-3">
+    <div className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-center gap-3">
         <UserAvatar user={user} className="size-10 shrink-0 text-sm" />
         <div className="min-w-0 flex-1">
@@ -201,7 +201,7 @@ function UserRow({ user }: { user: AdminUser }) {
       </div>
 
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-destructive/5 p-3 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-3 text-sm">
           <span className="min-w-0 flex-1">
             Khóa <span className="font-medium">{user.full_name}</span>? Tài khoản bị đăng xuất
             khỏi mọi thiết bị ngay và không đăng nhập lại được cho tới khi mở khóa.

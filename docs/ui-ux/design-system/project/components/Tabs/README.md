@@ -7,7 +7,7 @@ Chuyển giữa các phần ngang hàng của cùng một chỗ mà không rời
 ## Hai kiểu
 
 - **Khay** (mặc định): khay `muted` bo `radius-md`, tab đang chọn nền `card` + `shadow-sm`, chữ `foreground`; tab khác chữ `muted-foreground`. Dùng cho 2–4 phần ngắn: "Ghi chú | Hỏi đáp | Trợ giảng AI".
-- **Gạch chân** *(thêm)*: đường `border` dưới cả hàng, tab đang chọn có vạch 2px `primary`. Dùng khi tab là bộ lọc của cả trang: kỳ bảng xếp hạng, thanh tab admin. Hàng tab dài hơn khung thì cuộn ngang trong chính nó, không làm tràn trang (thanh tab admin 10 mục đang tràn ở 1440px).
+- **Gạch chân** (`<TabsList variant="line">`, có trong code từ task "Nền"): đường `border` dưới cả hàng, tab đang chọn có vạch 2px `primary`. Dùng khi tab là bộ lọc của cả trang: kỳ bảng xếp hạng, thanh tab admin. Hàng tab dài hơn khung thì cuộn ngang trong chính nó, không làm tràn trang (thanh tab admin 10 mục đang tràn ở 1440px).
 
 ## Luật
 

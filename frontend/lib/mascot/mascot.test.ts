@@ -128,14 +128,17 @@ test("only a passing gesture goes back to rest; every other mood keeps its pose"
   assert.deepEqual(MOOD_META.wave.shadow, MOOD_META.rest.shadow);
 });
 
-test("the colours the drawings read are the design-system tokens, scoped in globals.css", () => {
+test("the colours the drawings read are design-system tokens in globals.css' @theme", () => {
   const values = Object.fromEntries(tokens.color.tokens.map((t: { name: string; value: string }) => [t.name, t.value.toLowerCase()]));
   for (const [name, hex] of Object.entries(PALETTE)) assert.equal(hex, values[name], `${name} in tokens.json`);
 
-  const block = /\[data-mascot\]\s*\{([^}]*)\}/.exec(globals);
-  assert.ok(block, "globals.css has the [data-mascot] palette");
-  const scoped = Object.fromEntries([...block[1].matchAll(/--color-([a-z]+-\d+):\s*(#[0-9a-f]{6});/g)].map((m) => [m[1], m[2]]));
-  assert.deepEqual(scoped, PALETTE);
+  // The site-wide palette (task "Nền"). Its `@theme static` emits every step
+  // whether or not a utility names it, which is what a drawing reading
+  // var(--color-jade-500) from script needs.
+  const palettes = [...globals.matchAll(/@theme static\s*\{([^}]*)\}/g)].map((m) => m[1]).join("\n");
+  const site = Object.fromEntries([...palettes.matchAll(/--color-([a-z]+-\d+):\s*(#[0-9a-f]{6});/g)].map((m) => [m[1], m[2]]));
+  for (const [name, hex] of Object.entries(PALETTE)) assert.equal(site[name], hex, `--color-${name} in globals.css`);
+  assert.doesNotMatch(globals, /\[data-mascot\]\s*\{/, "the mascot no longer needs a palette of its own");
 
   for (const { mood, svg } of all) {
     for (const [, name] of svg.matchAll(/var\(--color-([a-z0-9-]+)\)/g)) assert.ok(name in PALETTE, `${mood} reads ${name}`);

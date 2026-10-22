@@ -178,7 +178,7 @@ export function LearnView({
   }
 
   if (status === "loading") {
-    return <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />;
+    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
   }
 
   if (!signedIn) {
@@ -226,7 +226,7 @@ export function LearnView({
   }
 
   if (!course.data || !curriculum.data || !progress.data) {
-    return <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />;
+    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
   }
 
   const completedIds = new Set(
@@ -423,7 +423,7 @@ export function LearnView({
               </Tabs>
             </>
           ) : (
-            <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />
+            <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />
           )}
         </div>
 
@@ -505,7 +505,7 @@ function LearnGate({
   action: string;
 }) {
   return (
-    <div className="mx-auto max-w-lg rounded-xl border border-dashed px-6 py-12 text-center">
+    <div className="mx-auto max-w-lg rounded-lg border border-dashed px-6 py-12 text-center">
       <Icon className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
       <p className="font-medium">{title}</p>
       <p className="mt-1 text-sm text-pretty text-muted-foreground">{hint}</p>

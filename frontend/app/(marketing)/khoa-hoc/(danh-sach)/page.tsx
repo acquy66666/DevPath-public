@@ -153,7 +153,7 @@ export default async function CatalogPage({
             <CatalogPagination query={query} page={current} pageCount={pageCount} />
           </>
         ) : (
-          <div className="rounded-xl border border-dashed p-12 text-center">
+          <div className="rounded-lg border border-dashed p-12 text-center">
             <p className="font-medium">Không tìm thấy khóa học nào</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {filtered

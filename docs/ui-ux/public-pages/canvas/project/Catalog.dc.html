@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Danh sách khóa học</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #f8fafc; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif">
+  <dc-import name="Header" compact="{{narrow}}" hint-size="100%,64px"></dc-import>
+
+  <!-- Đầu trang trên nền card: tiêu đề, ô tìm kiếm lớn, chip chủ đề -->
+  <div style="background: #ffffff; border-bottom: 1px solid #e3eaee">
+    <form method="get" action="#" style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 40px 16px 24px; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 40px; font-weight: 700; letter-spacing: -0.015em">Khóa học</h1>
+        <p style="margin: 0; font-size: 16px; line-height: 24px; color: #556670">Tìm theo từ khóa, lọc theo chủ đề, mức giá và đánh giá.</p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; max-width: 720px">
+        <label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap">Tìm kiếm</label>
+        <div style="flex: 1 1 260px; min-width: 0; position: relative">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#556670" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="position: absolute; left: 14px; top: 15px"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="q" name="q" type="search" value="python" placeholder="python, thuật toán, web…" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 14px 0 42px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 16px; color: #102029">
+        </div>
+        <button type="submit" style="height: 48px; padding: 0 22px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Tìm</button>
+      </div>
+
+      <nav aria-label="Chủ đề" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px">
+        <sc-for list="{{topics}}" as="t" hint-placeholder-count="6">
+          <a href="#" aria-current="{{t.current}}" style="flex-shrink: 0; padding: 6px 14px; border-radius: 999px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.fg}}; font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none; white-space: nowrap">{{t.name}}</a>
+        </sc-for>
+      </nav>
+    </form>
+  </div>
+
+  <main style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 24px 16px 96px; display: flex; flex-direction: column; gap: 20px">
+    <!-- Thanh kết quả: số khóa + bộ lọc phụ. Dưới md gom vào <details> -->
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px">
+      <p style="margin: 0; font-size: 16px; line-height: 24px"><span style="font-weight: 600">2 khóa học</span> <span style="color: #556670">cho “python”</span> · <a href="#" style="font-size: 14px">Xóa lọc</a></p>
+      <sc-if value="{{wide}}" hint-placeholder-val="{{true}}">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <sc-for list="{{selects}}" as="s" hint-placeholder-count="3">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: #556670">{{s.label}}
+              <span style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font-size: 15px; color: #102029">{{s.value}}<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#556670" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span>
+            </label>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{narrow}}" hint-placeholder-val="{{false}}">
+        <span style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font-size: 14px; font-weight: 600">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M7 12h10M10 18h4"></path></svg>
+          Bộ lọc · 1
+        </span>
+      </sc-if>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px">
+      <sc-for list="{{courses}}" as="c" hint-placeholder-count="2">
+        <dc-import name="CourseCard" course="{{c}}" hint-size="100%,460px"></dc-import>
+      </sc-for>
+    </div>
+  </main>
+
+  <dc-import name="Footer" hint-size="100%,150px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"narrow":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const narrow = this.props.narrow ?? false;
+    const chip = (name, current) => current
+      ? { name, current: "page", border: "#007967", bg: "#e7fbf6", fg: "#074b40" }
+      : { name, current: "false", border: "#e3eaee", bg: "#ffffff", fg: "#102029" };
+    return {
+      narrow,
+      wide: !narrow,
+      topics: [chip("Tất cả", true), chip("Lập trình web"), chip("Frontend"), chip("Backend"), chip("Ngôn ngữ lập trình"), chip("Python"), chip("JavaScript"), chip("Khoa học máy tính"), chip("Cấu trúc dữ liệu & giải thuật")],
+      selects: [
+        { label: "Giá", value: "Mọi mức giá" },
+        { label: "Đánh giá", value: "Mọi đánh giá" },
+        { label: "Sắp xếp", value: "Liên quan nhất" }
+      ],
+      courses: [
+        { title: "Python cơ bản cho người mới bắt đầu", subtitle: "Từ dòng lệnh đầu tiên đến chương trình chạy được, không cần biết gì trước", eyebrow: "Python · Người mới bắt đầu", instructor: "Trần Minh Khoa", initials: "TK", rating: "Chưa có đánh giá", rated: false, students: 16, duration: "1 giờ 41 phút", price: "", free: true, note: "", tile: { bg: "#ddecff", strong: "#4087de", soft: "#c0dcff", ink: "#1157a4", glyph: "()" } },
+        { title: "Cấu trúc dữ liệu & giải thuật với Python", subtitle: "Đủ để qua vòng phỏng vấn kỹ thuật, và để viết code nhanh hơn hằng ngày", eyebrow: "Giải thuật · Trung cấp", instructor: "Trần Minh Khoa", initials: "TK", rating: "Chưa có đánh giá", rated: false, students: 40, duration: "1 giờ 56 phút", price: "499.000 ₫", free: false, note: "", tile: { bg: "#ffe5ce", strong: "#be7100", soft: "#ffcfa1", ink: "#7e4a00", glyph: "[]" } }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

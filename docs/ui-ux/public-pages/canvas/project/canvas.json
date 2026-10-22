@@ -1,0 +1,45 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-22T09:00:00Z" },
+  "title": "DevPath — Nhóm 2: Trang công khai",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 2140, "title": "Trang chủ · khách · 1440", "expand": "fill" },
+    "Home375.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 3900, "title": "Trang chủ · 375" },
+    "Cards.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 1060, "title": "Thẻ khóa học + ảnh bìa", "expand": "fill" },
+    "Catalog.dc.html": { "x": 0, "y": 4020, "w": 1440, "h": 1500, "title": "Danh sách + tìm kiếm · 1440", "expand": "fill" },
+    "Catalog375.dc.html": { "x": 1520, "y": 4020, "w": 375, "h": 3000, "title": "Danh sách · 375" },
+    "Course.dc.html": { "x": 0, "y": 7140, "w": 1440, "h": 2500, "title": "Chi tiết khóa học · 1440", "expand": "fill" },
+    "Course375.dc.html": { "x": 1520, "y": 7140, "w": 375, "h": 4300, "title": "Chi tiết khóa học · 375" },
+    "Teach.dc.html": { "x": 0, "y": 11560, "w": 1440, "h": 1180, "title": "Trở thành giảng viên · 1440", "expand": "fill" },
+    "Teach375.dc.html": { "x": 1520, "y": 11560, "w": 375, "h": 2200, "title": "Trở thành giảng viên · 375" },
+    "Header.dc.html": { "x": 1975, "y": 1180, "w": 1440, "h": 64, "title": "Thành phần · header khách" },
+    "Footer.dc.html": { "x": 1975, "y": 1324, "w": 1440, "h": 150, "title": "Thành phần · footer" },
+    "CourseCard.dc.html": { "x": 1975, "y": 1554, "w": 300, "h": 440, "title": "Thành phần · thẻ khóa học" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Home375.dc.html",
+    "Cards.dc.html",
+    "Catalog.dc.html",
+    "Catalog375.dc.html",
+    "Course.dc.html",
+    "Course375.dc.html",
+    "Teach.dc.html",
+    "Teach375.dc.html",
+    "Header.dc.html",
+    "Footer.dc.html",
+    "CourseCard.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": "1792640804-d71a",
+      "copiedAt": "2026-10-22T09:00:00Z"
+    }
+  ]
+}

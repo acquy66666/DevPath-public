@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Sparkles, TrendingUp } from "lucide-react";
 
-import { CourseCard } from "@/components/courses/course-card";
+import { CourseCard, CourseRowCard } from "@/components/courses/course-card";
 import {
   CourseBlock,
   CourseBlockSkeleton,
@@ -50,13 +50,18 @@ export function RecommendedForYou() {
     );
   }
 
-  if (!query.data) return <CourseBlockSkeleton title={TITLE} count={LIMIT} described />;
+  if (!query.data) return <CourseBlockSkeleton title={TITLE} count={LIMIT} described notes />;
   if (query.data.items.length === 0) return null;
 
+  // A reader who has taken most of a small catalogue gets one or two courses
+  // back: those lie on their side rather than leave the row mostly empty.
+  const few = query.data.items.length <= 2;
+  const Card = few ? CourseRowCard : CourseCard;
+
   return (
-    <CourseBlock title={TITLE} description={describe(query.data)}>
+    <CourseBlock title={TITLE} description={describe(query.data)} layout={few ? "rows" : "grid"}>
       {query.data.items.map((item) => (
-        <CourseCard key={item.id} course={item} note={reason(item)} />
+        <Card key={item.id} course={item} note={reason(item)} />
       ))}
     </CourseBlock>
   );

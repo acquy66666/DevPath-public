@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thẻ khóa học</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<a href="Course.dc.html" style="box-sizing: border-box; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; text-decoration: none; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif">
+  <div aria-hidden="true" style="position: relative; aspect-ratio: 16 / 9; box-sizing: border-box; padding: 20px 22px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; background: {{c.tile.bg}}">
+    <span style="display: block; height: 8px; width: 38%; border-radius: 4px; background: {{c.tile.strong}}"></span>
+    <span style="display: block; height: 8px; width: 52%; margin-left: 10%; border-radius: 4px; background: {{c.tile.soft}}"></span>
+    <span style="display: flex; gap: 6px; margin-left: 10%"><span style="display: block; height: 8px; width: 30%; border-radius: 4px; background: {{c.tile.soft}}"></span><span style="display: block; height: 8px; width: 14%; border-radius: 4px; background: {{c.tile.strong}}"></span></span>
+    <span style="display: block; height: 8px; width: 24%; border-radius: 4px; background: {{c.tile.ink}}"></span>
+    <span style="position: absolute; right: 18px; bottom: 6px; font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 56px; line-height: 64px; font-weight: 600; letter-spacing: -0.04em; color: {{c.tile.soft}}">{{c.tile.glyph}}</span>
+  </div>
+  <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 16px">
+    <sc-if value="{{c.note}}" hint-placeholder-val="{{false}}">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 600; color: #066254">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+        <span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap">{{c.note}}</span>
+      </span>
+    </sc-if>
+    <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">{{c.eyebrow}}</span>
+    <span style="font-size: 18px; line-height: 26px; font-weight: 600; text-wrap: balance">{{c.title}}</span>
+    <span style="font-size: 14px; line-height: 20px; color: #556670; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden">{{c.subtitle}}</span>
+    <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: #3e505a">
+      <span aria-hidden="true" style="width: 24px; height: 24px; border-radius: 999px; background: #ccf5ea; color: #074b40; font-size: 10px; line-height: 24px; font-weight: 600; text-align: center">{{c.initials}}</span>
+      {{c.instructor}}
+    </span>
+    <span style="font-size: 12px; line-height: 18px; color: #556670">{{c.students}} học viên · {{c.duration}}</span>
+    <span style="margin-top: auto; padding-top: 12px; border-top: 1px solid #e3eaee; display: flex; align-items: center; justify-content: space-between; gap: 12px">
+      <span style="display: flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; color: #556670">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="{{c.starFill}}" stroke="{{c.starStroke}}" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1Z"></path></svg>
+        {{c.rating}}
+      </span>
+      <sc-if value="{{c.free}}" hint-placeholder-val="{{false}}">
+        <span style="flex-shrink: 0; padding: 2px 10px; border-radius: 999px; background: #e8fceb; color: #194f29; font-size: 13px; line-height: 20px; font-weight: 600">Miễn phí</span>
+      </sc-if>
+      <sc-if value="{{c.paid}}" hint-placeholder-val="{{true}}">
+        <span style="flex-shrink: 0; font-size: 16px; line-height: 24px; font-weight: 600; font-variant-numeric: tabular-nums">{{c.price}}</span>
+      </sc-if>
+    </span>
+  </div>
+</a>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"course":{"editor":null},"$preview":{"width":300,"height":440}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const c = this.props.course ?? {
+      title: "Cấu trúc dữ liệu & giải thuật với Python",
+      subtitle: "Đủ để qua vòng phỏng vấn kỹ thuật, và để viết code nhanh hơn hằng ngày",
+      eyebrow: "Cấu trúc dữ liệu & giải thuật · Trung cấp",
+      instructor: "Trần Minh Khoa",
+      initials: "TK",
+      rating: "Chưa có đánh giá",
+      rated: false,
+      students: 40,
+      duration: "1 giờ 56 phút",
+      price: "499.000 ₫",
+      free: false,
+      note: "",
+      tile: { bg: "#ffe5ce", strong: "#be7100", soft: "#ffcfa1", ink: "#7e4a00", glyph: "[]" }
+    };
+    return {
+      c: Object.assign({}, c, {
+        paid: !c.free,
+        starFill: c.rated ? "#a87d00" : "none",
+        starStroke: c.rated ? "#a87d00" : "#556670"
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

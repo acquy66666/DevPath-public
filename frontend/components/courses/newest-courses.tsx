@@ -32,17 +32,7 @@ export async function NewestCourses() {
   if (items.length === 0) return null;
 
   return (
-    <CourseBlock
-      title={TITLE}
-      description={
-        <>
-          Vừa lên sàn.{" "}
-          <Link href="/khoa-hoc" className="font-medium text-foreground hover:underline">
-            Xem tất cả khóa học →
-          </Link>
-        </>
-      }
-    >
+    <CourseBlock title={TITLE} description="Vừa lên sàn." action={<AllCoursesLink />}>
       {items.map((course) => (
         <CourseCard key={course.id} course={course} />
       ))}
@@ -51,5 +41,13 @@ export async function NewestCourses() {
 }
 
 export function NewestCoursesSkeleton() {
-  return <CourseBlockSkeleton title={TITLE} count={LIMIT} />;
+  return <CourseBlockSkeleton title={TITLE} count={LIMIT} described action={<AllCoursesLink />} />;
+}
+
+function AllCoursesLink() {
+  return (
+    <Link href="/khoa-hoc" className="text-link underline-offset-4 hover:underline">
+      Xem tất cả khóa học
+    </Link>
+  );
 }

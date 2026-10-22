@@ -1,8 +1,20 @@
-import { GraduationCap, Star, Users } from "lucide-react";
+import {
+  Award,
+  CalendarDays,
+  Clock,
+  Code2,
+  FileText,
+  ListChecks,
+  MessageSquareText,
+  PlayCircle,
+  Star,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { cache } from "react";
+import { cache, type ReactNode } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { CourseCover } from "@/components/courses/course-cover";
@@ -11,15 +23,16 @@ import { CourseReviews } from "@/components/courses/course-reviews";
 import { EnrollButton } from "@/components/courses/enroll-button";
 import { SimilarCourses } from "@/components/recommendations/similar-courses";
 import { ReportButton } from "@/components/reports/report-button";
-import { Badge } from "@/components/ui/badge";
 import { Markdown } from "@/components/ui/markdown";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
-import { getCurriculum } from "@/lib/api/curriculum";
+import { getCurriculum, type LessonType } from "@/lib/api/curriculum";
 import { getSimilarCourses, type SimilarCourse } from "@/lib/api/recommendations";
 import { listCourseReviews } from "@/lib/api/reviews";
+import { summarizeCurriculum } from "@/lib/courses/curriculum-summary";
 import { LEVEL_LABELS, languageLabel } from "@/lib/courses/labels";
 import { formatDate, formatDuration, formatPrice } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * The public page for one course, server-rendered so a crawler reads the whole
@@ -141,107 +154,107 @@ export default async function CourseDetailPage({
   ]);
   const duration = formatDuration(course.duration_total_s);
   const rated = course.rating_count > 0;
+  const summary = summarizeCurriculum(curriculum);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10">
-      <nav aria-label="Đường dẫn" className="mb-6 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">
-          Trang chủ
-        </Link>
-        <span className="mx-2" aria-hidden>
-          /
-        </span>
-        <span>{course.category.name}</span>
-      </nav>
-
+    <div className="mx-auto max-w-6xl px-4 pb-16">
       {/* Three grid items, not two columns: on a phone the price card has to
           come straight after the title -- below the curriculum and the reviews
           nobody finds the button -- while on a wide screen it is the sticky
           right-hand column beside both. */}
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <header className="min-w-0 space-y-4 lg:col-start-1 lg:row-start-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">{course.category.name}</Badge>
-            <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>
-            <Badge variant="outline">{languageLabel(course.language)}</Badge>
-          </div>
+      <div className="grid gap-x-10 lg:grid-cols-[minmax(0,1fr)_20rem]">
+        {/* The head sits on a band of `card` that runs the full width of the
+            window: a spread shadow paints it, clipped top and bottom to the
+            header itself, so the band needs no wrapper outside this grid and
+            the price card can still overlap it. */}
+        <header className="min-w-0 space-y-4 bg-card py-8 shadow-[0_0_0_100vmax_var(--card),0_1px_0_100vmax_var(--border)] [clip-path:inset(0_-100vmax_-1px)] lg:col-start-1 lg:row-start-1 lg:pb-10">
+          <nav aria-label="Đường dẫn" className="text-body-sm text-muted-foreground">
+            <Link href="/khoa-hoc" className="hover:text-foreground hover:underline hover:underline-offset-4">
+              Khóa học
+            </Link>
+            <span className="mx-2" aria-hidden>
+              /
+            </span>
+            <Link
+              href={`/khoa-hoc?category_id=${encodeURIComponent(course.category.id)}`}
+              className="hover:text-foreground hover:underline hover:underline-offset-4"
+            >
+              {course.category.name}
+            </Link>
+          </nav>
 
-          <h1 className="text-3xl font-semibold tracking-tight text-balance">
-            {course.title}
-          </h1>
+          <p className="text-eyebrow text-link uppercase">
+            {LEVEL_LABELS[course.level]} · {languageLabel(course.language)}
+          </p>
+
+          <h1 className="text-h1 text-balance">{course.title}</h1>
 
           {course.subtitle ? (
-            <p className="text-lg text-muted-foreground text-pretty">
-              {course.subtitle}
-            </p>
+            <p className="max-w-[40em] text-body-lg text-pretty text-foreground/80">{course.subtitle}</p>
           ) : null}
 
-          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Đánh giá</dt>
-              <Star className="size-4" aria-hidden />
-              <dd>
-                {rated
-                  ? `${course.rating_avg} (${course.rating_count} đánh giá)`
-                  : "Chưa có đánh giá"}
-              </dd>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              <dt className="sr-only">Học viên</dt>
-              <Users className="size-4" aria-hidden />
-              <dd>{course.students_count} học viên</dd>
-            </div>
-
+          <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-body-sm text-foreground/80">
+            <Fact label="Đánh giá" icon={Star} iconClassName={rated ? "fill-reward-mark text-reward-mark" : undefined}>
+              {rated ? `${formatRating(course.rating_avg)} (${course.rating_count} đánh giá)` : "Chưa có đánh giá"}
+            </Fact>
+            <Fact label="Học viên" icon={Users}>
+              {course.students_count} học viên
+            </Fact>
             {duration ? (
-              <div className="flex items-center gap-1.5">
-                <dt className="sr-only">Thời lượng</dt>
-                <GraduationCap className="size-4" aria-hidden />
-                <dd>{duration}</dd>
-              </div>
+              <Fact label="Thời lượng" icon={Clock}>
+                {duration}
+              </Fact>
+            ) : null}
+            {course.published_at ? (
+              <Fact label="Xuất bản" icon={CalendarDays}>
+                Xuất bản {formatDate(course.published_at)}
+              </Fact>
             ) : null}
           </dl>
 
-          <div className="flex items-center gap-3 pt-2">
-            <UserAvatar user={course.instructor} className="size-10 text-sm" />
-            <div className="text-sm">
-              <p className="font-medium">{course.instructor.full_name}</p>
-              <p className="text-muted-foreground">Giảng viên</p>
+          <div className="flex items-center gap-3 pt-1">
+            <UserAvatar user={course.instructor} className="size-10 text-body-sm" />
+            <div className="min-w-0">
+              <p className="truncate text-title">{course.instructor.full_name}</p>
+              <p className="text-caption text-muted-foreground">Giảng viên</p>
             </div>
           </div>
         </header>
 
-        <aside className="lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
-          <div className="overflow-hidden rounded-lg border">
-            <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} />
+        <aside
+          aria-label="Ghi danh khóa học"
+          className="mt-6 lg:sticky lg:top-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-8 lg:self-start"
+        >
+          <div className="overflow-hidden rounded-lg border bg-card">
+            <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} size="lg" />
 
             <div className="space-y-4 p-5">
-              <p className="text-2xl font-semibold">{formatPrice(course.price)}</p>
+              <p className="text-h1 tabular-nums">{formatPrice(course.price)}</p>
 
               <EnrollButton course={course} />
 
-              <dl className="space-y-1.5 border-t pt-4 text-sm">
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Trình độ</dt>
-                  <dd>{LEVEL_LABELS[course.level]}</dd>
-                </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-muted-foreground">Ngôn ngữ</dt>
-                  <dd>{languageLabel(course.language)}</dd>
-                </div>
-                {duration ? (
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Thời lượng</dt>
-                    <dd>{duration}</dd>
-                  </div>
-                ) : null}
-                {course.published_at ? (
-                  <div className="flex justify-between gap-3">
-                    <dt className="text-muted-foreground">Xuất bản</dt>
-                    <dd>{formatDate(course.published_at)}</dd>
-                  </div>
-                ) : null}
-              </dl>
+              <div className="space-y-2.5 border-t pt-4">
+                <p className="text-body-sm font-semibold">Khóa học gồm</p>
+                <ul className="space-y-2 text-body-sm text-foreground/80">
+                  {summary.byType.map(({ type, count }) => {
+                    const Icon = TYPE_ICONS[type];
+                    return (
+                      <li key={type} className="flex items-center gap-2.5">
+                        <Icon className="size-4 shrink-0 text-primary" aria-hidden />
+                        {includes(type, count, duration)}
+                      </li>
+                    );
+                  })}
+                  <li className="flex items-center gap-2.5">
+                    <MessageSquareText className="size-4 shrink-0 text-primary" aria-hidden />
+                    Trợ giảng AI trả lời theo bài giảng
+                  </li>
+                  <li className="flex items-center gap-2.5">
+                    <Award className="size-4 shrink-0 text-primary" aria-hidden />
+                    Chứng chỉ khi hoàn thành
+                  </li>
+                </ul>
+              </div>
 
               <div className="border-t pt-2">
                 <ReportButton
@@ -256,19 +269,30 @@ export default async function CourseDetailPage({
           </div>
         </aside>
 
-        <div className="min-w-0 space-y-10 lg:col-start-1 lg:row-start-2">
+        <div className="min-w-0 space-y-12 pt-10 lg:col-start-1 lg:row-start-2">
           {course.description ? (
-            <section className="space-y-3">
-              <h2 className="text-xl font-semibold tracking-tight">Giới thiệu</h2>
+            <section aria-labelledby="gioi-thieu" className="space-y-3">
+              <h2 id="gioi-thieu" className="text-h2">
+                Giới thiệu
+              </h2>
               {/* Markdown, as the course builder tells the instructor it is --
                   through the same renderer as the lessons, which shows raw
                   HTML as the characters typed. */}
-              <Markdown className="text-muted-foreground">{course.description}</Markdown>
+              <Markdown className="max-w-[40em] text-body-lg text-foreground/85">{course.description}</Markdown>
             </section>
           ) : null}
 
-          <section className="space-y-3">
-            <h2 className="text-xl font-semibold tracking-tight">Nội dung khóa học</h2>
+          <section aria-labelledby="noi-dung" className="space-y-3">
+            <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+              <h2 id="noi-dung" className="text-h2">
+                Nội dung khóa học
+              </h2>
+              {summary.lessons > 0 ? (
+                <p className="text-body-sm text-muted-foreground">
+                  {summary.sections} chương · {summary.lessons} bài học
+                </p>
+              ) : null}
+            </div>
             <CourseCurriculum curriculum={curriculum} />
           </section>
 
@@ -280,10 +304,57 @@ export default async function CourseDetailPage({
       </div>
 
       {similar.length > 0 ? (
-        <div className="mt-14">
+        <div className="mt-16">
           <SimilarCourses items={similar} />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+const TYPE_ICONS: Record<LessonType, LucideIcon> = {
+  video: PlayCircle,
+  article: FileText,
+  quiz: ListChecks,
+  code_exercise: Code2,
+};
+
+/** One line of "Khóa học gồm", counted from the curriculum. */
+function includes(type: LessonType, count: number, duration: string | null): string {
+  switch (type) {
+    case "video":
+      return duration ? `${count} video · ${duration}` : `${count} video`;
+    case "article":
+      return `${count} bài đọc`;
+    case "quiz":
+      return `${count} quiz`;
+    case "code_exercise":
+      return `${count} bài tập code chấm tự động`;
+  }
+}
+
+/** Comma decimals, as the design system writes numbers: 4,6. */
+function formatRating(value: string): string {
+  return Number(value).toLocaleString("vi-VN", { maximumFractionDigits: 1 });
+}
+
+/** One fact of the meta line: a hidden term, an icon, the value. */
+function Fact({
+  label,
+  icon: Icon,
+  iconClassName,
+  children,
+}: {
+  label: string;
+  icon: LucideIcon;
+  iconClassName?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <dt className="sr-only">{label}</dt>
+      <Icon className={cn("size-4 text-muted-foreground", iconClassName)} aria-hidden />
+      <dd>{children}</dd>
     </div>
   );
 }

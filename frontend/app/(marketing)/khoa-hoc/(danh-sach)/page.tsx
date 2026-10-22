@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cache } from "react";
 
-import { CatalogFilters } from "@/components/courses/catalog-filters";
 import { CatalogPagination } from "@/components/courses/catalog-pagination";
+import { CatalogRefine } from "@/components/courses/catalog-refine";
+import { CatalogSearch } from "@/components/courses/catalog-search";
 import { CourseCard } from "@/components/courses/course-card";
+import { TopicLinks } from "@/components/courses/topic-links";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { listCategories } from "@/lib/api/categories";
@@ -64,6 +66,12 @@ function parseQuery(raw: RawSearchParams): { query: CatalogQuery; page: number }
     },
     page: Number.isNaN(page) || page < 1 ? 1 : page,
   };
+}
+
+/** The catalogue at this query, back to page one. */
+function catalogHref(query: CatalogQuery): string {
+  const params = catalogSearchParams(query);
+  return params.size > 0 ? `/khoa-hoc?${params}` : "/khoa-hoc";
 }
 
 /** Anything narrowing the catalogue, sorting aside. */
@@ -129,18 +137,48 @@ export default async function CatalogPage({
   const filtered = isFiltered(query);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
-      <header className="mb-6 space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Khóa học</h1>
-        <p className="text-muted-foreground">
-          {results.total > 0
-            ? `${results.total} khóa học${query.q ? ` cho “${query.q}”` : ""}`
-            : "Chưa có khóa học nào khớp với lựa chọn của bạn."}
-        </p>
-      </header>
+    <div>
+      {/* The page head on `card`: the title, the search box, the topics. */}
+      <div className="border-b bg-card">
+        <header className="mx-auto max-w-6xl space-y-5 px-4 pt-10 pb-6">
+          <div className="space-y-1.5">
+            <h1 className="text-h1">Khóa học</h1>
+            <p className="text-body text-muted-foreground">
+              Tìm theo từ khóa, lọc theo chủ đề, mức giá và đánh giá.
+            </p>
+          </div>
+          <CatalogSearch query={query} />
+          <TopicLinks
+            categories={categories}
+            current={query.category_id ?? null}
+            allHref={catalogHref({ ...query, category_id: undefined })}
+            hrefFor={(id) => catalogHref({ ...query, category_id: id })}
+          />
+        </header>
+      </div>
 
-      <div className="space-y-8">
-        <CatalogFilters categories={categories} query={query} filtered={filtered} />
+      <div className="mx-auto max-w-6xl space-y-6 px-4 pt-6 pb-16">
+        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+          <p className="text-body">
+            {results.total > 0 ? (
+              <>
+                <span className="font-semibold">{results.total} khóa học</span>
+                {query.q ? <span className="text-muted-foreground"> cho “{query.q}”</span> : null}
+              </>
+            ) : (
+              <span className="text-muted-foreground">Chưa có khóa học nào khớp với lựa chọn của bạn.</span>
+            )}
+            {filtered ? (
+              <>
+                {" · "}
+                <Link href="/khoa-hoc" className="text-body-sm text-link underline underline-offset-4">
+                  Xóa lọc
+                </Link>
+              </>
+            ) : null}
+          </p>
+          <CatalogRefine query={query} />
+        </div>
 
         {results.items.length > 0 ? (
           <>

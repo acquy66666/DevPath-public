@@ -1,31 +1,29 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 
+import { Mascot } from "@/components/mascot/mascot";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { becomeInstructor } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
 
-const WHAT_YOU_GET = [
-  "Tạo khóa học: chương, bài giảng, video",
-  "Ra bài tập code và bộ test, hệ thống chấm tự động",
-  "Sinh quiz từ nội dung bài giảng bằng AI",
-  "Xem thống kê học viên và tiến độ hoàn thành",
-];
+/** The card's frame, the same in every state so the column does not jump. */
+function Frame({ children }: { children: ReactNode }) {
+  return <div className="space-y-4 rounded-lg border bg-card p-6">{children}</div>;
+}
 
+/**
+ * The action beside "Trở thành giảng viên": what it says depends on who is
+ * reading -- a visitor is asked to sign in, a learner gets the button, an
+ * instructor is sent to the teaching area, an admin is told why not.
+ */
 export function BecomeInstructorCard() {
   const router = useRouter();
   const { user, accessToken, status, refreshSession } = useAuth();
@@ -41,106 +39,105 @@ export function BecomeInstructorCard() {
   });
 
   if (status === "loading") {
-    return <Skeleton className="h-64 rounded-lg" />;
+    return (
+      <div aria-hidden>
+        <Frame>
+          <div className="flex items-center gap-3">
+            <Skeleton className="size-18 shrink-0 rounded-full" />
+            <div className="flex-1">
+              <SkeletonText size="h3" className="w-2/3" />
+              <SkeletonText size="body-sm" className="w-1/3" />
+            </div>
+          </div>
+          <div>
+            <SkeletonText />
+            <SkeletonText className="w-4/5" />
+          </div>
+          <Skeleton className="h-11 w-full" />
+        </Frame>
+      </div>
+    );
   }
 
   if (user === null) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Đăng nhập để tiếp tục</CardTitle>
-          <CardDescription>
-            Nâng cấp tài khoản cần biết bạn là ai. Đăng nhập rồi quay lại trang này nhé.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex gap-2">
-          <Button asChild>
-            <Link href="/dang-nhap">Đăng nhập</Link>
+      <Frame>
+        <h2 className="text-h3">Đăng nhập để tiếp tục</h2>
+        <p className="text-body text-foreground/80">
+          Nâng cấp tài khoản cần biết bạn là ai. Đăng nhập rồi quay lại trang này nhé.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Button size="lg" asChild>
+            <Link href="/dang-nhap?next=/tro-thanh-giang-vien">Đăng nhập</Link>
           </Button>
-          <Button variant="outline" asChild>
-            <Link href="/dang-ky">Tạo tài khoản</Link>
+          <Button size="lg" variant="outline" asChild>
+            <Link href="/dang-ky?next=/tro-thanh-giang-vien">Tạo tài khoản</Link>
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </Frame>
     );
   }
 
   if (user.role === "instructor") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle2 className="size-5 text-emerald-600" aria-hidden />
-            Bạn đã là giảng viên
-          </CardTitle>
-          <CardDescription>
-            Trang quản lý khóa học đang được xây dựng — sẽ có ở bước kế tiếp của dự án.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <Frame>
+        <h2 className="text-h3">Bạn đã là giảng viên</h2>
+        <p className="text-body text-foreground/80">
+          Khóa học, thống kê và hỏi đáp của học viên nằm ở khu giảng dạy.
+        </p>
+        <Button size="lg" className="w-full" asChild>
+          <Link href="/giang-day">Vào khu giảng dạy</Link>
+        </Button>
+      </Frame>
     );
   }
 
   if (user.role === "admin") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Tài khoản quản trị</CardTitle>
-          <CardDescription>
-            Quản trị viên đã có mọi quyền của giảng viên, không cần nâng cấp — và nâng
-            cấp sẽ làm mất quyền quản trị.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <Frame>
+        <h2 className="text-h3">Tài khoản quản trị</h2>
+        <p className="text-body text-foreground/80">
+          Quản trị viên đã có mọi quyền của giảng viên, không cần nâng cấp — và nâng cấp sẽ làm mất
+          quyền quản trị.
+        </p>
+      </Frame>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Trở thành giảng viên</CardTitle>
-        <CardDescription>
-          Miễn phí và có hiệu lực ngay. Tài khoản học viên của bạn giữ nguyên: khóa học
-          đang học, tiến độ, ghi chú đều còn.
-        </CardDescription>
-      </CardHeader>
+    <Frame>
+      <div className="flex items-center gap-3">
+        <Mascot mood="wave" className="size-18 shrink-0" />
+        <div className="min-w-0">
+          <h2 className="truncate text-h3">Chào {user.full_name}</h2>
+          <p className="text-body-sm text-muted-foreground">Tài khoản học viên</p>
+        </div>
+      </div>
 
-      <CardContent className="space-y-4">
-        <ul className="space-y-2 text-sm">
-          {WHAT_YOU_GET.map((item) => (
-            <li key={item} className="flex gap-2">
-              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-              {item}
-            </li>
-          ))}
-        </ul>
+      <p className="text-body text-foreground/80">
+        Miễn phí và có hiệu lực ngay. Khóa học đang học, tiến độ và ghi chú của bạn đều giữ nguyên.
+      </p>
 
-        <p className="text-sm text-muted-foreground">
-          Khóa học bạn tạo sẽ ở trạng thái nháp và phải qua duyệt trước khi hiển thị
-          công khai.
-        </p>
+      {mutation.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
+        </Alert>
+      ) : null}
 
-        {mutation.isError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
-          </Alert>
-        ) : null}
+      <Button size="lg" className="w-full" onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+        {mutation.isPending ? (
+          <>
+            <Loader2 className="animate-spin" aria-hidden />
+            Đang nâng cấp…
+          </>
+        ) : (
+          "Nâng cấp tài khoản của tôi"
+        )}
+      </Button>
 
-        <Button
-          className="w-full"
-          onClick={() => mutation.mutate()}
-          disabled={mutation.isPending}
-        >
-          {mutation.isPending ? (
-            <>
-              <Loader2 className="animate-spin" aria-hidden />
-              Đang nâng cấp…
-            </>
-          ) : (
-            "Nâng cấp tài khoản của tôi"
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+      <p className="text-caption text-muted-foreground">
+        Khóa học bạn tạo ở trạng thái nháp, và phải được quản trị viên duyệt trước khi hiện công khai.
+      </p>
+    </Frame>
   );
 }

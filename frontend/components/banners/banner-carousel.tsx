@@ -5,9 +5,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { Banner } from "@/lib/api/banners";
-import { cn } from "@/lib/utils";
 
 const INTERVAL_MS = 6000;
+
+/** A round white button over the picture; 36px, the size of a button. */
+const ARROW =
+  "flex size-9 items-center justify-center rounded-full bg-card text-foreground shadow-sm transition-colors duration-fast hover:bg-accent";
 
 /**
  * The homepage banners, one at a time.
@@ -69,40 +72,31 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
         ))}
       </div>
 
+      {/* Both arrows and the count sit together in a corner, off the title:
+          over the middle of the picture they covered its words on a phone. */}
       {count > 1 ? (
-        <>
+        <div className="absolute right-3 bottom-3 flex items-center gap-1.5 sm:right-5 sm:bottom-5">
           <button
             type="button"
             onClick={() => go(index - 1)}
-            className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow-sm backdrop-blur transition hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className={ARROW}
             aria-label="Banner trước"
           >
-            <ChevronLeft className="size-5" aria-hidden />
+            <ChevronLeft className="size-4.5" aria-hidden />
           </button>
+          <span className="min-w-10 text-center text-body-sm font-semibold text-slate-0 tabular-nums">
+            <span className="sr-only">Banner </span>
+            {index + 1} / {count}
+          </span>
           <button
             type="button"
             onClick={() => go(index + 1)}
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-background/80 p-1.5 shadow-sm backdrop-blur transition hover:bg-background focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className={ARROW}
             aria-label="Banner sau"
           >
-            <ChevronRight className="size-5" aria-hidden />
+            <ChevronRight className="size-4.5" aria-hidden />
           </button>
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-            {banners.map((banner, position) => (
-              <button
-                key={banner.id}
-                type="button"
-                onClick={() => go(position)}
-                aria-label={`Xem banner ${position + 1}`}
-                aria-current={position === index ? "true" : undefined}
-                className={cn(
-                  "h-2 rounded-full bg-white/60 transition-all focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                  position === index ? "w-6 bg-white" : "w-2",
-                )}
-              />
-            ))}
-          </div>
-        </>
+        </div>
       ) : null}
     </section>
   );
@@ -113,10 +107,11 @@ function Slide({ banner, focusable }: { banner: Banner; focusable: boolean }) {
     <>
       {/* eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here */}
       <img src={banner.image_url} alt="" className="size-full object-cover" />
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-5 pt-12 pb-8 sm:px-8">
-        <p className="max-w-2xl text-lg font-semibold text-balance text-white drop-shadow sm:text-2xl">
-          {banner.title}
-        </p>
+      {/* A scrim under the words: the picture is whatever an admin uploaded,
+          and white text has to stay readable on any of it. Right padding
+          leaves room for the controls in the corner. */}
+      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/75 to-transparent px-5 pt-14 pb-5 pr-36 sm:px-8 sm:pb-7 sm:pr-44">
+        <p className="max-w-2xl text-title text-balance text-slate-0 sm:text-h2">{banner.title}</p>
       </div>
     </>
   );

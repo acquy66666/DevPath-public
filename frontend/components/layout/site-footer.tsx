@@ -5,6 +5,8 @@ import { BrandMark } from "@/components/layout/brand-mark";
 const LINKS = [
   { href: "/khoa-hoc", label: "Khóa học" },
   { href: "/bang-xep-hang", label: "Bảng xếp hạng" },
+  // The only way in for a visitor: the user menu offers it once signed in.
+  { href: "/tro-thanh-giang-vien", label: "Trở thành giảng viên" },
   // Google's consent screen points here; keep it on every page.
   { href: "/chinh-sach-bao-mat", label: "Chính sách bảo mật" },
 ] as const;

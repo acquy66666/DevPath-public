@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trở thành giảng viên</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #f8fafc; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif">
+  <dc-import name="Header" compact="{{narrow}}" hint-size="100%,64px"></dc-import>
+
+  <main style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 56px 16px 96px; display: flex; flex-wrap: wrap; align-items: flex-start; gap: 48px">
+    <div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 40px">
+      <header style="display: flex; flex-direction: column; gap: 16px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #066254">Dành cho người dạy</span>
+        <h1 style="margin: 0; font-size: 40px; line-height: 52px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance">Dạy lập trình bằng bài tập được chấm tự động</h1>
+        <p style="margin: 0; max-width: 34em; font-size: 18px; line-height: 30px; color: #3e505a">Soạn khóa học, ra bài tập có bộ test, để hệ thống chấm từng bài nộp trong sandbox. Bạn dành thời gian cho bài giảng, không cho việc chấm tay.</p>
+      </header>
+
+      <section aria-labelledby="cong-cu" style="display: flex; flex-direction: column; gap: 16px">
+        <h2 id="cong-cu" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em">Bạn có những gì</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px">
+          <sc-for list="{{tools}}" as="t" hint-placeholder-count="4">
+            <li style="padding: 16px; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; display: flex; gap: 12px">
+              <span aria-hidden="true" style="flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; background: #e7fbf6; color: #066254; display: flex; align-items: center; justify-content: center; font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 14px; font-weight: 600">{{t.mark}}</span>
+              <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+                <span style="font-size: 16px; line-height: 24px; font-weight: 600">{{t.title}}</span>
+                <span style="font-size: 14px; line-height: 20px; color: #556670">{{t.text}}</span>
+              </span>
+            </li>
+          </sc-for>
+        </ul>
+      </section>
+
+      <section aria-labelledby="cac-buoc" style="display: flex; flex-direction: column; gap: 16px">
+        <h2 id="cac-buoc" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em">Từ tài khoản tới khóa học trên sàn</h2>
+        <ol style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+            <li style="display: flex; flex-direction: column; gap: 6px; padding-top: 12px; border-top: 2px solid {{s.rule}}">
+              <span style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 13px; line-height: 18px; font-weight: 600; color: #066254">{{s.n}}</span>
+              <span style="font-size: 16px; line-height: 24px; font-weight: 600">{{s.title}}</span>
+              <span style="font-size: 14px; line-height: 20px; color: #556670">{{s.text}}</span>
+            </li>
+          </sc-for>
+        </ol>
+      </section>
+    </div>
+
+    <aside aria-label="Nâng cấp tài khoản" style="flex: 1 1 320px; min-width: 0; max-width: 400px; display: flex; flex-direction: column; gap: 16px">
+      <div style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; align-items: center; gap: 12px">
+          <img src="/_blob/7fb7d8bfc6cd21a77b26b82fd414334c" alt="" width="72" height="72" style="width: 72px; height: 72px; flex-shrink: 0">
+          <div style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-size: 18px; line-height: 26px; font-weight: 600">Chào Người mua 08</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">Tài khoản học viên</span>
+          </div>
+        </div>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #3e505a">Miễn phí và có hiệu lực ngay. Khóa học đang học, tiến độ và ghi chú của bạn đều giữ nguyên.</p>
+        <button type="button" style="height: 44px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Nâng cấp tài khoản của tôi</button>
+        <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Khóa học bạn tạo ở trạng thái nháp, và phải được quản trị viên duyệt trước khi hiện công khai.</p>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Thẻ ở các trạng thái khác</span>
+        <sc-for list="{{states}}" as="st" hint-placeholder-count="3">
+          <div style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+            <span style="font-size: 16px; line-height: 24px; font-weight: 600">{{st.title}}</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">{{st.text}}</span>
+            <sc-if value="{{st.action}}" hint-placeholder-val="{{true}}">
+              <a href="#" style="align-self: flex-start; padding: 8px 14px; border-radius: 10px; border: 1px solid #6f7e88; color: #102029; font-size: 14px; line-height: 20px; font-weight: 600; text-decoration: none">{{st.action}}</a>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </aside>
+  </main>
+
+  <dc-import name="Footer" hint-size="100%,150px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"narrow":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      narrow: this.props.narrow ?? false,
+      tools: [
+        { mark: "§", title: "Soạn khóa học", text: "Chương, bài giảng video và bài đọc, sắp xếp bằng kéo-thả." },
+        { mark: "</>", title: "Bài tập code", text: "Bộ test mẫu và test ẩn, chấm tự động trong sandbox Docker." },
+        { mark: "AI", title: "Sinh quiz bằng AI", text: "Câu hỏi nháp từ nội dung bài giảng, bạn duyệt từng câu." },
+        { mark: "%", title: "Thống kê và hỏi đáp", text: "Học viên mới, tỉ lệ hoàn thành, câu hỏi chưa trả lời." }
+      ],
+      steps: [
+        { n: "01", title: "Nâng cấp", text: "Một cú bấm trên trang này.", rule: "#007967" },
+        { n: "02", title: "Soạn nháp", text: "Chỉ bạn thấy khóa học.", rule: "#d2dbe0" },
+        { n: "03", title: "Gửi duyệt", text: "Quản trị viên xem lại nội dung.", rule: "#d2dbe0" },
+        { n: "04", title: "Lên sàn", text: "Học viên tìm thấy và ghi danh.", rule: "#d2dbe0" }
+      ],
+      states: [
+        { title: "Khách", text: "Đăng nhập để nâng cấp tài khoản của bạn.", action: "Đăng nhập" },
+        { title: "Bạn đã là giảng viên", text: "Khóa học, thống kê và hỏi đáp ở khu giảng dạy.", action: "Vào khu giảng dạy" },
+        { title: "Tài khoản quản trị", text: "Quản trị viên đã có mọi quyền của giảng viên. Nâng cấp sẽ làm mất quyền quản trị.", action: "" }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

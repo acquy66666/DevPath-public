@@ -339,8 +339,8 @@ function CartRow({
         <CourseCover
           thumbnailUrl={course.thumbnail_url}
           colorKey={course.id}
+          size="sm"
           className="w-24 rounded-md sm:w-40"
-          iconClassName="size-6"
         />
       </Link>
 

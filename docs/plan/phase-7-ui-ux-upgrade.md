@@ -59,7 +59,16 @@ Thiết kế đầy đủ, gồm lý do, phản mục tiêu, bản đồ phản 
 
 Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run lint` + E2E luồng vàng xanh → ảnh trước/sau 1440 + 375 px vào `phase-7/`.
 
-- [ ] Nhóm 2 — Trang công khai: trang chủ (banner, gợi ý, khóa mới), danh sách + tìm kiếm, chi tiết khóa học, trang giảng viên
+- [x] Nhóm 2 — Trang công khai: trang chủ (banner, gợi ý, khóa mới), danh sách + tìm kiếm, chi tiết khóa học, trang giảng viên — xong 23/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/JEVpC3YxF8tst9t27965UK), 12 artboard (4 trang × 1440/375 + thẻ khóa học + thành phần), bản trong repo ở `docs/ui-ux/public-pages/canvas/`. "Trang giảng viên" = `/tro-thanh-giang-vien`: không có API hồ sơ giảng viên công khai, backend đứng yên.
+  - **Thẻ khóa học:** bìa "dòng code + cặp ngoặc" theo 6 dải màu minh họa (`lib/courses/cover.ts`, không nghệ), một dòng nhãn, avatar giảng viên, chân thẻ đánh giá + giá; `CourseRowCard` nằm ngang cho khối gợi ý chỉ có 1–2 khóa.
+  - **Trang chủ:** hero hai cột với minh họa một bài nộp AC + Naomi `celebrate` tĩnh; nút thứ hai thành "Khóa học của tôi" khi đã đăng nhập; banner xuống dưới hero; thêm "Duyệt theo chủ đề".
+  - **Danh sách:** ô tìm kiếm lớn + chip chủ đề trên nền `card`; giá/đánh giá/sắp xếp cạnh số kết quả, đổi là gửi (vẫn form GET, ô chọn nối form bằng thuộc tính `form`), điện thoại gom sau "Bộ lọc".
+  - **Chi tiết:** dải đầu trang `card` toàn bề ngang (bóng trải + `clip-path`, thẻ giá vẫn đè và dính); "Khóa học gồm" đếm từ mục lục thật.
+  - **Trở thành giảng viên:** trang hai cột (công cụ, bốn bước tới lúc lên sàn), Naomi `wave` cho học viên, giảng viên được dẫn vào khu giảng dạy (câu "đang được xây dựng" từ Phase 2 đã bỏ); footer có link tới trang.
+  - **Lỗi tìm ra:** `truncate` trong thẻ làm trang 360 px tràn 13 px (2/132 → 0/132 sau khi đổi sang `line-clamp-1`); skeleton "Học tiếp theo" thiếu dòng mô tả.
+  - **Kiểm:** `npm test` 35/35, lint + tsc sạch, tràn ngang 0/132, E2E 1 passed. Ảnh trước/sau 18 + 18.
+  - **Để lại:** ảnh banner mẫu của `seed_banners` vẫn gradient tím (dữ liệu) — sinh lại trước khi chụp ảnh gate. Bằng chứng: [`public-pages.md`](../report/assets/phase-7/public-pages.md)
 - [ ] Nhóm 3 — Nộp bài code ⭐: Monaco, kết quả từng test qua WebSocket, nhân vật theo **7 verdict** + `grading` theo tiến độ "test k/n"
 - [ ] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn)
 - [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ

@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Markdown } from "@/components/ui/markdown";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   approveCourse,
   getAdminCourse,
@@ -403,7 +404,7 @@ function LessonPreview({ lessonId }: { lessonId: string }) {
           <AlertDescription>{apiErrorMessage(lesson.error)}</AlertDescription>
         </Alert>
       ) : null}
-      {lesson.isPending ? <div className="h-24 animate-pulse rounded-md bg-muted/40" /> : null}
+      {lesson.isPending ? <Skeleton className="h-24" /> : null}
       {lesson.data ? (
         lesson.data.type === "video" ? (
           lesson.data.video?.hls_url ? (

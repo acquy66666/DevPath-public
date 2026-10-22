@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Lock, LockOpen, Users } from "lucide-react";
+import { Loader2, Lock, LockOpen } from "lucide-react";
 import { useState } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -103,11 +103,11 @@ export function AdminUserList() {
         </Alert>
       ) : null}
 
-      {users.isPending ? <ListSkeleton height="h-20" /> : null}
+      {users.isPending ? <ListSkeleton height="h-20" fill /> : null}
 
       {users.data && users.data.total === 0 ? (
         <EmptyState
-          icon={Users}
+          mood="empty-search"
           title="Không có tài khoản nào khớp"
           hint="Đổi từ khóa tìm kiếm hoặc bộ lọc vai trò, trạng thái."
         />

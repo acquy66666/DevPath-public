@@ -15,6 +15,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { cn } from "@/lib/utils";
 
@@ -98,7 +99,7 @@ export function SiteHeader() {
 
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {status === "loading" ? (
-            <div className="h-9 w-36 animate-pulse rounded-md bg-muted sm:h-11 sm:w-52" aria-hidden />
+            <Skeleton className="h-9 w-36 sm:h-11 sm:w-52" />
           ) : user ? (
             <>
               <NotificationBell />

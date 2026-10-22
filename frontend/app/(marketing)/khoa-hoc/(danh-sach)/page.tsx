@@ -5,6 +5,8 @@ import { cache } from "react";
 import { CatalogFilters } from "@/components/courses/catalog-filters";
 import { CatalogPagination } from "@/components/courses/catalog-pagination";
 import { CourseCard } from "@/components/courses/course-card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { listCategories } from "@/lib/api/categories";
 import {
   catalogSearchParams,
@@ -153,22 +155,22 @@ export default async function CatalogPage({
             <CatalogPagination query={query} page={current} pageCount={pageCount} />
           </>
         ) : (
-          <div className="rounded-lg border border-dashed p-12 text-center">
-            <p className="font-medium">Không tìm thấy khóa học nào</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {filtered
+          <EmptyState
+            mood={filtered ? "empty-search" : "empty-courses"}
+            title={filtered ? "Không tìm thấy khóa học nào" : "Chưa có khóa học nào"}
+            description={
+              filtered
                 ? "Thử bớt một bộ lọc, hoặc tìm bằng từ khóa khác."
-                : "Các khóa học đầu tiên đang được giảng viên hoàn thiện."}
-            </p>
-            {filtered ? (
-              <Link
-                href="/khoa-hoc"
-                className="mt-4 inline-block text-sm underline underline-offset-4"
-              >
-                Xóa toàn bộ bộ lọc
-              </Link>
-            ) : null}
-          </div>
+                : "Các khóa học đầu tiên đang được giảng viên hoàn thiện."
+            }
+            action={
+              filtered ? (
+                <Button variant="outline" asChild>
+                  <Link href="/khoa-hoc">Xóa toàn bộ bộ lọc</Link>
+                </Button>
+              ) : null
+            }
+          />
         )}
       </div>
     </div>

@@ -3,13 +3,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * The net under the room where people study.
@@ -22,29 +16,27 @@ import {
  */
 export default function LearnError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-xl px-4 py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Không mở được bài học này</CardTitle>
-          <CardDescription>
-            Có lỗi ngoài dự tính khi hiển thị trang học. Tiến độ và bài nộp của bạn
-            vẫn được lưu trên máy chủ.
-            {error.digest ? ` Mã lỗi: ${error.digest}.` : null}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-3">
-          <Button onClick={reset}>Thử lại</Button>
+    <StatePanel
+      mood="sorry"
+      title="Không mở được bài học này"
+      detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+      actions={
+        <>
+          <Button onClick={retry}>Thử lại</Button>
           <Button variant="outline" asChild>
             <Link href="/khoa-hoc-cua-toi">Về khóa học của tôi</Link>
           </Button>
-        </CardContent>
-      </Card>
-    </div>
+        </>
+      }
+    >
+      Lỗi phía hệ thống khi hiển thị trang học, không phải do bạn. Tiến độ và bài nộp của bạn vẫn được lưu trên máy
+      chủ.
+    </StatePanel>
   );
 }

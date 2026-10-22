@@ -16,6 +16,8 @@ import { ReportButton } from "@/components/reports/report-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import type { CourseDetail } from "@/lib/api/courses";
 import { getMyEnrollment } from "@/lib/api/enrollments";
@@ -257,7 +259,7 @@ export function CourseReviews({
       </div>
 
       {status === "loading" ? (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
+        <Skeleton className="h-24 rounded-lg" />
       ) : user === null ? (
         <p className="text-sm text-muted-foreground">
           <Link
@@ -269,7 +271,7 @@ export function CourseReviews({
           để viết đánh giá cho khóa học này.
         </p>
       ) : owns ? null : enrollment.isLoading ? (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
+        <Skeleton className="h-24 rounded-lg" />
       ) : !enrolled ? (
         <p className="text-sm text-muted-foreground">
           Đăng ký khóa học để viết đánh giá.
@@ -284,13 +286,15 @@ export function CourseReviews({
           onWritten={refresh}
         />
       ) : (
-        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-hidden />
+        <Skeleton className="h-24 rounded-lg" />
       )}
 
       {current.items.length === 0 ? (
-        <p className="rounded-lg border border-dashed px-5 py-8 text-center text-sm text-muted-foreground">
-          Chưa có đánh giá nào. Học xong rồi, bạn viết đánh giá đầu tiên nhé.
-        </p>
+        <EmptyState
+          size="md"
+          title="Chưa có đánh giá nào"
+          description="Học xong khóa này, bạn có thể viết đánh giá đầu tiên ngay trên trang này."
+        />
       ) : (
         <ul className={reviews.isPlaceholderData ? "opacity-60" : undefined}>
           {current.items.map((review) => (

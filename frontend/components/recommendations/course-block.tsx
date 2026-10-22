@@ -1,5 +1,8 @@
 import type { ReactNode } from "react";
 
+import { CourseCardSkeleton } from "@/components/courses/course-card";
+import { SkeletonText } from "@/components/ui/skeleton";
+
 /**
  * The frame the three recommender blocks share: a heading, one line saying
  * where the cards came from, and a row of course cards.
@@ -37,17 +40,23 @@ export function CourseBlockSkeleton({
   title,
   count,
   columns = 4,
+  described = false,
 }: {
   title: string;
   count: number;
   columns?: 3 | 4;
+  /** The block will have a line under its title and a reason on each card. */
+  described?: boolean;
 }) {
   return (
     <section className="space-y-4" aria-label={title} aria-busy>
-      <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+      <header className="space-y-1">
+        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        {described ? <SkeletonText size="body-sm" className="w-full max-w-lg" /> : null}
+      </header>
       <div className={gridClass(columns)}>
         {Array.from({ length: count }, (_, index) => (
-          <div key={index} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
+          <CourseCardSkeleton key={index} note={described} />
         ))}
       </div>
     </section>

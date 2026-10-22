@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, ShoppingCart, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,6 +18,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
 import {
   applyCoupon,
   clearCart,
@@ -111,7 +113,7 @@ export function CartView() {
   });
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
+    return <CartSkeleton />;
   }
 
   if (status === "anonymous") {
@@ -141,21 +143,21 @@ export function CartView() {
   }
 
   if (!cart.data) {
-    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
+    return <CartSkeleton />;
   }
 
   if (cart.data.items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <ShoppingCart className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-        <p className="font-medium">Giỏ hàng đang trống</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Thêm khóa học bạn muốn mua vào đây, rồi thanh toán một lần.
-        </p>
-        <Button className="mt-4" asChild>
-          <Link href="/khoa-hoc">Tìm khóa học</Link>
-        </Button>
-      </div>
+      <EmptyState
+        mood="empty-cart"
+        title="Giỏ hàng đang trống"
+        description="Thêm khóa học bạn muốn mua vào đây, rồi thanh toán một lần."
+        action={
+          <Button asChild>
+            <Link href="/khoa-hoc">Tìm khóa học</Link>
+          </Button>
+        }
+      />
     );
   }
 
@@ -380,5 +382,47 @@ function CartRow({
         {removeButton}
       </div>
     </div>
+  );
+}
+
+/**
+ * The cart on its way: the count, one line of the list (cover, title,
+ * instructor, price and "Bỏ"), the "Xóa toàn bộ" button and the summary card,
+ * where the real ones go.
+ */
+function CartSkeleton() {
+  return (
+    <SkeletonRegion label="Đang tải giỏ hàng…" className="grid gap-8 lg:grid-cols-[1fr_20rem]">
+      <div className="space-y-4">
+        <SkeletonText className="w-24" />
+        <div className="flex items-start gap-3 rounded-lg border p-4 sm:gap-4">
+          <Skeleton className="aspect-video w-24 shrink-0 sm:w-40" />
+          <div className="min-w-0 flex-1">
+            <SkeletonText className="w-3/4" />
+            <SkeletonText size="body-sm" className="w-1/3" />
+            <div className="mt-2 flex items-center justify-between gap-2 sm:hidden">
+              <SkeletonText className="w-20" />
+              <Skeleton className="h-8 w-16" />
+            </div>
+          </div>
+          <div className="hidden shrink-0 flex-col items-end gap-2 sm:flex">
+            <SkeletonText className="w-20" />
+            <Skeleton className="h-8 w-16" />
+          </div>
+        </div>
+        <Skeleton className="h-8 w-44" />
+      </div>
+      <div className="flex flex-col gap-4 rounded-lg border bg-card py-4">
+        <div className="space-y-1 px-4">
+          <SkeletonText size="body-sm" className="w-20" />
+          <Skeleton className="h-9 w-40" />
+        </div>
+        <div className="space-y-3 px-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <SkeletonText size="caption" className="h-4" />
+        </div>
+      </div>
+    </SkeletonRegion>
   );
 }

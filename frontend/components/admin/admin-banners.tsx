@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, ImagePlus, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -104,10 +104,9 @@ export function AdminBanners() {
           <AlertDescription>{apiErrorMessage(reorder.error)}</AlertDescription>
         </Alert>
       ) : null}
-      {banners.isPending ? <ListSkeleton height="h-28" /> : null}
+      {banners.isPending ? <ListSkeleton height="h-28" fill /> : null}
       {banners.data && items.length === 0 ? (
         <EmptyState
-          icon={ImagePlus}
           title="Chưa có banner nào"
           hint="Banner hiện ở đầu trang chủ — dùng cho khóa học mới, mã giảm giá, sự kiện. Ảnh ngang, tỉ lệ khoảng 21:8."
         />

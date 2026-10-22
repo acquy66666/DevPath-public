@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircleQuestion, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -19,6 +19,8 @@ import {
 } from "@/lib/api/qa";
 
 import { Pager } from "@/components/ui/pager";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { QA_KEY, QaThreadRow } from "./qa-shared";
 import { QA_MESSAGES, QaThreadView } from "./qa-thread-view";
@@ -175,19 +177,17 @@ export function QaPanel({
       {threads.isPending ? (
         <div className="space-y-3" aria-hidden>
           {[0, 1].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-md border bg-muted/40" />
+            <Skeleton key={row} className="h-24" />
           ))}
         </div>
       ) : null}
 
       {threads.data && threads.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-md border border-dashed px-4 py-8 text-center">
-          <MessageCircleQuestion className="size-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">Chưa có câu hỏi nào cho bài học này</p>
-          <p className="text-sm text-muted-foreground">
-            Chỗ nào chưa rõ, cứ hỏi — giảng viên và các bạn cùng khóa sẽ trả lời.
-          </p>
-        </div>
+        <EmptyState
+          size="md"
+          title="Chưa có câu hỏi nào cho bài học này"
+          description="Chỗ nào chưa rõ, bấm “Đặt câu hỏi”: giảng viên và các bạn cùng khóa sẽ trả lời."
+        />
       ) : null}
 
       {threads.data && threads.data.items.length > 0 ? (

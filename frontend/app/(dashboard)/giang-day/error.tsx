@@ -1,40 +1,30 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * The last net under the instructor screens. Errors from API calls are caught
  * where they happen and shown next to the thing that failed; what lands here is
- * a render that threw, so the only honest offer is "thử lại".
+ * a render that threw, so the only honest offer is "thử lại". No Naomi: in the
+ * work areas she only appears in empty states.
  */
 export default function InstructorError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-xl px-4 py-12">
-      <Card>
-        <CardHeader>
-          <CardTitle>Không mở được trang này</CardTitle>
-          <CardDescription>
-            Có lỗi ngoài dự tính khi hiển thị khu vực giảng viên.
-            {error.digest ? ` Mã lỗi: ${error.digest}.` : null}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={reset}>Thử lại</Button>
-        </CardContent>
-      </Card>
-    </div>
+    <StatePanel
+      mood={null}
+      title="Không mở được trang này"
+      titleAs="h2"
+      detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+      actions={<Button onClick={retry}>Thử lại</Button>}
+    >
+      Lỗi phía hệ thống khi hiển thị khu vực giảng viên, không phải do bạn. Nội dung đã lưu không bị ảnh hưởng.
+    </StatePanel>
   );
 }

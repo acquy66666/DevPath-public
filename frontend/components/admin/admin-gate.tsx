@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { AdminBodySkeleton, AdminNavSkeleton } from "@/components/admin/admin-shared";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { SkeletonRegion } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 /**
@@ -23,11 +25,14 @@ import { useAuth } from "@/lib/auth/auth-provider";
 export function AdminGate({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
 
+  // The admin frame in bars, then the body every admin screen starts from:
+  // the same one quan-tri/loading.tsx shows inside the real frame.
   if (status === "loading") {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12">
-        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
-      </div>
+      <SkeletonRegion label="Đang mở khu vực quản trị…" className="mx-auto max-w-5xl space-y-6 px-4 py-10">
+        <AdminNavSkeleton />
+        <AdminBodySkeleton />
+      </SkeletonRegion>
     );
   }
 

@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { becomeInstructor } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -40,7 +41,7 @@ export function BecomeInstructorCard() {
   });
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
+    return <Skeleton className="h-64 rounded-lg" />;
   }
 
   if (user === null) {

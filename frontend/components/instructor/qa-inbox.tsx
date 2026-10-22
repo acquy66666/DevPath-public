@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Inbox } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +11,8 @@ import { QA_MESSAGES, QaThreadView } from "@/components/qa/qa-thread-view";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Pager } from "@/components/ui/pager";
+import { EmptyState } from "@/components/ui/empty-state";
+import { QaRowsSkeleton } from "@/components/instructor/instructor-skeletons";
 import { listMyCourses } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { listInstructorThreads } from "@/lib/api/qa";
@@ -130,25 +132,19 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
       ) : null}
 
       {threads.isPending ? (
-        <div className="space-y-3" aria-hidden>
-          {[0, 1, 2].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-md border bg-muted/40" />
-          ))}
-        </div>
+        <QaRowsSkeleton />
       ) : null}
 
       {threads.data && threads.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
-          <Inbox className="size-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">
-            {unanswered ? "Không còn câu hỏi nào chờ bạn trả lời" : "Chưa có câu hỏi nào"}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {unanswered
+        <EmptyState
+          size="md"
+          title={unanswered ? "Không còn câu hỏi nào chờ bạn trả lời" : "Chưa có câu hỏi nào"}
+          description={
+            unanswered
               ? "Bỏ chọn “Chỉ câu chưa trả lời” để xem lại những câu đã trả lời."
-              : "Khi học viên đặt câu hỏi dưới một bài học, câu hỏi sẽ hiện ở đây."}
-          </p>
-        </div>
+              : "Khi học viên đặt câu hỏi dưới một bài học, câu hỏi sẽ hiện ở đây."
+          }
+        />
       ) : null}
 
       {threads.data && threads.data.items.length > 0 ? (

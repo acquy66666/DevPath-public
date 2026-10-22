@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { BookCheck, ImageOff } from "lucide-react";
+import { ImageOff } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -92,7 +92,7 @@ export function AdminCourseQueue() {
 
       {courses.data && courses.data.total === 0 ? (
         <EmptyState
-          icon={BookCheck}
+          mood={q ? "empty-search" : "empty-courses"}
           title={
             q
               ? "Không có khóa học nào khớp"

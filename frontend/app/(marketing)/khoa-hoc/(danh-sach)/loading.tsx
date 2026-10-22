@@ -1,8 +1,11 @@
+import { CourseCardSkeleton } from "@/components/courses/course-card";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
+
 /**
  * The catalogue fetches courses and categories on the server, so the browser
- * would otherwise sit on the previous page until both answer. Same grid, same
- * gaps, so the real cards land where the grey ones were instead of shoving the
- * page around.
+ * would otherwise sit on the previous page until both answer. Same heading,
+ * same filter grid (search, four selects, the button row), same card grid, so
+ * the real page lands where the grey one was instead of shoving it around.
  *
  * It lives in the `(danh-sach)` group, not in `khoa-hoc/` itself, because a
  * `loading.tsx` wraps every segment below it: one level up it also wrapped
@@ -11,25 +14,39 @@
  */
 export default function Loading() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-10">
+    <SkeletonRegion label="Đang tải danh sách khóa học…" className="mx-auto max-w-6xl px-4 py-10">
       <header className="mb-6 space-y-2">
-        <div className="h-9 w-44 animate-pulse rounded-md bg-muted" />
-        <div className="h-5 w-64 animate-pulse rounded bg-muted/70" />
+        <SkeletonText size="h1" className="h-9 w-44" />
+        <SkeletonText className="w-64" />
       </header>
 
       <div className="space-y-8">
-        <div className="h-11 animate-pulse rounded-lg border bg-muted/40" />
+        <div className="grid grid-cols-2 gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end">
+          <Field className="col-span-2 lg:col-span-1" />
+          <Field />
+          <Field />
+          <Field />
+          <Field />
+          <Skeleton className="col-span-2 h-9 w-24 lg:col-span-1" />
+        </div>
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {[0, 1, 2, 3, 4, 5].map((card) => (
-            <li
-              key={card}
-              className="h-72 animate-pulse rounded-lg border bg-muted/40"
-              aria-hidden
-            />
+            <li key={card} className="h-full">
+              <CourseCardSkeleton />
+            </li>
           ))}
         </ul>
       </div>
-      <span className="sr-only">Đang tải danh sách khóa học…</span>
+    </SkeletonRegion>
+  );
+}
+
+/** A label over a control, 6px apart, like FormField. */
+function Field({ className }: { className?: string }) {
+  return (
+    <div className={className}>
+      <SkeletonText size="body-sm" className="w-20" />
+      <Skeleton className="mt-1.5 h-10 w-full" />
     </div>
   );
 }

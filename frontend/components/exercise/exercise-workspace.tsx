@@ -11,6 +11,7 @@ import { SubmissionHistory } from "@/components/exercise/submission-history";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getExerciseOfLesson } from "@/lib/api/grading";
@@ -37,7 +38,7 @@ const CodeEditor = dynamic(
   () => import("@/components/exercise/code-editor").then((m) => m.CodeEditor),
   {
     ssr: false,
-    loading: () => <div className="h-[420px] animate-pulse rounded-md bg-muted" />,
+    loading: () => <Skeleton className="h-[420px]" />,
   },
 );
 
@@ -218,7 +219,7 @@ export function ExerciseWorkspace({
   }
 
   if (!exercise.data) {
-    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
+    return <Skeleton className="h-96 rounded-lg" />;
   }
 
   const sampleCases = (samples.data ?? []).filter((row) => !row.is_hidden);
@@ -273,7 +274,7 @@ export function ExerciseWorkspace({
         </div>
 
         {code === null ? (
-          <div className="h-[420px] animate-pulse rounded-md bg-muted" aria-hidden />
+          <Skeleton className="h-[420px]" />
         ) : (
           <CodeEditor
             ref={editor}

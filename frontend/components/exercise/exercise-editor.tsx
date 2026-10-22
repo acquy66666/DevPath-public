@@ -6,6 +6,7 @@ import { Code2 } from "lucide-react";
 import { ExerciseForm } from "@/components/exercise/exercise-form";
 import { TestCaseManager } from "@/components/exercise/test-case-manager";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getExerciseOfLesson } from "@/lib/api/grading";
@@ -37,7 +38,7 @@ export function ExerciseEditor({ lessonId }: { lessonId: string }) {
   });
 
   if (query.isPending) {
-    return <div className="h-40 animate-pulse rounded-md bg-muted/40" />;
+    return <Skeleton className="h-40" />;
   }
 
   if (query.isError) {

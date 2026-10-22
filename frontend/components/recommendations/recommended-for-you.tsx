@@ -50,7 +50,7 @@ export function RecommendedForYou() {
     );
   }
 
-  if (!query.data) return <CourseBlockSkeleton title={TITLE} count={LIMIT} />;
+  if (!query.data) return <CourseBlockSkeleton title={TITLE} count={LIMIT} described />;
   if (query.data.items.length === 0) return null;
 
   return (

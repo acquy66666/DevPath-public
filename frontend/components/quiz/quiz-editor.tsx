@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getQuizOfLesson } from "@/lib/api/quiz";
@@ -90,7 +91,7 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
   });
 
   if (quiz.isPending) {
-    return <div className="h-40 animate-pulse rounded-md bg-muted/40" />;
+    return <Skeleton className="h-40" />;
   }
 
   if (quiz.isError) {

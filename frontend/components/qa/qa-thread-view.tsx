@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Markdown } from "@/components/ui/markdown";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage, type MessageOverrides } from "@/lib/api/error-messages";
 import {
@@ -164,7 +165,7 @@ export function QaThreadView({
     return (
       <div className="space-y-3">
         {back}
-        <div className="h-40 animate-pulse rounded-md bg-muted/50" aria-hidden />
+        <Skeleton className="h-40" />
       </div>
     );
   }

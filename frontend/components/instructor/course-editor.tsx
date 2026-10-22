@@ -8,6 +8,7 @@ import { CourseStatusBadge } from "@/components/instructor/course-status-badge";
 import { CourseStatusCard } from "@/components/instructor/course-status-card";
 import { CurriculumBuilder } from "@/components/curriculum/curriculum-builder";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CourseEditorBodySkeleton } from "@/components/instructor/instructor-skeletons";
 import { getCourse } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -29,13 +30,7 @@ export function CourseEditor({ courseId }: { courseId: string }) {
   });
 
   if (query.isPending) {
-    return (
-      <div className="space-y-6">
-        <div className="h-9 w-72 animate-pulse rounded-md bg-muted" />
-        <div className="h-72 animate-pulse rounded-lg border bg-muted/40" />
-        <div className="h-96 animate-pulse rounded-lg border bg-muted/40" />
-      </div>
-    );
+    return <CourseEditorBodySkeleton />;
   }
 
   if (query.isError) {

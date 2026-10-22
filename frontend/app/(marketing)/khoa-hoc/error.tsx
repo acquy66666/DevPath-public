@@ -3,32 +3,35 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * Covers the catalogue. The course page one level down has its own boundary
- * with its own wording, and the nearest one wins.
+ * with its own wording, and the nearest one wins. The list is fetched on the
+ * server, so only `retry` (fetch again) can bring it back.
  */
 export default function CatalogError({
-  reset,
+  error,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-md px-4 py-20 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">
-        Không tải được danh sách khóa học
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Máy chủ đang không trả lời. Thử lại sau ít phút, hoặc quay về trang chủ.
-      </p>
-
-      <div className="mt-6 flex justify-center gap-3">
-        <Button onClick={reset}>Thử lại</Button>
-        <Button variant="outline" asChild>
-          <Link href="/">Về trang chủ</Link>
-        </Button>
-      </div>
-    </div>
+    <StatePanel
+      mood="sorry"
+      title="Không tải được danh sách khóa học"
+      detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+      actions={
+        <>
+          <Button onClick={retry}>Thử lại</Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Về trang chủ</Link>
+          </Button>
+        </>
+      }
+    >
+      Máy chủ đang không trả lời. Thử lại sau ít phút, hoặc quay về trang chủ.
+    </StatePanel>
   );
 }

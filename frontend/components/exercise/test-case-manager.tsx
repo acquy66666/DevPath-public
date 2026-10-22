@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   createTestCase,
@@ -88,7 +89,7 @@ export function TestCaseManager({ exerciseId }: { exerciseId: string }) {
       ) : null}
 
       {query.isPending ? (
-        <div className="h-20 animate-pulse rounded-md bg-muted/40" />
+        <Skeleton className="h-20" />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>

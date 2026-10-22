@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-provider";
 
 /**
@@ -26,10 +27,13 @@ export function ProfileView() {
 
   if (status === "loading") {
     return (
-      <div className="space-y-6">
-        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
-        <div className="h-56 animate-pulse rounded-lg border bg-muted/40" />
-      </div>
+      // Avatar, profile and password cards, at the heights they have once
+      // drawn (measured 22/10 at 1440 and 375px).
+      <SkeletonRegion label="Đang tải hồ sơ…" className="space-y-6">
+        <Skeleton className="h-[198px] rounded-lg sm:h-[178px]" />
+        <Skeleton className="h-[320px] rounded-lg sm:h-[304px]" />
+        <Skeleton className="h-[344px] rounded-lg sm:h-[324px]" />
+      </SkeletonRegion>
     );
   }
 

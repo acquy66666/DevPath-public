@@ -21,7 +21,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, ListTree } from "lucide-react";
+import { GripVertical } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { AddSectionForm } from "@/components/curriculum/add-section-form";
@@ -34,6 +34,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getCurriculum,
@@ -211,10 +213,7 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
         {query.isPending ? (
           <div className="space-y-3">
             {[0, 1].map((row) => (
-              <div
-                key={row}
-                className="h-28 animate-pulse rounded-lg border bg-muted/40"
-              />
+              <Skeleton key={row} className="h-28 rounded-lg" />
             ))}
           </div>
         ) : query.isError ? (
@@ -281,16 +280,12 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
 
 function EmptyCurriculum() {
   return (
-    <div className="rounded-lg border border-dashed px-4 py-10 text-center">
-      <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-md bg-muted">
-        <ListTree className="size-5 text-muted-foreground" aria-hidden />
-      </div>
-      <p className="font-medium">Chưa có chương nào</p>
-      <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
-        Khóa học được chia thành chương, mỗi chương chứa các bài học. Tạo chương đầu
-        tiên bên dưới — ví dụ &quot;Nhập môn&quot;.
-      </p>
-    </div>
+    <EmptyState
+      mood="empty-notes"
+      size="md"
+      title="Chưa có chương nào"
+      description="Khóa học được chia thành chương, mỗi chương chứa các bài học. Tạo chương đầu tiên bên dưới, ví dụ “Nhập môn”."
+    />
   );
 }
 

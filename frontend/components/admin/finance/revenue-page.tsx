@@ -170,7 +170,7 @@ export function RevenuePage() {
       </div>
 
       {revenue.isPending ? (
-        <ListSkeleton rows={2} height="h-40" />
+        <ListSkeleton rows={2} height="h-40" fill />
       ) : revenue.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(revenue.error)}</AlertDescription>

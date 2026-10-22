@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { SkeletonInline } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getMyGamification,
@@ -51,7 +52,7 @@ export function StudyStats() {
   });
 
   // The list below already says "đăng nhập"; saying it twice helps nobody.
-  if (status !== "authenticated") return null;
+  if (status === "anonymous") return null;
 
   if (summary.isError) {
     return (
@@ -61,20 +62,14 @@ export function StudyStats() {
     );
   }
 
-  if (!summary.data) {
-    return (
-      <div className="mb-8 grid grid-cols-3 gap-2 sm:gap-4" aria-hidden>
-        {[0, 1, 2].map((tile) => (
-          <div key={tile} className="h-24 animate-pulse rounded-lg border bg-muted/40 sm:h-28" />
-        ))}
-      </div>
-    );
-  }
-
+  // Until the numbers arrive -- and while the session itself is still being
+  // restored -- the section is drawn whole, with grey bars where the numbers
+  // go: labels, card and rules text take their real room, so the course list
+  // below does not move when the data lands.
   const data = summary.data;
 
   return (
-    <section aria-labelledby="study-stats-title" className="mb-10 space-y-4">
+    <section aria-labelledby="study-stats-title" aria-busy={!data} className="mb-10 space-y-4">
       <h2 id="study-stats-title" className="sr-only">
         Thành tích học tập
       </h2>
@@ -87,24 +82,24 @@ export function StudyStats() {
             <Flame
               className={cn(
                 "size-5",
-                data.active_today ? "text-orange-500" : "text-muted-foreground",
+                data?.active_today ? "text-orange-500" : "text-muted-foreground",
               )}
               aria-hidden
             />
           }
           label="Chuỗi ngày học"
-          value={`${data.current_streak} ngày`}
-          note={streakNote(data)}
+          value={data ? `${data.current_streak} ngày` : null}
+          note={data ? streakNote(data) : null}
         />
         <Tile
           icon={<Trophy className="size-5 text-amber-500" aria-hidden />}
           label="Chuỗi dài nhất"
-          value={`${data.longest_streak} ngày`}
+          value={data ? `${data.longest_streak} ngày` : null}
         />
         <Tile
           icon={<Sparkles className="size-5 text-primary" aria-hidden />}
           label="Tổng XP"
-          value={`${data.xp_total.toLocaleString("vi-VN")} XP`}
+          value={data ? `${data.xp_total.toLocaleString("vi-VN")} XP` : null}
         />
       </div>
 
@@ -148,11 +143,29 @@ export function StudyStats() {
             ))}
           </ul>
         ) : recent.data ? (
+          // One line, not Naomi: the course list below is this page's empty
+          // state, and one Naomi per screen is enough.
           <p className="mt-2 text-sm text-muted-foreground">
             Chưa có XP nào. Hoàn thành bài học đầu tiên để nhận 10 XP.
           </p>
         ) : (
-          <div className="mt-3 h-24 animate-pulse rounded-md bg-muted/40" aria-hidden />
+          // The five rows the list asks for, row for row: one line from `sm`,
+          // two on a phone, where the lesson titles wrap.
+          <ul className="mt-3 divide-y" aria-hidden>
+            {[0, 1, 2, 3, 4].map((row) => (
+              <li key={row} className="flex h-14 items-center gap-3 py-2 text-sm sm:h-9">
+                <span className="w-16 shrink-0">
+                  <SkeletonInline className="w-12" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <SkeletonInline className={row % 2 ? "w-1/2" : "w-3/4"} />
+                </span>
+                <span className="shrink-0 text-xs">
+                  <SkeletonInline className="w-14" />
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
         <p className="mt-3 border-t pt-3 text-xs text-muted-foreground">
           XP chỉ tính ở lần hoàn thành đầu tiên: {XP_RULES}. Một ngày được tính vào
@@ -178,8 +191,10 @@ function Tile({
 }: {
   icon: ReactNode;
   label: string;
-  value: string;
-  note?: string;
+  /** `null` while loading: a bar in the same line. */
+  value: string | null;
+  /** `null` while loading a note that will come; leave out for none. */
+  note?: string | null;
 }) {
   return (
     // A column with the number pushed to the bottom on a phone, where one label
@@ -190,8 +205,14 @@ function Tile({
         {icon}
         {label}
       </p>
-      <p className="mt-auto pt-1 text-lg font-semibold tracking-tight sm:mt-0 sm:text-2xl">{value}</p>
-      {note ? <p className="mt-1 hidden text-xs text-muted-foreground sm:block">{note}</p> : null}
+      <p className="mt-auto pt-1 text-lg font-semibold tracking-tight sm:mt-0 sm:text-2xl">
+        {value ?? <SkeletonInline className="w-[4ch]" />}
+      </p>
+      {note !== undefined ? (
+        <p className="mt-1 hidden text-xs text-muted-foreground sm:block">
+          {note ?? <SkeletonInline className="w-[16ch]" />}
+        </p>
+      ) : null}
     </div>
   );
 }

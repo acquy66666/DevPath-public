@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getLesson, updateLesson, type Lesson } from "@/lib/api/curriculum";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -44,7 +45,7 @@ export function LessonEditor({
   if (query.isPending) {
     return (
       <div className="border-t p-3">
-        <div className="h-32 animate-pulse rounded-md bg-muted/40" />
+        <Skeleton className="h-32" />
       </div>
     );
   }

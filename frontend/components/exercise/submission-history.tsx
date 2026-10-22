@@ -3,6 +3,7 @@
 import { History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Submission } from "@/lib/api/submissions";
 import { TONE_BADGE, verdictLabel, verdictTone } from "@/lib/grading/verdicts";
 
@@ -24,10 +25,12 @@ export function SubmissionHistory({
 }) {
   if (submissions.length === 0) {
     return (
-      <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-        Bạn chưa nộp bài nào. Viết code ở trên, chạy thử với test mẫu, rồi bấm
-        “Nộp bài”.
-      </p>
+      <EmptyState
+        mood="empty-notes"
+        size="md"
+        title="Chưa có bài nộp nào"
+        description="Viết code ở trên, chạy thử với test mẫu, rồi bấm “Nộp bài”."
+      />
     );
   }
 

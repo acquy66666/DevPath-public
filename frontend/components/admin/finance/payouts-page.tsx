@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FileText, Loader2, Receipt } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -254,7 +254,7 @@ export function PayoutsPage() {
               <AlertDescription>{apiErrorMessage(statements.error)}</AlertDescription>
             </Alert>
           ) : statements.data.items.length === 0 ? (
-            <EmptyState icon={Receipt} title="Chưa có bảng kê" hint="Chọn một tháng đã qua rồi bấm “Lập bảng kê”." />
+            <EmptyState title="Chưa có bảng kê nào" hint="Chọn một tháng đã qua rồi bấm “Lập bảng kê”." />
           ) : (
             <div className={cn("overflow-x-auto transition-opacity", statements.isFetching && "opacity-60")}>
               <table className="w-full min-w-[760px] text-sm">

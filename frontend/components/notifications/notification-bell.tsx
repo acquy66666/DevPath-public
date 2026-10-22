@@ -14,6 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getUnreadCount, listNotifications, type AppNotification } from "@/lib/api/notifications";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -115,10 +116,7 @@ export function NotificationBell() {
               {apiErrorMessage(recent.error)}
             </p>
           ) : recent.data.items.length === 0 ? (
-            <div className="flex flex-col items-center gap-2 px-3 py-8 text-center">
-              <Bell className="size-6 text-muted-foreground" aria-hidden />
-              <p className="text-sm text-muted-foreground">Chưa có thông báo nào.</p>
-            </div>
+            <EmptyState mood="empty-notifications" size="sm" framed={false} title="Chưa có thông báo nào" />
           ) : (
             recent.data.items.map((notification) => (
               <DropdownMenuItem

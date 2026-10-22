@@ -17,6 +17,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getLeaderboard,
@@ -119,12 +121,23 @@ export function LeaderboardView() {
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
         </Alert>
       ) : !board ? (
-        <div className="space-y-2" aria-hidden>
-          <div className="h-16 animate-pulse rounded-lg border bg-muted/40" />
-          {[0, 1, 2, 3, 4].map((row) => (
-            <div key={row} className="h-14 animate-pulse rounded-md bg-muted/40" />
-          ))}
-        </div>
+        // The "you" card and the board's first rows, at their real sizes.
+        <SkeletonRegion label="Đang tải bảng xếp hạng…" className="space-y-4">
+          <div className="rounded-lg border bg-card p-4">
+            <SkeletonText size="caption" className="h-4 w-40" />
+            <SkeletonText size="h3" className="mt-1 w-72 max-w-full" />
+          </div>
+          <ol className="divide-y rounded-lg border bg-card" aria-hidden>
+            {[0, 1, 2, 3, 4].map((row) => (
+              <li key={row} className="flex items-center gap-3 px-4 py-3">
+                <SkeletonText className="w-10 shrink-0" />
+                <Skeleton className="size-9 shrink-0 rounded-full" />
+                <SkeletonText className="min-w-0 flex-1" />
+                <SkeletonText className="w-16 shrink-0" />
+              </li>
+            ))}
+          </ol>
+        </SkeletonRegion>
       ) : (
         <>
           <div className="rounded-lg border bg-card p-4">
@@ -150,12 +163,10 @@ export function LeaderboardView() {
           </div>
 
           {board.items.length === 0 ? (
-            <div className="rounded-lg border border-dashed p-10 text-center">
-              <p className="font-medium">Chưa ai có XP {phrase}</p>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Người đầu tiên hoàn thành một bài học sẽ đứng đầu bảng.
-              </p>
-            </div>
+            <EmptyState
+              title={`Chưa ai có XP ${phrase}`}
+              description="Người đầu tiên hoàn thành một bài học sẽ đứng đầu bảng."
+            />
           ) : (
             <ol
               className={cn(

@@ -1,31 +1,38 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * Render-time failures only. A rejected sign-in never reaches here -- the form
  * catches those and shows them in place, which is where the user is looking.
+ * The card is as narrow as the sign-in form, so Naomi stands above the text.
  */
-export default function AuthError({ reset }: { error: Error; reset: () => void }) {
+export default function AuthError({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">Không mở được trang</CardTitle>
-        <CardDescription>
-          Có lỗi xảy ra khi hiển thị biểu mẫu. Thử lại giúp mình nhé.
-        </CardDescription>
-      </CardHeader>
       <CardContent>
-        <Button onClick={reset} className="w-full">
-          Thử lại
-        </Button>
+        <StatePanel
+          mood="sorry"
+          title="Không mở được trang"
+          titleAs="h2"
+          compact
+          detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+          actions={
+            <Button onClick={retry} className="w-full">
+              Thử lại
+            </Button>
+          }
+        >
+          Lỗi phía hệ thống khi hiển thị biểu mẫu, không phải do bạn. Thử lại thường là đủ.
+        </StatePanel>
       </CardContent>
     </Card>
   );

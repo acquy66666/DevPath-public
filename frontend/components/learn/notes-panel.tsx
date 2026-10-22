@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { EmptyState } from "@/components/ui/empty-state";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   createNote,
@@ -130,9 +131,16 @@ export function NotesPanel({
       ) : null}
 
       {notes.data && notes.data.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Chưa có ghi chú nào cho bài học này.
-        </p>
+        <EmptyState
+          mood="empty-notes"
+          size="md"
+          title="Chưa có ghi chú nào cho bài học này"
+          description={
+            timed
+              ? "Gõ vào ô bên trên khi xem video: ghi chú giữ luôn mốc thời gian, bấm vào là tua tới đó."
+              : "Gõ vào ô bên trên để ghi lại ý chính, chỉ mình bạn đọc được."
+          }
+        />
       ) : null}
 
       <ul className="space-y-3">

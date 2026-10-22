@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Flame } from "lucide-react";
+
 import Link from "next/link";
 import { useState } from "react";
 
@@ -81,7 +81,7 @@ export function AdminDashboard() {
       </div>
 
       {overview.isPending ? (
-        <ListSkeleton rows={2} height="h-40" />
+        <ListSkeleton rows={2} height="h-40" fill />
       ) : overview.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(overview.error)}</AlertDescription>
@@ -231,7 +231,7 @@ function HotCourses({ period, periodLabel }: { period: StatsPeriod; periodLabel:
           <ListSkeleton rows={3} height="h-12" />
         ) : hot.data.items.length === 0 ? (
           <EmptyState
-            icon={Flame}
+            mood="empty-courses"
             title="Chưa có lượt ghi danh nào trong kỳ này"
             hint="Chọn khoảng thời gian dài hơn để xem khóa học nào đang thu hút học viên."
           />

@@ -92,7 +92,7 @@ export function StatementDetail({ id }: { id: string }) {
     },
   });
 
-  if (query.isPending) return <ListSkeleton rows={3} height="h-32" />;
+  if (query.isPending) return <ListSkeleton rows={3} height="h-32" fill />;
   if (query.isError) {
     return (
       <Alert variant="destructive">

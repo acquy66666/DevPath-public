@@ -3,6 +3,8 @@
 import Editor, { loader, type OnMount } from "@monaco-editor/react";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 /**
  * Monaco, served from this origin rather than from a CDN.
  *
@@ -98,7 +100,7 @@ export function CodeEditor({
         }}
         onChange={(next) => onChange(next ?? "")}
         theme={dark ? "vs-dark" : "light"}
-        loading={<div className="h-full w-full animate-pulse bg-muted" aria-hidden />}
+        loading={<Skeleton className="size-full rounded-none" />}
         options={{
           fontSize: 14,
           // A beginner's exercise is short; a minimap over twenty lines is

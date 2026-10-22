@@ -1,9 +1,10 @@
 "use client";
 
-import { Loader2, MessageSquare, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { ChatSession } from "@/lib/api/chat";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -37,11 +38,13 @@ export function ChatHistory({
 
   if (sessions.length === 0) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-center">
-        <MessageSquare className="size-8 text-muted-foreground" aria-hidden />
-        <p className="text-sm text-muted-foreground">
-          Chưa có cuộc trò chuyện nào trong khóa học này.
-        </p>
+      <div className="flex h-full flex-col justify-center p-2">
+        <EmptyState
+          size="md"
+          framed={false}
+          title="Chưa có cuộc trò chuyện nào trong khóa học này"
+          description="Câu hỏi đầu tiên bạn gửi trợ giảng sẽ mở một cuộc trò chuyện ở đây."
+        />
       </div>
     );
   }

@@ -1,0 +1,332 @@
+# shift.cjs — log từng vòng (22/10/2026). Vòng 1–3 là sau khi sửa; JSON shift-after.json là vòng 3.
+
+## before
+guest      1440 CLS 0.0002 /khoa-hoc
+guest      1440 CLS 0.0015 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+guest       375 CLS 0.0010 /khoa-hoc
+guest       375 CLS 0.0186 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+      0.0176 aside.lg:sticky.lg:top-8.lg:col-start-2 285→313px y527→499 | dl.flex.flex-wrap.items-center 48→48px y375→347 | div.flex.items-center.gap-3 48→48px y439→411
+student    1440 CLS 0.1606 /
+      0.1556 section.max-w-2xl 246→246px y123→598.890625 | footer.border-t.bg-card.print:hidden 91→0px y809→0
+student    1440 CLS 0.2112 /khoa-hoc-cua-toi
+      0.0383 div.grid.gap-5.sm:grid-cols-2 288→288px y165→309 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0932 div.grid.gap-5.sm:grid-cols-2 288→288px y309→550 | footer.border-t.bg-card.print:hidden 186→22px y714→878
+      0.0798 div.space-y-6 288→262px y550→638 | p.mt-3.border-t.pt-3 45→45px y448→536 | footer.border-t.bg-card.print:hidden 22→0px y878→0
+student    1440 CLS 0.0005 /gio-hang
+student    1440 CLS 0.0005 /yeu-thich
+student    1440 CLS 0.0005 /thong-bao
+student    1440 CLS 0.0517 /ho-so
+      0.0517 footer.border-t.bg-card.print:hidden 186→0px y714→0 | div.flex.shrink-0.items-center 44→40px y10→12
+student    1440 CLS 0.0005 /bang-xep-hang
+student    1440 CLS 0.0034 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0010 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+student     375 CLS 0.0964 /
+      0.0964 section.space-y-4 69.1875→0px y742.8125→0 | div.flex.shrink-0.items-center 36→40px y14→12
+student     375 CLS 0.4414 /khoa-hoc-cua-toi
+      0.1178 div.grid.gap-5.sm:grid-cols-2 647→519px y165→293 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.2225 div.grid.gap-5.sm:grid-cols-2 519→210px y293→602
+      0.1011 div.grid.gap-5.sm:grid-cols-2 210→0px y602→0 | p.mt-3.border-t.pt-3 93→93px y452→700
+student     375 CLS 0.0004 /gio-hang
+student     375 CLS 0.2176 /yeu-thich
+      0.2172 footer.border-t.bg-card.print:hidden 0→258px y0→554
+student     375 CLS 0.0253 /thong-bao
+      0.0128 footer.border-t.bg-card.print:hidden 258→227px y554→585 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0121 footer.border-t.bg-card.print:hidden 227→258px y585→554
+student     375 CLS 0.0728 /ho-so
+      0.0728 footer.border-t.bg-card.print:hidden 103→0px y709→0 | div.flex.shrink-0.items-center 36→40px y14→12
+student     375 CLS 0.0417 /bang-xep-hang
+      0.0413 footer.border-t.bg-card.print:hidden 107→227px y705→585
+student     375 CLS 0.0180 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+      0.0176 aside.lg:sticky.lg:top-8.lg:col-start-2 285→313px y527→499 | dl.flex.flex-wrap.items-center 48→48px y375→347 | div.flex.items-center.gap-3 48→48px y439→411
+student     375 CLS 0.0036 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+instructor 1440 CLS 0.0006 /giang-day
+instructor 1440 CLS 0.0691 /giang-day/thong-ke
+      0.0128 footer.border-t.bg-card.print:hidden 186→115px y714→785 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0438 div.space-y-6 520→520px y217→319 | footer.border-t.bg-card.print:hidden 115→13px y785→887
+      0.0124 footer.border-t.bg-card.print:hidden 13→0px y887→0
+instructor 1440 CLS 0.0009 /giang-day/hoi-dap
+instructor 1440 CLS 0.0696 /giang-day/cap-bac
+      0.0690 footer.border-t.bg-card.print:hidden 186→0px y714→0
+instructor 1440 CLS 0.1411 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.0305 footer.border-t.bg-card.print:hidden 186→0px y714→0 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.1106 div.group/card.flex.flex-col 241→0px y659→0 | form.space-y-2 46→0px y568→0
+instructor  375 CLS 0.0659 /giang-day
+      0.0493 footer.border-t.bg-card.print:hidden 258→139px y554→673 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0166 footer.border-t.bg-card.print:hidden 139→195px y673→617
+instructor  375 CLS 0.4490 /giang-day/thong-ke
+      0.3364 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.1054 div.space-y-6 481→323px y331→489
+      0.0071 a.flex.flex-wrap.items-center 134→134px y331→311 | div.flex.flex-wrap.items-center 82→82px y229→209
+instructor  375 CLS 0.1044 /giang-day/hoi-dap
+      0.0675 footer.border-t.bg-card.print:hidden 258→95px y554→717 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0369 footer.border-t.bg-card.print:hidden 95→197px y717→615 | select.min-w-0.rounded-md.border 46→46px y255→255 | label.text-sm.text-muted-foreground 20→40px y267→257
+instructor  375 CLS 0.3166 /giang-day/cap-bac
+      0.0075 footer.border-t.bg-card.print:hidden 258→251px y554→561 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.3091 footer.border-t.bg-card.print:hidden 251→0px y561→0
+instructor  375 CLS 0.2509 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1504 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.1005 div.group/card.flex.flex-col 47→0px y765→0 | form.space-y-2 46→0px y674→0
+admin      1440 CLS 0.0745 /quan-tri
+      0.0376 footer.border-t.bg-card.print:hidden 186→0px y714→0 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0369 div.group/card.flex.flex-col 241→0px y659→0
+admin      1440 CLS 0.0004 /quan-tri/khoa-hoc
+admin      1440 CLS 0.0343 /quan-tri/bao-cao
+      0.0175 footer.border-t.bg-card.print:hidden 186→69px y714→831 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0168 footer.border-t.bg-card.print:hidden 69→186px y831→714
+admin      1440 CLS 0.2071 /quan-tri/nguoi-dung
+      0.2067 footer.border-t.bg-card.print:hidden 186→0px y714→0
+admin      1440 CLS 0.0341 /quan-tri/danh-muc
+      0.0094 footer.border-t.bg-card.print:hidden 186→137px y714→763 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0246 footer.border-t.bg-card.print:hidden 137→0px y763→0
+admin      1440 CLS 0.0556 /quan-tri/ma-giam-gia
+      0.0544 footer.border-t.bg-card.print:hidden 186→0px y714→0
+admin      1440 CLS 0.0071 /quan-tri/banner
+      0.0067 footer.border-t.bg-card.print:hidden 186→139px y714→761
+admin       375 CLS 0.2452 /quan-tri
+      0.2424 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+admin       375 CLS 0.1006 /quan-tri/khoa-hoc
+      0.0717 footer.border-t.bg-card.print:hidden 258→85px y554→727 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0289 footer.border-t.bg-card.print:hidden 85→187px y727→625
+admin       375 CLS 0.2206 /quan-tri/bao-cao
+      0.1504 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0702 footer.border-t.bg-card.print:hidden 0→169px y0→643
+admin       375 CLS 0.2156 /quan-tri/nguoi-dung
+      0.0518 footer.border-t.bg-card.print:hidden 258→133px y554→679 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.1638 footer.border-t.bg-card.print:hidden 133→0px y679→0
+admin       375 CLS 0.1197 /quan-tri/danh-muc
+      0.1197 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+admin       375 CLS 0.1359 /quan-tri/ma-giam-gia
+      0.1048 footer.border-t.bg-card.print:hidden 258→5px y554→807 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0062 footer.border-t.bg-card.print:hidden 5→0px y807→0
+      0.0250 p.text-xs.text-muted-foreground 32→32px y760→730 | li. 0→29px y0→783 | p.text-sm.break-words.text-muted-foreground 20→20px y736→706
+admin       375 CLS 0.1098 /quan-tri/banner
+      0.1098 footer.border-t.bg-card.print:hidden 258→0px y554→0 | div.flex.shrink-0.items-center 36→40px y14→12
+
+31/46 lượt xem có CLS ≥ 0,01; tổng 4.397; lớn nhất 0.449
+
+## after
+guest      1440 CLS 0.0002 /khoa-hoc
+guest      1440 CLS 0.0002 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+guest       375 CLS 0.0010 /khoa-hoc
+guest       375 CLS 0.0010 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0062 /
+      0.0062 section.space-y-4 11.109375→0px y888.890625→0 | div.flex.shrink-0.items-center 44→40px y10→12
+student    1440 CLS 0.0005 /khoa-hoc-cua-toi
+student    1440 CLS 0.0005 /gio-hang
+student    1440 CLS 0.0022 /yeu-thich
+student    1440 CLS 0.0005 /thong-bao
+student    1440 CLS 0.0005 /ho-so
+student    1440 CLS 0.0249 /bang-xep-hang
+      0.0244 footer.border-t.bg-card.print:hidden 16→186px y884→714
+student    1440 CLS 0.0031 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0010 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+student     375 CLS 0.0964 /
+      0.0964 section.space-y-4 69.1875→0px y742.8125→0 | div.flex.shrink-0.items-center 36→40px y14→12
+student     375 CLS 0.0461 /khoa-hoc-cua-toi
+      0.0457 p.mt-3.border-t.pt-3 93→93px y540→700 | ?
+student     375 CLS 0.0454 /gio-hang
+      0.0450 footer.border-t.bg-card.print:hidden 143→258px y669→554
+student     375 CLS 0.0641 /yeu-thich
+      0.0637 footer.border-t.bg-card.print:hidden 95.1875→258px y716.8125→554
+student     375 CLS 0.0258 /thong-bao
+      0.0254 footer.border-t.bg-card.print:hidden 258→193px y554→619
+student     375 CLS 0.0004 /ho-so
+student     375 CLS 0.0229 /bang-xep-hang
+      0.0225 footer.border-t.bg-card.print:hidden 0→83px y0→729
+student     375 CLS 0.0004 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student     375 CLS 0.0036 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+instructor 1440 CLS 0.0330 /giang-day
+      0.0324 footer.border-t.bg-card.print:hidden 0→186px y0→714
+instructor 1440 CLS 0.0006 /giang-day/thong-ke
+instructor 1440 CLS 0.0460 /giang-day/hoi-dap
+      0.0454 footer.border-t.bg-card.print:hidden 0→186px y0→714 | label.flex.items-center.gap-2 20→20px y247→247
+instructor 1440 CLS 0.0006 /giang-day/cap-bac
+instructor 1440 CLS 0.1112 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1106 div.group/card.flex.flex-col 241→0px y659→0 | form.space-y-2 46→0px y568→0
+instructor  375 CLS 0.1024 /giang-day
+      0.1020 footer.border-t.bg-card.print:hidden 0→195px y0→617
+instructor  375 CLS 0.0191 /giang-day/thong-ke
+      0.0116 div.space-y-6 347→323px y465→489
+      0.0071 a.flex.flex-wrap.items-center 134→134px y331→311 | div.flex.flex-wrap.items-center 82→82px y229→209
+instructor  375 CLS 0.1084 /giang-day/hoi-dap
+      0.1080 footer.border-t.bg-card.print:hidden 0→157px y0→655 | select.min-w-0.rounded-md.border 46→46px y255→255 | label.text-sm.text-muted-foreground 20→40px y267→257
+instructor  375 CLS 0.0004 /giang-day/cap-bac
+instructor  375 CLS 0.1009 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1005 div.group/card.flex.flex-col 47→0px y765→0 | form.space-y-2 46→0px y674→0
+admin      1440 CLS 0.0004 /quan-tri
+admin      1440 CLS 0.0417 /quan-tri/khoa-hoc
+      0.0413 footer.border-t.bg-card.print:hidden 0→186px y0→714
+admin      1440 CLS 0.0417 /quan-tri/bao-cao
+      0.0413 footer.border-t.bg-card.print:hidden 0→186px y0→714
+admin      1440 CLS 0.0004 /quan-tri/nguoi-dung
+admin      1440 CLS 0.0004 /quan-tri/danh-muc
+admin      1440 CLS 0.0012 /quan-tri/ma-giam-gia
+admin      1440 CLS 0.0288 /quan-tri/banner
+      0.0284 footer.border-t.bg-card.print:hidden 0→139px y0→761
+admin       375 CLS 0.0033 /quan-tri
+admin       375 CLS 0.0997 /quan-tri/khoa-hoc
+      0.0993 footer.border-t.bg-card.print:hidden 0→171px y0→641
+admin       375 CLS 0.0846 /quan-tri/bao-cao
+      0.0842 footer.border-t.bg-card.print:hidden 0→153px y0→659
+admin       375 CLS 0.0004 /quan-tri/nguoi-dung
+admin       375 CLS 0.0004 /quan-tri/danh-muc
+admin       375 CLS 0.0254 /quan-tri/ma-giam-gia
+      0.0250 p.text-xs.text-muted-foreground 32→32px y760→730 | li. 0→29px y0→783 | p.text-sm.break-words.text-muted-foreground 20→20px y736→706
+admin       375 CLS 0.0004 /quan-tri/banner
+
+20/46 lượt xem có CLS ≥ 0,01; tổng 1.198; lớn nhất 0.111
+
+## after2
+guest      1440 CLS 0.0002 /khoa-hoc
+guest      1440 CLS 0.0002 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+guest       375 CLS 0.0010 /khoa-hoc
+guest       375 CLS 0.0010 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0068 /
+      0.0068 section.space-y-4 11.109375→0px y888.890625→0 | div.flex.shrink-0.items-center 44→40px y10→12
+student    1440 CLS 0.0012 /khoa-hoc-cua-toi
+student    1440 CLS 0.0005 /gio-hang
+student    1440 CLS 0.0022 /yeu-thich
+student    1440 CLS 0.0005 /thong-bao
+student    1440 CLS 0.0005 /ho-so
+student    1440 CLS 0.0005 /bang-xep-hang
+student    1440 CLS 0.0031 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0010 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+student     375 CLS 0.0964 /
+      0.0964 section.space-y-4 69.1875→0px y742.8125→0 | div.flex.shrink-0.items-center 36→40px y14→12
+student     375 CLS 0.0147 /khoa-hoc-cua-toi
+      0.0143 p.mt-3.border-t.pt-3 93→93px y636→700 | div.space-y-6 26→0px y786→0
+student     375 CLS 0.0454 /gio-hang
+      0.0450 footer.border-t.bg-card.print:hidden 143→258px y669→554
+student     375 CLS 0.0641 /yeu-thich
+      0.0637 footer.border-t.bg-card.print:hidden 95.1875→258px y716.8125→554
+student     375 CLS 0.0258 /thong-bao
+      0.0254 footer.border-t.bg-card.print:hidden 258→193px y554→619
+student     375 CLS 0.0004 /ho-so
+student     375 CLS 0.0009 /bang-xep-hang
+student     375 CLS 0.0004 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student     375 CLS 0.0036 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+instructor 1440 CLS 0.0006 /giang-day
+instructor 1440 CLS 0.0006 /giang-day/thong-ke
+instructor 1440 CLS 0.0009 /giang-day/hoi-dap
+instructor 1440 CLS 0.0594 /giang-day/cap-bac
+      0.0101 footer.border-t.bg-card.print:hidden 125→145px y775→755 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0492 footer.border-t.bg-card.print:hidden 145→0px y755→0
+instructor 1440 CLS 0.1112 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1106 div.group/card.flex.flex-col 241→0px y659→0 | form.space-y-2 46→0px y568→0
+instructor  375 CLS 0.0235 /giang-day
+      0.0231 footer.border-t.bg-card.print:hidden 117→195px y695→617
+instructor  375 CLS 0.0191 /giang-day/thong-ke
+      0.0116 div.space-y-6 347→323px y465→489
+      0.0071 a.flex.flex-wrap.items-center 134→134px y331→311 | div.flex.flex-wrap.items-center 82→82px y229→209
+instructor  375 CLS 0.0242 /giang-day/hoi-dap
+      0.0205 footer.border-t.bg-card.print:hidden 89→157px y723→655 | select.min-w-0.rounded-md.border 46→46px y255→255 | label.text-sm.text-muted-foreground 20→40px y267→257
+instructor  375 CLS 0.0225 /giang-day/cap-bac
+      0.0209 footer.border-t.bg-card.print:hidden 17→0px y795→0
+instructor  375 CLS 0.1009 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1005 div.group/card.flex.flex-col 47→0px y765→0 | form.space-y-2 46→0px y674→0
+admin      1440 CLS 0.0745 /quan-tri
+      0.0376 footer.border-t.bg-card.print:hidden 186→0px y714→0 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0369 div.group/card.flex.flex-col 241→0px y659→0
+admin      1440 CLS 0.0004 /quan-tri/khoa-hoc
+admin      1440 CLS 0.0343 /quan-tri/bao-cao
+      0.0175 footer.border-t.bg-card.print:hidden 186→69px y714→831 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0168 footer.border-t.bg-card.print:hidden 69→186px y831→714
+admin      1440 CLS 0.2071 /quan-tri/nguoi-dung
+      0.2067 footer.border-t.bg-card.print:hidden 186→0px y714→0
+admin      1440 CLS 0.0341 /quan-tri/danh-muc
+      0.0094 footer.border-t.bg-card.print:hidden 186→137px y714→763 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0246 footer.border-t.bg-card.print:hidden 137→0px y763→0
+admin      1440 CLS 0.0556 /quan-tri/ma-giam-gia
+      0.0544 footer.border-t.bg-card.print:hidden 186→0px y714→0
+admin      1440 CLS 0.0071 /quan-tri/banner
+      0.0067 footer.border-t.bg-card.print:hidden 186→139px y714→761
+admin       375 CLS 0.1099 /quan-tri
+      0.1071 footer.border-t.bg-card.print:hidden 137→0px y675→0 | div.flex.shrink-0.items-center 36→40px y14→12
+admin       375 CLS 0.0343 /quan-tri/khoa-hoc
+      0.0120 footer.border-t.bg-card.print:hidden 137→85px y675→727 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0223 footer.border-t.bg-card.print:hidden 85→171px y727→641
+admin       375 CLS 0.1157 /quan-tri/bao-cao
+      0.0559 footer.border-t.bg-card.print:hidden 137→0px y675→0 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0599 footer.border-t.bg-card.print:hidden 0→153px y0→659
+admin       375 CLS 0.1679 /quan-tri/nguoi-dung
+      0.1638 footer.border-t.bg-card.print:hidden 133→0px y679→0
+admin       375 CLS 0.0388 /quan-tri/danh-muc
+      0.0388 footer.border-t.bg-card.print:hidden 137→0px y675→0 | div.flex.shrink-0.items-center 36→40px y14→12
+admin       375 CLS 0.0616 /quan-tri/ma-giam-gia
+      0.0305 footer.border-t.bg-card.print:hidden 137→5px y675→807 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0062 footer.border-t.bg-card.print:hidden 5→0px y807→0
+      0.0250 p.text-xs.text-muted-foreground 32→32px y760→730 | li. 0→29px y0→783 | p.text-sm.break-words.text-muted-foreground 20→20px y736→706
+admin       375 CLS 0.0332 /quan-tri/banner
+      0.0332 footer.border-t.bg-card.print:hidden 137→0px y675→0 | div.flex.shrink-0.items-center 36→40px y14→12
+
+24/46 lượt xem có CLS ≥ 0,01; tổng 1.608; lớn nhất 0.207
+
+## after3
+guest      1440 CLS 0.0002 /khoa-hoc
+guest      1440 CLS 0.0002 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+guest       375 CLS 0.0010 /khoa-hoc
+guest       375 CLS 0.0010 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0068 /
+      0.0068 section.space-y-4 11.109375→0px y888.890625→0 | div.flex.shrink-0.items-center 44→40px y10→12
+student    1440 CLS 0.0012 /khoa-hoc-cua-toi
+student    1440 CLS 0.0005 /gio-hang
+student    1440 CLS 0.0022 /yeu-thich
+student    1440 CLS 0.0005 /thong-bao
+student    1440 CLS 0.0005 /ho-so
+student    1440 CLS 0.0005 /bang-xep-hang
+student    1440 CLS 0.0031 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student    1440 CLS 0.0010 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+student     375 CLS 0.0964 /
+      0.0964 section.space-y-4 69.1875→0px y742.8125→0 | div.flex.shrink-0.items-center 36→40px y14→12
+student     375 CLS 0.0147 /khoa-hoc-cua-toi
+      0.0143 p.mt-3.border-t.pt-3 93→93px y636→700 | div.space-y-6 26→0px y786→0
+student     375 CLS 0.0454 /gio-hang
+      0.0450 footer.border-t.bg-card.print:hidden 143→258px y669→554
+student     375 CLS 0.0641 /yeu-thich
+      0.0637 footer.border-t.bg-card.print:hidden 95.1875→258px y716.8125→554
+student     375 CLS 0.0258 /thong-bao
+      0.0254 footer.border-t.bg-card.print:hidden 258→193px y554→619
+student     375 CLS 0.0004 /ho-so
+student     375 CLS 0.0009 /bang-xep-hang
+student     375 CLS 0.0004 /khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau
+student     375 CLS 0.0036 /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658
+instructor 1440 CLS 0.0006 /giang-day
+instructor 1440 CLS 0.0006 /giang-day/thong-ke
+instructor 1440 CLS 0.0009 /giang-day/hoi-dap
+instructor 1440 CLS 0.0006 /giang-day/cap-bac
+instructor 1440 CLS 0.1112 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1106 div.group/card.flex.flex-col 241→0px y659→0 | form.space-y-2 46→0px y568→0
+instructor  375 CLS 0.0235 /giang-day
+      0.0231 footer.border-t.bg-card.print:hidden 117→195px y695→617
+instructor  375 CLS 0.0191 /giang-day/thong-ke
+      0.0116 div.space-y-6 347→323px y465→489
+      0.0071 a.flex.flex-wrap.items-center 134→134px y331→311 | div.flex.flex-wrap.items-center 82→82px y229→209
+instructor  375 CLS 0.0242 /giang-day/hoi-dap
+      0.0205 footer.border-t.bg-card.print:hidden 89→157px y723→655 | select.min-w-0.rounded-md.border 46→46px y255→255 | label.text-sm.text-muted-foreground 20→40px y267→257
+instructor  375 CLS 0.0004 /giang-day/cap-bac
+instructor  375 CLS 0.1009 /giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9
+      0.1005 div.group/card.flex.flex-col 47→0px y765→0 | form.space-y-2 46→0px y674→0
+admin      1440 CLS 0.0004 /quan-tri
+admin      1440 CLS 0.0425 /quan-tri/khoa-hoc
+      0.0425 footer.border-t.bg-card.print:hidden 0→186px y0→714 | div.flex.shrink-0.items-center 44→40px y10→12
+admin      1440 CLS 0.0267 /quan-tri/bao-cao
+      0.0099 footer.border-t.bg-card.print:hidden 0→69px y0→831 | div.flex.shrink-0.items-center 44→40px y10→12
+      0.0168 footer.border-t.bg-card.print:hidden 69→186px y831→714
+admin      1440 CLS 0.0004 /quan-tri/nguoi-dung
+admin      1440 CLS 0.0004 /quan-tri/danh-muc
+admin      1440 CLS 0.0012 /quan-tri/ma-giam-gia
+admin      1440 CLS 0.0288 /quan-tri/banner
+      0.0284 footer.border-t.bg-card.print:hidden 0→139px y0→761
+admin       375 CLS 0.0033 /quan-tri
+admin       375 CLS 0.0595 /quan-tri/khoa-hoc
+      0.0372 footer.border-t.bg-card.print:hidden 0→85px y0→727 | div.flex.shrink-0.items-center 36→40px y14→12
+      0.0223 footer.border-t.bg-card.print:hidden 85→171px y727→641
+admin       375 CLS 0.0603 /quan-tri/bao-cao
+      0.0599 footer.border-t.bg-card.print:hidden 0→153px y0→659
+admin       375 CLS 0.0004 /quan-tri/nguoi-dung
+admin       375 CLS 0.0004 /quan-tri/danh-muc
+admin       375 CLS 0.0254 /quan-tri/ma-giam-gia
+      0.0250 p.text-xs.text-muted-foreground 32→32px y760→730 | li. 0→29px y0→783 | p.text-sm.break-words.text-muted-foreground 20→20px y736→706
+admin       375 CLS 0.0004 /quan-tri/banner
+
+16/46 lượt xem có CLS ≥ 0,01; tổng 0.802; lớn nhất 0.111

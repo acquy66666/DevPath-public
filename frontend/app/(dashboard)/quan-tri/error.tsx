@@ -1,34 +1,30 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { StatePanel } from "@/components/ui/state-panel";
 
-/** A render that threw. Failed API calls are shown where they happen. */
+/**
+ * A render that threw. Failed API calls are shown where they happen. No
+ * Naomi: in the admin area she only appears in empty states.
+ */
 export default function AdminError({
   error,
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Không mở được trang này</CardTitle>
-        <CardDescription>
-          Có lỗi ngoài dự tính khi hiển thị khu vực quản trị.
-          {error.digest ? ` Mã lỗi: ${error.digest}.` : null}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Button onClick={reset}>Thử lại</Button>
-      </CardContent>
-    </Card>
+    <StatePanel
+      mood={null}
+      title="Không mở được trang này"
+      titleAs="h2"
+      compact
+      className="mx-0"
+      detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+      actions={<Button onClick={retry}>Thử lại</Button>}
+    >
+      Lỗi phía hệ thống khi hiển thị khu vực quản trị, không phải do bạn.
+    </StatePanel>
   );
 }

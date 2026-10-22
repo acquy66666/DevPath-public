@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * Shown for a slug with no course behind it — mistyped, renamed, or taken down.
@@ -11,17 +12,22 @@ import { Button } from "@/components/ui/button";
  */
 export default function CourseNotFound() {
   return (
-    <div className="mx-auto max-w-md px-4 py-20 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">Không tìm thấy khóa học</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Đường dẫn có thể sai, hoặc khóa học chưa được xuất bản.
-      </p>
-
-      <div className="mt-6">
-        <Button asChild>
-          <Link href="/">Về trang chủ</Link>
-        </Button>
-      </div>
-    </div>
+    <StatePanel
+      mood="lost"
+      code="404"
+      title="Không tìm thấy khóa học"
+      actions={
+        <>
+          <Button asChild>
+            <Link href="/khoa-hoc">Xem các khóa học</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Về trang chủ</Link>
+          </Button>
+        </>
+      }
+    >
+      Đường dẫn có thể sai, hoặc khóa học chưa được xuất bản.
+    </StatePanel>
   );
 }

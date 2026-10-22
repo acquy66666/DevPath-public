@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, ChevronDown, Loader2, Pencil } from "lucide-react";
+import { ChevronDown, Loader2, Pencil } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -154,13 +154,13 @@ export function TierReview() {
       </div>
 
       {evaluations.isPending ? (
-        <ListSkeleton rows={3} />
+        <ListSkeleton rows={3} fill />
       ) : evaluations.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(evaluations.error)}</AlertDescription>
         </Alert>
       ) : rows.length === 0 ? (
-        <EmptyState icon={Award} title="Không có giảng viên nào ở đây" hint="Thử bộ lọc khác." />
+        <EmptyState mood="empty-search" title="Không có giảng viên nào ở đây" hint="Thử bộ lọc khác." />
       ) : (
         <ul className="space-y-3">
           {rows.map((row) => (

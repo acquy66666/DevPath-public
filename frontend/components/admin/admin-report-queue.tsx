@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Flag, Loader2, Lock, Star } from "lucide-react";
+import { ExternalLink, Loader2, Lock, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -135,7 +135,6 @@ export function AdminReportQueue() {
 
       {reports.data && reports.data.total === 0 ? (
         <EmptyState
-          icon={Flag}
           title={queue === "pending" ? "Không có báo cáo nào đang chờ" : "Chưa xử lý báo cáo nào"}
           hint={
             queue === "pending"

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Award, BarChart3, ChevronRight, Plus } from "lucide-react";
+import { ArrowLeft, Award, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -15,6 +15,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ExportButton } from "@/components/ui/export-button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatsBodySkeleton, TierLineSkeleton } from "@/components/instructor/instructor-skeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getInstructorInsights,
@@ -101,13 +104,13 @@ export function StatsDashboard() {
       <TierSummary />
 
       {overview.isPending ? (
-        <Skeleton />
+        <StatsBodySkeleton />
       ) : overview.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(overview.error)}</AlertDescription>
         </Alert>
       ) : overview.data.courses_total === 0 && overview.data.students_total === 0 ? (
-        <EmptyState />
+        <NothingYet />
       ) : (
         <div className={cn("space-y-6 transition-opacity", overview.isFetching && "opacity-60")}>
           <Overview data={overview.data} previousLabel={choice.previous} />
@@ -118,7 +121,7 @@ export function StatsDashboard() {
               <AlertDescription>{apiErrorMessage(insights.error)}</AlertDescription>
             </Alert>
           ) : (
-            <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
+            <Skeleton className="h-64 rounded-lg" />
           )}
           <Card>
             <CardHeader>
@@ -151,7 +154,10 @@ function TierSummary() {
     queryFn: () => getMyTier(accessToken as string),
     enabled: accessToken !== null,
   });
-  if (!tier.data) return null;
+  // Same size as the line it stands for, so the numbers below stay put. Gone
+  // if the tier cannot be read: the page is about the numbers.
+  if (tier.isError) return null;
+  if (!tier.data) return <TierLineSkeleton />;
   const { current, next, eligible } = tier.data;
   return (
     <Link
@@ -524,39 +530,20 @@ export function PeriodPicker({
   );
 }
 
-function Skeleton() {
+function NothingYet() {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((tile) => (
-          <div key={tile} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
-        ))}
-      </div>
-      <div className="h-72 animate-pulse rounded-lg border bg-muted/40" />
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-md bg-muted">
-          <BarChart3 className="size-5 text-muted-foreground" aria-hidden />
-        </div>
-        <CardTitle>Chưa có gì để thống kê</CardTitle>
-        <CardDescription>
-          Số liệu xuất hiện ở đây khi khóa học đầu tiên của bạn có người ghi danh.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <EmptyState
+      size="md"
+      title="Chưa có số liệu nào để thống kê"
+      description="Số liệu xuất hiện ở đây khi khóa học đầu tiên của bạn có người ghi danh."
+      action={
         <Button asChild>
           <Link href="/giang-day/moi">
             <Plus aria-hidden />
             Tạo khóa học
           </Link>
         </Button>
-      </CardContent>
-    </Card>
+      }
+    />
   );
 }

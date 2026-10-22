@@ -3,33 +3,35 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * A code that is not a certificate calls `notFound()` instead, so anything landing
  * here is the backend being unreachable or answering badly -- something a
- * retry can genuinely fix.
+ * retry can genuinely fix, by fetching the page again (`retry`).
  */
 export default function CertificateError({
-  reset,
+  error,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <div className="mx-auto max-w-md px-4 py-20 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">
-        Không tải được chứng chỉ
-      </h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Máy chủ đang không trả lời. Thử lại sau ít phút, hoặc quay về trang chủ.
-      </p>
-
-      <div className="mt-6 flex justify-center gap-3">
-        <Button onClick={reset}>Thử lại</Button>
-        <Button variant="outline" asChild>
-          <Link href="/">Về trang chủ</Link>
-        </Button>
-      </div>
-    </div>
+    <StatePanel
+      mood="sorry"
+      title="Không tải được chứng chỉ"
+      detail={error.digest ? `Mã lỗi: ${error.digest}` : null}
+      actions={
+        <>
+          <Button onClick={retry}>Thử lại</Button>
+          <Button variant="outline" asChild>
+            <Link href="/">Về trang chủ</Link>
+          </Button>
+        </>
+      }
+    >
+      Máy chủ đang không trả lời. Thử lại sau ít phút, hoặc quay về trang chủ.
+    </StatePanel>
   );
 }

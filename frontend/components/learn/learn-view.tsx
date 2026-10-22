@@ -33,6 +33,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { getCurriculum, getLesson } from "@/lib/api/curriculum";
@@ -178,7 +179,7 @@ export function LearnView({
   }
 
   if (status === "loading") {
-    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
+    return <Skeleton className="h-96 rounded-lg" />;
   }
 
   if (!signedIn) {
@@ -226,7 +227,7 @@ export function LearnView({
   }
 
   if (!course.data || !curriculum.data || !progress.data) {
-    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
+    return <Skeleton className="h-96 rounded-lg" />;
   }
 
   const completedIds = new Set(
@@ -423,7 +424,7 @@ export function LearnView({
               </Tabs>
             </>
           ) : (
-            <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />
+            <Skeleton className="h-96 rounded-lg" />
           )}
         </div>
 

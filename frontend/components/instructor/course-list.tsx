@@ -1,14 +1,15 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Award, BarChart3, BookOpen, MessageCircleQuestion, Plus } from "lucide-react";
+import { Award, BarChart3, MessageCircleQuestion, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CourseStatusBadge } from "@/components/instructor/course-status-badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TeachingRowsSkeleton } from "@/components/instructor/instructor-skeletons";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { listMyCourses } from "@/lib/api/courses";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -66,17 +67,13 @@ export function CourseList() {
       </div>
 
       {query.isPending ? (
-        <div className="space-y-4">
-          {[0, 1, 2].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
-          ))}
-        </div>
+        <TeachingRowsSkeleton />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
         </Alert>
       ) : query.data.items.length === 0 ? (
-        <EmptyState />
+        <NoCourses />
       ) : (
         <ul className="space-y-3">
           {query.data.items.map((course) => (
@@ -133,27 +130,21 @@ export function CourseList() {
   );
 }
 
-function EmptyState() {
+function NoCourses() {
   return (
-    <Card>
-      <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-md bg-muted">
-          <BookOpen className="size-5 text-muted-foreground" aria-hidden />
-        </div>
-        <CardTitle>Chưa có khóa học nào</CardTitle>
-        <CardDescription>
-          Khóa học đầu tiên chỉ cần một cái tên và một danh mục — nội dung soạn dần sau,
-          và nó ở dạng nháp cho tới khi bạn bấm xuất bản.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <EmptyState
+      mood="empty-courses"
+      size="md"
+      title="Chưa có khóa học nào"
+      description="Khóa học đầu tiên chỉ cần một cái tên và một danh mục. Nội dung soạn dần sau, và khóa ở dạng nháp cho tới khi bạn gửi duyệt."
+      action={
         <Button asChild>
           <Link href="/giang-day/moi">
             <Plus aria-hidden />
             Tạo khóa học đầu tiên
           </Link>
         </Button>
-      </CardContent>
-    </Card>
+      }
+    />
   );
 }

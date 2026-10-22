@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus, Trash2, Wallet } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -137,7 +137,7 @@ export function ProfitPage() {
       </div>
 
       {profit.isPending ? (
-        <ListSkeleton rows={2} height="h-48" />
+        <ListSkeleton rows={2} height="h-48" fill />
       ) : profit.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(profit.error)}</AlertDescription>
@@ -340,7 +340,7 @@ function Expenses({ year }: { year: number }) {
             <AlertDescription>{apiErrorMessage(expenses.error)}</AlertDescription>
           </Alert>
         ) : expenses.data.items.length === 0 ? (
-          <EmptyState icon={Wallet} title="Chưa có khoản chi nào" hint="Thêm hóa đơn máy chủ, API AI, marketing… để tính lợi nhuận." />
+          <EmptyState title="Chưa có khoản chi nào" hint="Thêm hóa đơn máy chủ, API AI, marketing… để tính lợi nhuận." />
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">

@@ -9,6 +9,7 @@ import { AddToCartButton } from "@/components/commerce/add-to-cart-button";
 import { WishlistButton } from "@/components/commerce/wishlist-button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import type { CourseDetail } from "@/lib/api/courses";
 import { enrolInCourse, getMyEnrollment } from "@/lib/api/enrollments";
@@ -45,7 +46,13 @@ export function EnrollButton({ course }: { course: CourseDetail }) {
   });
 
   if (status === "loading") {
-    return <div className="h-9 w-full animate-pulse rounded-md bg-muted" aria-hidden />;
+    // The button and the line under it, which every state but "own course" has.
+    return (
+      <div className="space-y-2" aria-hidden>
+        <Skeleton className="h-9 w-full" />
+        <SkeletonText size="caption" className="mx-auto h-4 w-40" />
+      </div>
+    );
   }
 
   if (owns) {

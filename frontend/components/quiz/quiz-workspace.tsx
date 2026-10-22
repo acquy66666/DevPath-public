@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getQuizOfLesson,
@@ -123,7 +124,7 @@ export function QuizWorkspace({
   }, [running, remaining, answers, hand]);
 
   if (quiz.isPending) {
-    return <div className="h-40 animate-pulse rounded-md bg-muted" />;
+    return <Skeleton className="h-40" />;
   }
 
   if (quiz.isError) {

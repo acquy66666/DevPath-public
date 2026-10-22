@@ -1,11 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Heart, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { CourseCard } from "@/components/courses/course-card";
+import { CourseCard, CourseListSkeleton } from "@/components/courses/course-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   addToCart,
   getCart,
@@ -68,11 +69,7 @@ export function WishlistView() {
 
   if (status === "loading") {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((row) => (
-          <div key={row} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
-        ))}
-      </div>
+      <CourseListSkeleton label="Đang tải danh sách yêu thích…" />
     );
   }
 
@@ -104,26 +101,22 @@ export function WishlistView() {
 
   if (!query.data) {
     return (
-      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {[0, 1, 2].map((row) => (
-          <div key={row} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
-        ))}
-      </div>
+      <CourseListSkeleton label="Đang tải danh sách yêu thích…" />
     );
   }
 
   if (query.data.items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-12 text-center">
-        <Heart className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-        <p className="font-medium">Chưa có khóa học nào được lưu</p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Bấm “Lưu vào yêu thích” ở trang khóa học để dành lại xem sau.
-        </p>
-        <Button className="mt-4" asChild>
-          <Link href="/khoa-hoc">Tìm khóa học</Link>
-        </Button>
-      </div>
+      <EmptyState
+        mood="empty-courses"
+        title="Chưa có khóa học nào được lưu"
+        description="Bấm “Lưu vào yêu thích” ở trang khóa học để dành lại xem sau."
+        action={
+          <Button asChild>
+            <Link href="/khoa-hoc">Tìm khóa học</Link>
+          </Button>
+        }
+      />
     );
   }
 

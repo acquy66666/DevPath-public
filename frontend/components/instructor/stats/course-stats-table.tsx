@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pager } from "@/components/ui/pager";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { listCourseStats, type CourseStats, type StatsPeriod } from "@/lib/api/instructor-stats";
 import { cn } from "@/lib/utils";
@@ -47,7 +49,7 @@ export function CourseStatsTable({
   });
 
   if (query.isPending) {
-    return <div className="h-48 animate-pulse rounded-md bg-muted/40" />;
+    return <Skeleton className="h-48" />;
   }
 
   if (query.isError) {
@@ -62,9 +64,7 @@ export function CourseStatsTable({
 
   if (items.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Chưa có khóa học nào để thống kê.
-      </p>
+      <EmptyState mood="empty-courses" size="md" framed={false} title="Chưa có khóa học nào để thống kê" />
     );
   }
 

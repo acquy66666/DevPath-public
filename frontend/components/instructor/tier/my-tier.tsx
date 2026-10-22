@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatRate } from "@/components/instructor/stats/format";
+import { TierBodySkeleton } from "@/components/instructor/instructor-skeletons";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getMyTier } from "@/lib/api/instructor-stats";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -56,7 +57,7 @@ export function MyTier() {
       </div>
 
       {query.isPending ? (
-        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
+        <TierBodySkeleton />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>

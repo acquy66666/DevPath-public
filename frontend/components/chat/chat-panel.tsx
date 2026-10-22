@@ -31,6 +31,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Mascot } from "@/components/mascot/mascot";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   askAssistant,
   createChatSession,
@@ -599,9 +601,8 @@ function EmptyState({
   return (
     <div className="flex min-h-full flex-col justify-center gap-5">
       <div className="space-y-2 text-center">
-        <span className="mx-auto flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <Sparkles className="size-5" aria-hidden />
-        </span>
+        {/* Waiting for the first question: still, like every empty state. */}
+        <Mascot mood="empty" className="mx-auto size-20" />
         <p className="font-medium">Hỏi trợ giảng AI về khóa học</p>
         <p className="text-sm text-pretty text-muted-foreground">
           Trợ giảng trả lời từ bài viết và lời giảng của chính khóa học này, kèm nguồn để
@@ -658,11 +659,11 @@ function EmptyState({
 function ConversationSkeleton() {
   return (
     <div className="space-y-5" aria-hidden>
-      <div className="ml-auto h-9 w-2/3 animate-pulse rounded-xl bg-muted" />
+      <Skeleton className="ml-auto h-9 w-2/3 rounded-xl" />
       <div className="space-y-2">
-        <div className="h-3 w-full animate-pulse rounded bg-muted" />
-        <div className="h-3 w-5/6 animate-pulse rounded bg-muted" />
-        <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
+        <Skeleton className="h-3 w-full rounded-xs" />
+        <Skeleton className="h-3 w-5/6 rounded-xs" />
+        <Skeleton className="h-3 w-2/3 rounded-xs" />
       </div>
     </div>
   );
@@ -672,7 +673,7 @@ function HistorySkeleton() {
   return (
     <div className="space-y-2 p-3" aria-hidden>
       {[0, 1, 2].map((row) => (
-        <div key={row} className="h-10 animate-pulse rounded-md bg-muted" />
+        <Skeleton key={row} className="h-10" />
       ))}
     </div>
   );

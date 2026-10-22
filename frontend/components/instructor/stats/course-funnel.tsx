@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { ExportButton } from "@/components/ui/export-button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   funnelExportPath,
@@ -78,7 +79,7 @@ export function CourseFunnelDialog({
         ) : null}
 
         {query.isPending ? (
-          <div className="h-48 animate-pulse rounded-md bg-muted/40" />
+          <Skeleton className="h-48" />
         ) : query.isError ? (
           <Alert variant="destructive">
             <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>

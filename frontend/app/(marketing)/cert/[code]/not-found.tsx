@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { StatePanel } from "@/components/ui/state-panel";
 
 /**
  * A code that is not a certificate: mistyped, cut short, or made up.
@@ -10,17 +11,17 @@ import { Button } from "@/components/ui/button";
  */
 export default function CertificateNotFound() {
   return (
-    <div className="mx-auto max-w-md px-4 py-20 text-center">
-      <h1 className="text-xl font-semibold tracking-tight">Không tìm thấy chứng chỉ</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Không có chứng chỉ nào mang mã này. Hãy kiểm tra lại mã in trên chứng chỉ, gồm 16 ký
-        tự chữ và số.
-      </p>
-      <div className="mt-6">
+    <StatePanel
+      mood="lost"
+      code="404"
+      title="Không tìm thấy chứng chỉ"
+      actions={
         <Button asChild>
           <Link href="/">Về trang chủ</Link>
         </Button>
-      </div>
-    </div>
+      }
+    >
+      Không có chứng chỉ nào mang mã này. Hãy kiểm tra lại mã in trên chứng chỉ, gồm 16 ký tự chữ và số.
+    </StatePanel>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/card";
 import { Pager } from "@/components/ui/pager";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getUnreadCount, listNotifications } from "@/lib/api/notifications";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -48,7 +50,15 @@ export function NotificationList() {
   const unreadCount = count.data?.count ?? 0;
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
+    return (
+      <SkeletonRegion label="Đang tải thông báo…" className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Skeleton className="h-9 w-44" />
+          <Skeleton className="h-8 w-44" />
+        </div>
+        <NotificationRowsSkeleton />
+      </SkeletonRegion>
+    );
   }
 
   if (status === "anonymous") {
@@ -108,24 +118,15 @@ export function NotificationList() {
       ) : null}
 
       {list.isPending ? (
-        <div className="space-y-2" aria-hidden>
-          {[0, 1, 2, 3].map((row) => (
-            <div key={row} className="h-16 animate-pulse rounded-md bg-muted/40" />
-          ))}
-        </div>
+        <NotificationRowsSkeleton />
       ) : null}
 
       {list.data && list.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
-          <Bell className="size-8 text-muted-foreground" aria-hidden />
-          <p className="font-medium">
-            {unread ? "Bạn đã đọc hết thông báo" : "Chưa có thông báo nào"}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            Khi có người trả lời câu hỏi của bạn, hoặc học viên hỏi trong khóa bạn dạy, thông
-            báo sẽ hiện ở đây.
-          </p>
-        </div>
+        <EmptyState
+          mood="empty-notifications"
+          title={unread ? "Bạn đã đọc hết thông báo" : "Chưa có thông báo nào"}
+          description="Khi có người trả lời câu hỏi của bạn, hoặc học viên hỏi trong khóa bạn dạy, thông báo sẽ hiện ở đây."
+        />
       ) : null}
 
       {list.data && list.data.items.length > 0 ? (
@@ -155,5 +156,22 @@ export function NotificationList() {
         />
       ) : null}
     </div>
+  );
+}
+
+/** Rows in the list's own frame: a line of text and a time, as a notification has. */
+function NotificationRowsSkeleton() {
+  return (
+    <ul className="divide-y rounded-lg border" aria-hidden>
+      {[0, 1, 2, 3].map((row) => (
+        <li key={row} className="flex items-start gap-3 p-3">
+          <Skeleton className="size-8 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1">
+            <SkeletonText size="body-sm" className={row % 2 ? "w-2/3" : "w-5/6"} />
+            <SkeletonText size="caption" className="h-4 w-24" />
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }

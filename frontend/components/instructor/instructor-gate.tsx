@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { instructorSkeletonFor } from "@/components/instructor/instructor-skeletons";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -25,14 +27,11 @@ import { useAuth } from "@/lib/auth/auth-provider";
  */
 export function InstructorGate({ children }: { children: ReactNode }) {
   const { user, status } = useAuth();
+  const pathname = usePathname();
 
-  if (status === "loading") {
-    return (
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
-      </div>
-    );
-  }
+  // The skeleton of the screen being opened, not a generic block: the same
+  // one its loading.tsx and its first query show.
+  if (status === "loading") return instructorSkeletonFor(pathname);
 
   if (user === null) {
     return (

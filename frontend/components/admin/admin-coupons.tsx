@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Plus, TicketPercent, Trash2, X } from "lucide-react";
+import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -134,12 +134,16 @@ export function AdminCoupons() {
           <AlertDescription>{apiErrorMessage(coupons.error)}</AlertDescription>
         </Alert>
       ) : null}
-      {coupons.isPending ? <ListSkeleton height="h-20" /> : null}
+      {coupons.isPending ? <ListSkeleton height="h-20" fill /> : null}
       {coupons.data && coupons.data.total === 0 ? (
         <EmptyState
-          icon={TicketPercent}
+          mood={q || status !== "all" ? "empty-search" : "empty"}
           title={q || status !== "all" ? "Không có mã nào khớp" : "Chưa có mã giảm giá nào"}
-          hint="Bấm “Tạo mã” để mở một chiến dịch: giảm theo phần trăm hoặc số tiền, cho toàn sàn hoặc vài khóa học."
+          hint={
+            q || status !== "all"
+              ? "Đổi từ khóa tìm kiếm hoặc bộ lọc trạng thái."
+              : "Bấm “Tạo mã” để mở một chiến dịch: giảm theo phần trăm hoặc số tiền, cho toàn sàn hoặc vài khóa học."
+          }
         />
       ) : null}
       {coupons.data && coupons.data.items.length > 0 ? (

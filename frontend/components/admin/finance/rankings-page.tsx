@@ -103,7 +103,7 @@ export function RankingsPage() {
       </div>
 
       {query.isPending ? (
-        <ListSkeleton rows={3} height="h-48" />
+        <ListSkeleton rows={3} height="h-48" fill />
       ) : query.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>

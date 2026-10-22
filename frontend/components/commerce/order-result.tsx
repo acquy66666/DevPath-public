@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getOrder, type Order } from "@/lib/api/orders";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
@@ -126,7 +127,7 @@ export function OrderResult({ code }: { code: string | null }) {
   }
 
   if (!order.data) {
-    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
+    return <Skeleton className="h-64 rounded-lg" />;
   }
 
   return <Receipt order={order.data} waiting={order.isFetching} />;

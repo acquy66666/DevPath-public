@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, FolderTree, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
@@ -92,11 +92,10 @@ export function AdminCategories() {
         </Alert>
       ) : null}
 
-      {tree.isPending ? <ListSkeleton height="h-28" /> : null}
+      {tree.isPending ? <ListSkeleton height="h-28" fill /> : null}
 
       {tree.data && parents.length === 0 ? (
         <EmptyState
-          icon={FolderTree}
           title="Chưa có danh mục nào"
           hint="Tạo danh mục cấp trên cùng trước, rồi thêm danh mục con vào bên trong."
         />

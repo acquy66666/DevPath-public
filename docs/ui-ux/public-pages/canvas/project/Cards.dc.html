@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thẻ khóa học và ảnh bìa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="min-height: 100%; box-sizing: border-box; padding: 48px 16px 64px; background: #f8fafc; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif">
+  <div style="max-width: 1152px; margin: 0 auto; display: flex; flex-direction: column; gap: 48px">
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Ảnh bìa dự phòng</span>
+        <h2 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Sáu dải màu minh họa, chọn theo id khóa học</h2>
+        <p style="margin: 0; max-width: 46em; font-size: 14px; line-height: 20px; color: #556670">Trình soạn chưa có tải ảnh bìa, nên gần như mọi khóa dùng ảnh này. Vài dòng code giả và một cặp dấu ngoặc thay cho mũ tốt nghiệp. Màu lấy từ dải màu gốc (nền 100, vạch 200/500/700). Không dùng nghệ: nghệ chỉ dành cho phần thưởng.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px">
+        <sc-for list="{{tiles}}" as="t" hint-placeholder-count="6">
+          <figure style="margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0">
+            <div aria-hidden="true" style="position: relative; aspect-ratio: 16 / 9; box-sizing: border-box; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; border-radius: 14px; background: {{t.bg}}">
+              <span style="display: block; height: 6px; width: 38%; border-radius: 3px; background: {{t.strong}}"></span>
+              <span style="display: block; height: 6px; width: 52%; margin-left: 10%; border-radius: 3px; background: {{t.soft}}"></span>
+              <span style="display: block; height: 6px; width: 30%; margin-left: 10%; border-radius: 3px; background: {{t.soft}}"></span>
+              <span style="display: block; height: 6px; width: 24%; border-radius: 3px; background: {{t.ink}}"></span>
+              <span style="position: absolute; right: 12px; bottom: 2px; font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 36px; line-height: 44px; font-weight: 600; color: {{t.soft}}">{{t.glyph}}</span>
+            </div>
+            <figcaption style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 12px; line-height: 18px; color: #556670">{{t.name}}</figcaption>
+          </figure>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Thẻ khóa học</span>
+        <h2 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Một dòng nhãn thay hai badge, giá ở góc dưới</h2>
+        <p style="margin: 0; max-width: 46em; font-size: 14px; line-height: 20px; color: #556670">Có phí, miễn phí, có đánh giá (sao màu phần thưởng), và thẻ trong khối gợi ý có dòng lý do. Rê chuột: bóng <code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace">shadow-md</code>, nhấc 2px trong <code style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace">duration-fast</code>; giảm chuyển động thì chỉ còn bóng.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px">
+        <sc-for list="{{cards}}" as="c" hint-placeholder-count="4">
+          <dc-import name="CourseCard" course="{{c}}" hint-size="100%,460px"></dc-import>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-labelledby="goi-y" style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Khối gợi ý khi chỉ có 1–2 khóa</span>
+        <h2 id="goi-y" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600">Gợi ý cho bạn</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Dựa trên các khóa bạn đã học và lựa chọn của những học viên giống bạn.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 20px">
+        <a href="Course.dc.html" style="display: flex; flex-wrap: wrap; overflow: hidden; background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; text-decoration: none; color: #102029">
+          <div aria-hidden="true" style="position: relative; flex: 1 1 200px; min-height: 140px; box-sizing: border-box; padding: 18px 20px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; background: #ffe1ee">
+            <span style="display: block; height: 7px; width: 38%; border-radius: 4px; background: #d14e95"></span>
+            <span style="display: block; height: 7px; width: 52%; margin-left: 10%; border-radius: 4px; background: #ffc6e0"></span>
+            <span style="display: block; height: 7px; width: 30%; margin-left: 10%; border-radius: 4px; background: #ffc6e0"></span>
+            <span style="display: block; height: 7px; width: 24%; border-radius: 4px; background: #922764"></span>
+            <span style="position: absolute; right: 14px; bottom: 2px; font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 44px; line-height: 52px; font-weight: 600; color: #ffc6e0">=&gt;</span>
+          </div>
+          <div style="flex: 2 1 260px; min-width: 0; padding: 16px; display: flex; flex-direction: column; gap: 6px">
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 600; color: #066254">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+              Vì bạn đã học Cấu trúc dữ liệu &amp; giải thuật với Python
+            </span>
+            <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">JavaScript · Người mới bắt đầu</span>
+            <span style="font-size: 18px; line-height: 26px; font-weight: 600">JavaScript hiện đại: ES6+ và DOM</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">Nguyễn Mai Anh · 18 học viên · 1 giờ 37 phút</span>
+            <span style="margin-top: auto; padding-top: 6px"><span style="padding: 2px 10px; border-radius: 999px; background: #e8fceb; color: #194f29; font-size: 13px; line-height: 20px; font-weight: 600">Miễn phí</span></span>
+          </div>
+        </a>
+      </div>
+      <p style="margin: 0; font-size: 13px; line-height: 20px; color: #556670">3–4 khóa thì quay về lưới thẻ dọc như "Khóa học mới". Một hàng 4 cột chỉ có 1 thẻ để trống ba phần tư trang.</p>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1060}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const t = {
+      jade: { name: "jade", bg: "#ccf5ea", strong: "#039580", soft: "#a3ead9", ink: "#066254", glyph: "{}" },
+      blue: { name: "blue", bg: "#ddecff", strong: "#4087de", soft: "#c0dcff", ink: "#1157a4", glyph: "()" },
+      violet: { name: "violet", bg: "#ece7ff", strong: "#8f6edb", soft: "#dbd2ff", ink: "#6040a1", glyph: "</>" },
+      rose: { name: "rose", bg: "#ffe1ee", strong: "#d14e95", soft: "#ffc6e0", ink: "#922764", glyph: "=>" },
+      amber: { name: "amber", bg: "#ffe5ce", strong: "#be7100", soft: "#ffcfa1", ink: "#7e4a00", glyph: "[]" },
+      green: { name: "green", bg: "#cff7d6", strong: "#2e9e52", soft: "#a9ecb6", ink: "#1d6835", glyph: "#!" }
+    };
+    return {
+      tiles: [t.jade, t.blue, t.violet, t.rose, t.amber, t.green],
+      cards: [
+        { title: "Cấu trúc dữ liệu & giải thuật với Python", subtitle: "Đủ để qua vòng phỏng vấn kỹ thuật, và để viết code nhanh hơn hằng ngày", eyebrow: "Giải thuật · Trung cấp", instructor: "Trần Minh Khoa", initials: "TK", rating: "Chưa có đánh giá", rated: false, students: 40, duration: "1 giờ 56 phút", price: "499.000 ₫", free: false, note: "", tile: t.amber },
+        { title: "Python cơ bản cho người mới bắt đầu", subtitle: "Từ dòng lệnh đầu tiên đến chương trình chạy được, không cần biết gì trước", eyebrow: "Python · Người mới bắt đầu", instructor: "Trần Minh Khoa", initials: "TK", rating: "Chưa có đánh giá", rated: false, students: 16, duration: "1 giờ 41 phút", price: "", free: true, note: "", tile: t.blue },
+        { title: "[Khóa có đánh giá]", subtitle: "Ví dụ trạng thái: điểm trung bình kèm số lượt", eyebrow: "Frontend · Cơ bản", instructor: "[Giảng viên]", initials: "GV", rating: "4,6 (12)", rated: true, students: 52, duration: "3 giờ 10 phút", price: "299.000 ₫", free: false, note: "", tile: t.violet },
+        { title: "Xây dựng REST API với FastAPI", subtitle: "Từ endpoint đầu tiên đến API có xác thực, có test và đóng gói Docker", eyebrow: "Backend · Trung cấp", instructor: "Nguyễn Mai Anh", initials: "MA", rating: "Chưa có đánh giá", rated: false, students: 15, duration: "1 giờ 46 phút", price: "", free: true, note: "Được nhiều học viên chọn", tile: t.jade }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

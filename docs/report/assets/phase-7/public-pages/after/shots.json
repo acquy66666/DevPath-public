@@ -1,0 +1,24 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-22T17:01:33.345Z",
+  "shots": [
+    "chi-tiet-da-ghi-danh-1440",
+    "chi-tiet-da-ghi-danh-375",
+    "chi-tiet-mien-phi-1440",
+    "chi-tiet-mien-phi-375",
+    "chi-tiet-tra-phi-1440",
+    "chi-tiet-tra-phi-375",
+    "danh-sach-1440",
+    "danh-sach-375",
+    "giang-vien-hoc-vien-1440",
+    "giang-vien-hoc-vien-375",
+    "giang-vien-khach-1440",
+    "giang-vien-khach-375",
+    "tim-python-1440",
+    "tim-python-375",
+    "trang-chu-hoc-vien-1440",
+    "trang-chu-hoc-vien-375",
+    "trang-chu-khach-1440",
+    "trang-chu-khach-375"
+  ]
+}

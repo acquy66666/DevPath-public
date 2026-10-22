@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Header khách</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<header style="box-sizing: border-box; height: 64px; background: #ffffff; border-bottom: 1px solid #e3eaee; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029">
+  <div style="box-sizing: border-box; max-width: 1152px; height: 64px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 24px">
+    <sc-if value="{{compact}}" hint-placeholder-val="{{false}}">
+      <button type="button" aria-label="Mở menu điều hướng" style="width: 40px; height: 40px; margin-left: -8px; border: 0; background: transparent; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #102029">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      </button>
+    </sc-if>
+    <a href="Main.dc.html" style="font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <sc-if value="{{wide}}" hint-placeholder-val="{{true}}">
+      <nav aria-label="Điều hướng chính" style="display: flex; gap: 4px">
+        <a href="Catalog.dc.html" style="padding: 8px 12px; border-radius: 10px; font-size: 15px; line-height: 20px; font-weight: 500; text-decoration: none; color: #3e505a">Khóa học</a>
+        <a href="#" style="padding: 8px 12px; border-radius: 10px; font-size: 15px; line-height: 20px; font-weight: 500; text-decoration: none; color: #3e505a">Bảng xếp hạng</a>
+      </nav>
+    </sc-if>
+    <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+      <a href="#" style="padding: 8px 12px; border-radius: 10px; font-size: 14px; line-height: 20px; font-weight: 600; text-decoration: none; color: #102029">Đăng nhập</a>
+      <a href="#" style="padding: 8px 14px; border-radius: 10px; font-size: 14px; line-height: 20px; font-weight: 600; text-decoration: none; color: #ffffff; background: #007967">Đăng ký</a>
+    </div>
+  </div>
+</header>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"compact":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":64}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const compact = this.props.compact ?? false;
+    return { compact: compact, wide: !compact };
+  }
+}
+</script>
+</body>
+</html>

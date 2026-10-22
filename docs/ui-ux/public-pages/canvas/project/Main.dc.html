@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trang chủ DevPath</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="min-height: 100%; background: #f8fafc; color: #102029; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif">
+  <dc-import name="Header" compact="{{narrow}}" hint-size="100%,64px"></dc-import>
+
+  <main style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 16px 96px; display: flex; flex-direction: column; gap: 64px">
+
+    <!-- Hero: lời hứa bên trái, cảnh chấm bài thật bên phải -->
+    <section style="padding-top: 56px; display: flex; flex-wrap: wrap; align-items: center; gap: 48px">
+      <div style="flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #066254">Học lập trình bằng tiếng Việt</span>
+        <h1 style="margin: 0; font-size: 40px; line-height: 52px; font-weight: 700; letter-spacing: -0.02em; text-wrap: balance">Học lập trình bằng cách viết code</h1>
+        <p style="margin: 0; max-width: 34em; font-size: 18px; line-height: 30px; color: #3e505a">Bài tập được chấm tự động trong môi trường cô lập, gợi ý khóa học theo tiến độ của bạn, và trợ giảng AI trả lời trong phạm vi bài giảng.</p>
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; padding-top: 4px">
+          <a href="Catalog.dc.html" style="padding: 12px 20px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 15px; line-height: 20px; font-weight: 600; text-decoration: none">Khám phá khóa học</a>
+          <a href="#" style="padding: 11px 19px; border-radius: 10px; border: 1px solid #6f7e88; background: #ffffff; color: #102029; font-size: 15px; line-height: 20px; font-weight: 600; text-decoration: none">Tạo tài khoản miễn phí</a>
+        </div>
+        <ul style="margin: 8px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 12px 24px; font-size: 14px; line-height: 20px; color: #3e505a">
+          <li style="display: flex; align-items: center; gap: 8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"></path><path d="m9 12 2 2 4-4"></path></svg>
+            Chấm trong sandbox Docker
+          </li>
+          <li style="display: flex; align-items: center; gap: 8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"></path></svg>
+            Gợi ý theo tiến độ
+          </li>
+          <li style="display: flex; align-items: center; gap: 8px">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            Trợ giảng AI trích nguồn bài giảng
+          </li>
+        </ul>
+      </div>
+
+      <!-- Minh họa: một lượt nộp bài AC, Naomi vừa bắt được bug -->
+      <figure aria-label="Ví dụ một bài nộp được chấm: 3 test đều đúng, 100 trên 100" style="flex: 1 1 400px; min-width: 0; margin: 0; position: relative; padding-bottom: 28px">
+        <div style="background: #ffffff; border: 1px solid #e3eaee; border-radius: 14px; overflow: hidden">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: #f0f4f7; border-bottom: 1px solid #e3eaee">
+            <span style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 13px; line-height: 20px; color: #3e505a">tong_so_chan.py</span>
+            <span style="font-size: 12px; line-height: 18px; color: #556670">Python 3.12</span>
+          </div>
+          <pre style="margin: 0; padding: 16px 16px 18px; font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-size: 14px; line-height: 24px; color: #102029; overflow-x: auto"><span style="color: #93a1a9">1  </span><span style="color: #066254">def</span> <span style="color: #1157a4">tong_so_chan</span>(ds):
+<span style="color: #93a1a9">2  </span>    <span style="color: #066254">return</span> <span style="color: #1157a4">sum</span>(x <span style="color: #066254">for</span> x <span style="color: #066254">in</span> ds <span style="color: #066254">if</span> x % <span style="color: #922764">2</span> == <span style="color: #922764">0</span>)
+<span style="color: #93a1a9">3  </span>
+<span style="color: #93a1a9">4  </span>n = <span style="color: #1157a4">int</span>(<span style="color: #1157a4">input</span>())
+<span style="color: #93a1a9">5  </span><span style="color: #1157a4">print</span>(tong_so_chan(<span style="color: #1157a4">map</span>(<span style="color: #1157a4">int</span>, <span style="color: #1157a4">input</span>().split())))</pre>
+          <div style="border-top: 1px solid #e3eaee; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+              <span style="font-size: 14px; line-height: 20px; font-weight: 600">Kết quả chấm</span>
+              <span style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: #e8fceb; color: #194f29; font-size: 13px; line-height: 20px; font-weight: 600">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#238142" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                <span style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace">AC</span> Đúng · 100/100
+              </span>
+            </div>
+            <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 20px; color: #3e505a">
+              <sc-for list="{{tests}}" as="t" hint-placeholder-count="3">
+                <li style="display: flex; align-items: center; gap: 8px">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#238142" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+                  <span style="flex: 1">{{t.name}}</span>
+                  <span style="font-family: 'Geist Mono', ui-monospace, Consolas, monospace; font-variant-numeric: tabular-nums; color: #556670">{{t.time}}</span>
+                </li>
+              </sc-for>
+            </ol>
+          </div>
+        </div>
+        <img src="/_blob/be0bba51de4f7b8b8b6260ed12d5dcd2" alt="" width="132" height="132" style="position: absolute; right: 4px; bottom: -8px; width: 132px; height: 132px">
+      </figure>
+    </section>
+
+    <!-- Banner: nằm sau lời hứa, thấp hơn, khung theo design system -->
+    <section aria-roledescription="carousel" aria-label="Tin nổi bật" style="position: relative; overflow: hidden; border-radius: 20px; background: #074b40; min-height: 200px; display: flex; align-items: flex-end">
+      <div style="padding: 32px 32px 40px; display: flex; flex-direction: column; gap: 8px; max-width: 640px">
+        <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a3ead9">Ảnh banner do quản trị viên tải lên</span>
+        <span style="font-size: 24px; line-height: 32px; font-weight: 700; color: #ffffff; text-wrap: balance">Chào bạn mới: giảm 50% mọi khóa học với mã CHAOMUNG50</span>
+      </div>
+      <div style="position: absolute; right: 20px; bottom: 20px; display: flex; align-items: center; gap: 8px">
+        <button type="button" aria-label="Banner trước" style="width: 36px; height: 36px; border-radius: 999px; border: 0; background: #ffffff; color: #102029; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+        <span style="padding: 0 4px; font-size: 13px; line-height: 20px; font-weight: 600; color: #ffffff; font-variant-numeric: tabular-nums">1 / 3</span>
+        <button type="button" aria-label="Banner sau" style="width: 36px; height: 36px; border-radius: 999px; border: 0; background: #ffffff; color: #102029; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+      </div>
+    </section>
+
+    <!-- Chủ đề: lấy từ cây danh mục, mỗi chip là một URL lọc sẵn -->
+    <section aria-labelledby="chu-de" style="display: flex; flex-direction: column; gap: 16px">
+      <h2 id="chu-de" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em">Duyệt theo chủ đề</h2>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{topics}}" as="t" hint-placeholder-count="5">
+          <li><a href="Catalog.dc.html" style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; border: 1px solid #e3eaee; background: #ffffff; color: #102029; font-size: 14px; line-height: 20px; font-weight: 500; text-decoration: none">{{t.name}}</a></li>
+        </sc-for>
+      </ul>
+    </section>
+
+    <!-- Khóa học mới -->
+    <section aria-labelledby="khoa-moi" style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px">
+        <div style="display: flex; flex-direction: column; gap: 4px">
+          <h2 id="khoa-moi" style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 600; letter-spacing: -0.01em">Khóa học mới</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Vừa lên sàn.</p>
+        </div>
+        <a href="Catalog.dc.html" style="font-size: 14px; line-height: 20px; font-weight: 600; color: #066254">Xem tất cả khóa học</a>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px">
+        <sc-for list="{{courses}}" as="c" hint-placeholder-count="4">
+          <dc-import name="CourseCard" course="{{c}}" hint-size="100%,440px"></dc-import>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+
+  <dc-import name="Footer" hint-size="100%,150px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"narrow":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":2140}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tile = {
+      blue: { bg: "#ddecff", strong: "#4087de", soft: "#c0dcff", ink: "#1157a4" },
+      amber: { bg: "#ffe5ce", strong: "#be7100", soft: "#ffcfa1", ink: "#7e4a00" },
+      jade: { bg: "#ccf5ea", strong: "#039580", soft: "#a3ead9", ink: "#066254" },
+      rose: { bg: "#ffe1ee", strong: "#d14e95", soft: "#ffc6e0", ink: "#922764" }
+    };
+    const none = "Chưa có đánh giá";
+    return {
+      narrow: this.props.narrow ?? false,
+      tests: [
+        { name: "Test 1 · Đúng", time: "18 ms" },
+        { name: "Test 2 · Đúng", time: "21 ms" },
+        { name: "Test 3 (ẩn) · Đúng", time: "19 ms" }
+      ],
+      topics: [
+        { name: "Lập trình web" },
+        { name: "Frontend" },
+        { name: "Backend" },
+        { name: "Ngôn ngữ lập trình" },
+        { name: "Python" },
+        { name: "JavaScript" },
+        { name: "Khoa học máy tính" },
+        { name: "Cấu trúc dữ liệu & giải thuật" }
+      ],
+      courses: [
+        { title: "Python cơ bản cho người mới bắt đầu", subtitle: "Từ dòng lệnh đầu tiên đến chương trình chạy được, không cần biết gì trước", eyebrow: "Python · Người mới bắt đầu", instructor: "Trần Minh Khoa", initials: "TK", rating: none, rated: false, students: 16, duration: "1 giờ 41 phút", price: "", free: true, note: "", tile: Object.assign({ glyph: "()" }, tile.blue) },
+        { title: "Cấu trúc dữ liệu & giải thuật với Python", subtitle: "Đủ để qua vòng phỏng vấn kỹ thuật, và để viết code nhanh hơn hằng ngày", eyebrow: "Giải thuật · Trung cấp", instructor: "Trần Minh Khoa", initials: "TK", rating: none, rated: false, students: 40, duration: "1 giờ 56 phút", price: "499.000 ₫", free: false, note: "", tile: Object.assign({ glyph: "[]" }, tile.amber) },
+        { title: "Xây dựng REST API với FastAPI", subtitle: "Từ endpoint đầu tiên đến API có xác thực, có test và đóng gói Docker", eyebrow: "Backend · Trung cấp", instructor: "Nguyễn Mai Anh", initials: "MA", rating: none, rated: false, students: 15, duration: "1 giờ 46 phút", price: "", free: true, note: "", tile: Object.assign({ glyph: "{}" }, tile.jade) },
+        { title: "JavaScript hiện đại: ES6+ và DOM", subtitle: "Cú pháp hiện đại, thao tác DOM và bất đồng bộ — đủ để tự làm giao diện động", eyebrow: "JavaScript · Người mới bắt đầu", instructor: "Nguyễn Mai Anh", initials: "MA", rating: none, rated: false, students: 18, duration: "1 giờ 37 phút", price: "", free: true, note: "", tile: Object.assign({ glyph: "=>" }, tile.rose) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

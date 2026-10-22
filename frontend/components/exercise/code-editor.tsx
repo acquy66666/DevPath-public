@@ -88,7 +88,7 @@ export function CodeEditor({
   }));
 
   return (
-    <div className="overflow-hidden rounded-lg border" style={{ height }}>
+    <div className="overflow-hidden rounded-md border" style={{ height }}>
       <Editor
         height="100%"
         language={language}

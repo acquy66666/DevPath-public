@@ -119,7 +119,7 @@ export function QaThreadRow({
       <button
         type="button"
         onClick={onOpen}
-        className="w-full space-y-1.5 rounded-lg border p-3 text-left transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="w-full space-y-1.5 rounded-md border p-3 text-left transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
       >
         {showPlace ? (
           <p className="truncate text-xs text-muted-foreground">

@@ -95,14 +95,14 @@ export function QuizGenerator({
 
   if (curriculum.isSuccess && sections.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+      <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
         Khóa học chưa có bài viết hay video nào để AI soạn câu hỏi từ đó.
       </p>
     );
   }
 
   return (
-    <section className="space-y-3 rounded-lg border bg-muted/20 p-3">
+    <section className="space-y-3 rounded-md border bg-muted/20 p-3">
       <div className="flex items-start gap-2">
         <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
         <div>

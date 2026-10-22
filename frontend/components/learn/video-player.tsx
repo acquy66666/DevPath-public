@@ -186,7 +186,7 @@ export function VideoPlayer({
 
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-xl border bg-black">
+      <div className="overflow-hidden rounded-lg border bg-black">
         <video
           ref={video}
           controls

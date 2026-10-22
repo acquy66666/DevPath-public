@@ -173,7 +173,7 @@ export function StatementDetail({ id }: { id: string }) {
         ) : null}
       </div>
 
-      <article className="space-y-6 rounded-xl border bg-card p-6 print:border-0 print:p-0">
+      <article className="space-y-6 rounded-lg border bg-card p-6 print:border-0 print:p-0">
         <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-4">
           <div>
             <p className="text-xs tracking-widest text-muted-foreground uppercase">DevPath</p>
@@ -344,7 +344,7 @@ function PayDialog({
   });
   return (
     <Dialog open={open} onOpenChange={(value) => (value ? null : onClose())}>
-      <DialogContent>
+      <DialogContent size="form">
         <form
           className="space-y-4"
           onSubmit={(event) => {
@@ -411,7 +411,7 @@ function VoidDialog({
   });
   return (
     <Dialog open={open} onOpenChange={(value) => (value ? null : onClose())}>
-      <DialogContent>
+      <DialogContent size="form">
         <form
           className="space-y-4"
           onSubmit={(event) => {

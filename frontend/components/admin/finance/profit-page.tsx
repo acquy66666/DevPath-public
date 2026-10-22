@@ -248,7 +248,7 @@ function Tile({
   tone?: "gain" | "loss";
 }) {
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-lg border bg-card p-4">
       <p className="text-sm text-muted-foreground">{label}</p>
       <p
         className={cn(
@@ -342,7 +342,7 @@ function Expenses({ year }: { year: number }) {
         ) : expenses.data.items.length === 0 ? (
           <EmptyState icon={Wallet} title="Chưa có khoản chi nào" hint="Thêm hóa đơn máy chủ, API AI, marketing… để tính lợi nhuận." />
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">
@@ -442,7 +442,7 @@ function ExpenseDialog({
 
   return (
     <Dialog open={expense !== null} onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent>
+      <DialogContent size="form">
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>{expense === "new" ? "Thêm khoản chi" : "Sửa khoản chi"}</DialogTitle>

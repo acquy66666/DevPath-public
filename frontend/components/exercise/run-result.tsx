@@ -60,7 +60,7 @@ export function RunResult({
     const current = Math.min(done + 1, total);
 
     return (
-      <div className="rounded-lg border bg-muted/30 p-4">
+      <div className="rounded-md border bg-muted/30 p-4">
         <p
           className="flex items-center gap-2 text-sm font-medium"
           // Announced rather than only drawn: a student using a screen reader
@@ -150,13 +150,13 @@ export function RunResult({
       {/* A compile error has no per-case results: the program never became a
           program. The compiler's own words are the only thing to show. */}
       {detail?.message && status === "done" ? (
-        <pre className="max-h-48 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">
+        <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs whitespace-pre-wrap">
           {detail.message}
         </pre>
       ) : null}
 
       {detail && detail.results.length > 0 ? (
-        <ul className="divide-y rounded-lg border">
+        <ul className="divide-y rounded-md border">
           {detail.results.map((result) => {
             const sample = byPosition.get(result.position);
             const caseTone = verdictTone(result.verdict);

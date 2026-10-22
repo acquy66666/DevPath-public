@@ -24,7 +24,7 @@ export function SubmissionHistory({
 }) {
   if (submissions.length === 0) {
     return (
-      <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+      <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
         Bạn chưa nộp bài nào. Viết code ở trên, chạy thử với test mẫu, rồi bấm
         “Nộp bài”.
       </p>
@@ -32,7 +32,7 @@ export function SubmissionHistory({
   }
 
   return (
-    <ul className="divide-y rounded-lg border">
+    <ul className="divide-y rounded-md border">
       {submissions.map((submission) => {
         const tone = verdictTone(submission.verdict);
         const selected = submission.id === selectedId;

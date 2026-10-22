@@ -68,7 +68,7 @@ export function CourseList() {
       {query.isPending ? (
         <div className="space-y-4">
           {[0, 1, 2].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-xl border bg-muted/40" />
+            <div key={row} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
           ))}
         </div>
       ) : query.isError ? (
@@ -83,7 +83,7 @@ export function CourseList() {
             <li key={course.id}>
               <Link
                 href={`/giang-day/${course.id}`}
-                className="block rounded-xl border p-4 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                className="block rounded-lg border p-4 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -137,7 +137,7 @@ function EmptyState() {
   return (
     <Card>
       <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-muted">
+        <div className="mb-2 flex size-10 items-center justify-center rounded-md bg-muted">
           <BookOpen className="size-5 text-muted-foreground" aria-hidden />
         </div>
         <CardTitle>Chưa có khóa học nào</CardTitle>

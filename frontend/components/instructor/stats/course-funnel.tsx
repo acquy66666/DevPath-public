@@ -78,7 +78,7 @@ export function CourseFunnelDialog({
         ) : null}
 
         {query.isPending ? (
-          <div className="h-48 animate-pulse rounded-lg bg-muted/40" />
+          <div className="h-48 animate-pulse rounded-md bg-muted/40" />
         ) : query.isError ? (
           <Alert variant="destructive">
             <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
@@ -103,8 +103,8 @@ export function CourseFunnelDialog({
                   <div
                     className={
                       drop === index
-                        ? "rounded-lg border border-amber-500/60 bg-amber-50 p-3 dark:bg-amber-950/30"
-                        : "rounded-lg border p-3"
+                        ? "rounded-md border border-amber-500/60 bg-amber-50 p-3 dark:bg-amber-950/30"
+                        : "rounded-md border p-3"
                     }
                   >
                     <div className="flex items-start justify-between gap-3">

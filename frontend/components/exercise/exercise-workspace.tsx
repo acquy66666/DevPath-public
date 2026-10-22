@@ -37,7 +37,7 @@ const CodeEditor = dynamic(
   () => import("@/components/exercise/code-editor").then((m) => m.CodeEditor),
   {
     ssr: false,
-    loading: () => <div className="h-[420px] animate-pulse rounded-lg bg-muted" />,
+    loading: () => <div className="h-[420px] animate-pulse rounded-md bg-muted" />,
   },
 );
 
@@ -218,7 +218,7 @@ export function ExerciseWorkspace({
   }
 
   if (!exercise.data) {
-    return <div className="h-96 animate-pulse rounded-xl bg-muted/50" aria-hidden />;
+    return <div className="h-96 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
   }
 
   const sampleCases = (samples.data ?? []).filter((row) => !row.is_hidden);
@@ -229,7 +229,7 @@ export function ExerciseWorkspace({
 
   return (
     <div className="space-y-6">
-      <section className="space-y-3 rounded-xl border p-4">
+      <section className="space-y-3 rounded-lg border p-4">
         <Markdown className="text-sm">{exercise.data.statement_md}</Markdown>
         <p className="text-xs text-muted-foreground">
           Giới hạn: {exercise.data.time_limit_ms} ms ·{" "}
@@ -243,7 +243,7 @@ export function ExerciseWorkspace({
           <h2 className="text-sm font-semibold">Test case mẫu</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {sampleCases.map((sample) => (
-              <li key={sample.id} className="space-y-1 rounded-lg border p-3 text-xs">
+              <li key={sample.id} className="space-y-1 rounded-md border p-3 text-xs">
                 <p className="text-muted-foreground">Input</p>
                 <pre className="overflow-x-auto rounded bg-muted/40 p-2 whitespace-pre-wrap">
                   {sample.sample_input || "(trống)"}
@@ -273,7 +273,7 @@ export function ExerciseWorkspace({
         </div>
 
         {code === null ? (
-          <div className="h-[420px] animate-pulse rounded-lg bg-muted" aria-hidden />
+          <div className="h-[420px] animate-pulse rounded-md bg-muted" aria-hidden />
         ) : (
           <CodeEditor
             ref={editor}

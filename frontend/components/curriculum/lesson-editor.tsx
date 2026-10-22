@@ -44,7 +44,7 @@ export function LessonEditor({
   if (query.isPending) {
     return (
       <div className="border-t p-3">
-        <div className="h-32 animate-pulse rounded-lg bg-muted/40" />
+        <div className="h-32 animate-pulse rounded-md bg-muted/40" />
       </div>
     );
   }

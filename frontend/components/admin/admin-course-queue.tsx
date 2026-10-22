@@ -143,9 +143,9 @@ function CourseRow({ course }: { course: AdminCourse }) {
   return (
     <Link
       href={`/quan-tri/khoa-hoc/${course.id}`}
-      className="flex gap-4 rounded-xl border p-3 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="flex gap-4 rounded-lg border p-3 transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      <div className="hidden aspect-video w-32 shrink-0 overflow-hidden rounded-lg bg-muted sm:block">
+      <div className="hidden aspect-video w-32 shrink-0 overflow-hidden rounded-md bg-muted sm:block">
         {course.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here
           <img src={course.thumbnail_url} alt="" className="size-full object-cover" />

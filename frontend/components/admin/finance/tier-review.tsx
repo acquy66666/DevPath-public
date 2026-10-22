@@ -100,7 +100,7 @@ export function TierReview() {
       {tiers.data ? (
         <ol className="grid gap-2 sm:grid-cols-5" aria-label="Bậc thang">
           {tiers.data.map((tier) => (
-            <li key={tier.id} className="rounded-xl border p-3 text-sm">
+            <li key={tier.id} className="rounded-lg border p-3 text-sm">
               <div className="flex items-start justify-between gap-1">
                 <span>
                   <span className="text-xs text-muted-foreground">Cấp {tier.rank}</span>
@@ -195,7 +195,7 @@ function EvaluationRow({ row, onDecide }: { row: Evaluation; onDecide: () => voi
   });
 
   return (
-    <li className="rounded-xl border">
+    <li className="rounded-lg border">
       <div className="flex flex-wrap items-start justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="font-medium">{row.instructor.full_name}</p>
@@ -270,7 +270,7 @@ function EvaluationRow({ row, onDecide }: { row: Evaluation; onDecide: () => voi
             {history.data && history.data.length > 0 ? (
               <ul className="space-y-2 text-sm">
                 {history.data.map((change) => (
-                  <li key={change.id} className="rounded-lg bg-muted/40 p-2">
+                  <li key={change.id} className="rounded-md bg-muted/40 p-2">
                     <span className="font-medium">
                       {change.from_tier?.name ?? "Khởi hành"} → {change.to_tier.name}
                     </span>{" "}
@@ -344,7 +344,7 @@ function DecisionDialog({
 
   return (
     <Dialog open={row !== null} onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent>
+      <DialogContent size="form">
         <form onSubmit={submit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>Đổi cấp cho {row?.instructor.full_name}</DialogTitle>
@@ -460,7 +460,7 @@ function TierEditDialog({ tier, onClose }: { tier: TierAdmin | null; onClose: ()
 
   return (
     <Dialog open={tier !== null} onOpenChange={(open) => (open ? null : onClose())}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto">
+      <DialogContent size="form" className="max-h-[85vh] overflow-y-auto">
         <form
           onSubmit={(event) => {
             event.preventDefault();

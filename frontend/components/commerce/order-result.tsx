@@ -126,7 +126,7 @@ export function OrderResult({ code }: { code: string | null }) {
   }
 
   if (!order.data) {
-    return <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />;
+    return <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />;
   }
 
   return <Receipt order={order.data} waiting={order.isFetching} />;

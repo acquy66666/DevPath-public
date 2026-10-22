@@ -45,7 +45,7 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
     <section
       aria-roledescription="carousel"
       aria-label="Tin nổi bật"
-      className="relative overflow-hidden rounded-2xl border bg-muted"
+      className="relative overflow-hidden rounded-xl border bg-muted"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}

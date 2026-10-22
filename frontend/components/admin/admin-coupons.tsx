@@ -199,7 +199,7 @@ function CouponRow({ coupon, onEdit }: { coupon: AdminCoupon; onEdit: () => void
   const { label, variant } = STATUS[coupon.status];
 
   return (
-    <div className="space-y-2 rounded-xl border p-3">
+    <div className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="flex flex-wrap items-center gap-2">
@@ -243,7 +243,7 @@ function CouponRow({ coupon, onEdit }: { coupon: AdminCoupon; onEdit: () => void
         </div>
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-destructive/5 p-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
           <span className="min-w-0 flex-1">
             {confirming === "end"
               ? `Kết thúc ${coupon.code} ngay bây giờ? Giỏ hàng đang áp mã sẽ không thanh toán được với mã này nữa.`
@@ -433,7 +433,7 @@ function CoursePicker({
   const chosenIds = new Set(chosen.map((course) => course.id));
 
   return (
-    <div className="space-y-2 rounded-lg border p-3">
+    <div className="space-y-2 rounded-md border p-3">
       {chosen.length > 0 ? (
         <ul className="flex flex-wrap gap-1.5">
           {chosen.map((course) => (

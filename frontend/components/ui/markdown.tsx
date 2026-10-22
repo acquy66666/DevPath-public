@@ -72,7 +72,7 @@ const components: Components = {
   code: ({ className, ...props }) => (
     <code
       {...withoutNode(props)}
-      className={cn("rounded bg-muted px-1 py-0.5 font-mono text-[0.85em]", className)}
+      className={cn("rounded-xs bg-muted px-1 py-0.5 font-mono text-[0.85em]", className)}
     />
   ),
   // A block's `<code>` is the same component as inline code; inside `<pre>`
@@ -80,19 +80,19 @@ const components: Components = {
   pre: (props) => (
     <pre
       {...withoutNode(props)}
-      className="overflow-x-auto rounded-lg bg-muted p-3 font-mono text-[0.85em] leading-normal [&>code]:rounded-none [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-[1em]"
+      className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-[0.85em] leading-normal [&>code]:rounded-none [&>code]:bg-transparent [&>code]:p-0 [&>code]:text-[1em]"
     />
   ),
   blockquote: (props) => (
     <blockquote
       {...withoutNode(props)}
-      className="border-l-2 pl-3 text-muted-foreground"
+      className="border-l-2 border-border-strong pl-3 text-muted-foreground"
     />
   ),
   a: (props) => (
     <a
       {...withoutNode(props)}
-      className="underline underline-offset-4"
+      className="text-link underline underline-offset-4 hover:decoration-2"
       target="_blank"
       rel="noreferrer noopener"
     />

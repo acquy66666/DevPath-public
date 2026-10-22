@@ -137,7 +137,7 @@ export function NotesPanel({
 
       <ul className="space-y-3">
         {notes.data?.map((note) => (
-          <li key={note.id} className="rounded-lg border p-3">
+          <li key={note.id} className="rounded-md border p-3">
             <div className="flex items-start justify-between gap-3">
               {timed ? (
                 <button

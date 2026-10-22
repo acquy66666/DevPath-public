@@ -104,7 +104,7 @@ export function AdminCategories() {
 
       <ul className="space-y-3" aria-busy={reorder.isPending}>
         {parents.map((parent, index) => (
-          <li key={parent.id} className="rounded-xl border">
+          <li key={parent.id} className="rounded-lg border">
             <CategoryRow
               category={parent}
               parents={parents}
@@ -377,7 +377,7 @@ function CategoryRow({
         </div>
       </div>
       {confirming ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-destructive/5 p-2 text-sm">
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
           <span className="min-w-0 flex-1">Xóa danh mục “{category.name}”?</span>
           <Button
             size="sm"

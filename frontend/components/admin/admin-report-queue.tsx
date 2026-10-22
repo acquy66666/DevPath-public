@@ -78,7 +78,7 @@ export function AdminReportQueue() {
       </h2>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-lg border p-0.5" role="group" aria-label="Hàng đợi">
+        <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Hàng đợi">
           {(
             [
               ["pending", "Chờ xử lý"],
@@ -189,7 +189,7 @@ function ReportCard({ report }: { report: AdminReport }) {
   const href = targetHref(report);
 
   return (
-    <article className="space-y-3 rounded-xl border p-4">
+    <article className="space-y-3 rounded-lg border p-4">
       <header className="flex flex-wrap items-center gap-2 text-sm">
         <Badge variant="destructive">{REPORT_REASON_LABELS[report.reason]}</Badge>
         <Badge variant="outline">{TARGET_LABELS[report.target_type]}</Badge>
@@ -202,7 +202,7 @@ function ReportCard({ report }: { report: AdminReport }) {
         ) : null}
       </header>
 
-      <div className="space-y-2 rounded-lg bg-muted/40 p-3 text-sm">
+      <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
         {target.exists ? (
           <>
             {target.course && report.target_type !== "course" ? (
@@ -305,7 +305,7 @@ function AuthorLine({ report }: { report: AdminReport }) {
         ) : null}
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-destructive/5 p-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2">
           <span className="min-w-0 flex-1 text-xs">
             Khóa {author.full_name}: đăng xuất khỏi mọi thiết bị và không đăng nhập được nữa.
           </span>

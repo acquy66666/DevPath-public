@@ -70,7 +70,7 @@ export function WishlistView() {
     return (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((row) => (
-          <div key={row} className="h-72 animate-pulse rounded-xl border bg-muted/40" />
+          <div key={row} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
         ))}
       </div>
     );
@@ -106,7 +106,7 @@ export function WishlistView() {
     return (
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {[0, 1, 2].map((row) => (
-          <div key={row} className="h-72 animate-pulse rounded-xl border bg-muted/40" />
+          <div key={row} className="h-72 animate-pulse rounded-lg border bg-muted/40" />
         ))}
       </div>
     );
@@ -114,7 +114,7 @@ export function WishlistView() {
 
   if (query.data.items.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-12 text-center">
+      <div className="rounded-lg border border-dashed p-12 text-center">
         <Heart className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
         <p className="font-medium">Chưa có khóa học nào được lưu</p>
         <p className="mt-1 text-sm text-muted-foreground">

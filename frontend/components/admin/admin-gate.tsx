@@ -26,7 +26,7 @@ export function AdminGate({ children }: { children: ReactNode }) {
   if (status === "loading") {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
-        <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />
+        <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
       </div>
     );
   }

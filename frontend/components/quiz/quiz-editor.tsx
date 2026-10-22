@@ -90,7 +90,7 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
   });
 
   if (quiz.isPending) {
-    return <div className="h-40 animate-pulse rounded-lg bg-muted/40" />;
+    return <div className="h-40 animate-pulse rounded-md bg-muted/40" />;
   }
 
   if (quiz.isError) {
@@ -104,8 +104,8 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
 
     return (
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-lg border border-dashed p-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+        <div className="flex items-start gap-3 rounded-md border border-dashed p-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
             <ListChecks className="size-4 text-muted-foreground" aria-hidden />
           </div>
           <div>
@@ -206,7 +206,7 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
 
       <ol className="space-y-2">
         {rows.map((row, index) => (
-          <li key={row.id} className="rounded-lg border p-3">
+          <li key={row.id} className="rounded-md border p-3">
             {editing?.id === row.id ? (
               <QuestionForm
                 quizId={data.id}

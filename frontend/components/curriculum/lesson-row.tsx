@@ -87,7 +87,7 @@ export function LessonRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={`rounded-lg border bg-background ${isDragging ? "opacity-40" : ""}`}
+      className={`rounded-md border bg-background ${isDragging ? "opacity-40" : ""}`}
     >
       <div className="flex items-center gap-2 p-2">
         <Button

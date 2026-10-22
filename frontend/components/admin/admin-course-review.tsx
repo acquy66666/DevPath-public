@@ -126,7 +126,7 @@ function CourseHeader({ course }: { course: AdminCourse }) {
         <img
           src={course.thumbnail_url}
           alt=""
-          className="aspect-video w-full max-w-md rounded-xl border object-cover"
+          className="aspect-video w-full max-w-md rounded-lg border object-cover"
         />
       ) : null}
       <div className="flex flex-wrap items-center gap-2">
@@ -336,12 +336,12 @@ function CurriculumPreview({ courseId }: { courseId: string }) {
       ) : null}
       {curriculum.isPending ? <ListSkeleton rows={2} height="h-12" /> : null}
       {curriculum.data && curriculum.data.sections.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+        <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
           Khóa học chưa có chương nào — đây thường là lý do nên từ chối.
         </p>
       ) : null}
       {curriculum.data && curriculum.data.sections.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-hidden rounded-md border">
           {curriculum.data.sections.map((section) => (
             <div key={section.id} className="border-b last:border-b-0">
               <p className="bg-muted/40 px-4 py-2 text-sm font-medium break-words">
@@ -403,7 +403,7 @@ function LessonPreview({ lessonId }: { lessonId: string }) {
           <AlertDescription>{apiErrorMessage(lesson.error)}</AlertDescription>
         </Alert>
       ) : null}
-      {lesson.isPending ? <div className="h-24 animate-pulse rounded-lg bg-muted/40" /> : null}
+      {lesson.isPending ? <div className="h-24 animate-pulse rounded-md bg-muted/40" /> : null}
       {lesson.data ? (
         lesson.data.type === "video" ? (
           lesson.data.video?.hls_url ? (

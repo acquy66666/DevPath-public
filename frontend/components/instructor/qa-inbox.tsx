@@ -132,13 +132,13 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
       {threads.isPending ? (
         <div className="space-y-3" aria-hidden>
           {[0, 1, 2].map((row) => (
-            <div key={row} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
+            <div key={row} className="h-24 animate-pulse rounded-md border bg-muted/40" />
           ))}
         </div>
       ) : null}
 
       {threads.data && threads.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-12 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
           <Inbox className="size-8 text-muted-foreground" aria-hidden />
           <p className="font-medium">
             {unanswered ? "Không còn câu hỏi nào chờ bạn trả lời" : "Chưa có câu hỏi nào"}

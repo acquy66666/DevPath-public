@@ -55,7 +55,7 @@ export function CatalogFilters({
       // Two across from the smallest screen up, with the search box and the
       // buttons spanning both: one field per row made a phone scroll a full
       // screen of filters before the first course.
-      className="grid grid-cols-2 gap-3 rounded-xl border p-4 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end"
+      className="grid grid-cols-2 gap-3 rounded-lg border p-4 lg:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))_auto] lg:items-end"
     >
       <div className="col-span-2 space-y-1.5 lg:col-span-1">
         <Label htmlFor="catalog-q">Tìm kiếm</Label>

@@ -176,13 +176,13 @@ function BannerRow({
   const { label, variant } = STATUS[banner.status];
 
   return (
-    <div className="space-y-2 rounded-xl border p-3">
+    <div className="space-y-2 rounded-lg border p-3">
       <div className="flex flex-wrap gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here */}
         <img
           src={banner.image_url}
           alt=""
-          className="aspect-[21/8] w-full rounded-lg border object-cover sm:w-56"
+          className="aspect-[21/8] w-full rounded-md border object-cover sm:w-56"
         />
         <div className="min-w-0 flex-1 space-y-1">
           <p className="flex flex-wrap items-center gap-2">
@@ -217,7 +217,7 @@ function BannerRow({
         </div>
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg bg-destructive/5 p-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
           <span className="min-w-0 flex-1">Xóa banner “{banner.title}” và ảnh của nó?</span>
           <Button size="sm" variant="destructive" onClick={() => remove.mutate()} disabled={remove.isPending}>
             {remove.isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}
@@ -325,7 +325,7 @@ function BannerForm({ banner, onDone }: { banner: AdminBanner | null; onDone: ()
         <Label htmlFor={fileId}>Ảnh</Label>
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element -- a local blob or a bucket URL
-          <img src={preview} alt="" className="aspect-[21/8] w-full rounded-lg border object-cover" />
+          <img src={preview} alt="" className="aspect-[21/8] w-full rounded-md border object-cover" />
         ) : null}
         <input
           id={fileId}

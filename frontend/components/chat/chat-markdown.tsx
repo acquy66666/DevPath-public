@@ -55,7 +55,7 @@ export function ChatMarkdown({
           ),
           pre: (props) => (
             <pre
-              className="overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs [&_code]:bg-transparent [&_code]:p-0"
+              className="overflow-x-auto rounded-md bg-muted p-3 font-mono text-xs [&_code]:bg-transparent [&_code]:p-0"
               {...props}
             />
           ),

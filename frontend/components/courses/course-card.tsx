@@ -21,7 +21,7 @@ export function CourseCard({ course, note }: { course: Course; note?: ReactNode 
   return (
     <Link
       href={`/khoa-hoc/${course.slug}`}
-      className="group flex h-full flex-col overflow-hidden rounded-xl border transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="group flex h-full flex-col overflow-hidden rounded-lg border transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <CourseCover
         thumbnailUrl={course.thumbnail_url}

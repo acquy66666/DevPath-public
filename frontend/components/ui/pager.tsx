@@ -1,5 +1,9 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+
 /**
  * "Trang 2 / 5" between two buttons, under a paged `{items, total, page,
  * page_size}` list. Draws nothing when everything fits on one page.
@@ -19,25 +23,29 @@ export function Pager({
   if (pageCount === 1) return null;
   return (
     <nav className="flex items-center justify-between gap-3 text-sm" aria-label="Phân trang">
-      <button
+      <Button
         type="button"
-        className="rounded-md px-2 py-1 hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+        variant="ghost"
+        size="sm"
         onClick={() => onPage(page - 1)}
         disabled={page <= 1}
       >
-        ← Trang trước
-      </button>
-      <span className="text-muted-foreground">
+        <ChevronLeft data-icon="inline-start" aria-hidden />
+        Trang trước
+      </Button>
+      <span className="text-muted-foreground tabular-nums">
         Trang {page} / {pageCount}
       </span>
-      <button
+      <Button
         type="button"
-        className="rounded-md px-2 py-1 hover:bg-muted disabled:pointer-events-none disabled:opacity-40"
+        variant="ghost"
+        size="sm"
         onClick={() => onPage(page + 1)}
         disabled={page >= pageCount}
       >
-        Trang sau →
-      </button>
+        Trang sau
+        <ChevronRight data-icon="inline-end" aria-hidden />
+      </Button>
     </nav>
   );
 }

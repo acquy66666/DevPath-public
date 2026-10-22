@@ -42,7 +42,7 @@ export function CouponBox({
   if (discount) {
     return (
       <div className="space-y-2">
-        <div className="flex items-center gap-2 rounded-lg border border-emerald-600/30 bg-emerald-600/5 p-3">
+        <div className="flex items-center gap-2 rounded-md border border-emerald-600/30 bg-emerald-600/5 p-3">
           <TicketPercent className="size-4 shrink-0 text-emerald-700" aria-hidden />
           <div className="min-w-0 flex-1 text-sm">
             <p className="font-medium">{discount.coupon.code}</p>

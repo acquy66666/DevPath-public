@@ -48,7 +48,7 @@ export function NotificationList() {
   const unreadCount = count.data?.count ?? 0;
 
   if (status === "loading") {
-    return <div className="h-64 animate-pulse rounded-xl bg-muted/50" aria-hidden />;
+    return <div className="h-64 animate-pulse rounded-lg bg-muted/50" aria-hidden />;
   }
 
   if (status === "anonymous") {
@@ -110,13 +110,13 @@ export function NotificationList() {
       {list.isPending ? (
         <div className="space-y-2" aria-hidden>
           {[0, 1, 2, 3].map((row) => (
-            <div key={row} className="h-16 animate-pulse rounded-lg bg-muted/40" />
+            <div key={row} className="h-16 animate-pulse rounded-md bg-muted/40" />
           ))}
         </div>
       ) : null}
 
       {list.data && list.data.total === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-12 text-center">
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
           <Bell className="size-8 text-muted-foreground" aria-hidden />
           <p className="font-medium">
             {unread ? "Bạn đã đọc hết thông báo" : "Chưa có thông báo nào"}
@@ -130,7 +130,7 @@ export function NotificationList() {
 
       {list.data && list.data.items.length > 0 ? (
         <ul
-          className={cn("divide-y rounded-xl border", list.isPlaceholderData && "opacity-60")}
+          className={cn("divide-y rounded-lg border", list.isPlaceholderData && "opacity-60")}
           aria-busy={list.isFetching}
         >
           {list.data.items.map((notification) => (

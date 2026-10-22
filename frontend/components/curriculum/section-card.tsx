@@ -67,7 +67,7 @@ export function SectionCard({
       style={{ transform: CSS.Translate.toString(transform), transition }}
       // The floating copy in the DragOverlay stands in for the row while it is
       // being dragged; leaving both at full opacity reads as two rows.
-      className={`rounded-xl border bg-card ${isDragging ? "opacity-40" : ""}`}
+      className={`rounded-lg border bg-card ${isDragging ? "opacity-40" : ""}`}
     >
       <div className="flex items-start gap-2 border-b p-3">
         <Button
@@ -249,7 +249,7 @@ function EmptyLessonSlot({ sectionId }: { sectionId: string }) {
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground transition-colors ${
+      className={`rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground transition-colors ${
         isOver ? "border-primary bg-primary/5 text-foreground" : ""
       }`}
     >

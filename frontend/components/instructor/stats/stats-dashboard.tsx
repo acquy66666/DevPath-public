@@ -118,7 +118,7 @@ export function StatsDashboard() {
               <AlertDescription>{apiErrorMessage(insights.error)}</AlertDescription>
             </Alert>
           ) : (
-            <div className="h-64 animate-pulse rounded-xl border bg-muted/40" />
+            <div className="h-64 animate-pulse rounded-lg border bg-muted/40" />
           )}
           <Card>
             <CardHeader>
@@ -156,10 +156,10 @@ function TierSummary() {
   return (
     <Link
       href="/giang-day/cap-bac"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4 transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
       <span className="flex items-center gap-3">
-        <span className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
           <Award className="size-5" aria-hidden />
         </span>
         <span>
@@ -503,7 +503,7 @@ export function PeriodPicker({
   onChange: (period: StatsPeriod) => void;
 }) {
   return (
-    <div role="group" aria-label="Khoảng thời gian" className="inline-flex rounded-lg border p-0.5">
+    <div role="group" aria-label="Khoảng thời gian" className="inline-flex rounded-md border p-0.5">
       {STATS_PERIODS.map((option) => (
         <button
           key={option.value}
@@ -529,10 +529,10 @@ function Skeleton() {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[0, 1, 2, 3, 4, 5, 6, 7].map((tile) => (
-          <div key={tile} className="h-24 animate-pulse rounded-xl border bg-muted/40" />
+          <div key={tile} className="h-24 animate-pulse rounded-lg border bg-muted/40" />
         ))}
       </div>
-      <div className="h-72 animate-pulse rounded-xl border bg-muted/40" />
+      <div className="h-72 animate-pulse rounded-lg border bg-muted/40" />
     </div>
   );
 }
@@ -541,7 +541,7 @@ function EmptyState() {
   return (
     <Card>
       <CardHeader>
-        <div className="mb-2 flex size-10 items-center justify-center rounded-lg bg-muted">
+        <div className="mb-2 flex size-10 items-center justify-center rounded-md bg-muted">
           <BarChart3 className="size-5 text-muted-foreground" aria-hidden />
         </div>
         <CardTitle>Chưa có gì để thống kê</CardTitle>

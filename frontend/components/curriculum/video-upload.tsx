@@ -112,7 +112,7 @@ export function VideoUpload({ lesson }: { lesson: Lesson }) {
   const busy = phase !== "idle";
 
   return (
-    <div className="space-y-3 rounded-lg border p-3">
+    <div className="space-y-3 rounded-md border p-3">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium">Video bài giảng</p>
         {asset ? <StatusPill asset={asset} /> : null}

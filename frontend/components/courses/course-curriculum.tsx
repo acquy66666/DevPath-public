@@ -51,7 +51,7 @@ export function CourseCurriculum({ curriculum }: { curriculum: Curriculum }) {
 
   if (lessonCount === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
+      <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
         Giảng viên đang xây dựng nội dung cho khóa học này.
       </div>
     );
@@ -63,7 +63,7 @@ export function CourseCurriculum({ curriculum }: { curriculum: Curriculum }) {
         {curriculum.sections.length} chương · {lessonCount} bài học
       </p>
 
-      <div className="overflow-hidden rounded-lg border">
+      <div className="overflow-hidden rounded-md border">
         {curriculum.sections.map((section, index) => (
           <details
             key={section.id}

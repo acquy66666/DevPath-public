@@ -60,7 +60,7 @@ export function ListSkeleton({ rows = 3, height = "h-24" }: { rows?: number; hei
   return (
     <div className="space-y-3" aria-hidden>
       {Array.from({ length: rows }, (_, row) => (
-        <div key={row} className={`${height} animate-pulse rounded-xl border bg-muted/40`} />
+        <div key={row} className={`${height} animate-pulse rounded-lg border bg-muted/40`} />
       ))}
     </div>
   );
@@ -76,7 +76,7 @@ export function EmptyState({
   hint: string;
 }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed px-4 py-12 text-center">
+    <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed px-4 py-12 text-center">
       <Icon className="size-8 text-muted-foreground" aria-hidden />
       <p className="font-medium">{title}</p>
       <p className="max-w-md text-sm text-muted-foreground">{hint}</p>

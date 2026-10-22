@@ -14,7 +14,7 @@ Một hai chữ trạng thái đặt cạnh tên một thứ: khóa học, đơn
 | `reward` *(thêm)* | `reward` / `reward-foreground` | "+30 XP" |
 | `streak` *(thêm)* | nền `reward-soft`, chữ `streak-text`, lửa `streak` | "7 ngày" |
 
-Biến thể *(thêm)* chưa có trong code; thêm ở task "Nền" của Phase 7, thay cho các class `bg-emerald-*`/`bg-amber-*` đang viết tay ở từng màn.
+Biến thể *(thêm)* có trong code từ task "Nền" (22/10/2026). Các màn còn class `bg-emerald-*`/`bg-amber-*` viết tay chuyển sang chúng khi nhóm màn của mình được thiết kế lại.
 
 ## Luật
 

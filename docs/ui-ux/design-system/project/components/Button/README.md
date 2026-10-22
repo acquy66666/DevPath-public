@@ -17,7 +17,7 @@ Nút cho mọi hành động; mặc định là nút trầm, `primary` chỉ dà
 
 ## Kích thước
 
-`sm` 32px · mặc định 36px · `lg` 44px · `icon` 36×36. **Đề xuất đổi so với code hiện tại** (32/28/36px): mặc định lên 36px, và nút chính trên điện thoại dùng `lg` để vùng chạm đủ 44px. Bo góc `radius-md`, chữ 14px đậm 600.
+`sm` 32px · mặc định 36px · `lg` 44px · `icon` 36×36 (code còn `xs` 28px, `icon-xs/sm/lg` 28/32/44px cho thanh công cụ). Đã vào code ở task "Nền" (22/10/2026; trước đó 32/28/36px). Nút chính trên điện thoại dùng `lg` để vùng chạm đủ 44px. Bo góc `radius-md`, chữ 14px đậm 600.
 
 ## Luật
 

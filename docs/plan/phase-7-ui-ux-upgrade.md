@@ -36,7 +36,16 @@ Thiết kế đầy đủ, gồm lý do, phản mục tiêu, bản đồ phản 
 
 ## Nền
 
-- [ ] Đưa token vào `app/globals.css` (`@theme`; xóa khối `[data-mascot]` tạm của Naomi và sửa test màu trong `lib/mascot/mascot.test.ts` cho đọc `@theme`), cập nhật toàn bộ `components/ui/*` (button, card, input, badge, tabs, dialog, alert, pager…). Header, footer, menu điện thoại theo design system. **Đo lại tràn ngang ở 360/375/1440 px** (header khách từng là điểm tràn)
+- [x] Đưa token vào `app/globals.css` (`@theme`; xóa khối `[data-mascot]` tạm của Naomi và sửa test màu trong `lib/mascot/mascot.test.ts` cho đọc `@theme`), cập nhật toàn bộ `components/ui/*` (button, card, input, badge, tabs, dialog, alert, pager…). Header, footer, menu điện thoại theo design system. **Đo lại tràn ngang ở 360/375/1440 px** (header khách từng là điểm tràn) — xong 22/10:
+  - **Token:** 82 bậc màu (`@theme static`), 82 token ngữ nghĩa (`:root` + `@theme inline`), 14 kiểu chữ, bo góc, bóng, thời lượng, đường cong. Khối `[data-mascot]` đã xóa. `lib/design/tokens.test.ts` đỏ khi `globals.css` lệch `tokens.json`, hoặc khi `components/ui` gọi màu gốc, hex, `black`/`white`, `leading-none`.
+  - **Lỗi tìm ra:** `cn()` (tailwind-merge) coi `text-body-sm` là màu chữ nên nuốt mất cỡ chữ. Sửa bằng `extendTailwindMerge` với tên của design system.
+  - **Thang bo góc:** đúng tên token (`rounded-lg` 14px, `rounded-xl` 20px). 184 class trong 81 tệp màn đổi tên lùi một bậc, nên pixel giữ nguyên.
+  - **`components/ui`:** 15 tệp theo design system. Nút 36px, ô nhập 40px/16px. Badge thêm 6 biến thể, Alert thêm 3 và `role` theo biến thể, Tabs thêm kiểu `line`, Dialog có `size="form"`.
+  - **Header:** hai link điều hướng; dưới `md` gom vào nút menu. Footer làm lại.
+  - **Tràn ngang:** 44 route × 360/375/1440 × 4 vai = **0/132** sau khi sửa 2 lượt tràn có từ Phase 6.5 (`sr-only` thoát khung cuộn của bảng thống kê giảng viên).
+  - **Kiểm:** `npm test` 26/26, lint + tsc sạch, build không mạng xanh, E2E 1 passed.
+  - **Artifact design system:** bản 12, thêm 4 preview.
+  - Bằng chứng: [`foundation.md`](../report/assets/phase-7/foundation.md)
 - [ ] Trạng thái toàn site: `app/not-found.tsx` + 2 trang 404 riêng (khóa học, chứng chỉ) có nhân vật `lost`; `error.tsx` có `sorry`; skeleton loading theo design system; mọi empty state có nhân vật + đạo cụ
 
 ## Thiết kế lại theo nhóm màn

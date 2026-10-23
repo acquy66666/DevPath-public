@@ -31,6 +31,7 @@ from app.models import (
 from app.services import orphans
 from app.services.storage import StoredObject
 from tests.api.fakes import FakeStorage
+from tests.api.test_video_upload import make_lesson, make_user
 
 NOW = datetime.now(UTC)
 OLD = timedelta(days=30)
@@ -171,6 +172,21 @@ def test_a_key_is_claimed_by_the_row_that_names_it() -> None:
     assert not ownership.claims("certificates/ABCDEFGHJKLMNPQR.txt")
 
 
+def test_a_lesson_picture_is_claimed_only_as_the_exact_file_an_article_names() -> None:
+    course = uuid.uuid4()
+    ownership = orphans.Ownership(
+        video_assets=frozenset(),
+        avatar_keys=frozenset(),
+        banner_keys=frozenset(),
+        certificate_codes=frozenset(),
+        lesson_image_keys=frozenset({f"lesson-images/{course}/a.png"}),
+    )
+
+    assert ownership.claims(f"lesson-images/{course}/a.png")
+    # Pasted, then deleted from the text before saving.
+    assert not ownership.claims(f"lesson-images/{course}/b.png")
+
+
 async def test_ownership_is_read_from_every_table_that_names_an_object(
     db_session: AsyncSession, storage: BucketStorage
 ) -> None:
@@ -195,6 +211,46 @@ async def test_ownership_is_read_from_every_table_that_names_an_object(
     assert {avatar, moved_avatar} <= ownership.avatar_keys
     assert banner in ownership.banner_keys
     assert code in ownership.certificate_codes
+
+
+async def test_a_lesson_picture_is_claimed_by_any_article_that_names_it(
+    db_session: AsyncSession, storage: BucketStorage
+) -> None:
+    owner = await make_user(db_session, "instructor")
+    lesson = await make_lesson(db_session, owner, lesson_type="article")
+    course = uuid.uuid4()
+    first = f"lesson-images/{course}/{_hex()}.png"
+    titled = f"lesson-images/{course}/{_hex()}.gif"
+    moved = f"lesson-images/{course}/{_hex()}.webp"
+    lesson.article_content = (
+        f"Mở terminal:\n\n![Cửa sổ terminal]({storage.public_url(first)})\n\n"
+        f'Rồi bấm chạy: ![Nút chạy]({storage.public_url(titled)} "Nút Run")\n\n'
+        # Written while the bucket was served from another address: still ours.
+        f"![Cũ](https://old-cdn.example/devpath-media/{moved})"
+    )
+    await db_session.flush()
+
+    ownership = await orphans.load_ownership(db_session)
+
+    assert {first, titled, moved} <= ownership.lesson_image_keys
+    assert ownership.claims(titled)
+
+
+async def test_a_lesson_picture_nothing_names_is_marked_like_any_orphan(
+    db_session: AsyncSession, storage: BucketStorage
+) -> None:
+    owner = await make_user(db_session, "instructor")
+    lesson = await make_lesson(db_session, owner, lesson_type="article")
+    kept = f"lesson-images/{uuid.uuid4()}/{_hex()}.png"
+    lesson.article_content = f"![Ảnh]({storage.public_url(kept)})"
+    await db_session.flush()
+    storage.put(kept)
+    dropped = storage.put(f"lesson-images/{uuid.uuid4()}/{_hex()}.png")
+
+    report = await orphans.sweep(db_session, storage, apply=True, now=NOW)
+
+    assert [obj.key for obj in report.marked] == [dropped]
+    assert report.deleted == []
 
 
 # --- Marking, quarantine, deleting ------------------------------------------

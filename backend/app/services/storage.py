@@ -160,6 +160,36 @@ def banner_key(filename: str) -> str:
     return f"{BANNER_PREFIX}/{uuid.uuid4().hex}{suffix}"
 
 
+#: Pictures inside article lessons. One folder per course rather than per
+#: lesson: an instructor who moves a paragraph, picture and all, into another
+#: lesson of the same course should not be moving it out of its folder.
+LESSON_IMAGE_PREFIX = "lesson-images"
+
+#: What an article may show, and the extension its key gets. The extension
+#: comes from the type, not the filename: a pasted screenshot arrives named
+#: `image.png` whatever it is, and the type is what the bucket serves back.
+#: GIF joins the avatar types because a few seconds of screen recording is
+#: the most common picture in a programming lesson. SVG stays out, as for
+#: avatars: it can carry script.
+LESSON_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+
+#: 5 MB, like an avatar. A screenshot is well under one; a GIF that is not
+#: under five is a video, and the lesson has a video type for that.
+MAX_LESSON_IMAGE_BYTES = 5 * 1024 * 1024
+
+
+def lesson_image_key(course_id: uuid.UUID, content_type: str) -> str:
+    """Where one picture of an article lands: a fresh name every time, so a
+    replaced picture is never served from a stale cache."""
+    suffix = LESSON_IMAGE_TYPES[content_type]
+    return f"{LESSON_IMAGE_PREFIX}/{course_id}/{uuid.uuid4().hex}{suffix}"
+
+
 #: `DeleteObjects` takes at most this many keys per request.
 DELETE_BATCH = 1000
 

@@ -9,13 +9,14 @@ a picture no row names. And every "delete the old one" in the services is best
 effort (`storage.delete_quietly`), so a bucket that refused once leaves a file
 behind for good.
 
-What counts as claimed, family by family -- the four prefixes this platform
+What counts as claimed, family by family -- the five prefixes this platform
 writes, and nothing else in the bucket is ever looked at:
 
   videos/<asset id>/...         a `video_assets` row with that id
   avatars/<user id>/<file>      exactly the picture some `users.avatar_url` names
   banners/<file>                exactly the picture some `banners.image_url` names
   certificates/<code>.pdf       a `certificates` row with that code
+  lesson-images/<course>/<file> exactly the picture some article's Markdown names
 
 Then the rules that keep a mistake here from being permanent -- the bucket
 has no versioning configured, and the nightly backup is of the database, not
@@ -40,6 +41,7 @@ of the files:
 from __future__ import annotations
 
 import logging
+import re
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
@@ -48,8 +50,13 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Banner, Certificate, OrphanObject, User, VideoAsset
-from app.services.storage import BANNER_PREFIX, ObjectStorage, StoredObject
+from app.models import Banner, Certificate, Lesson, OrphanObject, User, VideoAsset
+from app.services.storage import (
+    BANNER_PREFIX,
+    LESSON_IMAGE_PREFIX,
+    ObjectStorage,
+    StoredObject,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,8 +64,15 @@ VIDEOS = "videos/"
 AVATARS = "avatars/"
 BANNERS = f"{BANNER_PREFIX}/"
 CERTIFICATES = "certificates/"
+LESSON_IMAGES = f"{LESSON_IMAGE_PREFIX}/"
 #: With the slash: `videos` alone would also list `videosX/...`.
-MANAGED_PREFIXES = (VIDEOS, AVATARS, BANNERS, CERTIFICATES)
+MANAGED_PREFIXES = (VIDEOS, AVATARS, BANNERS, CERTIFICATES, LESSON_IMAGES)
+
+#: A lesson-image key anywhere in an article's Markdown, whatever host its URL
+#: names -- for the same reason as `_key_in_url`. It stops at whatever cannot
+#: be in a key this platform mints (`)`, a space, a quote), so a title after
+#: the URL is not read as part of it.
+_LESSON_IMAGE_IN_TEXT = re.compile(re.escape(LESSON_IMAGES) + r"[A-Za-z0-9._/-]+")
 
 #: Longer than any signed upload URL lives (`upload_url_ttl_seconds`, an hour)
 #: with room for a browser that took its time.
@@ -96,6 +110,7 @@ class Ownership:
     avatar_keys: frozenset[str]
     banner_keys: frozenset[str]
     certificate_codes: frozenset[str]
+    lesson_image_keys: frozenset[str] = frozenset()
 
     def claims(self, key: str) -> bool:
         if key.startswith(VIDEOS):
@@ -107,6 +122,8 @@ class Ownership:
         if key.startswith(CERTIFICATES):
             name = key[len(CERTIFICATES) :]
             return name.endswith(".pdf") and name.removesuffix(".pdf") in self.certificate_codes
+        if key.startswith(LESSON_IMAGES):
+            return key in self.lesson_image_keys
         raise ValueError(f"not a key this sweeper manages: {key}")
 
 
@@ -115,6 +132,12 @@ async def load_ownership(session: AsyncSession) -> Ownership:
     avatars = await session.scalars(select(User.avatar_url).where(User.avatar_url.is_not(None)))
     banners = await session.scalars(select(Banner.image_url))
     codes = await session.scalars(select(Certificate.code))
+    # Every article that mentions the folder at all, published or not: a draft
+    # is an instructor's work in progress, and its pictures are as claimed as
+    # those of a live course.
+    articles = await session.scalars(
+        select(Lesson.article_content).where(Lesson.article_content.contains(LESSON_IMAGES))
+    )
     return Ownership(
         video_assets=frozenset(str(asset) for asset in assets),
         avatar_keys=frozenset(
@@ -124,6 +147,9 @@ async def load_ownership(session: AsyncSession) -> Ownership:
             key for url in banners if (key := _key_in_url(url, BANNERS)) is not None
         ),
         certificate_codes=frozenset(codes),
+        lesson_image_keys=frozenset(
+            key for text in articles for key in _LESSON_IMAGE_IN_TEXT.findall(text or "")
+        ),
     )
 
 

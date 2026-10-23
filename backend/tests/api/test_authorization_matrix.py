@@ -404,6 +404,12 @@ RULES: dict[str, Rule] = {
         params=VIDEO,
         body={"filename": "bai.mp4", "content_type": "video/mp4", "size_bytes": 1000},
     ),
+    "POST /lessons/{lesson_id}/images": Owned(
+        "teacher",
+        AUTHORS,
+        params={"lesson_id": "article_lesson"},
+        body={"content_type": "image/png", "size_bytes": 1000},
+    ),
     "GET /video-assets/{video_asset_id}": Owned("teacher", AUTHORS),
     "POST /video-assets/{video_asset_id}/complete": Owned("teacher", AUTHORS),
     "POST /video-assets/{video_asset_id}/retry": Owned("teacher", AUTHORS),

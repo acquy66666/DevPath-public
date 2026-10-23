@@ -40,6 +40,7 @@ published and the asker being enrolled), not this module's.
 """
 
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 
@@ -102,6 +103,21 @@ def transcript_of(lesson: Lesson, storage: ObjectStorage | None) -> str | None:
         raise TranscriptUnavailable(f"{key}: {exc}") from exc
 
 
+#: `![alt](address "title")`, the Markdown of a picture.
+_PICTURE = re.compile(r"!\[([^\]]*)\]\([^)]*\)")
+
+
+def article_words(markdown: str) -> str:
+    """An article with each picture reduced to its description.
+
+    The address of an uploaded picture is fifty characters of folder and hex:
+    embedded, it would be a chunk's worth of noise every chatbot question is
+    compared against, and quoted back it would be a link nobody asked for.
+    The description is the part a person wrote, so it stays.
+    """
+    return _PICTURE.sub(lambda match: match.group(1), markdown)
+
+
 def lesson_text(lesson: Lesson, transcript: str | None = None) -> str:
     """The words of a lesson, or empty if it has none.
 
@@ -114,7 +130,7 @@ def lesson_text(lesson: Lesson, transcript: str | None = None) -> str:
     inside it. It costs a few tokens per chunk and buys every chunk a heading.
     """
     if lesson.type == "article":
-        body = (lesson.article_content or "").strip()
+        body = article_words(lesson.article_content or "").strip()
     elif lesson.type == "video":
         body = (transcript or "").strip()
     else:

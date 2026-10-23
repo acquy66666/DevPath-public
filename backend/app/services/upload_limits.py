@@ -40,6 +40,8 @@ VIDEO_BYTES_WINDOW_SECONDS = DAY_SECONDS
 AVATAR_KEY = "upload:avatar:user:{user}"
 VIDEO_TICKETS_KEY = "upload:video:user:{user}"
 VIDEO_BYTES_KEY = "upload:video-bytes:user:{user}"
+LESSON_IMAGE_WINDOW_SECONDS = DAY_SECONDS
+LESSON_IMAGE_KEY = "upload:lesson-image:user:{user}"
 
 GIGABYTE = 1024 * 1024 * 1024
 
@@ -73,6 +75,20 @@ async def enforce_avatar_ticket_limit(limiter: RateLimiter, user_id: uuid.UUID) 
     if wait:
         raise UploadRateLimitedError(
             f"Bạn đã xin tải ảnh đại diện lên {limit} lần trong 24 giờ. "
+            f"Thử lại sau khoảng {_wait(wait)}.",
+            retry_after=wait,
+        )
+
+
+async def enforce_lesson_image_ticket_limit(limiter: RateLimiter, user_id: uuid.UUID) -> None:
+    """Count one picture-in-an-article ticket against the account's day."""
+    limit = get_settings().lesson_image_upload_tickets_per_user
+    wait = await limiter.count(
+        LESSON_IMAGE_KEY.format(user=user_id), limit, LESSON_IMAGE_WINDOW_SECONDS
+    )
+    if wait:
+        raise UploadRateLimitedError(
+            f"Bạn đã tải {limit} ảnh vào bài đọc trong 24 giờ. "
             f"Thử lại sau khoảng {_wait(wait)}.",
             retry_after=wait,
         )

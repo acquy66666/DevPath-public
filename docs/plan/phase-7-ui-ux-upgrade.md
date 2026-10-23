@@ -74,7 +74,13 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Trình hiển thị:** `remark-gfm` (bảng, gạch ngang, việc cần làm); ảnh chỉ vẽ khi nằm trên kho media của site, nơi khác thành liên kết (`lib/markdown/images.ts`).
   - **Backend:** `lesson-images/<course_id>/…` (PNG/JPEG/WebP/GIF, 5 MB ký vào URL, 200 vé/ngày); không bảng ảnh — job dọn mồ côi nhận ảnh khi còn bài đọc nhắc tới key; ingest RAG chỉ giữ mô tả ảnh.
   - **Kiểm:** pytest nhóm liên quan 297 passed, `npm test` 56/56, chạy thật 18/18 (`article-editor/run.cjs`), E2E 1 passed. Bằng chứng: [`article-editor.md`](../report/assets/phase-7/article-editor.md)
-- [ ] Nhóm 3 — Nộp bài code ⭐: Monaco, kết quả từng test qua WebSocket, nhân vật theo **7 verdict** + `grading` theo tiến độ "test k/n"
+- [x] Nhóm 3 — Nộp bài code ⭐: Monaco, kết quả từng test qua WebSocket, nhân vật theo **7 verdict** + `grading` theo tiến độ "test k/n" — xong 24/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/BKT1qVijkW67ekwt8LLY36), 5 artboard; thành phần "khối kết quả" có 12 trạng thái chọn ở Tweaks. Dữ liệu thật của bài "đếm số chẵn" trên CSDL demo. Bản trong repo ở `docs/ui-ux/code-submission/canvas/`. User duyệt kèm **chế độ toàn màn hình** (ngoài plan).
+  - **Kết quả:** dải màu theo 7 verdict, có Naomi theo verdict (`lib/grading/verdicts.ts`: `VERDICT_MOOD`, `VERDICT_CLASSES`). Thanh tiến độ mỗi test một đoạn, ở lại làm hình tóm tắt. Test sai đầu tiên được tô và có dòng chỉ tới; nếu là test mẫu thì ô so đầu ra tự mở. Chạy thử **không có Naomi**; mở lại từ lịch sử thì Naomi đứng yên.
+  - **Khung code:** thẻ có tab `main.py`, Monaco theo theme đọc từ biến `--color-*`, font Geist Mono. Toàn màn hình từ 1024 px là cùng một cây React (`display: contents`), nên Monaco không dựng lại. Với bài code, "Đánh dấu hoàn thành" thành nút viền.
+  - **Lỗi tìm ra:** CSS rút `#ffffff` thành `#fff` làm theme âm thầm rơi về mặc định; dòng lịch sử ở 375 px rớt nút xuống hàng.
+  - **Kiểm:** `npm test` 69/69 (13 mới), lint + tsc sạch, `check.cjs` 15/15 (phản ứng đúng một lần, giảm chuyển động, toàn màn hình, Esc, 375 px), tràn ngang 0/132, E2E 1 passed không sửa spec. Ảnh trước/sau 14 + 15.
+  - Bằng chứng: [`code-submission.md`](../report/assets/phase-7/code-submission.md)
 - [ ] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn)
 - [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ
 - [ ] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐

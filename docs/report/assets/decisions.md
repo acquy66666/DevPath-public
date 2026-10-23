@@ -904,3 +904,19 @@ Task ngoài kế hoạch Phase 7, user yêu cầu sau khi tự soạn thử mộ
 
 **GIF được nhận, SVG thì không.** Vài giây quay màn hình là kiểu ảnh hay gặp nhất trong bài lập trình. SVG có thể chứa script, mà bucket trả object về đúng kiểu nó được gửi lên. Đây cùng lý do với avatar.
 
+## Nộp bài code: Naomi chỉ cho lần nộp thật, toàn màn hình không dựng lại Monaco (24/10/2026)
+
+Nhóm màn 3 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/code-submission.md` + `code-submission/`.
+
+**Chạy thử không có Naomi.** Bản đồ phản ứng gắn nhân vật vào verdict, và chạy thử cũng ra verdict. Nhưng chạy thử là diễn tập: chỉ test mẫu, không vào lịch sử, có thể bấm hàng chục lần. Nếu Naomi nhảy mừng cả khi chạy thử đúng 2/2 test mẫu, thì cú nhảy khi nộp bài đúng hết mọi test mất ý nghĩa. Vì vậy chạy thử có dải kết quả gọn, nói số test mẫu đúng và nhắc nộp để chấm với test ẩn.
+
+**Naomi phản ứng theo id bài nộp trang vừa gửi, không theo việc kết quả có trên màn hình.** `reactTo` chỉ khác null khi bài đang hiện chính là bài trang này vừa gửi và đang theo dõi qua WebSocket. Mở lại một bài từ lịch sử thì `reactTo` null, nên Naomi đứng yên ở mood của verdict, đúng "tư thế tĩnh tương ứng" của thiết kế mục 5. Component `<Mascot>` đã phản ứng một lần cho mỗi cặp (mood, event): `grading` rồi verdict là hai phản ứng của cùng một bài nộp.
+
+**Toàn màn hình là cùng một cây React, đổi lớp, không phải một dialog.** Dời Monaco sang một cây khác (portal, dialog) là dựng lại editor, mất con trỏ và lịch sử hoàn tác giữa lúc học viên đang sửa bài. Ở chế độ thường, hai lớp bọc dùng `display: contents` nên không tạo hộp. Ở chế độ toàn màn hình, chúng thành hai cột flex. React giữ nguyên mọi phần tử vì chỉ `className` đổi. Script kiểm so đúng phần tử `.monaco-editor` trước và sau. Nút chỉ hiện từ 1024 px: dưới đó hai cột không vừa.
+
+**Màu Monaco đọc từ biến CSS lúc chạy, không viết trong component.** Monaco tự vẽ và chỉ nhận mã hex. Component đọc `--color-*` của `@theme static` khi Monaco khởi tạo. Nhờ vậy `globals.css` vẫn là nơi duy nhất viết màu. Thiếu một biến thì theme vẫn được khai báo, chỉ là bản `vs` trơn: editor không bao giờ hỏng vì màu.
+
+**Mã verdict lạ được vẽ như SE.** Grader thêm mã mới trước khi frontend biết thì dải kết quả màu xám, câu "không phải lỗi của bạn". Đó là cách đọc trung thực nhất của "trang này không biết mã đó nghĩa là gì".
+
+**Với bài code, "Đánh dấu hoàn thành" thành nút viền.** Bài code tự hoàn thành khi bài nộp được AC, trong cùng transaction với verdict. Nếu nút này vẫn là nút chính, màn có hai nút chính cạnh "Nộp bài". Nút vẫn bấm được (user chốt 05/10: chứng chỉ giữ kiểu Udemy).
+

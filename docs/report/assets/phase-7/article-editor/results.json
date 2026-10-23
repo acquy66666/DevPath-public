@@ -1,0 +1,95 @@
+{
+  "ranAt": "2026-10-23T04:01:47.462Z",
+  "results": [
+    {
+      "name": "Nút Chữ đậm bọc đúng phần được chọn",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Ctrl+Z hoàn tác cú bấm thanh công cụ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Phím tắt Ctrl+B làm chữ đậm",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Danh sách đánh số đánh 1. 2. 3.",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Nút Bảng chèn bảng và chọn sẵn ô tiêu đề đầu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Dán ảnh: tải lên bucket rồi thay chỗ giữ bằng địa chỉ thật",
+      "ok": true,
+      "detail": "PUT 200 → http://minio.localhost:9000/devpath-media/lesson-images/66cdd22a-43d9-46b6-9ae1-ad4e572513f8/275cda2b8b8542769b61ed9ed170857b.png"
+    },
+    {
+      "name": "Mô tả ảnh lấy từ tên tệp",
+      "ok": true,
+      "detail": "terminal hello"
+    },
+    {
+      "name": "Ảnh đọc lại được từ bucket",
+      "ok": true,
+      "detail": "200 image/png"
+    },
+    {
+      "name": "Xem trước vẽ ảnh đã tải",
+      "ok": true,
+      "detail": "naturalWidth 720"
+    },
+    {
+      "name": "Xem trước hiện bảng thật (remark-gfm)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Ảnh trang khác thành liên kết",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Ảnh trang khác không bị tải",
+      "ok": true,
+      "detail": "0 request"
+    },
+    {
+      "name": "Toàn màn hình ở 1440 px: soạn và xem trước cạnh nhau",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Esc thoát toàn màn hình",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Lưu xong, bài đọc trên máy chủ chứa đúng địa chỉ ảnh",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "375 px: không tràn ngang",
+      "ok": true,
+      "detail": "0px"
+    },
+    {
+      "name": "375 px: ô soạn và thanh công cụ nằm gọn trong khung bài học",
+      "ok": true,
+      "detail": "-12px"
+    },
+    {
+      "name": "375 px xem trước: bảng cuộn trong khung, trang không tràn",
+      "ok": true,
+      "detail": "0px"
+    }
+  ]
+}

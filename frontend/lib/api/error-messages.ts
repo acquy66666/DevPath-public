@@ -87,6 +87,7 @@ const MESSAGES: Record<string, string> = {
   STORAGE_ERROR: "Kho lưu trữ đang trục trặc. Thử lại sau ít phút.",
   VIDEO_ASSET_NOT_FOUND: "Không tìm thấy video này. Có thể nó đã được thay bằng video khác.",
   LESSON_NOT_VIDEO: "Chỉ bài học dạng video mới gắn được video.",
+  LESSON_NOT_ARTICLE: "Chỉ bài đọc mới chèn được ảnh.",
   INVALID_VIDEO_STATUS:
     "Video đang ở trạng thái khác nên không làm được thao tác này. Tải lại trang nhé.",
 

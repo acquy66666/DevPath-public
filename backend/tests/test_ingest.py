@@ -24,7 +24,7 @@ from app.core.exceptions import NotFoundError
 from app.models import Category, Course, CourseSection, DocChunk, Lesson, User, VideoAsset
 from app.models.rag import EMBEDDING_DIMENSIONS
 from app.services.chunking import chunk_text
-from app.services.ingest import ingest_course
+from app.services.ingest import article_words, ingest_course
 from app.services.llm import LLMUnavailableError
 from tests.api.fakes import FakeStorage
 
@@ -506,3 +506,20 @@ async def test_an_unchanged_transcript_is_not_embedded_twice(
 
     assert again.calls == []
     assert report.unchanged == 2
+
+
+def test_a_picture_reaches_the_chatbot_as_its_description_only() -> None:
+    article = (
+        "Mở terminal rồi gõ lệnh.\n\n"
+        "![Cửa sổ terminal sau khi chạy python](https://site.example/devpath-media/"
+        'lesson-images/0f0f/abc.png "Terminal")\n\n'
+        "Xem thêm [tài liệu](https://docs.python.org/3/) và ảnh không mô tả ![](x.png)."
+    )
+
+    words = article_words(article)
+
+    assert "lesson-images" not in words
+    assert "Cửa sổ terminal sau khi chạy python" in words
+    # A link is a word the author wrote; only pictures lose their address.
+    assert "[tài liệu](https://docs.python.org/3/)" in words
+    assert "x.png" not in words

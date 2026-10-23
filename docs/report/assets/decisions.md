@@ -880,3 +880,27 @@ Task "Component `components/mascot/`" của Phase 7. Số đo, ảnh và cách c
 - Hẹn giờ dự phòng (`endsAt + 1 s`) đưa Naomi về tư thế tĩnh nếu animation bị dừng hay hủy từ bên ngoài. Chrome không báo `finished` cho animation đang dừng bị tua quá điểm cuối; lúc chụp khung hình, component từng kẹt ở "đang phản ứng" vì chuyện này.
 
 Giới hạn còn lại: React tách một boundary đã xong ra cuối luồng HTML khi phần HTML trước nó vượt 12.800 byte (`progressiveChunkSize`). Hình khi đó hiện bằng một script inline trước hydrate, nên trình duyệt tắt JS không thấy nó. Trang đo có một Naomi sau một đoạn HTML ngắn, và hình nằm ngay trong HTML. Trang `/dev/naomi` có 32 hình, và cả 32 bị tách ra cuối. Khi gắn Naomi vào trang thật (404, empty state), đo lại trên trang đó.
+
+## Bài đọc: Markdown có xem trước, ảnh chỉ từ kho nhà (23/10/2026)
+
+Task ngoài kế hoạch Phase 7, user yêu cầu sau khi tự soạn thử một khóa. Bằng chứng: `docs/report/assets/phase-7/article-editor.md` + `article-editor/`.
+
+**Giữ Markdown, không chuyển sang trình soạn WYSIWYG (Tiptap, Lexical…).**
+- `lessons.article_content` là Markdown. Ingest RAG cắt đoạn trên chính văn bản đó, và trang học vẽ nó bằng `<Markdown>`.
+- WYSIWYG kéo theo một trong hai cái giá. Lưu HTML/JSON thì phải đổi định dạng lưu, viết lại ingest và có một đường render thứ hai, dễ lệch với trang học. Lưu Markdown qua bộ chuyển đổi thì có những định dạng soạn được mà không lưu được.
+- Ô soạn có xem trước dùng **đúng component của trang học** nên thấy gì được nấy, thêm 0 KB cho trình soạn và không đổi một dòng dữ liệu nào.
+- Thanh công cụ chỉ viết cú pháp, qua `execCommand("insertText")` để Ctrl+Z còn hoạt động. API này bị đánh dấu cũ, nhưng là cách duy nhất chèn chữ vào `<textarea>` mà giữ được lịch sử hoàn tác. Trình duyệt không có thì rơi về cập nhật state, chỉ mất phần hoàn tác.
+
+**Không có bảng ảnh.** Avatar và banner có một cột trỏ tới ảnh. Ảnh của bài đọc thì nằm giữa văn bản, và một ảnh có thể được chép sang bài khác. Bảng `lesson_images` sẽ phải đồng bộ với văn bản mỗi lần lưu, và sẽ sai ngay khi giảng viên dán một dòng ảnh từ bài này sang bài kia. Thay vào đó, job dọn mồ côi coi **văn bản là nguồn sự thật**: key nào còn xuất hiện trong một bài đọc thì còn được dùng. Cái giá là một câu `LIKE '%lesson-images/%'` mỗi đêm trên bảng `lessons`, nhỏ so với việc liệt kê cả bucket.
+
+**Một thư mục cho mỗi khóa, không phải mỗi bài.** Chuyển một đoạn có ảnh sang bài khác cùng khóa là việc thường gặp, và ảnh không nên vì thế mà "ở sai chỗ". Đuôi tệp lấy theo kiểu, không theo tên: ảnh dán từ clipboard luôn tên `image.png`.
+
+**Ảnh chỉ được vẽ khi nằm trên kho media của DevPath; nơi khác thành liên kết.**
+- Markdown cho tác giả trỏ ảnh tới bất kỳ đâu, và trình duyệt vẽ ảnh là đã báo cho chủ địa chỉ đó ai đang đọc, từ IP nào, lúc nào.
+- Ở đây tác giả và người đọc là hai người khác nhau: giảng viên viết cho cả lớp, học viên hỏi giảng viên trong Hỏi đáp.
+- Trang chính sách bảo mật hứa "không gắn công cụ theo dõi của bên thứ ba". Một ảnh 1 px trong bài đọc sẽ phá lời hứa đó mà DevPath không hay biết.
+- CSP `img-src … https:` vẫn để mở (avatar Google cần), nên chặn phải nằm ở trình hiển thị.
+- Cái giá: ảnh minh họa từ trang khác phải tải lại lên DevPath mới hiện được.
+
+**GIF được nhận, SVG thì không.** Vài giây quay màn hình là kiểu ảnh hay gặp nhất trong bài lập trình. SVG có thể chứa script, mà bucket trả object về đúng kiểu nó được gửi lên. Đây cùng lý do với avatar.
+

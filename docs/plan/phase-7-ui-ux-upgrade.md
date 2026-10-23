@@ -69,6 +69,11 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** `truncate` trong thẻ làm trang 360 px tràn 13 px (2/132 → 0/132 sau khi đổi sang `line-clamp-1`); skeleton "Học tiếp theo" thiếu dòng mô tả.
   - **Kiểm:** `npm test` 35/35, lint + tsc sạch, tràn ngang 0/132, E2E 1 passed. Ảnh trước/sau 18 + 18.
   - **Để lại:** ảnh banner mẫu của `seed_banners` vẫn gradient tím (dữ liệu) — sinh lại trước khi chụp ảnh gate. Bằng chứng: [`public-pages.md`](../report/assets/phase-7/public-pages.md)
+- [x] Ngoài kế hoạch (user yêu cầu 23/10) — Bài đọc: ô soạn có xem trước + chèn ảnh — xong 23/10. **Ngoại lệ luật "backend đứng yên"**: cần endpoint vé tải ảnh.
+  - **Ô soạn** `components/curriculum/article-editor.tsx`: tab Soạn/Xem trước (xem trước = chính `<Markdown>` của trang học), Toàn màn hình hai cột ở ≥ 1024 px, thanh công cụ viết cú pháp qua `execCommand("insertText")` nên Ctrl+Z còn chạy; dán/kéo thả/nút "Chèn ảnh" → giữ chỗ → `POST /lessons/{id}/images` → PUT thẳng bucket → thay bằng địa chỉ.
+  - **Trình hiển thị:** `remark-gfm` (bảng, gạch ngang, việc cần làm); ảnh chỉ vẽ khi nằm trên kho media của site, nơi khác thành liên kết (`lib/markdown/images.ts`).
+  - **Backend:** `lesson-images/<course_id>/…` (PNG/JPEG/WebP/GIF, 5 MB ký vào URL, 200 vé/ngày); không bảng ảnh — job dọn mồ côi nhận ảnh khi còn bài đọc nhắc tới key; ingest RAG chỉ giữ mô tả ảnh.
+  - **Kiểm:** pytest nhóm liên quan 297 passed, `npm test` 56/56, chạy thật 18/18 (`article-editor/run.cjs`), E2E 1 passed. Bằng chứng: [`article-editor.md`](../report/assets/phase-7/article-editor.md)
 - [ ] Nhóm 3 — Nộp bài code ⭐: Monaco, kết quả từng test qua WebSocket, nhân vật theo **7 verdict** + `grading` theo tiến độ "test k/n"
 - [ ] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn)
 - [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ

@@ -1,5 +1,8 @@
+import { ImageIcon } from "lucide-react";
 import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown";
+import remarkGfm from "remark-gfm";
 
+import { classifyImage, mediaOrigins } from "@/lib/markdown/images";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,6 +21,14 @@ import { cn } from "@/lib/utils";
  *
  * Code is sized in `em`, so the same styles serve a compact statement
  * (`className="text-sm"`) and an article at body size.
+ *
+ * GitHub's extensions are on (`remark-gfm`): tables, ~~strikethrough~~, task
+ * lists and bare links -- an instructor pasting a table from any Markdown
+ * editor expects a table, not a row of pipes.
+ *
+ * Pictures are drawn only from this platform's own media storage
+ * (`lib/markdown/images.ts`); an image anywhere else is shown as a link, so
+ * an author cannot learn who reads their text by hiding a picture in it.
  */
 export function Markdown({
   children,
@@ -28,7 +39,9 @@ export function Markdown({
 }) {
   return (
     <div className={cn("space-y-3 leading-relaxed text-pretty break-words", className)}>
-      <ReactMarkdown components={components}>{children}</ReactMarkdown>
+      <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
+        {children}
+      </ReactMarkdown>
     </div>
   );
 }
@@ -43,6 +56,63 @@ function withoutNode<Props extends ExtraProps>(props: Props): Omit<Props, "node"
   return rest;
 }
 
+/** Read once: both are build-time values. */
+const MEDIA_ORIGINS = mediaOrigins();
+
+/**
+ * Inside a paragraph, so spans only: a `<figure>` in a `<p>` is invalid HTML
+ * and a hydration error. The description shows under the picture for
+ * sighted readers; screen readers already hear it as the alt text.
+ */
+function Picture({ src, alt }: { src?: string; alt?: string }) {
+  const source = classifyImage(src, MEDIA_ORIGINS);
+  const description = alt?.trim() ?? "";
+
+  if (source.kind === "uploading") {
+    return (
+      <span className="flex items-center gap-2 rounded-md border border-dashed border-border-strong p-4 text-sm text-muted-foreground">
+        <ImageIcon className="size-4 shrink-0" aria-hidden />
+        Đang tải ảnh lên…
+      </span>
+    );
+  }
+
+  if (source.kind === "external") {
+    const label = `Ảnh ngoài: ${description || "không có mô tả"}`;
+    return source.href ? (
+      <a
+        href={source.href}
+        target="_blank"
+        rel="noreferrer noopener"
+        className="inline-flex items-center gap-1 text-link underline underline-offset-4 hover:decoration-2"
+      >
+        <ImageIcon className="size-4 shrink-0" aria-hidden />
+        {label}
+      </a>
+    ) : (
+      <span className="text-muted-foreground">[{label}]</span>
+    );
+  }
+
+  return (
+    <span className="block py-1">
+      {/* eslint-disable-next-line @next/next/no-img-element -- bucket URLs of any size, not optimisable here */}
+      <img
+        src={source.src}
+        alt={description}
+        loading="lazy"
+        decoding="async"
+        className="mx-auto block h-auto max-h-[36rem] w-auto max-w-full rounded-md border border-border"
+      />
+      {description && description !== "Ảnh" ? (
+        <span aria-hidden className="mt-1.5 block text-center text-sm text-muted-foreground">
+          {description}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 // Headings sit one level down: the page's own h1 is the lesson title.
 const heading = "font-semibold not-first:pt-2";
 
@@ -55,10 +125,15 @@ const components: Components = {
   h6: (props) => <h6 {...withoutNode(props)} className={heading} />,
   // Authors break lines inside a paragraph and expect to see them broken.
   p: (props) => <p {...withoutNode(props)} className="whitespace-pre-line" />,
-  ul: (props) => (
+  // A task list (`- [x] …`) carries its own checkbox instead of a bullet.
+  ul: ({ className, ...props }) => (
     <ul
       {...withoutNode(props)}
-      className="list-disc space-y-1 pl-5 marker:text-muted-foreground"
+      className={
+        className?.includes("contains-task-list")
+          ? "space-y-1"
+          : "list-disc space-y-1 pl-5 marker:text-muted-foreground"
+      }
     />
   ),
   ol: (props) => (
@@ -68,6 +143,28 @@ const components: Components = {
     />
   ),
   strong: (props) => <strong {...withoutNode(props)} className="font-semibold" />,
+  del: (props) => <del {...withoutNode(props)} className="text-muted-foreground" />,
+  hr: (props) => <hr {...withoutNode(props)} className="my-2 border-border" />,
+  input: (props) => (
+    <input {...withoutNode(props)} className="mr-2 size-4 translate-y-0.5 accent-primary" />
+  ),
+  img: ({ src, alt }) => <Picture src={typeof src === "string" ? src : undefined} alt={alt} />,
+  // `relative`: an `sr-only` inside an `overflow-x-auto` box widens the page
+  // unless the box positions it.
+  table: (props) => (
+    <div className="relative max-w-full overflow-x-auto rounded-md border border-border">
+      <table {...withoutNode(props)} className="w-full border-collapse text-[0.95em]" />
+    </div>
+  ),
+  th: (props) => (
+    <th
+      {...withoutNode(props)}
+      className="border-b border-border bg-muted px-3 py-2 text-left font-semibold"
+    />
+  ),
+  td: (props) => (
+    <td {...withoutNode(props)} className="border-t border-border px-3 py-2 align-top" />
+  ),
   // Keeps the `language-*` class of a fenced block: it names the language.
   code: ({ className, ...props }) => (
     <code

@@ -164,6 +164,10 @@ class Settings(BaseSettings):
     avatar_upload_tickets_per_user: int = 20
     video_upload_tickets_per_user: int = 60
     video_upload_bytes_per_user: int = 10 * 1024 * 1024 * 1024
+    #   Pictures in articles: a course written in one sitting is a few dozen
+    #   lessons with a handful of screenshots each. 200 a day at 5 MB is at
+    #   most 1 GB -- a tenth of what the video budget allows.
+    lesson_image_upload_tickets_per_user: int = 200
 
     # VNPay. Empty until somebody registers a merchant account at
     # sandbox.vnpayment.vn; `vnpay_enabled` is what the payment route checks,

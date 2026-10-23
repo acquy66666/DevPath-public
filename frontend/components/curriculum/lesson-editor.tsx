@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
 import { useId, useState } from "react";
 
+import { ArticleEditor } from "@/components/curriculum/article-editor";
 import { ExerciseEditor } from "@/components/exercise/exercise-editor";
 import { TranscriptUpload } from "@/components/curriculum/transcript-upload";
 import { VideoUpload } from "@/components/curriculum/video-upload";
@@ -12,7 +13,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getLesson, updateLesson, type Lesson } from "@/lib/api/curriculum";
@@ -91,6 +91,7 @@ function LessonForm({
   const [isPreview, setIsPreview] = useState(lesson.is_preview);
   const [content, setContent] = useState(lesson.article_content ?? "");
   const [titleError, setTitleError] = useState<string | null>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   const save = useMutation({
     mutationFn: () =>
@@ -140,13 +141,13 @@ function LessonForm({
       {lesson.type === "article" ? (
         <div className="space-y-2">
           <Label htmlFor={contentId}>Nội dung bài đọc</Label>
-          <Textarea
+          <ArticleEditor
             id={contentId}
+            lessonId={lesson.id}
             value={content}
-            onChange={(event) => setContent(event.target.value)}
-            rows={8}
-            placeholder="Viết nội dung bài học ở đây. Markdown được hỗ trợ."
+            onChange={setContent}
             disabled={save.isPending}
+            onUploadingChange={setUploadingImages}
           />
         </div>
       ) : lesson.type === "code_exercise" ? (
@@ -191,13 +192,16 @@ function LessonForm({
             if (error) return;
             save.mutate();
           }}
-          disabled={save.isPending}
+          // Saving while a picture uploads would save its placeholder.
+          disabled={save.isPending || uploadingImages}
         >
           {save.isPending ? (
             <>
               <Loader2 className="animate-spin" aria-hidden />
               Đang lưu…
             </>
+          ) : uploadingImages ? (
+            "Đang tải ảnh…"
           ) : (
             "Lưu bài học"
           )}

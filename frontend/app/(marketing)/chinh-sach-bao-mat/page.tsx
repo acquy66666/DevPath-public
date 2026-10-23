@@ -70,6 +70,10 @@ export default function PrivacyPolicyPage() {
             chuyện.
           </li>
           <li>
+            <strong>Nội dung giảng viên đăng:</strong> thông tin khóa học, bài đọc cùng ảnh chèn
+            trong bài, video, transcript, bài tập và câu hỏi trắc nghiệm.
+          </li>
+          <li>
             <strong>Mua khóa học:</strong> đơn hàng, số tiền, mã giảm giá đã dùng, và thông báo kết
             quả mà VNPay gửi về. Số thẻ hay tài khoản ngân hàng được nhập trên trang của VNPay; DevPath
             không nhận và không lưu các thông tin đó.
@@ -92,7 +96,9 @@ export default function PrivacyPolicyPage() {
         </Bullets>
         <p>
           DevPath không bán dữ liệu của bạn, không hiển thị quảng cáo, và không gắn công cụ theo dõi
-          hay phân tích của bên thứ ba.
+          hay phân tích của bên thứ ba. Ảnh trong bài đọc, đề bài và Hỏi đáp chỉ được tải từ kho lưu
+          trữ của DevPath; ảnh trỏ tới trang khác hiện thành liên kết, để trang đó không biết ai
+          đang đọc.
         </p>
       </Section>
 

@@ -1,9 +1,10 @@
 "use client";
 
-import Editor, { loader, type OnMount } from "@monaco-editor/react";
+import Editor, { loader, type BeforeMount, type OnMount } from "@monaco-editor/react";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 
 /**
  * Monaco, served from this origin rather than from a CDN.
@@ -43,9 +44,78 @@ function useDarkMode(): boolean {
   return dark;
 }
 
+/**
+ * The editor's light theme, in the design system's colours.
+ *
+ * Monaco paints on its own and wants hex values, so they are read from the
+ * palette variables app/globals.css declares (`@theme static`) rather than
+ * written here: the stylesheet stays the only place a colour is spelled.
+ * If any of them is missing the theme is Monaco's own `vs` under our name --
+ * plainer, never broken.
+ */
+const THEME = "devpath-light";
+
+/** `#fff` → `#ffffff`: the stylesheet is minified, and Monaco takes six digits only. */
+function longHex(value: string): string {
+  const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(value);
+  return short ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}` : value;
+}
+
+function defineTheme(monaco: Parameters<BeforeMount>[0]) {
+  const css = getComputedStyle(document.documentElement);
+  const step = (name: string) => longHex(css.getPropertyValue(`--color-${name}`).trim());
+  const names = [
+    "slate-0", "slate-25", "slate-50", "slate-100", "slate-300", "slate-400", "slate-600",
+    "slate-700", "slate-900", "jade-50", "jade-100", "jade-300", "jade-600", "jade-700",
+    "rose-700", "amber-700",
+  ];
+  const c = Object.fromEntries(names.map((name) => [name, step(name)]));
+  if (!Object.values(c).every((value) => /^#[0-9a-f]{6}$/i.test(value))) {
+    monaco.editor.defineTheme(THEME, { base: "vs", inherit: true, rules: [], colors: {} });
+    return;
+  }
+  const fg = (name: string) => c[name].slice(1);
+
+  monaco.editor.defineTheme(THEME, {
+    base: "vs",
+    inherit: true,
+    rules: [
+      { token: "", foreground: fg("slate-900") },
+      { token: "keyword", foreground: fg("jade-700") },
+      { token: "comment", foreground: fg("slate-600"), fontStyle: "italic" },
+      { token: "string", foreground: fg("rose-700") },
+      { token: "number", foreground: fg("amber-700") },
+      { token: "delimiter", foreground: fg("slate-700") },
+    ],
+    colors: {
+      "editor.background": c["slate-0"],
+      "editor.foreground": c["slate-900"],
+      "editorLineNumber.foreground": c["slate-400"],
+      "editorLineNumber.activeForeground": c["slate-700"],
+      "editor.lineHighlightBackground": c["slate-25"],
+      "editor.lineHighlightBorder": c["slate-50"],
+      "editor.selectionBackground": c["jade-100"],
+      "editor.inactiveSelectionBackground": c["jade-50"],
+      "editorCursor.foreground": c["jade-600"],
+      "editorIndentGuide.background1": c["slate-100"],
+      "editorIndentGuide.activeBackground1": c["slate-300"],
+      "editorBracketMatch.background": c["jade-50"],
+      "editorBracketMatch.border": c["jade-300"],
+    },
+  });
+}
+
+/** Geist Mono, the design system's code face, with its metric-matched fallback. */
+function monoFamily(): string {
+  const family = getComputedStyle(document.documentElement).getPropertyValue("--font-geist-mono").trim();
+  return family ? `${family}, monospace` : "monospace";
+}
+
 export interface CodeEditorHandle {
   /** Replace everything in the editor — "restore the starter code", say. */
   setValue: (next: string) => void;
+  /** Put the cursor in the editor. */
+  focus: () => void;
 }
 
 export interface CodeEditorProps {
@@ -53,7 +123,11 @@ export interface CodeEditorProps {
   initialValue: string;
   onChange: (value: string) => void;
   language?: string;
-  height?: number;
+  /**
+   * Sizes the box: a fixed height by default, or `flex-1 min-h-0` inside a
+   * column that gives it the rest of the screen.
+   */
+  className?: string;
   ref?: Ref<CodeEditorHandle>;
 }
 
@@ -76,7 +150,7 @@ export function CodeEditor({
   initialValue,
   onChange,
   language = "python",
-  height = 420,
+  className,
   ref,
 }: CodeEditorProps) {
   const dark = useDarkMode();
@@ -87,22 +161,30 @@ export function CodeEditor({
       editor.current?.setValue(next);
       onChange(next);
     },
+    focus: () => editor.current?.focus(),
   }));
 
   return (
-    <div className="overflow-hidden rounded-md border" style={{ height }}>
+    <div className={cn("h-80 overflow-hidden sm:h-[420px]", className)}>
       <Editor
         height="100%"
         language={language}
         defaultValue={initialValue}
-        onMount={(instance) => {
+        beforeMount={defineTheme}
+        onMount={(instance, monaco) => {
           editor.current = instance;
+          // Measured with the fallback face if Geist Mono was still on its
+          // way; measured again once it is here, or the cursor drifts off the
+          // letters it sits between.
+          void document.fonts?.ready.then(() => monaco.editor.remeasureFonts());
         }}
         onChange={(next) => onChange(next ?? "")}
-        theme={dark ? "vs-dark" : "light"}
+        theme={dark ? "vs-dark" : THEME}
         loading={<Skeleton className="size-full rounded-none" />}
         options={{
           fontSize: 14,
+          lineHeight: 22,
+          fontFamily: monoFamily(),
           // A beginner's exercise is short; a minimap over twenty lines is
           // decoration that costs a fifth of the width.
           minimap: { enabled: false },

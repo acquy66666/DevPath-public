@@ -308,6 +308,8 @@ export function LearnView({
                   key={lesson.data.id}
                   lessonId={lesson.data.id}
                   accessToken={accessToken as string}
+                  title={lesson.data.title}
+                  context={course.data.title}
                   // Solving it finishes the lesson, and the worker wrote that
                   // down in the same transaction as the verdict. The page only
                   // has to go and look: the tick, the "x/y bài" counter and the
@@ -343,7 +345,10 @@ export function LearnView({
 
               <div className="flex flex-wrap items-center gap-3">
                 <Button
-                  variant={finished ? "outline" : "default"}
+                  // A code exercise finishes itself on an accepted submission,
+                  // and "Nộp bài" is that screen's one primary button; ticking
+                  // it by hand stays possible (certificates work the Udemy way).
+                  variant={finished || lesson.data.type === "code_exercise" ? "outline" : "default"}
                   onClick={() => setCompleted.mutate(!finished)}
                   disabled={setCompleted.isPending}
                 >
@@ -384,6 +389,10 @@ export function LearnView({
                 {setCompleted.isError ? (
                   <p className="text-sm text-destructive">
                     {apiErrorMessage(setCompleted.error)}
+                  </p>
+                ) : lesson.data.type === "code_exercise" && !finished ? (
+                  <p className="text-caption text-muted-foreground">
+                    Bài code tự hoàn thành khi bạn nộp đúng mọi test.
                   </p>
                 ) : null}
               </div>

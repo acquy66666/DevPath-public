@@ -1,0 +1,1413 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-24T18:00:13.655Z",
+  "data": {
+    "slug": "python-co-ban-cho-nguoi-moi-bat-dau",
+    "cert": "WHVUV5UGNQD33F39",
+    "learnSlug": "python-co-ban-cho-nguoi-moi-bat-dau",
+    "lessons": {
+      "video": "adde9550-8db2-44c4-b0b7-b5cf7256925f",
+      "article": "a9381ddb-048d-4514-a0af-182bd183e658",
+      "quiz": "97722b42-16e6-45bc-9a1b-441325b74c86",
+      "code_exercise": "e0fca157-69b5-4fd4-ae58-20996fd0f618"
+    },
+    "courseId": "1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+    "statementId": null
+  },
+  "results": [
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/khoa-hoc?q=khongtimthayxyz",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/cert/WHVUV5UGNQD33F39",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/cert/KHONGCOMANAY0000",
+      "status": 404,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/dang-nhap",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/dang-ky",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/tro-thanh-giang-vien",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/chinh-sach-bao-mat",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 360,
+      "url": "/khong-co-trang-nay",
+      "status": 404,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc?q=khongtimthayxyz",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/cert/WHVUV5UGNQD33F39",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/cert/KHONGCOMANAY0000",
+      "status": 404,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/dang-nhap",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/dang-ky",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/tro-thanh-giang-vien",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/chinh-sach-bao-mat",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 375,
+      "url": "/khong-co-trang-nay",
+      "status": 404,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc?q=khongtimthayxyz",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/cert/WHVUV5UGNQD33F39",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/cert/KHONGCOMANAY0000",
+      "status": 404,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/dang-nhap",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/dang-ky",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/tro-thanh-giang-vien",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/chinh-sach-bao-mat",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "width": 1440,
+      "url": "/khong-co-trang-nay",
+      "status": 404,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "guest",
+      "consoleErrors": [
+        "http://localhost:3000/ Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc?q=khongtimthayxyz Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/bang-xep-hang Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/WHVUV5UGNQD33F39 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-ky Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/tro-thanh-giang-vien Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/chinh-sach-bao-mat Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc-cua-toi Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/ Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc?q=khongtimthayxyz Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/bang-xep-hang Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/WHVUV5UGNQD33F39 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-ky Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/tro-thanh-giang-vien Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/chinh-sach-bao-mat Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc-cua-toi Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/ Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc?q=khongtimthayxyz Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/bang-xep-hang Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/WHVUV5UGNQD33F39 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/cert/KHONGCOMANAY0000 Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/dang-ky Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/tro-thanh-giang-vien Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/chinh-sach-bao-mat Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc-cua-toi Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/khong-co-trang-nay Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/gio-hang",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/yeu-thich",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/thong-bao",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/ho-so",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=adde9550-8db2-44c4-b0b7-b5cf7256925f",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=97722b42-16e6-45bc-9a1b-441325b74c86",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=e0fca157-69b5-4fd4-ae58-20996fd0f618",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 360,
+      "url": "/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/gio-hang",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/yeu-thich",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/thong-bao",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/ho-so",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=adde9550-8db2-44c4-b0b7-b5cf7256925f",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=97722b42-16e6-45bc-9a1b-441325b74c86",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=e0fca157-69b5-4fd4-ae58-20996fd0f618",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 375,
+      "url": "/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/khoa-hoc-cua-toi",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/gio-hang",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/yeu-thich",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/thong-bao",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/ho-so",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/bang-xep-hang",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=adde9550-8db2-44c4-b0b7-b5cf7256925f",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=a9381ddb-048d-4514-a0af-182bd183e658",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=97722b42-16e6-45bc-9a1b-441325b74c86",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=e0fca157-69b5-4fd4-ae58-20996fd0f618",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "width": 1440,
+      "url": "/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "student",
+      "consoleErrors": [
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+        "http://localhost:3000/khoa-hoc/python-co-ban-cho-nguoi-moi-bat-dau Failed to load resource: the server responded with a status of 404 (Not Found)",
+        "http://localhost:3000/thanh-toan/ket-qua?vnp_TxnRef=KHONGCO Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)"
+      ]
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day/thong-ke",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day/hoi-dap",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day/cap-bac",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day/moi",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 360,
+      "url": "/giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/thong-ke",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/hoi-dap",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/cap-bac",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/moi",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 375,
+      "url": "/giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/thong-ke",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/hoi-dap",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/cap-bac",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/moi",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "width": 1440,
+      "url": "/giang-day/1fcef1d9-cf34-4ecf-89c1-e98af369aac9",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "instructor",
+      "consoleErrors": [
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/doanh-thu",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/xep-hang",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/cap-giang-vien",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/thanh-toan",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/loi-nhuan",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/bao-cao",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/nguoi-dung",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/danh-muc",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/ma-giam-gia",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 360,
+      "url": "/quan-tri/banner",
+      "status": 200,
+      "scrollWidth": 360,
+      "clientWidth": 360,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/doanh-thu",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/xep-hang",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/cap-giang-vien",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/thanh-toan",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/loi-nhuan",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/bao-cao",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/nguoi-dung",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/danh-muc",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/ma-giam-gia",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 375,
+      "url": "/quan-tri/banner",
+      "status": 200,
+      "scrollWidth": 375,
+      "clientWidth": 375,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/doanh-thu",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/xep-hang",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/cap-giang-vien",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/thanh-toan",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/loi-nhuan",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/khoa-hoc",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/bao-cao",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/nguoi-dung",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/danh-muc",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/ma-giam-gia",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "width": 1440,
+      "url": "/quan-tri/banner",
+      "status": 200,
+      "scrollWidth": 1440,
+      "clientWidth": 1440,
+      "overflow": false,
+      "offenders": []
+    },
+    {
+      "role": "admin",
+      "consoleErrors": [
+        "http://localhost:3000/dang-nhap Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ]
+    }
+  ]
+}

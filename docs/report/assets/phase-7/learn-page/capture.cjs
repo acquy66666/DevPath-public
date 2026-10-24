@@ -306,7 +306,10 @@ async function openConversation(page, title) {
       await region.getByRole("button", { name: "Gửi câu hỏi" }).click();
       // Once the sources are in and the first words have arrived.
       await page
-        .waitForFunction(() => /Đang đọc \d+ bài/.test(document.body.innerText), null, { timeout: 60_000 })
+        // "Đang đọc 6 bài: …" before the redesign, "Đọc 6 bài liên quan" after.
+        .waitForFunction(() => /Đang đọc \d+ bài|Đọc \d+ bài liên quan/.test(document.body.innerText), null, {
+          timeout: 60_000,
+        })
         .catch(() => console.log("  (không bắt được lúc đang trả lời)"));
       await shoot(page, "7-tro-giang-dang-tra-loi-1440", { fullPage: false });
       await region.getByRole("button", { name: "Gửi câu hỏi" }).waitFor({ timeout: 120_000 });

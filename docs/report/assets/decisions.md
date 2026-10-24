@@ -920,3 +920,23 @@ Nhóm màn 3 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/code-sub
 
 **Với bài code, "Đánh dấu hoàn thành" thành nút viền.** Bài code tự hoàn thành khi bài nộp được AC, trong cùng transaction với verdict. Nếu nút này vẫn là nút chính, màn có hai nút chính cạnh "Nộp bài". Nút vẫn bấm được (user chốt 05/10: chứng chỉ giữ kiểu Udemy).
 
+
+## Trang học: mục lục gập theo chương, Naomi là gương mặt của trợ giảng (25/10/2026)
+
+Nhóm màn 4 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/learn-page.md` + `learn-page/`. Backend không đổi.
+
+**"x/y bài" chỉ viết một lần trên trang.** Số này nằm ở thanh khóa học trên cùng. Mục lục ghi "4 chương · 18 bài", mỗi chương ghi "3/3". Lý do thứ nhất là người đọc chỉ cần một con số tiến độ. Lý do thứ hai là E2E luồng vàng tìm đúng chữ "1/2 bài", nên hai chỗ cùng chữ là lỗi "strict mode" của Playwright. Script kiểm bắt được một lỗi như vậy lúc làm: phần chữ ẩn cho trình đọc màn hình của từng chương từng ghi "3/3 bài đã xong", tức là có 5 chỗ khớp "x/y bài". Giờ chữ ẩn là "Đã xong 3/3".
+
+**Mục lục mở chương đang học, gập các chương khác.** Khóa 18 bài liệt kê hết thì bài đang học bị đẩy khỏi cột dính bên phải, và trên điện thoại mọi thứ dưới bài học bị đẩy xuống rất xa. Học viên mở thêm chương nào thì chương đó giữ nguyên. Đi sang bài thuộc chương đang gập (bằng "Bài tiếp theo") thì chương đó tự mở. Việc này được điều chỉnh ngay trong lúc render khi bài đổi, không dùng effect, nên không có khung hình nào mà dòng đang học bị ẩn.
+
+**"Bài trước" / "Bài tiếp theo" là link, tính từ mục lục đã có trên trang.** Không cần request mới. Vì là link nên nút back của trình duyệt đi lùi từng bài, và bấm vào thì trang cuộn lên đầu bài mới. Bấm trong mục lục thì vẫn giữ vị trí cuộn như cũ: đó là chọn bài trong khi đang nhìn mục lục.
+
+**Mỗi màn một nút chính, và nút chính đổi theo việc học.** Bài video và bài đọc chưa xong thì nút chính là "Đánh dấu hoàn thành". Xong rồi thì "Bài tiếp theo" thành nút chính, vì đó là việc tiếp theo. Bài code và quiz tự hoàn thành (AC, hoặc làm đạt) và có nút chính riêng ("Nộp bài"). Với hai loại này, đánh dấu tay là nút viền và "Bài tiếp theo" giữ màu phụ. Quiz trước đây vẫn có nút "Đánh dấu hoàn thành" màu chính cạnh nút nộp, tức là hai nút chính trên một màn.
+
+**Naomi là gương mặt của trợ giảng, đứng ở đầu khung chat.** Naomi `thinking` khi đang tra cứu và soạn câu trả lời, `answer` (cầm sách mở) khi câu trả lời trích được nguồn trong khóa, `rest` khi chưa hỏi gì, câu hỏi ngoài phạm vi, hoặc câu trả lời bị dừng/lỗi. Mỗi câu hỏi là một sự kiện cho `thinking`, mỗi câu trả lời là một sự kiện cho `answer`. Mở lại cuộc trò chuyện từ lịch sử thì Naomi đứng yên. Vì Naomi đã ở đầu khung, phần trống của khung chat không vẽ thêm Naomi và câu trả lời không có avatar riêng. Câu từ chối nhận ra bằng đúng luật của backend (`chat.is_refusal`: cụm "ngoài phạm vi tài liệu" trong câu đầu), có test đối chiếu với `chat.py`.
+
+**Lúc đang trả lời, trang hiện ba bước: tra cứu tài liệu khóa học → đọc N bài liên quan → soạn câu trả lời.** Trước đây chỉ có spinner và một dòng liệt kê sáu tên bài. Ba bước này đi theo đúng các sự kiện SSE có sẵn (`sources` rồi `delta`). Chúng cho người xem thấy phần truy xuất của RAG (điểm nhấn ⭐) đang làm gì, ngay trong lúc nó làm.
+
+**Naomi `graduate` chỉ phản ứng khi khóa vừa xong trong phiên đó.** Trang phải đã thấy khóa chưa xong trước. Mở lại một khóa đã xong thì Naomi đứng yên trong banner, cạnh nút "Xem chứng chỉ". Banner dùng màu phần thưởng (nghệ nhạt) vì chứng chỉ là phần thưởng. Khóa từng xong rồi bị bỏ tick một bài thì chứng chỉ vẫn còn, và link "Xem chứng chỉ" chuyển về thanh khóa học. Không bao giờ có hai link cùng lúc.
+
+**Hộp thư Hỏi đáp của giảng viên đổi theo.** `QaThreadView` dùng chung cho trang học và `/giang-day/hoi-dap`. Trên trang học, nút "Gửi câu trả lời" là nút phụ vì việc chính của màn là bài học. Trong hộp thư của giảng viên, trả lời là việc chính nên vẫn là nút chính.

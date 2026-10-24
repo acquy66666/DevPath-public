@@ -81,7 +81,14 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** CSS rút `#ffffff` thành `#fff` làm theme âm thầm rơi về mặc định; dòng lịch sử ở 375 px rớt nút xuống hàng.
   - **Kiểm:** `npm test` 69/69 (13 mới), lint + tsc sạch, `check.cjs` 15/15 (phản ứng đúng một lần, giảm chuyển động, toàn màn hình, Esc, 375 px), tràn ngang 0/132, E2E 1 passed không sửa spec. Ảnh trước/sau 14 + 15.
   - Bằng chứng: [`code-submission.md`](../report/assets/phase-7/code-submission.md)
-- [ ] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn)
+- [x] Nhóm 4 — Trang học: video, bài đọc, mục lục, ghi chú, Hỏi đáp, **trợ giảng AI** ⭐ (`thinking` khi stream, `answer` khi có nguồn) — xong 25/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/Ah6qN7TNcWZQzEuYYcoUS4), 6 artboard (video + ghi chú, bài đọc + Hỏi đáp + trợ giảng, 375 px, trợ giảng 4 trạng thái, Hỏi đáp, trạng thái). Dữ liệu thật của khóa Python trên CSDL dev. Bản trong repo ở `docs/ui-ux/learn-page/canvas/`. User duyệt 25/10.
+  - **Khung trang:** thanh khóa học (ảnh bìa nhỏ, tiến độ; "x/y bài" chỉ viết ở đây), đầu bài "Chương · Bài k/n" + chip loại/độ dài/"Tiếp tục từ", video trong thẻ có "Ghi chú tại mm:ss", bài đọc `body-lg` trong thẻ. **Mới:** "Bài trước" / "Bài tiếp theo" (tính từ mục lục, `lib/learn/position.ts`); xong bài thì "Bài tiếp theo" thành nút chính; quiz như bài code (đánh dấu tay là nút viền).
+  - **Mục lục:** gập theo chương, mở chương đang học, tự mở chương khi đi sang; trạng thái từng bài bằng chữ ("Video · Đã xong").
+  - **Trợ giảng AI:** Naomi ở đầu khung (`thinking` / `answer` / `rest`, `lib/chat/assistant-state.ts`), 3 bước tra cứu → đọc N bài → soạn, nguồn dạng thẻ "Mở bài" / "Đang xem", nhãn "Ngoài phạm vi khóa học" theo đúng luật `chat.is_refusal`. Xong khóa: banner màu phần thưởng với Naomi `graduate`, chỉ phản ứng khi khóa vừa xong trong phiên.
+  - **Lỗi tìm ra:** chữ ẩn "3/3 bài đã xong" của từng chương làm "x/y bài" có 5 chỗ khớp (E2E sẽ đỏ vì strict mode); quiz có hai nút chính.
+  - **Kiểm:** `npm test` 82/82 (13 mới), lint + tsc sạch, `check.cjs` 19/19, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 12 + 12.
+  - Bằng chứng: [`learn-page.md`](../report/assets/phase-7/learn-page.md)
 - [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ
 - [ ] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐
 - [ ] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave`

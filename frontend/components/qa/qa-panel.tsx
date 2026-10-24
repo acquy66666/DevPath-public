@@ -22,6 +22,8 @@ import { Pager } from "@/components/ui/pager";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 
+import { cn } from "@/lib/utils";
+
 import { QA_KEY, QaThreadRow } from "./qa-shared";
 import { QA_MESSAGES, QaThreadView } from "./qa-thread-view";
 
@@ -34,12 +36,15 @@ import { QA_MESSAGES, QaThreadView } from "./qa-thread-view";
  */
 export function QaPanel({
   lessonId,
+  lessonTitle,
   accessToken,
   currentUserId,
   openThreadId,
   onOpenThread,
 }: {
   lessonId: string;
+  /** Named on the form, so a question is asked about the right lesson. */
+  lessonTitle: string;
   accessToken: string;
   currentUserId: string | null;
   openThreadId: string | null;
@@ -92,16 +97,21 @@ export function QaPanel({
     );
   }
 
+  const total = threads.data?.total ?? null;
+
   return (
-    <section className="space-y-4">
+    <section aria-label="Hỏi đáp" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <label htmlFor="qa-sort" className="text-sm text-muted-foreground">
-            Sắp xếp
+        <div className="flex min-w-0 items-center gap-3">
+          {total !== null ? (
+            <h2 className="text-body-sm font-semibold text-muted-foreground">{total} câu hỏi</h2>
+          ) : null}
+          <label htmlFor="qa-sort" className="sr-only">
+            Sắp xếp câu hỏi
           </label>
           <NativeSelect
             id="qa-sort"
-            className="w-auto"
+            className="h-9 w-auto text-body-sm"
             value={sort}
             onChange={(event) => {
               setSort(event.target.value as QaSort);
@@ -113,7 +123,7 @@ export function QaPanel({
           </NativeSelect>
         </div>
         {!composing ? (
-          <Button size="sm" onClick={() => setComposing(true)}>
+          <Button variant="secondary" onClick={() => setComposing(true)}>
             <Plus aria-hidden />
             Đặt câu hỏi
           </Button>
@@ -121,7 +131,8 @@ export function QaPanel({
       </div>
 
       {composing ? (
-        <form onSubmit={submit} className="space-y-2 rounded-md border p-3">
+        <form onSubmit={submit} className="flex flex-col gap-2.5 rounded-lg border bg-card p-4">
+          <p className="text-title text-pretty">Câu hỏi mới về bài “{lessonTitle}”</p>
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -146,7 +157,7 @@ export function QaPanel({
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="submit"
-              size="sm"
+              variant="secondary"
               disabled={ask.isPending || title.trim() === "" || body.trim() === ""}
             >
               {ask.isPending ? (
@@ -158,10 +169,10 @@ export function QaPanel({
                 "Gửi câu hỏi"
               )}
             </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={() => setComposing(false)}>
+            <Button type="button" variant="ghost" onClick={() => setComposing(false)}>
               Hủy
             </Button>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-caption text-muted-foreground">
               Hỗ trợ Markdown — bọc đoạn mã trong ```.
             </span>
           </div>
@@ -175,14 +186,14 @@ export function QaPanel({
       ) : null}
 
       {threads.isPending ? (
-        <div className="space-y-3" aria-hidden>
+        <div className="flex flex-col gap-2.5" aria-hidden>
           {[0, 1].map((row) => (
-            <Skeleton key={row} className="h-24" />
+            <Skeleton key={row} className="h-28 rounded-lg" />
           ))}
         </div>
       ) : null}
 
-      {threads.data && threads.data.total === 0 ? (
+      {threads.data && threads.data.total === 0 && !composing ? (
         <EmptyState
           size="md"
           title="Chưa có câu hỏi nào cho bài học này"
@@ -192,7 +203,7 @@ export function QaPanel({
 
       {threads.data && threads.data.items.length > 0 ? (
         <ul
-          className={threads.isPlaceholderData ? "space-y-3 opacity-60" : "space-y-3"}
+          className={cn("flex flex-col gap-2.5", threads.isPlaceholderData && "opacity-60")}
           aria-busy={threads.isFetching}
         >
           {threads.data.items.map((thread) => (

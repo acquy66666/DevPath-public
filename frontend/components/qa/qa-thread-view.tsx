@@ -135,20 +135,16 @@ export function QaThreadView({
   }
 
   const back = (
-    <button
-      type="button"
-      onClick={onBack}
-      className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-    >
-      <ArrowLeft className="size-4" aria-hidden />
+    <Button variant="ghost" size="sm" onClick={onBack} className="-ml-2 self-start text-muted-foreground">
+      <ArrowLeft aria-hidden />
       {backLabel}
-    </button>
+    </Button>
   );
 
   if (thread.isError) {
     const gone = thread.error instanceof ApiError && thread.error.status === 404;
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {back}
         <Alert variant={gone ? "default" : "destructive"}>
           <AlertDescription>
@@ -163,9 +159,9 @@ export function QaThreadView({
 
   if (!thread.data) {
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {back}
-        <Skeleton className="h-40" />
+        <Skeleton className="h-48 rounded-lg" />
       </div>
     );
   }
@@ -176,13 +172,13 @@ export function QaThreadView({
   const failed = [vote, resolve, removeThread, removeReply].find((m) => m.isError);
 
   return (
-    <article className="space-y-5">
+    <div className="flex flex-col gap-4">
       {back}
 
-      <header className="space-y-2">
+      <article className="flex flex-col gap-3.5 rounded-lg border bg-card p-4 sm:p-5">
         {editing ? (
           <form
-            className="space-y-2"
+            className="flex flex-col gap-2"
             onSubmit={(event) => {
               event.preventDefault();
               edit.mutate();
@@ -222,21 +218,22 @@ export function QaThreadView({
           </form>
         ) : (
           <>
-            <h3 className="text-lg font-semibold tracking-tight text-pretty break-words">
-              {data.title}
-            </h3>
-            <QaByline author={data.author} createdAt={data.created_at} />
-            <QaThreadBadges thread={data} />
-            <Markdown className="text-sm">{data.body}</Markdown>
+            <div className="flex flex-col gap-2.5">
+              <h3 className="text-h3 text-balance break-words">{data.title}</h3>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                <QaByline author={data.author} createdAt={data.created_at} />
+                <QaThreadBadges thread={data} />
+              </div>
+            </div>
+            <Markdown className="text-[0.9375rem]">{data.body}</Markdown>
           </>
         )}
-      </header>
 
       {!editing ? (
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-muted pt-3">
           <Button
             size="sm"
-            variant={data.voted ? "default" : "outline"}
+            variant={data.voted ? "secondary" : "outline"}
             aria-pressed={data.voted}
             disabled={isAuthor || vote.isPending}
             title={
@@ -325,6 +322,7 @@ export function QaThreadView({
           ) : null}
         </div>
       ) : null}
+      </article>
 
       {failed ? (
         <Alert variant="destructive">
@@ -332,8 +330,8 @@ export function QaThreadView({
         </Alert>
       ) : null}
 
-      <section className="space-y-3 border-t pt-4" aria-label="Câu trả lời">
-        <h4 className="text-sm font-semibold">
+      <section className="flex flex-col gap-2.5" aria-label="Câu trả lời">
+        <h4 className="text-body-sm font-semibold text-muted-foreground">
           {replyTotal === 0 ? "Chưa có câu trả lời" : `${replyTotal} câu trả lời`}
         </h4>
 
@@ -343,15 +341,15 @@ export function QaThreadView({
           </Alert>
         ) : null}
 
-        <ul className="space-y-3">
+        <ul className="flex flex-col gap-2.5">
           {allReplies.map((reply) => (
             <li
               key={reply.id}
               className={cn(
-                "space-y-2 rounded-md border p-3",
+                "flex flex-col gap-2.5 rounded-lg border p-4",
                 // The answer the reader is most likely looking for stands out
                 // from the discussion around it.
-                reply.is_instructor_reply && "border-primary/40 bg-primary/5",
+                reply.is_instructor_reply ? "border-secondary-hover bg-secondary" : "bg-card",
               )}
             >
               <div className="flex items-start justify-between gap-2">
@@ -370,9 +368,9 @@ export function QaThreadView({
                   ) : null}
                   {reply.author.id === currentUserId || staff ? (
                     <Button
-                      size="icon"
+                      size="icon-sm"
                       variant="ghost"
-                      className="size-7 shrink-0"
+                      className="shrink-0 text-muted-foreground"
                       aria-label="Xóa câu trả lời"
                       disabled={removeReply.isPending}
                       onClick={() => removeReply.mutate(reply)}
@@ -382,7 +380,7 @@ export function QaThreadView({
                   ) : null}
                 </div>
               </div>
-              <Markdown className="text-sm">{reply.body}</Markdown>
+              <Markdown className="text-[0.9375rem] text-foreground">{reply.body}</Markdown>
             </li>
           ))}
         </ul>
@@ -391,6 +389,7 @@ export function QaThreadView({
           <Button
             size="sm"
             variant="outline"
+            className="self-start"
             onClick={() => replies.fetchNextPage()}
             disabled={replies.isFetchingNextPage}
           >
@@ -398,22 +397,38 @@ export function QaThreadView({
             Xem thêm câu trả lời
           </Button>
         ) : null}
+      </section>
 
-        <form onSubmit={submitReply} className="space-y-2">
-          <Textarea
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={staff ? "Trả lời học viên…" : "Viết câu trả lời…"}
-            rows={3}
-            maxLength={QA_BODY_MAX_LENGTH}
-            aria-label="Câu trả lời của bạn"
-          />
-          {answer.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{apiErrorMessage(answer.error, QA_MESSAGES)}</AlertDescription>
-            </Alert>
-          ) : null}
-          <Button type="submit" size="sm" disabled={answer.isPending || draft.trim() === ""}>
+      <form
+        onSubmit={submitReply}
+        className="overflow-hidden rounded-lg border bg-card outline-offset-2 outline-ring has-[textarea:focus-visible]:outline-2"
+      >
+        <Textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          placeholder={staff ? "Trả lời học viên…" : "Viết câu trả lời…"}
+          rows={3}
+          maxLength={QA_BODY_MAX_LENGTH}
+          aria-label="Câu trả lời của bạn"
+          // The card frames the field; focus shows on the card.
+          className="min-h-22 rounded-none border-0 bg-transparent px-4 py-3.5 shadow-none focus-visible:outline-none"
+        />
+        {answer.isError ? (
+          <Alert variant="destructive" className="mx-3 mb-3 w-auto">
+            <AlertDescription>{apiErrorMessage(answer.error, QA_MESSAGES)}</AlertDescription>
+          </Alert>
+        ) : null}
+        <div className="flex flex-col items-stretch gap-2 border-t border-muted bg-background px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+          <p className="text-caption text-muted-foreground">
+            Hỗ trợ Markdown — bọc đoạn mã trong ``` để giữ nguyên định dạng.
+          </p>
+          <Button
+            type="submit"
+            // The course's staff answer from their inbox, where this is the
+            // screen's one job; under a lesson the lesson is.
+            variant={staff ? "default" : "secondary"}
+            disabled={answer.isPending || draft.trim() === ""}
+          >
             {answer.isPending ? (
               <>
                 <Loader2 className="animate-spin" aria-hidden />
@@ -423,11 +438,8 @@ export function QaThreadView({
               "Gửi câu trả lời"
             )}
           </Button>
-          <p className="text-xs text-muted-foreground">
-            Hỗ trợ Markdown — bọc đoạn mã trong ``` để giữ nguyên định dạng.
-          </p>
-        </form>
-      </section>
-    </article>
+        </div>
+      </form>
+    </div>
   );
 }

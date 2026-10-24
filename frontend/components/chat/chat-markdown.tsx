@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 import { citationNumber, remarkCitations } from "@/lib/chat/citations";
@@ -36,7 +37,7 @@ export function ChatMarkdown({
   const known = new Set(byNumber.keys());
 
   return (
-    <div className="space-y-2 text-sm leading-relaxed text-pretty break-words">
+    <div className="space-y-2 text-body-sm leading-[1.375rem] text-pretty break-words">
       <ReactMarkdown
         remarkPlugins={[[remarkCitations, { known }]]}
         components={{
@@ -110,43 +111,51 @@ export function SourceList({
   if (cited.length === 0) return null;
 
   return (
-    <div className="space-y-1 border-t pt-2">
-      <p className="text-xs font-medium text-muted-foreground">Nguồn trong khóa học</p>
-      <ul className="space-y-0.5">
+    <div className="flex flex-col gap-1.5">
+      <p className="text-eyebrow text-muted-foreground uppercase">Nguồn trong khóa học</p>
+      <ul className="flex flex-col gap-1.5">
         {[...cited]
           .sort((a, b) => a.number - b.number)
-          .map((lesson) => (
-            <li key={lesson.number}>
-              <button
-                type="button"
-                onClick={() => onOpenLesson(lesson.lessonId)}
-                disabled={lesson.title === null}
-                className="flex w-full items-start gap-2 rounded-md px-1.5 py-1 text-left text-xs transition-colors hover:bg-muted disabled:hover:bg-transparent"
-              >
-                <span className="mt-px inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded bg-primary/10 px-1 text-[10px] font-semibold text-primary">
-                  {lesson.number}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      "block truncate font-medium",
-                      lesson.title === null && "font-normal text-muted-foreground italic",
-                    )}
-                  >
-                    {lesson.title ?? "Bài học không còn trong khóa"}
+          .map((lesson) => {
+            const here = lesson.lessonId === currentLessonId;
+            return (
+              <li key={lesson.number}>
+                <button
+                  type="button"
+                  onClick={() => onOpenLesson(lesson.lessonId)}
+                  disabled={lesson.title === null}
+                  className="flex w-full items-center gap-2.5 rounded-md border bg-background px-2.5 py-2 text-left transition-colors duration-fast hover:not-disabled:bg-accent disabled:cursor-not-allowed"
+                >
+                  <span className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-sm bg-secondary px-1 font-mono text-[0.6875rem] font-semibold text-secondary-foreground">
+                    {lesson.number}
                   </span>
-                  {lesson.sectionTitle ? (
-                    <span className="block truncate text-muted-foreground">
-                      {lesson.sectionTitle}
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span
+                      className={cn(
+                        "truncate text-[0.8125rem] leading-[1.125rem] font-semibold",
+                        lesson.title === null && "font-normal text-muted-foreground italic",
+                      )}
+                    >
+                      {lesson.title ?? "Bài học không còn trong khóa"}
                     </span>
-                  ) : null}
-                </span>
-                {lesson.lessonId === currentLessonId ? (
-                  <span className="shrink-0 text-[10px] text-muted-foreground">đang xem</span>
-                ) : null}
-              </button>
-            </li>
-          ))}
+                    {lesson.sectionTitle ? (
+                      <span className="truncate text-caption text-muted-foreground">
+                        {lesson.sectionTitle}
+                      </span>
+                    ) : null}
+                  </span>
+                  {lesson.title === null ? null : here ? (
+                    <span className="shrink-0 text-caption text-muted-foreground">Đang xem</span>
+                  ) : (
+                    <span className="inline-flex shrink-0 items-center gap-1 text-caption font-semibold text-link">
+                      Mở bài
+                      <ArrowRight className="size-3.5" aria-hidden />
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
       </ul>
     </div>
   );
@@ -176,7 +185,7 @@ export function CitationChip({
       title={label}
       aria-label={label}
       className={cn(
-        "mx-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded bg-primary/10 px-1 align-text-top text-[10px] leading-none font-semibold text-primary transition-colors hover:bg-primary/20 disabled:bg-muted disabled:text-muted-foreground",
+        "mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-sm bg-secondary px-1 align-[1px] font-mono text-[0.6875rem] leading-5 font-semibold text-secondary-foreground transition-colors duration-fast hover:not-disabled:bg-secondary-hover disabled:bg-muted disabled:text-muted-foreground",
         className,
       )}
     >

@@ -8,7 +8,11 @@ import {
   type Ref,
 } from "react";
 
+import { NotebookPen } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
+import { formatTimestamp } from "@/lib/format";
 
 /** What the player offers. 1 is first because it is the answer for most people. */
 const SPEEDS = [1, 0.75, 1.25, 1.5, 1.75, 2];
@@ -49,6 +53,7 @@ export function VideoPlayer({
   startAt,
   onProgress,
   onEnded,
+  onNoteHere,
   ref,
 }: {
   src: string;
@@ -56,6 +61,8 @@ export function VideoPlayer({
   startAt: number;
   onProgress: (seconds: number) => void;
   onEnded: () => void;
+  /** "Ghi chú tại 02:20": open the note box, stamped with this moment. */
+  onNoteHere?: () => void;
   ref?: Ref<PlayerHandle>;
 }) {
   const video = useRef<HTMLVideoElement>(null);
@@ -64,6 +71,9 @@ export function VideoPlayer({
   // server and there is no hydration to mismatch.
   const [speed, setSpeed] = useState(storedSpeed);
   const [error, setError] = useState<string | null>(null);
+  // Whole seconds only, for the "Ghi chú tại" button: `timeupdate` fires four
+  // times a second and the label changes once.
+  const [second, setSecond] = useState(Math.floor(startAt));
 
   // Held in a ref so the heartbeat effect can call the latest callback without
   // tearing the player down every time the page re-renders.
@@ -185,36 +195,50 @@ export function VideoPlayer({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border bg-black">
-        <video
-          ref={video}
-          controls
-          playsInline
-          onEnded={onEnded}
-          className="aspect-video w-full"
-        />
-      </div>
+    <section aria-label="Video bài giảng" className="overflow-hidden rounded-lg border bg-card">
+      {/* The film strip is the one place the page goes dark: a video is
+          watched against black, whatever the theme around it. */}
+      <video
+        ref={video}
+        controls
+        playsInline
+        onEnded={onEnded}
+        onTimeUpdate={(event) => {
+          const now = Math.floor(event.currentTarget.currentTime);
+          if (now !== second) setSecond(now);
+        }}
+        className="block aspect-video w-full bg-slate-950"
+      />
 
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="px-4 pt-3 text-body-sm text-destructive-text">{error}</p> : null}
 
-      <div className="flex items-center justify-end gap-2">
-        <label htmlFor="playback-rate" className="text-sm text-muted-foreground">
-          Tốc độ phát
-        </label>
-        <NativeSelect
-          id="playback-rate"
-          value={speed}
-          onChange={(event) => changeSpeed(Number(event.target.value))}
-          className="w-24"
-        >
-          {SPEEDS.map((value) => (
-            <option key={value} value={value}>
-              {value}×
-            </option>
-          ))}
-        </NativeSelect>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-2 py-1.5 sm:px-3 sm:py-2">
+        {onNoteHere ? (
+          <Button type="button" variant="ghost" className="h-11 px-2 sm:h-9 sm:px-3" onClick={onNoteHere}>
+            <NotebookPen aria-hidden />
+            Ghi chú tại <span className="font-mono font-medium tabular-nums">{formatTimestamp(second)}</span>
+          </Button>
+        ) : (
+          <span />
+        )}
+        <div className="flex items-center gap-2">
+          <label htmlFor="playback-rate" className="sr-only text-body-sm text-muted-foreground sm:not-sr-only">
+            Tốc độ phát
+          </label>
+          <NativeSelect
+            id="playback-rate"
+            value={speed}
+            onChange={(event) => changeSpeed(Number(event.target.value))}
+            className="w-24"
+          >
+            {SPEEDS.map((value) => (
+              <option key={value} value={value}>
+                {value}×
+              </option>
+            ))}
+          </NativeSelect>
+        </div>
       </div>
-    </div>
+    </section>
   );
 }

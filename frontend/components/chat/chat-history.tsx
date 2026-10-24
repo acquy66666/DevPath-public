@@ -55,7 +55,7 @@ export function ChatHistory({
         {sessions.map((session) => (
           <li key={session.id}>
             {confirming === session.id ? (
-              <div className="space-y-2 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+              <div className="space-y-2 rounded-md border border-destructive-soft bg-destructive-soft p-3">
                 <p className="text-sm">Xóa cuộc trò chuyện này cùng mọi tin nhắn trong đó?</p>
                 <div className="flex gap-2">
                   <Button
@@ -77,25 +77,25 @@ export function ChatHistory({
             ) : (
               <div
                 className={cn(
-                  "group flex items-center gap-1 rounded-md transition-colors hover:bg-muted",
-                  session.id === currentId && "bg-muted",
+                  "group flex items-center gap-1 rounded-md transition-colors duration-fast hover:bg-accent",
+                  session.id === currentId && "bg-secondary text-secondary-foreground hover:bg-secondary-hover",
                 )}
               >
                 <button
                   type="button"
                   onClick={() => onOpen(session.id)}
                   aria-current={session.id === currentId ? "true" : undefined}
-                  className="min-w-0 flex-1 px-3 py-2 text-left"
+                  className="min-w-0 flex-1 px-3 py-2.5 text-left"
                 >
                   <span
                     className={cn(
-                      "block truncate text-sm",
+                      "block truncate text-body-sm font-medium",
                       session.title === null && "text-muted-foreground italic",
                     )}
                   >
                     {session.title ?? "Chưa có câu hỏi nào được trả lời"}
                   </span>
-                  <span className="block text-xs text-muted-foreground">
+                  <span className="block text-caption text-muted-foreground">
                     {formatRelativeTime(session.updated_at)}
                   </span>
                 </button>

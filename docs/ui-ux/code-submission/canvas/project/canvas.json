@@ -1,0 +1,31 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-23T10:00:00Z" },
+  "title": "DevPath — Nhóm 3: Nộp bài code",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 2700, "title": "Bài code · đang chấm · 1440", "expand": "fill" },
+    "Mobile.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 3700, "title": "Bài code · Đúng · 375" },
+    "Focus.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 900, "title": "Toàn màn hình · Sai kết quả · 1440" },
+    "Results.dc.html": { "x": 1975, "y": 1020, "w": 1520, "h": 4300, "title": "Khối kết quả · 12 trạng thái" },
+    "ResultPanel.dc.html": { "x": 0, "y": 2820, "w": 704, "h": 640, "title": "Thành phần · khối kết quả (Tweaks: trạng thái)" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Mobile.dc.html",
+    "Focus.dc.html",
+    "Results.dc.html",
+    "ResultPanel.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": "1792640804-d71a",
+      "copiedAt": "2026-10-23T10:00:00Z"
+    }
+  ]
+}

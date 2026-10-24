@@ -1,0 +1,80 @@
+{
+  "at": "2026-10-23T17:41:58.253Z",
+  "results": [
+    {
+      "name": "chạy thử: không có Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "nộp WA: grading rồi partial, mỗi mood phản ứng đúng một lần",
+      "ok": true,
+      "detail": "grading:playing → grading:still → partial:playing → partial:still"
+    },
+    {
+      "name": "nộp AC: celebrate phản ứng đúng một lần",
+      "ok": true,
+      "detail": "grading:playing → grading:still → celebrate:playing → celebrate:still"
+    },
+    {
+      "name": "kết quả được cuộn vào màn hình",
+      "ok": true,
+      "detail": "y = 505"
+    },
+    {
+      "name": "không phản ứng lại khi trang vẽ lại",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "mở lại từ lịch sử: Naomi đứng yên",
+      "ok": true,
+      "detail": "không đổi pha"
+    },
+    {
+      "name": "toàn màn hình: cùng một Monaco, không dựng lại",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toàn màn hình: trang phía sau không cuộn",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "toàn màn hình: editor cao theo màn hình",
+      "ok": true,
+      "detail": "432 px"
+    },
+    {
+      "name": "toàn màn hình: đề bài bên trái editor",
+      "ok": true,
+      "detail": "480 px"
+    },
+    {
+      "name": "Esc thoát toàn màn hình",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "thoát rồi: bàn phím về nút Toàn màn hình",
+      "ok": true,
+      "detail": "Toàn màn hình"
+    },
+    {
+      "name": "thoát rồi: vẫn cùng một Monaco",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "375 px: không tràn ngang",
+      "ok": true,
+      "detail": "0 px"
+    },
+    {
+      "name": "giảm chuyển động: Naomi hiện celebrate, không phản ứng",
+      "ok": true,
+      "detail": "không đổi pha"
+    }
+  ]
+}

@@ -2,10 +2,12 @@
 
 import { History } from "lucide-react";
 
+import { GradingChip, VerdictChip } from "@/components/exercise/verdict-chip";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import type { Submission } from "@/lib/api/submissions";
-import { TONE_BADGE, verdictLabel, verdictTone } from "@/lib/grading/verdicts";
+import { formatDateTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * Every attempt this student has handed in, newest first.
@@ -35,52 +37,48 @@ export function SubmissionHistory({
   }
 
   return (
-    <ul className="divide-y rounded-md border">
+    <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border bg-card">
       {submissions.map((submission) => {
-        const tone = verdictTone(submission.verdict);
         const selected = submission.id === selectedId;
 
         return (
           <li
             key={submission.id}
-            className={`flex flex-wrap items-center gap-3 p-3 text-sm ${
-              selected ? "bg-muted/50" : ""
-            }`}
+            aria-current={selected ? "true" : undefined}
+            className={cn(
+              "flex flex-wrap items-center gap-x-2 gap-y-1 py-2 pr-2 pl-3.5 sm:gap-x-3",
+              selected && "bg-muted",
+            )}
           >
-            <span
-              className={`rounded px-1.5 py-0.5 text-xs font-semibold ${
-                submission.status === "done"
-                  ? TONE_BADGE[tone]
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {submission.status === "done"
-                ? verdictLabel(submission.verdict)
-                : submission.status === "error"
-                  ? "Lỗi hệ thống"
-                  : "Đang chấm"}
+            {submission.status === "done" ? (
+              <VerdictChip verdict={submission.verdict ?? "SE"} />
+            ) : submission.status === "error" ? (
+              <VerdictChip verdict="SE" />
+            ) : (
+              <GradingChip />
+            )}
+
+            <span className="text-body-sm font-semibold tabular-nums sm:w-16">
+              {submission.score === null ? "—" : `${submission.score}/100`}
             </span>
 
-            {submission.score !== null ? (
-              <span className="tabular-nums">{submission.score}/100</span>
-            ) : null}
-
             <time
-              className="text-muted-foreground"
+              className="text-body-sm text-muted-foreground tabular-nums max-sm:order-last max-sm:basis-full"
               dateTime={submission.created_at}
             >
-              {new Date(submission.created_at).toLocaleString("vi-VN")}
+              {formatDateTime(submission.created_at)}
             </time>
 
-            <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto"
-              onClick={() => onSelect(submission)}
-            >
-              <History aria-hidden />
-              Xem lại
-            </Button>
+            {selected ? (
+              <span className="ml-auto px-2.5 text-caption font-semibold text-muted-foreground">
+                Đang xem
+              </span>
+            ) : (
+              <Button size="sm" variant="ghost" className="ml-auto" onClick={() => onSelect(submission)}>
+                <History aria-hidden />
+                Xem lại
+              </Button>
+            )}
           </li>
         );
       })}

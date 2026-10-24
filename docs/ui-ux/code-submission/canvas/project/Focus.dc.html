@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Toàn màn hình</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 900px; display: flex; flex-direction: column; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029">
+  <div style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 12px; flex-shrink: 0; border-bottom: 1px solid #e3eaee; background: #ffffff">
+    <a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none; color: #102029">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v3a2 2 0 0 1-2 2H3"></path><path d="M21 8h-3a2 2 0 0 1-2-2V3"></path><path d="M3 16h3a2 2 0 0 1 2 2v3"></path><path d="M16 21v-3a2 2 0 0 1 2-2h3"></path></svg>
+      Thoát toàn màn hình
+    </a>
+    <span aria-hidden="true" style="width: 1px; height: 24px; background: #e3eaee"></span>
+    <div style="min-width: 0; display: flex; flex-direction: column">
+      <p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Bài tập: đếm số chẵn</p>
+      <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Python cơ bản cho người mới bắt đầu · Chương 3</p>
+    </div>
+    <span style="margin-left: auto; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Bản nháp tự lưu trên trình duyệt này</span>
+    <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 14px; font-weight: 600; color: #102029">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l14 9-14 9V3z"></path></svg>
+      Chạy thử
+    </button>
+    <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; font: inherit; font-size: 14px; font-weight: 600; color: #ffffff">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.54 21.69a.5.5 0 0 0 .94-.03L22 3.5a.5.5 0 0 0-.64-.64L3.33 9.37a.5.5 0 0 0-.03.94l7.58 3.03a2 2 0 0 1 1.11 1.11z"></path><path d="m21.85 2.15-10.94 10.94"></path></svg>
+      Nộp bài
+    </button>
+  </div>
+
+  <div style="flex: 1; min-height: 0; display: flex">
+    <section aria-labelledby="focus-de-bai" style="box-sizing: border-box; width: 480px; flex-shrink: 0; overflow: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid #e3eaee; background: #ffffff">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 id="focus-de-bai" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Đề bài</h2>
+        <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Python 3 · 2 giây mỗi test · 128 MB · 2 test mẫu, 4 test ẩn</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 24px">
+        <p style="margin: 0">Cho một dãy số nguyên, đếm xem có bao nhiêu số chẵn.</p>
+        <p style="margin: 0"><strong>Đầu vào:</strong> dòng đầu là số nguyên <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">n</code> — số lượng phần tử. Dòng thứ hai là <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">n</code> số nguyên cách nhau bởi dấu cách.</p>
+        <p style="margin: 0"><strong>Đầu ra:</strong> một số nguyên duy nhất — số lượng số chẵn trong dãy.</p>
+        <p style="margin: 0"><strong>Giới hạn:</strong> <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">1 ≤ n ≤ 1000</code>, mỗi số trong khoảng <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">-10^6</code> đến <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">10^6</code>.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h3 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Test mẫu</h3>
+        <div style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 10px; overflow: hidden">
+          <p style="margin: 0; padding: 6px 12px; background: #f0f4f7; font-size: 12px; line-height: 18px; font-weight: 600; color: #3e505a">Test #1</p>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr))">
+            <div style="padding: 8px 12px; border-right: 1px solid #e3eaee"><p style="margin: 0 0 4px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Đầu vào</p><pre style="margin: 0; font-family: 'Geist Mono', monospace; font-size: 13px; line-height: 20px">5
+1 2 3 4 6</pre></div>
+            <div style="padding: 8px 12px"><p style="margin: 0 0 4px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Kết quả mong đợi</p><pre style="margin: 0; font-family: 'Geist Mono', monospace; font-size: 13px; line-height: 20px">3</pre></div>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 10px; overflow: hidden">
+          <p style="margin: 0; padding: 6px 12px; background: #f0f4f7; font-size: 12px; line-height: 18px; font-weight: 600; color: #3e505a">Test #2</p>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr))">
+            <div style="padding: 8px 12px; border-right: 1px solid #e3eaee"><p style="margin: 0 0 4px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Đầu vào</p><pre style="margin: 0; font-family: 'Geist Mono', monospace; font-size: 13px; line-height: 20px">3
+1 3 5</pre></div>
+            <div style="padding: 8px 12px"><p style="margin: 0 0 4px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Kết quả mong đợi</p><pre style="margin: 0; font-family: 'Geist Mono', monospace; font-size: 13px; line-height: 20px">0</pre></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 8px; height: 40px; flex-shrink: 0; padding-right: 8px; border-bottom: 1px solid #e3eaee; background: #f8fafc">
+        <span style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-bottom: 2px solid #007967; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px; font-weight: 600">main.py</span>
+        <button type="button" style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: #102029">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+          Khôi phục code mẫu
+        </button>
+      </div>
+      <div style="flex: 1; min-height: 0; display: flex; padding: 12px 0; background: #ffffff; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 14px; line-height: 22px">
+        <div aria-hidden="true" style="width: 48px; flex-shrink: 0; padding-right: 12px; box-sizing: border-box; text-align: right; color: #93a1a9; white-space: pre">1
+2
+3
+4
+5
+6
+7
+8</div>
+        <pre style="margin: 0; flex: 1; min-width: 0; color: #102029; white-space: pre">n = <span style="color: #066254">int</span>(<span style="color: #066254">input</span>())
+a = <span style="color: #066254">list</span>(<span style="color: #066254">map</span>(<span style="color: #066254">int</span>, <span style="color: #066254">input</span>().split()))
+
+<span style="color: #556670; font-style: italic"># Viết code của bạn ở đây</span>
+<span style="color: #066254">print</span>(<span style="color: #066254">sum</span>(<span style="color: #7e4a00">1</span> <span style="color: #066254">for</span> x <span style="color: #066254">in</span> a <span style="color: #066254">if</span> x % <span style="color: #7e4a00">2</span> == <span style="color: #7e4a00">0</span> <span style="color: #066254">and</span> x &gt; <span style="color: #7e4a00">0</span>))
+</pre>
+      </div>
+      <section aria-labelledby="focus-ket-qua" style="box-sizing: border-box; height: 400px; flex-shrink: 0; overflow: auto; padding: 14px 20px 20px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid #d2dbe0; background: #f8fafc">
+        <h2 id="focus-ket-qua" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Kết quả</h2>
+        <dc-import name="ResultPanel" kind="wa" hint-size="100%,580px"></dc-import>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

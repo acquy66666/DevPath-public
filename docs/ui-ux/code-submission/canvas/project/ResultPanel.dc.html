@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Khối kết quả chấm bài</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 12px; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029">
+
+  <sc-if value="{{v.reopened}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px">
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Xem lại bài nộp lúc <span style="font-variant-numeric: tabular-nums">21:21 · 18/10/2026</span></p>
+      <button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; font-weight: 600; color: #102029">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="m10 12-2 2 2 2"></path><path d="m14 16 2-2-2-2"></path></svg>
+        Đưa code này vào editor
+      </button>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{v.live}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; align-items: center; gap: {{gap}}px; padding: {{pad}}px; border-radius: 14px; background: #f0f4f7">
+      <img src="/_blob/8e276986b32d336d767c876f2c6736de" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0">
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">{{v.eyebrow}}</p>
+        <p aria-live="polite" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums">{{v.title}}</p>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">{{v.caption}}</p>
+        <div role="progressbar" aria-label="Tiến độ chấm" aria-valuemin="0" aria-valuemax="{{v.total}}" aria-valuenow="{{v.done}}" style="display: flex; gap: 4px; margin-top: 4px">
+          <sc-for list="{{segs}}" as="s" hint-placeholder-count="6">
+            <span style="flex: 1; height: 8px; border-radius: 9999px; background: {{s.bg}}"></span>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{v.final}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; align-items: center; gap: {{gap}}px; padding: {{pad}}px; border-radius: 14px; background: {{v.soft}}">
+      <sc-if value="{{m.celebrate}}" hint-placeholder-val="{{true}}"><img src="/_blob/293205d9052a76dea4f8173462887776" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.partial}}" hint-placeholder-val="{{false}}"><img src="/_blob/56efb93633051ea42e47406f4e16958e" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.sleepy}}" hint-placeholder-val="{{false}}"><img src="/_blob/6959ac8b20186d6066970b679e9bd56e" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.stuffed}}" hint-placeholder-val="{{false}}"><img src="/_blob/fe0d19b5902550f641c01f16bd267c42" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.dizzy}}" hint-placeholder-val="{{false}}"><img src="/_blob/4a11d7318f1cdda186b4de21b94521de" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.tangled}}" hint-placeholder-val="{{false}}"><img src="/_blob/a143537fbcf0bc06a11dc0168e49bab1" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <sc-if value="{{m.sorry}}" hint-placeholder-val="{{false}}"><img src="/_blob/1fff9093c97d5a4ba2daf39d256bc9ed" alt="" style="width: {{naomi}}px; height: {{naomi}}px; flex-shrink: 0"></sc-if>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+          <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px; background: #ffffff; color: {{v.fg}}; font-size: 13px; line-height: 18px; font-weight: 600">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.icon}}"></path></svg>
+            <span style="font-family: 'Geist Mono', ui-monospace, monospace">{{v.code}}</span>
+            <span>{{v.label}}</span>
+          </span>
+        </div>
+        <p aria-live="polite" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; color: {{v.fg}}; font-variant-numeric: tabular-nums">{{v.title}}</p>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #273842">{{v.hint}}</p>
+        <sc-if value="{{v.hasPointer}}" hint-placeholder-val="{{false}}">
+          <p style="margin: 0; display: flex; align-items: flex-start; gap: 6px; font-size: 14px; line-height: 20px; font-weight: 600; color: {{v.fg}}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px"><path d="M12 5v14"></path><path d="m19 12-7 7-7-7"></path></svg>
+            <span>{{v.pointer}}</span>
+          </p>
+        </sc-if>
+        <sc-if value="{{v.hasRows}}" hint-placeholder-val="{{true}}">
+          <div role="progressbar" aria-label="Số test đúng" aria-valuemin="0" aria-valuemax="{{v.total}}" aria-valuenow="{{v.passed}}" style="display: flex; gap: 4px; margin-top: 4px">
+            <sc-for list="{{segs}}" as="s" hint-placeholder-count="6">
+              <span style="flex: 1; height: 8px; border-radius: 9999px; background: {{s.bg}}"></span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; letter-spacing: 0.01em; color: #3e505a; font-variant-numeric: tabular-nums">{{v.meta}}</p>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{v.trial}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 14px; background: {{v.soft}}">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 12px; border-radius: 9999px; background: #ffffff; color: {{v.fg}}; font-size: 13px; line-height: 18px; font-weight: 600">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{v.icon}}"></path></svg>
+          <span style="font-family: 'Geist Mono', ui-monospace, monospace">{{v.code}}</span>
+          <span>{{v.label}}</span>
+        </span>
+        <span style="display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 9999px; background: #ffffff; color: #3e505a; font-size: 12px; line-height: 18px; font-weight: 500">Chạy thử · không tính vào lịch sử</span>
+      </div>
+      <p aria-live="polite" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600; color: {{v.fg}}">{{v.title}}</p>
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #273842">Bấm “Nộp bài” để chấm với cả 4 test ẩn.</p>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{v.hasMessage}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600">Thông báo của Python</p>
+      <pre style="margin: 0; padding: 12px 14px; border-radius: 14px; border: 1px solid #c0dcff; background: #f0f4f7; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; line-height: 20px; color: #102029; white-space: pre-wrap; overflow-x: auto">{{v.message}}</pre>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{v.hasRows}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px">
+        <p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">{{v.rowsTitle}}</p>
+        <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">{{v.rowsNote}}</p>
+      </div>
+      <ul style="list-style: none; margin: 0; padding: 0; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+          <li style="border-top: {{r.sep}}; background: {{r.bg}}">
+            <div style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 8px 0 14px; font-size: 14px; line-height: 20px">
+              <span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 4px; flex-shrink: 0; background: {{r.dot}}; box-shadow: {{r.ring}}"></span>
+              <span style="width: 28px; flex-shrink: 0; font-family: 'Geist Mono', ui-monospace, monospace; font-weight: 600; font-variant-numeric: tabular-nums">{{r.num}}</span>
+              <span style="flex-shrink: 0; padding: 1px 8px; border-radius: 9999px; background: #f0f4f7; color: #556670; font-size: 12px; line-height: 18px; font-weight: 500">{{r.tag}}</span>
+              <span style="flex: 1; min-width: 0; color: {{r.fg}}; font-weight: {{r.weight}}">{{r.text}}</span>
+              <span style="flex-shrink: 0; color: #556670; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; font-variant-numeric: tabular-nums">{{r.time}}</span>
+              <sc-if value="{{r.expandable}}" hint-placeholder-val="{{true}}">
+                <button type="button" aria-label="{{r.toggleLabel}}" aria-expanded="{{r.openStr}}" style="display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex-shrink: 0; border: 0; border-radius: 10px; background: transparent; color: #3e505a">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: {{r.chevron}}"><path d="m6 9 6 6 6-6"></path></svg>
+                </button>
+              </sc-if>
+              <sc-if value="{{r.spacer}}" hint-placeholder-val="{{false}}">
+                <span aria-hidden="true" style="width: 32px; flex-shrink: 0"></span>
+              </sc-if>
+            </div>
+            <sc-if value="{{r.open}}" hint-placeholder-val="{{false}}">
+              <div style="display: grid; grid-template-columns: {{cols}}; gap: 12px; padding: {{detailPad}}">
+                <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Đầu vào</p>
+                  <pre style="margin: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e3eaee; background: #f0f4f7; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; line-height: 20px; white-space: pre-wrap">{{r.input}}</pre>
+                </div>
+                <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Mong đợi</p>
+                  <pre style="margin: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid #e3eaee; background: #f0f4f7; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; line-height: 20px; white-space: pre-wrap">{{r.expected}}</pre>
+                </div>
+                <div style="min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 600; color: {{r.gotLabelColor}}">{{r.gotLabel}}</p>
+                  <pre style="margin: 0; padding: 8px 10px; border-radius: 10px; border: 1px solid {{r.gotBorder}}; background: {{r.gotBg}}; font-family: 'Geist Mono', ui-monospace, monospace; font-size: 13px; line-height: 20px; white-space: pre-wrap">{{r.got}}</pre>
+                </div>
+              </div>
+            </sc-if>
+          </li>
+        </sc-for>
+      </ul>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"kind":{"editor":"enum","options":["queued","grading","ac","wa","waSample","tle","mle","re","ce","se","trial","history"],"default":"ac"},"compact":{"editor":"boolean","default":false},"$preview":{"width":704,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const kind = this.props.kind ?? 'ac';
+    const compact = this.props.compact ?? false;
+
+    const VC = {
+      AC: { label: 'Đúng', fg: '#194f29', soft: '#e8fceb', solid: '#238142', icon: 'M20 6 9 17l-5-5' },
+      WA: { label: 'Sai kết quả', fg: '#79191b', soft: '#fff2f1', solid: '#c3292e', icon: 'M18 6 6 18M6 6l12 12' },
+      TLE: { label: 'Quá thời gian', fg: '#613700', soft: '#fff4e9', solid: '#9c5c00', icon: 'M12 2a10 10 0 1 0 0 20a10 10 0 1 0 0-20zM12 6v6l4 2' },
+      MLE: { label: 'Quá bộ nhớ', fg: '#6e204b', soft: '#fff2f7', solid: '#b4327c', icon: 'M6 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM9 9h6v6H9zM15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2' },
+      RE: { label: 'Lỗi khi chạy', fg: '#49317a', soft: '#f6f4ff', solid: '#7752c3', icon: 'M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z' },
+      CE: { label: 'Lỗi cú pháp', fg: '#10427b', soft: '#f0f6ff', solid: '#1b6cc7', icon: 'm16 18 6-6-6-6M8 6l-6 6 6 6' },
+      SE: { label: 'Lỗi hệ thống', fg: '#3e505a', soft: '#e3eaee', solid: '#6f7e88', icon: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z' }
+    };
+    const HINT = {
+      AC: 'Chương trình in ra đúng kết quả mong đợi ở mọi test case.',
+      WA: 'Chương trình chạy xong nhưng in ra khác kết quả mong đợi.',
+      TLE: 'Chương trình chạy quá lâu và bị dừng. Thường là vòng lặp không kết thúc, hoặc thuật toán chậm hơn mức đề bài cho phép.',
+      MLE: 'Chương trình dùng quá nhiều bộ nhớ và bị dừng.',
+      RE: 'Chương trình dừng giữa chừng vì một lỗi lúc chạy — chia cho 0, đọc quá mảng, gọi hàm không có…',
+      CE: 'Chương trình không chạy được vì sai cú pháp. Xem thông báo bên dưới.',
+      SE: 'Lỗi phía hệ thống chấm bài, không phải lỗi bài của bạn. Bài này chưa được chấm.'
+    };
+    const SAMPLES = [
+      { input: '5\n1 2 3 4 6', expected: '3' },
+      { input: '3\n1 3 5', expected: '0' }
+    ];
+    const WA_REAL = [['AC', 416, '3'], ['AC', 366, '0'], ['AC', 316], ['AC', 366], ['WA', 418], ['WA', 316]];
+    const WA_POINTER = 'Sai đầu tiên ở test #5 — test ẩn, chỉ biết đúng hay sai, không xem được dữ liệu.';
+    const K = {
+      queued: { mode: 'live', eyebrow: 'Nộp bài · trong hàng đợi', title: 'Đang chờ tới lượt chấm…', caption: 'Bài của bạn được chấm ngay khi tới lượt.', cases: ['wait', 'wait', 'wait', 'wait', 'wait', 'wait'] },
+      grading: { mode: 'live', eyebrow: 'Nộp bài · đang chấm', title: 'Đang chấm test 4/6', caption: 'Mỗi test chạy trong một sandbox riêng: không có mạng, tối đa 2 giây và 128 MB.', cases: [['AC', 367], ['AC', 315], ['AC', 265], 'run', 'wait', 'wait'] },
+      ac: { mode: 'final', verdict: 'AC', mood: 'celebrate', score: '100/100', meta: '6/6 test đúng · chậm nhất 0,37 s', cases: [['AC', 367, '3'], ['AC', 315, '0'], ['AC', 265], ['AC', 316], ['AC', 315], ['AC', 315]] },
+      wa: { mode: 'final', verdict: 'WA', mood: 'partial', score: '50/100', meta: '4/6 test đúng · chậm nhất 0,42 s', pointer: WA_POINTER, first: 4, cases: WA_REAL },
+      waSample: { mode: 'final', verdict: 'WA', mood: 'partial', score: '0/100', meta: '0/6 test đúng · chậm nhất 0,35 s', pointer: 'Sai đầu tiên ở test #1 — test mẫu, so đầu ra ở bên dưới.', first: 0, open: 0, cases: [['WA', 352, '2'], ['WA', 318, '3'], ['WA', 296], ['WA', 301], ['WA', 322], ['WA', 305]] },
+      tle: { mode: 'final', verdict: 'TLE', mood: 'sleepy', score: '88/100', meta: '5/6 test đúng · giới hạn 2 giây mỗi test', pointer: 'Quá giờ ở test #4 — test ẩn.', first: 3, cases: [['AC', 352, '3'], ['AC', 318, '0'], ['AC', 296], ['TLE', 2000], ['AC', 322], ['AC', 305]] },
+      mle: { mode: 'final', verdict: 'MLE', mood: 'stuffed', score: '0/100', meta: '0/6 test đúng · giới hạn 128 MB', pointer: 'Vượt bộ nhớ từ test #1 — test mẫu.', first: 0, cases: [['MLE', 412, ''], ['MLE', 398, ''], ['MLE', 405], ['MLE', 401], ['MLE', 399], ['MLE', 410]] },
+      re: { mode: 'final', verdict: 'RE', mood: 'dizzy', score: '0/100', meta: '0/6 test đúng', pointer: 'Dừng giữa chừng từ test #1 — test mẫu, xem nó in được gì ở bên dưới.', first: 0, open: 0, cases: [['RE', 301, ''], ['RE', 296, ''], ['RE', 288], ['RE', 290], ['RE', 295], ['RE', 292]] },
+      ce: { mode: 'final', verdict: 'CE', mood: 'tangled', score: '0/100', meta: 'Không test nào được chạy', message: "  File \"main.py\", line 9\n    print(count\n         ^\nSyntaxError: '(' was never closed", cases: [] },
+      se: { mode: 'final', verdict: 'SE', mood: 'sorry', score: null, meta: 'Lần nộp này không tính điểm. Nộp lại sau ít phút.', cases: [] },
+      trial: { mode: 'trial', verdict: 'AC', cases: [['AC', 366, '3'], ['AC', 365, '0']] },
+      history: { mode: 'final', reopened: true, verdict: 'WA', mood: 'partial', score: '50/100', meta: '4/6 test đúng · chậm nhất 0,42 s', pointer: WA_POINTER, first: 4, cases: WA_REAL }
+    };
+    const spec = K[kind] || K.ac;
+    const fmt = (ms) => (ms / 1000).toFixed(2).replace('.', ',') + ' s';
+
+    const rows = spec.cases.map((c, i) => {
+      const sample = i < 2;
+      const base = {
+        num: '#' + (i + 1), tag: sample ? 'Mẫu' : 'Ẩn',
+        sep: i === 0 ? 'none' : '1px solid #e3eaee', bg: '#ffffff', ring: 'none', weight: '400',
+        open: false, openStr: 'false', chevron: 'rotate(0deg)', expandable: false, spacer: true,
+        toggleLabel: 'Xem đầu vào và đầu ra của test ' + (i + 1),
+        input: '', expected: '', got: '', gotLabel: '', gotLabelColor: '#556670', gotBg: '#f0f4f7', gotBorder: '#e3eaee'
+      };
+      if (c === 'wait') return Object.assign(base, { text: 'Chờ', fg: '#556670', dot: '#d2dbe0', time: '—' });
+      if (c === 'run') return Object.assign(base, { text: 'Đang chấm…', fg: '#007967', weight: '600', dot: '#ffffff', ring: '0 0 0 2px #007967', time: '—' });
+      const v = c[0], ms = c[1], got = c[2];
+      const s = SAMPLES[i] || { input: '', expected: '' };
+      const wrong = v !== 'AC';
+      const canOpen = sample && got !== undefined && spec.mode !== 'live';
+      const open = spec.open === i;
+      let text = VC[v].label;
+      if (sample && v === 'WA' && got !== undefined) text = 'Sai kết quả · in ra ' + got + ', mong đợi ' + s.expected;
+      return Object.assign(base, {
+        text, fg: wrong ? VC[v].fg : '#102029', weight: wrong ? '600' : '400', dot: VC[v].solid,
+        time: v === 'TLE' ? '> 2,00 s' : fmt(ms),
+        bg: spec.first === i ? VC[v].soft : '#ffffff',
+        expandable: canOpen, spacer: !canOpen,
+        open, openStr: open ? 'true' : 'false', chevron: open ? 'rotate(180deg)' : 'rotate(0deg)',
+        input: s.input, expected: s.expected, got: got === '' || got === undefined ? '(trống)' : got,
+        gotLabel: !wrong ? 'Chương trình in ra' : v === 'WA' ? 'Chương trình in ra · khác mong đợi' : 'In ra trước khi bị dừng',
+        gotLabelColor: wrong ? VC[v].fg : '#556670',
+        gotBg: wrong ? VC[v].soft : '#f0f4f7', gotBorder: wrong ? VC[v].solid : '#e3eaee'
+      });
+    });
+
+    const segs = spec.cases.map((c) => ({
+      bg: c === 'wait' ? '#d2dbe0' : c === 'run' ? '#6fd3be' : VC[c[0]].solid
+    }));
+    const done = spec.cases.filter((c) => typeof c !== 'string').length;
+    const passed = spec.cases.filter((c) => typeof c !== 'string' && c[0] === 'AC').length;
+    const vc = spec.verdict ? VC[spec.verdict] : { label: '', fg: '#102029', soft: '#f0f4f7', icon: '' };
+
+    let title = spec.title || '';
+    if (spec.mode === 'final') title = spec.score ? spec.score + ' · ' + vc.label : vc.label;
+    if (spec.mode === 'trial') title = 'Chạy thử · ' + passed + '/' + spec.cases.length + ' test mẫu đúng';
+
+    const mood = spec.mood || '';
+    return {
+      gap: compact ? 14 : 20,
+      pad: compact ? 14 : 20,
+      naomi: compact ? 80 : 128,
+      cols: compact ? 'minmax(0, 1fr)' : 'repeat(3, minmax(0, 1fr))',
+      detailPad: compact ? '0 14px 14px 14px' : '0 14px 14px 52px',
+      m: {
+        celebrate: mood === 'celebrate', partial: mood === 'partial', sleepy: mood === 'sleepy', stuffed: mood === 'stuffed',
+        dizzy: mood === 'dizzy', tangled: mood === 'tangled', sorry: mood === 'sorry'
+      },
+      v: {
+        live: spec.mode === 'live', final: spec.mode === 'final', trial: spec.mode === 'trial', reopened: !!spec.reopened,
+        code: spec.verdict || '', label: vc.label, fg: vc.fg, soft: vc.soft, icon: vc.icon,
+        eyebrow: spec.eyebrow || '', caption: spec.caption || '', title,
+        hint: HINT[spec.verdict] || '', meta: spec.meta || '',
+        pointer: spec.pointer || '', hasPointer: !!spec.pointer,
+        message: spec.message || '', hasMessage: !!spec.message,
+        hasRows: rows.length > 0, total: spec.cases.length, done, passed,
+        rowsTitle: spec.mode === 'trial' ? 'Test mẫu' : 'Từng test',
+        rowsNote: spec.mode === 'trial' ? 'Mở một test để so đầu ra.' : 'Test ẩn chỉ cho biết đúng hay sai.'
+      },
+      segs,
+      rows
+    };
+  }
+}
+</script>
+</body>
+</html>

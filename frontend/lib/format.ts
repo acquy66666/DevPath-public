@@ -47,6 +47,19 @@ export function formatDate(iso: string): string {
   return DATE.format(new Date(iso));
 }
 
+const TIME = new Intl.DateTimeFormat("vi-VN", {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+  timeZone: "Asia/Ho_Chi_Minh",
+});
+
+/** A moment the student did something: "21:21 · 18/10/2026", Vietnamese time. */
+export function formatDateTime(iso: string): string {
+  const at = new Date(iso);
+  return `${TIME.format(at)} · ${DATE.format(at)}`;
+}
+
 /**
  * A course length in words: "6 giờ 30 phút", "45 phút".
  *

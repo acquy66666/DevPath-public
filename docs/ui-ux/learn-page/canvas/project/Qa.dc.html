@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hỏi đáp dưới bài học</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1600px; min-height: 1080px; padding: 40px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: grid; grid-template-columns: repeat(2, minmax(0, 704px)); gap: 72px; align-items: start">
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Danh sách · đang đặt câu hỏi</p>
+
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">1 câu hỏi</h2>
+        <label for="sap-xep-q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Sắp xếp câu hỏi</label>
+        <select id="sap-xep-q" style="box-sizing: border-box; height: 36px; padding: 0 28px 0 10px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 14px; color: #102029">
+          <option>Mới nhất</option>
+          <option>Nhiều người hỏi nhất</option>
+        </select>
+      </div>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Câu hỏi mới về bài “Ép kiểu và những cái bẫy quen thuộc”</p>
+      <label for="tieu-de" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Tiêu đề câu hỏi</label>
+      <input id="tieu-de" type="text" placeholder="Tóm tắt câu hỏi trong một dòng" style="box-sizing: border-box; width: 100%; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 16px; color: #102029">
+      <label for="noi-dung" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Nội dung câu hỏi</label>
+      <textarea id="noi-dung" rows="5" placeholder="Bạn đang vướng ở đâu? Dán đoạn mã và thông báo lỗi nếu có." style="box-sizing: border-box; width: 100%; resize: vertical; padding: 10px 12px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 16px; line-height: 24px; color: #102029"></textarea>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+        <button type="submit" disabled="" style="height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border: 0; border-radius: 10px; background: #e7fbf6; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; color: #074b40; opacity: 0.5">Gửi câu hỏi</button>
+        <button type="button" style="height: 36px; display: inline-flex; align-items: center; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">Hủy</button>
+        <span style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Hỗ trợ Markdown — bọc đoạn mã trong ```.</span>
+      </div>
+    </form>
+
+    <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+      <li>
+        <button type="button" style="box-sizing: border-box; width: 100%; display: flex; align-items: flex-start; gap: 16px; padding: 16px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; font: inherit; text-align: left; color: #102029">
+          <span style="flex: none; box-sizing: border-box; width: 48px; padding: 6px 0; border-radius: 10px; background: #f0f4f7; display: flex; flex-direction: column; align-items: center; color: #3e505a">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18v-6H5l7-7 7 7h-4v6H9z"></path></svg>
+            <span style="font-size: 14px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums">0</span>
+            <span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">lượt cũng hỏi</span>
+          </span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 16px; line-height: 24px; font-weight: 600">int("3.5") báo lỗi nhưng int(3.5) thì không?</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">Em gõ int("3.5") thì bị ValueError: invalid literal for int(), nhưng int(3.5) lại ra 3. Sao hai cách viết lại khác nhau vậy ạ?</span>
+            <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding-top: 2px">
+              <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670"><span style="width: 20px; height: 20px; border-radius: 9999px; background: #007967; color: #ffffff; font-size: 9px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">TA</span>Trần Minh Anh · vừa xong</span>
+              <span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 9999px; background: #e8fceb; color: #194f29; font-size: 12px; line-height: 18px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>Giảng viên đã trả lời</span>
+              <span style="margin-left: auto; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>1 trả lời</span>
+            </span>
+          </span>
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 16px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Một câu hỏi · giảng viên đã trả lời</p>
+
+    <button type="button" style="align-self: flex-start; height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 8px 0 4px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 500; color: #556670"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg>Tất cả câu hỏi của bài này</button>
+
+    <article style="display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <h3 style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; text-wrap: balance">int("3.5") báo lỗi nhưng int(3.5) thì không?</h3>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+          <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px"><span style="width: 28px; height: 28px; border-radius: 9999px; background: #007967; color: #ffffff; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">TA</span><span style="font-weight: 600">Trần Minh Anh</span><span style="color: #556670">· vừa xong</span></span>
+          <span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 9999px; background: #e8fceb; color: #194f29; font-size: 12px; line-height: 18px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>Giảng viên đã trả lời</span>
+        </div>
+      </div>
+      <p style="margin: 0; font-size: 15px; line-height: 24px">Em gõ <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">int("3.5")</code> thì bị <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">ValueError: invalid literal for int()</code>, nhưng <code style="padding: 1px 5px; border-radius: 4px; background: #f0f4f7; font-family: 'Geist Mono', monospace; font-size: 13px">int(3.5)</code> lại ra 3. Sao hai cách viết lại khác nhau vậy ạ?</p>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid #f0f4f7">
+        <button type="button" disabled="" aria-label="0 người cũng có câu hỏi này" title="Bạn không tự bình chọn câu hỏi của mình" style="box-sizing: border-box; height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid #d2dbe0; border-radius: 10px; background: #ffffff; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; color: #556670; opacity: 0.7"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18v-6H5l7-7 7 7h-4v6H9z"></path></svg>0</button>
+        <button type="button" style="box-sizing: border-box; height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; color: #102029"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>Đánh dấu đã giải quyết</button>
+        <span style="margin-left: auto; display: inline-flex; gap: 2px">
+          <button type="button" style="height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; color: #3e505a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path><path d="m15 5 4 4"></path></svg>Sửa</button>
+          <button type="button" style="height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 13px; line-height: 20px; font-weight: 600; color: #a01e23"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>Xóa</button>
+        </span>
+      </div>
+    </article>
+
+    <section aria-labelledby="tra-loi" style="display: flex; flex-direction: column; gap: 10px">
+      <h3 id="tra-loi" style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">1 câu trả lời</h3>
+      <article style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid #ccf5ea; border-radius: 14px; background: #e7fbf6">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <span style="min-width: 0; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 14px; line-height: 20px"><span style="width: 28px; height: 28px; border-radius: 9999px; background: #074b40; color: #ffffff; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">TK</span><span style="font-weight: 600">Trần Minh Khoa</span><span style="display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px; border-radius: 9999px; background: #007967; color: #ffffff; font-size: 12px; line-height: 18px; font-weight: 600"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"></path><path d="m9 12 2 2 4-4"></path></svg>Giảng viên</span><span style="color: #3e505a">· vừa xong</span></span>
+          <button type="button" style="margin-left: auto; flex: none; height: 28px; display: inline-flex; align-items: center; gap: 4px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 12px; line-height: 18px; font-weight: 600; color: #3e505a"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" x2="4" y1="22" y2="15"></line></svg>Báo cáo</button>
+        </div>
+        <p style="margin: 0; font-size: 15px; line-height: 24px; color: #102029">Hai lệnh nhận hai kiểu dữ liệu khác nhau. Với một <strong>số thực</strong>, <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">int()</code> bỏ phần thập phân nên <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">int(3.5)</code> là <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">3</code>. Với một <strong>chuỗi</strong>, <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">int()</code> chỉ đọc được chuỗi viết đúng một số nguyên, nên <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">"3.5"</code> bị từ chối. Muốn đi từ chuỗi đó sang số nguyên thì qua số thực trước: <code style="padding: 1px 5px; border-radius: 4px; background: #ffffff; font-family: 'Geist Mono', monospace; font-size: 13px">int(float("3.5"))</code>.</p>
+      </article>
+    </section>
+
+    <form style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+      <label for="tra-loi-moi" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%)">Câu trả lời của bạn</label>
+      <textarea id="tra-loi-moi" rows="3" placeholder="Viết câu trả lời…" style="box-sizing: border-box; width: 100%; min-height: 88px; resize: vertical; padding: 14px 16px; border: 0; background: transparent; font: inherit; font-size: 16px; line-height: 24px; color: #102029"></textarea>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 12px 10px 16px; border-top: 1px solid #f0f4f7; background: #f8fafc">
+        <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Hỗ trợ Markdown — bọc đoạn mã trong ``` để giữ nguyên định dạng.</p>
+        <button type="submit" disabled="" style="height: 36px; display: inline-flex; align-items: center; padding: 0 14px; border: 0; border-radius: 10px; background: #e7fbf6; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; color: #074b40; opacity: 0.5">Gửi câu trả lời</button>
+      </div>
+    </form>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

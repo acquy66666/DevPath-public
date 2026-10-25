@@ -1,0 +1,19 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-25T11:18:17.392Z",
+  "shots": [
+    "1-truoc-khi-lam-1440",
+    "1-truoc-khi-lam-375",
+    "10-muc-100-1440",
+    "2-muc-20-1440",
+    "3-muc-60-1440",
+    "4-het-gio-1440",
+    "5-co-lich-su-1440",
+    "6-dang-lam-1440",
+    "6-dang-lam-375",
+    "7-lam-do-1440",
+    "8-sap-het-gio-1440",
+    "9-ket-qua-80-1440",
+    "9-ket-qua-80-375"
+  ]
+}

@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quiz · các trạng thái</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 1420px; padding: 56px 64px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px 48px; align-content: start">
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Chưa làm lượt nào · có giờ</p>
+    <section aria-labelledby="intro-a" style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span aria-hidden="true" style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #e7fbf6; color: #007967; display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg></span>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 id="intro-a" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Bài trắc nghiệm</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Mỗi câu một đáp án đúng. Kết quả và lời giải thích hiện ngay khi nộp.</p>
+        </div>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+        <div style="padding: 12px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e3eaee"><dt style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Số câu</dt><dd style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums">5 câu</dd></div>
+        <div style="padding: 12px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e3eaee"><dt style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Thời gian</dt><dd style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums">10 phút</dd></div>
+        <div style="padding: 12px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #e3eaee"><dt style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">Điểm đạt</dt><dd style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; font-variant-numeric: tabular-nums">70%</dd></div>
+      </dl>
+      <p style="margin: 0; display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px; color: #3e505a"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M5 3 2 6"></path><path d="m22 6-3-3"></path></svg>Đồng hồ chạy ở máy chủ và bắt đầu ngay khi bạn bấm nút. Đóng tab không làm nó dừng.</p>
+      <div><button type="button" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; border: 0; border-radius: 10px; background: #007967; font: inherit; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>Bắt đầu làm bài</button></div>
+    </section>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Đã làm, chưa đạt · có lịch sử</p>
+    <section aria-labelledby="intro-b" style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span aria-hidden="true" style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #e7fbf6; color: #007967; display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg></span>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 id="intro-b" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Bài trắc nghiệm</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">5 câu · 10 phút · đạt từ 70%</p>
+        </div>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+        <button type="button" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; border: 0; border-radius: 10px; background: #007967; font: inherit; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Làm lại</button>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Điểm cao nhất của bạn: <span style="font-weight: 600; color: #10427b">60%</span></p>
+      </div>
+    </section>
+    <section aria-labelledby="intro-b-history" style="border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+      <div style="display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; padding: 14px 16px">
+        <h3 id="intro-b-history" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Lượt đã làm</h3>
+        <p style="margin: 0; font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">2 lượt · cao nhất 60%</p>
+      </div>
+        <ul style="list-style: none; margin: 0; padding: 0">
+          <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 6px 8px 6px 16px; border-top: 1px solid #f0f4f7">
+            <span style="width: 56px; font-size: 14px; line-height: 20px; font-weight: 600">Lượt 2</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 52px; height: 26px; padding: 0 8px; border-radius: 9999px; background: #f0f6ff; color: #10427b; font-size: 13px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums">60%</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">Chưa đạt · 16:20 · 25/10/2026</span>
+            <button type="button" style="margin-left: auto; height: 32px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; color: #066254">Xem lại</button>
+          </li>
+          <li style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 6px 8px 6px 16px; border-top: 1px solid #f0f4f7">
+            <span style="width: 56px; font-size: 14px; line-height: 20px; font-weight: 600">Lượt 1</span>
+            <span style="display: inline-flex; align-items: center; justify-content: center; min-width: 52px; height: 26px; padding: 0 8px; border-radius: 9999px; background: #f6f4ff; color: #49317a; font-size: 13px; line-height: 20px; font-weight: 600; font-variant-numeric: tabular-nums">40%</span>
+            <span style="font-size: 14px; line-height: 20px; color: #556670">Chưa đạt · 16:12 · 25/10/2026</span>
+            <button type="button" style="margin-left: auto; height: 32px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 600; color: #066254">Xem lại</button>
+          </li>
+        </ul>
+    </section>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Có lượt đang làm dở</p>
+    <section aria-labelledby="intro-c" style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span aria-hidden="true" style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #e7fbf6; color: #007967; display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg></span>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 id="intro-c" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Bài trắc nghiệm</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">5 câu · 10 phút · đạt từ 70%</p>
+        </div>
+      </div>
+      <div role="status" style="display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #f0f6ff; color: #10427b">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M5 3 2 6"></path><path d="m22 6-3-3"></path></svg>
+        <p style="margin: 0; font-size: 14px; line-height: 20px">Bạn đang làm dở một lượt, bắt đầu lúc 16:20 · 25/10/2026. Đồng hồ vẫn chạy trong lúc bạn rời trang.</p>
+      </div>
+      <div><button type="button" style="height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; border: 0; border-radius: 10px; background: #007967; font: inherit; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>Tiếp tục làm bài</button></div>
+    </section>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Không tính giờ · bài đã hoàn thành ("Bài tiếp theo" là nút chính)</p>
+    <section aria-labelledby="intro-d" style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span aria-hidden="true" style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #e7fbf6; color: #007967; display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"></path><path d="m3 7 2 2 4-4"></path><path d="M13 6h8"></path><path d="M13 12h8"></path><path d="M13 18h8"></path></svg></span>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+          <h2 id="intro-d" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Bài trắc nghiệm</h2>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">5 câu · không giới hạn thời gian · đạt từ 70%</p>
+        </div>
+      </div>
+      <p style="margin: 0; display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: #194f29"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg>Bạn đã đạt bài này: cao nhất 80% sau 2 lượt.</p>
+      <p style="margin: 0; display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 20px; color: #3e505a"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M5 22h14"></path><path d="M5 2h14"></path><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path></svg>Không tính giờ, cứ làm thong thả.</p>
+      <div><button type="button" style="box-sizing: border-box; height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 18px; border: 1px solid #6f7e88; border-radius: 10px; background: #ffffff; font: inherit; font-size: 15px; line-height: 20px; font-weight: 600; color: #102029"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>Làm lại</button></div>
+    </section>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Thanh làm bài · bình thường · dưới 1 phút · không tính giờ · đang nộp</p>
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 20px; padding: 14px 16px 14px 20px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; box-shadow: 0 1px 2px #06131b14">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">Đã trả lời <span style="color: #102029">3/5</span> câu</p>
+          <div style="display: flex; gap: 6px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span></div>
+        </div>
+        <div style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 8px 14px; border-radius: 10px; background: #f0f4f7">
+          <span style="font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums">06:42</span>
+          <span style="font-size: 12px; line-height: 18px; font-weight: 500; color: #556670">còn lại trong 10 phút</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 20px; padding: 14px 16px 14px 20px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; box-shadow: 0 1px 2px #06131b14">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">Đã trả lời <span style="color: #102029">4/5</span> câu</p>
+          <div style="display: flex; gap: 6px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span></div>
+        </div>
+        <div style="flex: none; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding: 8px 14px; border-radius: 10px; background: #fff4e9; color: #613700">
+          <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 28px; line-height: 32px; font-weight: 600; font-variant-numeric: tabular-nums"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M5 3 2 6"></path><path d="m22 6-3-3"></path></svg>00:48</span>
+          <span style="font-size: 12px; line-height: 18px; font-weight: 600">Còn dưới 1 phút</span>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 20px; padding: 14px 16px 14px 20px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; box-shadow: 0 1px 2px #06131b14">
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+          <p style="margin: 0; font-size: 14px; line-height: 20px; font-weight: 600; color: #3e505a">Đã trả lời <span style="color: #102029">1/5</span> câu</p>
+          <div style="display: flex; gap: 6px"><span style="width: 32px; height: 32px; border-radius: 8px; background: #007967"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span><span style="box-sizing: border-box; width: 32px; height: 32px; border-radius: 8px; border: 1px solid #6f7e88"></span></div>
+        </div>
+        <p style="margin: 0; flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; line-height: 20px; font-weight: 500; color: #556670"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 22h14"></path><path d="M5 2h14"></path><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"></path><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"></path></svg>Không tính giờ</p>
+      </div>
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding: 16px 16px 16px 20px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+        <div style="display: flex; flex-direction: column; gap: 2px">
+          <p style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Đã trả lời đủ 5/5 câu</p>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Nộp khi bạn đã sẵn sàng. Nộp rồi thì không sửa được nữa.</p>
+        </div>
+        <button type="button" disabled style="height: 44px; display: inline-flex; align-items: center; gap: 8px; padding: 0 20px; border: 0; border-radius: 10px; background: #007967; opacity: 0.5; font: inherit; font-size: 15px; line-height: 20px; font-weight: 600; color: #ffffff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg>Đang nộp…</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Chưa mở · đang tải</p>
+    <section style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; align-items: center; gap: 16px">
+      <span aria-hidden="true" style="flex: none; width: 48px; height: 48px; border-radius: 14px; background: #f0f4f7; color: #556670; display: inline-flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg></span>
+      <div style="min-width: 0; display: flex; flex-direction: column; gap: 2px">
+        <h2 style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Bài trắc nghiệm này chưa được mở</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Giảng viên chưa xuất bản câu hỏi. Bạn vẫn học tiếp được các bài khác.</p>
+      </div>
+    </section>
+    <div aria-hidden="true" style="box-sizing: border-box; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; align-items: center; gap: 16px"><span style="width: 48px; height: 48px; border-radius: 14px; background: #f0f4f7"></span><span style="display: flex; flex-direction: column; gap: 8px"><span style="width: 180px; height: 20px; border-radius: 6px; background: #f0f4f7"></span><span style="width: 260px; height: 14px; border-radius: 6px; background: #f0f4f7"></span></span></div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px"><span style="height: 66px; border-radius: 10px; background: #f0f4f7"></span><span style="height: 66px; border-radius: 10px; background: #f0f4f7"></span><span style="height: 66px; border-radius: 10px; background: #f0f4f7"></span></div>
+      <span style="width: 172px; height: 44px; border-radius: 10px; background: #f0f4f7"></span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1420}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

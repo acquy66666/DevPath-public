@@ -89,7 +89,14 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** chữ ẩn "3/3 bài đã xong" của từng chương làm "x/y bài" có 5 chỗ khớp (E2E sẽ đỏ vì strict mode); quiz có hai nút chính.
   - **Kiểm:** `npm test` 82/82 (13 mới), lint + tsc sạch, `check.cjs` 19/19, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 12 + 12.
   - Bằng chứng: [`learn-page.md`](../report/assets/phase-7/learn-page.md)
-- [ ] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ
+- [x] Nhóm 5 — Quiz: làm bài có đồng hồ, kết quả 4 mức (`party`/`proud`/`cheer`/`comfort`) + `startled` khi hết giờ — xong 25/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/UDrWjt17EWn5E3ohFCiNmo), 6 artboard (đang làm 1440, kết quả 1440, đang làm + kết quả 375, 5 kiểu kết quả + lượt cũ, các trạng thái). Dữ liệu thật: quiz "Kiểm tra: vòng lặp for" của khóa Python (5 câu duyệt ở gate Phase 4). Bản trong repo ở `docs/ui-ux/quiz/canvas/`. User duyệt 25/10; canvas bản 8 sửa theo code.
+  - **Làm bài:** thanh dính có số câu đã trả lời, nút từng câu (tới câu đó + focus), đồng hồ `role="timer"` im lặng, hổ phách dưới 1 phút; vùng đọc chỉ báo 5 phút / 1 phút / 10 giây. Phương án là thẻ có chữ cái A–D bọc radio thật. Code trong backtick vẽ thành code (`lib/quiz/inline-code.ts`). Câu đã chọn giữ trong `localStorage` tới khi nộp.
+  - **Kết quả:** dải theo mức (`lib/quiz/result-view.ts`: mức, Naomi, màu, câu chữ; "Đạt" theo `passed` của máy chủ chứ không theo màu), "↓ Câu sai: câu 3", thanh từng câu, xem lại từng câu + bộ lọc "Câu sai". Hết giờ ghi "Chưa nộp" thay vì "Bỏ trống". Lịch sử mở lại được lượt cũ (Naomi đứng yên). Naomi chỉ phản ứng với lượt vừa nộp.
+  - **Một nút chính:** đang làm thì "Nộp bài"; bài đã xong thì "Bài tiếp theo" (`LessonActions` nhận `sitting`); dưới 50% và chưa xong thì "Ôn lại chương N" (`LessonPlace.sectionStart`).
+  - **Lỗi tìm ra:** tải lại giữa quiz có giờ mất hết câu đã chọn; đồng hồ cũ `aria-live` đọc từng giây; backtick in nguyên văn; lượt hết giờ ghi "Bạn chưa trả lời câu này" cho mọi câu.
+  - **Kiểm:** `npm test` 100/100 (18 mới), lint + tsc sạch, `check.cjs` 26/26, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 13 + 14.
+  - Bằng chứng: [`quiz.md`](../report/assets/phase-7/quiz.md)
 - [ ] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐
 - [ ] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave`
 - [ ] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`)

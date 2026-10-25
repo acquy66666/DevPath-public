@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { getCurriculum, getLesson } from "@/lib/api/curriculum";
+import { getQuizOfLesson } from "@/lib/api/quiz";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getCourseProgress, saveProgress } from "@/lib/api/progress";
 import { listBookmarks, setBookmark } from "@/lib/api/study";
@@ -124,6 +125,19 @@ export function LearnView({
     queryFn: () => getLesson(currentId as string, accessToken),
     enabled: signedIn && currentId !== null,
   });
+
+  // The quiz's own facts, for "Quiz · 5 câu" in the heading. The same query
+  // the quiz below reads, so it costs one request between them.
+  const quizMeta = useQuery({
+    queryKey: ["quiz", currentId],
+    queryFn: () => getQuizOfLesson(currentId as string, accessToken as string),
+    enabled: signedIn && currentId !== null && lesson.data?.type === "quiz",
+    retry: false,
+  });
+
+  // While a quiz is being answered, "Nộp bài" is the main button on screen;
+  // "Bài tiếp theo" must not compete with it even on a finished lesson.
+  const [sitting, setSitting] = useState(false);
 
   const current = progress.data?.lessons.find((row) => row.lesson_id === currentId);
   const finished = current?.completed_at != null;
@@ -251,7 +265,9 @@ export function LearnView({
       ? formatTimestamp(data.video.duration_s)
       : data?.type === "article" && data.article_content?.trim()
         ? `${readingMinutes(data.article_content)} phút đọc`
-        : null;
+        : data?.type === "quiz" && quizMeta.data?.question_count
+          ? `${quizMeta.data.question_count} câu`
+          : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -346,6 +362,15 @@ export function LearnView({
                   key={data.id}
                   lessonId={data.id}
                   accessToken={accessToken as string}
+                  finished={finished}
+                  review={
+                    place?.sectionStart
+                      ? {
+                          href: `/hoc/${slug}?bai=${place.sectionStart.id}`,
+                          label: `Ôn lại chương ${place.sectionNumber}`,
+                        }
+                      : null
+                  }
                   // Passing finishes the lesson, written in the same
                   // transaction as the score. The page only has to go and
                   // look -- exactly as it does after an accepted submission.
@@ -353,6 +378,7 @@ export function LearnView({
                     queryClient.invalidateQueries({ queryKey: ["progress", courseId] });
                     queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
                   }}
+                  onSittingChange={setSitting}
                 />
               ) : data.article_content?.trim() ? (
                 <article className="rounded-lg border bg-card px-5 py-6 sm:px-10 sm:py-8">
@@ -377,6 +403,7 @@ export function LearnView({
                 onToggleFlag={() => toggleBookmark.mutate(!flagged)}
                 previous={place?.previous ?? null}
                 next={place?.next ?? null}
+                sitting={data.type === "quiz" && sitting}
                 error={setCompleted.isError ? apiErrorMessage(setCompleted.error) : null}
               />
 

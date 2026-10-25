@@ -940,3 +940,25 @@ Nhóm màn 4 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/learn-pa
 **Naomi `graduate` chỉ phản ứng khi khóa vừa xong trong phiên đó.** Trang phải đã thấy khóa chưa xong trước. Mở lại một khóa đã xong thì Naomi đứng yên trong banner, cạnh nút "Xem chứng chỉ". Banner dùng màu phần thưởng (nghệ nhạt) vì chứng chỉ là phần thưởng. Khóa từng xong rồi bị bỏ tick một bài thì chứng chỉ vẫn còn, và link "Xem chứng chỉ" chuyển về thanh khóa học. Không bao giờ có hai link cùng lúc.
 
 **Hộp thư Hỏi đáp của giảng viên đổi theo.** `QaThreadView` dùng chung cho trang học và `/giang-day/hoi-dap`. Trên trang học, nút "Gửi câu trả lời" là nút phụ vì việc chính của màn là bài học. Trong hộp thư của giảng viên, trả lời là việc chính nên vẫn là nút chính.
+
+## Quiz: bốn mức kết quả, đồng hồ im lặng, giữ câu đã chọn khi tải lại (25/10/2026)
+
+Nhóm màn 5 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/quiz.md` + `quiz/`. Backend không đổi.
+
+**Màu theo mức điểm, chữ "Đạt" theo điểm đạt của quiz.** Bốn mức của design system (100 / ≥ 80 / ≥ 50 / dưới) quyết định màu và Naomi. "Đạt" hay "Chưa đạt" lấy đúng cờ `passed` máy chủ trả về. Một quiz đặt điểm đạt 60% thì 65% là "Đạt" dù màu lam (`cheer`); quiz đặt 90% thì 85% là "Chưa đạt" dù màu xanh (`proud`). Có test cho cả hai trường hợp.
+
+**Hết giờ là một mức riêng, và câu trả lời của lượt đó ghi "Chưa nộp".** Máy chủ chấm 0 điểm mà không đọc bài nộp sau hạn + 10 giây ân hạn, và không lưu đáp án của lượt đó. Vì vậy trang dùng màu của TLE và Naomi `startled`, ghi rõ vì sao 0 điểm. Không câu nào bị ghi "Bỏ trống", vì không ai biết học viên đã chọn gì. Bản cũ ghi "Bạn chưa trả lời câu này" ở cả 5 câu.
+
+**Câu đã chọn được giữ trong trình duyệt đến lúc nộp.** Máy chủ chỉ nhận đáp án khi nộp, nên trước đây tải lại trang giữa một quiz có giờ là mất hết câu đã chọn, trong khi đồng hồ ở máy chủ vẫn chạy. Câu đã chọn giờ nằm trong `localStorage` theo id lượt làm, đọc và ghi trong `try/catch`, xóa khi nộp xong. Đây là tiện ích cho từng người xem, không phải dữ liệu cần bền: mất thì câu đó trống, như trước. Đồng hồ vẫn là của máy chủ.
+
+**Đồng hồ là `role="timer"`, im lặng; một vùng đọc duy nhất báo các mốc và điểm số.** Đồng hồ cũ có `aria-live`, nên trình đọc màn hình đọc nó mỗi giây, đè lên câu hỏi đang được đọc. Giờ vùng đọc của quiz chỉ báo "Còn 5 phút" / "Còn 1 phút" / "Còn 10 giây", rồi "80%. Đạt. 4/5 câu đúng." khi có kết quả. Vùng đọc được gắn suốt đời quiz trên trang, vì một vùng xuất hiện cùng lúc với chữ của nó thì không được đọc. Câu báo được tính ngay khi render, không qua effect.
+
+**Mỗi màn một nút chính, kể cả khi đổi qua lại giữa làm bài và kết quả.** Khi đang làm bài, "Nộp bài" là nút chính, và trang học được báo (`onSittingChange`) để "Bài tiếp theo" giữ màu phụ. Ở màn đầu và kết quả: bài chưa xong thì nút bắt đầu / làm lại là chính; bài đã xong (do quiz này hoặc tick tay) thì "Bài tiếp theo" là chính, "Làm lại" là nút viền. Dưới 50% và bài chưa xong, "Ôn lại chương N" (về bài đầu chương, tính từ mục lục) là nút chính: điểm thấp như vậy thì làm lại ngay ít khi là việc đúng.
+
+**"Làm lại" ở kết quả bắt đầu lượt mới ngay, không quay về màn đầu.** Học viên đã thấy luật đồng hồ ở màn đầu lần trước; bấm "Làm lại" là chủ ý. Màn đầu vẫn là chỗ trang mở ra khi quay lại bài, và là chỗ "Đóng lượt này" đưa về sau khi xem một lượt cũ.
+
+**Sau khi nộp, focus và khung nhìn tới dải kết quả.** Nút "Nộp bài" ở cuối một trang dài, còn kết quả ở đầu phần quiz. Không cuộn thì phản ứng của Naomi diễn ra ngoài màn hình, và focus rơi về `body` vì nút vừa bấm đã biến mất. Mở bài thì focus vào câu 1; đóng lượt cũ thì focus vào nút ở màn đầu.
+
+**Code trong backtick được vẽ thành code, bằng một hàm riêng chứ không qua `<Markdown>`.** Prompt sinh quiz bảo model đặt code trong backtick, và giảng viên cũng gõ như vậy. Một câu hỏi hay một phương án chỉ là một dòng: Markdown đầy đủ sẽ biến "1. range(5)" thành danh sách và "*args" thành chữ nghiêng.
+
+**Lượt cũ mở lại được từ lịch sử, Naomi đứng yên.** Endpoint `GET /quiz-attempts/{id}` đã có từ Phase 4 nhưng trang chưa dùng. Naomi chỉ phản ứng với lượt vừa nộp trên trang (`reactTo`). Mở một lượt khác thì `reactTo` bị xóa, nên quay lại lượt vừa nộp cũng không ăn mừng lần nữa.

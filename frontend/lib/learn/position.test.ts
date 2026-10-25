@@ -33,6 +33,13 @@ test("a lesson knows its section, its number and its neighbours", () => {
   assert.equal(place.next?.id, "f");
 });
 
+test("a lesson knows where its section starts, unless it is the start", () => {
+  // A quiz at the end of its chapter points back to the chapter's first lesson.
+  assert.equal(locateLesson(COURSE, "f")?.sectionStart?.id, "d");
+  assert.equal(locateLesson(COURSE, "e")?.sectionStart?.id, "d");
+  assert.equal(locateLesson(COURSE, "d")?.sectionStart, null);
+});
+
 test("neighbours cross section borders, and the ends have none", () => {
   assert.equal(locateLesson(COURSE, "c")?.next?.id, "d");
   assert.equal(locateLesson(COURSE, "d")?.previous?.id, "c");

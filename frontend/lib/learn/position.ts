@@ -14,6 +14,11 @@ export interface LessonPlace {
   /** The lesson before and after in reading order, across sections. */
   previous: LessonSummary | null;
   next: LessonSummary | null;
+  /**
+   * The first lesson of the section, where "Ôn lại chương N" after a weak
+   * quiz goes; null when this lesson is the first.
+   */
+  sectionStart: LessonSummary | null;
 }
 
 export function locateLesson(curriculum: Curriculum, lessonId: string | null): LessonPlace | null {
@@ -33,6 +38,7 @@ export function locateLesson(curriculum: Curriculum, lessonId: string | null): L
     sectionLessonCount: section.lessons.length,
     previous: order[at - 1] ?? null,
     next: order[at + 1] ?? null,
+    sectionStart: section.lessons[0].id === lessonId ? null : section.lessons[0],
   };
 }
 

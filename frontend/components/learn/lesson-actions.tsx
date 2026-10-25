@@ -12,9 +12,11 @@ import { cn } from "@/lib/utils";
  * One primary button per screen (design system): ticking the lesson while it
  * is open, "Bài tiếp theo" once it is done. A code exercise and a quiz finish
  * themselves -- an accepted submission, a passing score -- and have their own
- * primary ("Nộp bài"), so for them ticking by hand is an outline button and
- * moving on stays secondary. Ticking by hand stays possible everywhere:
- * certificates work the Udemy way.
+ * primary ("Nộp bài", "Bắt đầu làm bài"), so for them ticking by hand is an
+ * outline button. Moving on stays secondary under a code exercise, whose
+ * editor is always there, and under a quiz being answered; a finished quiz
+ * hands the primary to "Bài tiếp theo". Ticking by hand stays possible
+ * everywhere: certificates work the Udemy way.
  *
  * The neighbours are links, so the browser's back button walks the lessons,
  * and following one scrolls to the top of the next lesson.
@@ -30,6 +32,7 @@ export function LessonActions({
   onToggleFlag,
   previous,
   next,
+  sitting = false,
   error,
 }: {
   slug: string;
@@ -42,10 +45,16 @@ export function LessonActions({
   onToggleFlag: () => void;
   previous: LessonSummary | null;
   next: LessonSummary | null;
+  /** A quiz is being answered: its "Nộp bài" is the main button meanwhile. */
+  sitting?: boolean;
   error: string | null;
 }) {
   const selfFinishing = type === "code_exercise" || type === "quiz";
-  const nextIsMain = finished && !selfFinishing;
+  // A finished lesson's main button is the next lesson -- except under a code
+  // exercise, whose editor keeps "Nộp bài" on screen, and under a quiz while
+  // it is being answered. A finished quiz between attempts (its intro, its
+  // result) offers trying again as an outline, so "Bài tiếp theo" leads.
+  const nextIsMain = finished && type !== "code_exercise" && !sitting;
 
   return (
     <div className="flex flex-col gap-2">

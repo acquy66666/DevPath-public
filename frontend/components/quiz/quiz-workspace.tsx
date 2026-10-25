@@ -1,34 +1,68 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Clock, ListChecks, XCircle } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { LockKeyhole } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
+import { AttemptHistory } from "@/components/quiz/attempt-history";
+import { QuizIntro } from "@/components/quiz/quiz-intro";
+import { preloadResultMoods, QuizResult } from "@/components/quiz/quiz-result";
+import { QuizSheet } from "@/components/quiz/quiz-sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
+  getAttempt,
   getQuizOfLesson,
   listAttempts,
   startAttempt,
   submitAttempt,
   type Attempt,
 } from "@/lib/api/quiz";
-import { cn } from "@/lib/utils";
+import { historyRows, resultCopy, summarizeReview, timerAnnouncement } from "@/lib/quiz/result-view";
 
-/** mm:ss, the only formatting a countdown needs. */
-function clock(seconds: number): string {
-  const minutes = Math.floor(seconds / 60);
-  return `${minutes}:${String(seconds % 60).padStart(2, "0")}`;
+const REDUCE = "(prefers-reduced-motion: reduce)";
+
+// The answers of a running attempt, kept in this browser until it is handed
+// in. The server stores answers only on submit, so without this a refresh in
+// the middle of a timed quiz would cost every answer while the clock ran on.
+// A convenience for this viewer only: unreadable or missing is simply blank.
+const draftKey = (attemptId: string) => `devpath:quiz-draft:${attemptId}`;
+
+function readDraft(attempt: Attempt): (number | null)[] | null {
+  try {
+    const raw = window.localStorage.getItem(draftKey(attempt.id));
+    if (!raw) return null;
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length !== attempt.questions.length) return null;
+    return parsed.map((value, index) =>
+      Number.isInteger(value) && value >= 0 && value < attempt.questions[index].options.length
+        ? (value as number)
+        : null,
+    );
+  } catch {
+    return null;
+  }
 }
 
-function describeLimit(seconds: number | null): string {
-  if (seconds === null) return "không giới hạn thời gian";
-  const minutes = Math.round(seconds / 60);
-  return `${minutes} phút`;
+function writeDraft(attemptId: string, answers: (number | null)[]) {
+  try {
+    window.localStorage.setItem(draftKey(attemptId), JSON.stringify(answers));
+  } catch {
+    // Storage full, blocked or absent: the answers still live on the page.
+  }
 }
+
+function dropDraft(attemptId: string) {
+  try {
+    window.localStorage.removeItem(draftKey(attemptId));
+  } catch {
+    // Nothing to clean up, or nothing we may touch.
+  }
+}
+
+/** Where focus goes once the next screen of the quiz is on the page. */
+type FocusTarget = "paper" | "result" | "start";
 
 /**
  * The student's side of a quiz: start it, answer it, hand it in, read why.
@@ -43,16 +77,28 @@ function describeLimit(seconds: number | null): string {
  * It deliberately does not start an attempt on mount. Opening a lesson to see
  * what is in it must not start a clock; the student presses the button, and
  * the button says "tiếp tục" when there is an unfinished attempt to resume.
+ *
+ * Naomi answers the attempt handed in on this page, once (`reactTo`). One
+ * opened again from the history is a still picture.
  */
 export function QuizWorkspace({
   lessonId,
   accessToken,
+  finished,
+  review,
   onPassed,
+  onSittingChange,
 }: {
   lessonId: string;
   accessToken: string;
+  /** The lesson is ticked: "Bài tiếp theo" is the main button, not this. */
+  finished: boolean;
+  /** The first lesson of the quiz's chapter, for "Ôn lại chương N". */
+  review: { href: string; label: string } | null;
   /** The quiz was passed -- the lesson is finished, in the same transaction. */
   onPassed?: () => void;
+  /** An attempt is being answered: the page keeps its other buttons quiet. */
+  onSittingChange?: (sitting: boolean) => void;
 }) {
   const queryClient = useQueryClient();
 
@@ -63,7 +109,7 @@ export function QuizWorkspace({
   });
   const quizId = quiz.data?.id ?? null;
 
-  const history = useQuery({
+  const attempts = useQuery({
     queryKey: ["quiz-attempts", quizId],
     queryFn: () => listAttempts(accessToken, quizId as string),
     enabled: quizId !== null,
@@ -72,27 +118,39 @@ export function QuizWorkspace({
   const [attempt, setAttempt] = useState<Attempt | null>(null);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [reactTo, setReactTo] = useState<string | null>(null);
   //: Guards the one submit the countdown makes on its own, so a re-render at
   //: zero cannot fire a second one.
   const handedIn = useRef(false);
+  const focusNext = useRef<FocusTarget | null>(null);
+  const band = useRef<HTMLDivElement>(null);
+  const firstQuestion = useRef<HTMLFieldSetElement>(null);
+  const startButton = useRef<HTMLButtonElement>(null);
 
   const running = attempt !== null && attempt.submitted_at === null;
 
-  const adopt = useCallback((next: Attempt) => {
+  function adopt(next: Attempt, focus: FocusTarget) {
     setAttempt(next);
     setRemaining(next.submitted_at === null ? next.seconds_remaining : null);
     setAnswers(
       next.review
         ? next.review.map((row) => row.your_answer)
-        : Array<number | null>(next.questions.length).fill(null),
+        : (readDraft(next) ?? Array<number | null>(next.questions.length).fill(null)),
     );
-  }, []);
+    focusNext.current = focus;
+  }
+
+  function refreshHistory() {
+    queryClient.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
+  }
 
   const begin = useMutation({
     mutationFn: () => startAttempt(accessToken, quizId as string),
     onSuccess: (next) => {
       handedIn.current = false;
-      adopt(next);
+      setReactTo(null);
+      adopt(next, "paper");
+      refreshHistory();
     },
   });
 
@@ -100,9 +158,21 @@ export function QuizWorkspace({
     mutationFn: (chosen: (number | null)[]) =>
       submitAttempt(accessToken, attempt?.id as string, chosen),
     onSuccess: (next) => {
-      adopt(next);
-      queryClient.invalidateQueries({ queryKey: ["quiz-attempts", quizId] });
+      dropDraft(next.id);
+      setReactTo(next.id);
+      adopt(next, "result");
+      refreshHistory();
+      // A paper handed in is a day of study, passed or not.
+      queryClient.invalidateQueries({ queryKey: ["gamification"] });
       if (next.passed) onPassed?.();
+    },
+  });
+
+  const reopen = useMutation({
+    mutationFn: (attemptId: string) => getAttempt(accessToken, attemptId),
+    onSuccess: (next) => {
+      setReactTo(null);
+      adopt(next, "result");
     },
   });
 
@@ -114,8 +184,8 @@ export function QuizWorkspace({
   }, [running, remaining]);
 
   // Out of time: hand in whatever is on the page. Anything the server judges
-  // to be past the grace window comes back marked zero, and the banner below
-  // says so -- the page does not decide that here.
+  // to be past the grace window comes back marked zero, and the result says
+  // so -- the page does not decide that here.
   useEffect(() => {
     if (running && remaining === 0 && !handedIn.current && !hand.isPending) {
       handedIn.current = true;
@@ -123,13 +193,66 @@ export function QuizWorkspace({
     }
   }, [running, remaining, answers, hand]);
 
+  useEffect(() => {
+    if (running && attempt) writeDraft(attempt.id, answers);
+  }, [running, attempt, answers]);
+
+  useEffect(() => {
+    onSittingChange?.(running);
+    return () => onSittingChange?.(false);
+  }, [running, onSittingChange]);
+
+  // The result must not wait on a download when it lands.
+  useEffect(() => {
+    if (running) preloadResultMoods();
+  }, [running]);
+
+  // The button that was pressed is gone with the screen it was on: put focus
+  // where the next screen starts, and bring a result into view (the hand-in
+  // is at the bottom of a long paper, the result at its top).
+  useEffect(() => {
+    const target = focusNext.current;
+    if (target === null) return;
+    focusNext.current = null;
+    if (target === "paper") {
+      firstQuestion.current?.focus();
+    } else if (target === "start") {
+      startButton.current?.focus();
+    } else if (band.current) {
+      band.current.focus({ preventScroll: true });
+      band.current.scrollIntoView({
+        block: "start",
+        behavior: window.matchMedia(REDUCE).matches ? "auto" : "smooth",
+      });
+    }
+  }, [attempt]);
+
   if (quiz.isPending) {
-    return <Skeleton className="h-40" />;
+    return (
+      <SkeletonRegion
+        label="Đang tải bài trắc nghiệm"
+        className="flex flex-col gap-5 rounded-lg border bg-card p-5 sm:p-6"
+      >
+        <div className="flex items-center gap-4">
+          <Skeleton className="size-12 shrink-0 rounded-lg" />
+          <div className="flex w-full max-w-72 flex-col">
+            <SkeletonText size="h3" className="w-44" />
+            <SkeletonText size="body-sm" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <Skeleton className="h-16 sm:h-18" />
+          <Skeleton className="h-16 sm:h-18" />
+          <Skeleton className="h-16 sm:h-18" />
+        </div>
+        <Skeleton className="h-11 w-full sm:w-44" />
+      </SkeletonRegion>
+    );
   }
 
   if (quiz.isError) {
     return (
-      <Alert>
+      <Alert variant="destructive">
         <AlertDescription>{apiErrorMessage(quiz.error)}</AlertDescription>
       </Alert>
     );
@@ -138,238 +261,124 @@ export function QuizWorkspace({
   const meta = quiz.data;
   if (!meta.is_published || meta.question_count === 0) {
     return (
-      <Alert>
-        <AlertDescription>
-          Bài trắc nghiệm này chưa được mở. Quay lại sau nhé.
-        </AlertDescription>
-      </Alert>
+      <div className="flex items-center gap-4 rounded-lg border bg-card p-5 sm:p-6">
+        <span
+          aria-hidden
+          className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground"
+        >
+          <LockKeyhole className="size-6" />
+        </span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="text-title">Bài trắc nghiệm này chưa được mở</h2>
+          <p className="text-body-sm text-muted-foreground">
+            Giảng viên chưa xuất bản câu hỏi. Bạn vẫn học tiếp được các bài khác.
+          </p>
+        </div>
+      </div>
     );
   }
 
-  const unfinished = history.data?.items.find((row) => row.submitted_at === null);
-  const review = attempt?.review ?? null;
+  const history = attempts.data ? historyRows(attempts.data) : null;
+  const historyPanel = history ? (
+    <AttemptHistory
+      history={history}
+      viewing={attempt?.id ?? null}
+      opening={reopen.isPending ? (reopen.variables ?? null) : null}
+      onOpen={(attemptId) => reopen.mutate(attemptId)}
+    />
+  ) : null;
 
-  // --- Before starting ----------------------------------------------------
+  let body;
+  let announce = "";
 
   if (attempt === null) {
-    return (
-      <section className="space-y-4 rounded-md border p-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <h2 className="text-lg font-semibold">Bài trắc nghiệm</h2>
-          <Badge variant="secondary">
-            <ListChecks className="mr-1 size-3.5" />
-            {meta.question_count} câu
-          </Badge>
-          <Badge variant="secondary">
-            <Clock className="mr-1 size-3.5" />
-            {describeLimit(meta.time_limit_s)}
-          </Badge>
-          <Badge variant="secondary">Đạt từ {meta.pass_score}%</Badge>
-        </div>
-
-        <p className="text-sm text-muted-foreground">
-          {meta.time_limit_s === null
-            ? "Không tính giờ — cứ làm thong thả."
-            : "Đồng hồ chạy ở máy chủ và bắt đầu ngay khi bạn bấm nút. Đóng tab không làm nó dừng lại."}
-        </p>
-
-        {begin.isError ? (
+    body = (
+      <>
+        <QuizIntro
+          quiz={meta}
+          history={history}
+          finished={finished}
+          starting={begin.isPending}
+          error={begin.isError ? apiErrorMessage(begin.error) : null}
+          onStart={() => begin.mutate()}
+          startRef={startButton}
+        />
+        {reopen.isError ? (
           <Alert variant="destructive">
-            <AlertDescription>{apiErrorMessage(begin.error)}</AlertDescription>
+            <AlertDescription>{apiErrorMessage(reopen.error)}</AlertDescription>
           </Alert>
         ) : null}
-
-        <Button onClick={() => begin.mutate()} disabled={begin.isPending}>
-          {unfinished ? "Tiếp tục làm bài" : "Bắt đầu làm bài"}
-        </Button>
-
-        {history.data && history.data.items.length > 0 ? (
-          <AttemptHistory rows={history.data.items} />
-        ) : null}
-      </section>
+        {historyPanel}
+      </>
+    );
+  } else if (attempt.review) {
+    const justHandedIn = reactTo === attempt.id;
+    if (justHandedIn) {
+      const summary = summarizeReview(attempt.review, attempt.expired);
+      const copy = resultCopy({
+        score: attempt.score ?? 0,
+        passed: attempt.passed === true,
+        expired: attempt.expired,
+        passScore: attempt.pass_score,
+        correct: summary.correct,
+        total: summary.total,
+        timeLimitS: attempt.time_limit_s,
+      });
+      announce = `${attempt.score ?? 0}%. ${copy.chip}. ${copy.headline}.`;
+    }
+    body = (
+      <>
+        <QuizResult
+          attempt={attempt}
+          number={history?.rows.find((row) => row.id === attempt.id)?.number ?? null}
+          reactTo={reactTo}
+          finished={finished}
+          review={review}
+          onRetry={() => begin.mutate()}
+          retrying={begin.isPending}
+          retryError={begin.isError ? apiErrorMessage(begin.error) : null}
+          onClose={
+            justHandedIn
+              ? null
+              : () => {
+                  focusNext.current = "start";
+                  setAttempt(null);
+                }
+          }
+          bandRef={band}
+        />
+        {historyPanel}
+      </>
+    );
+  } else {
+    const limit = attempt.time_limit_s;
+    if (remaining !== null && limit !== null) announce = timerAnnouncement(remaining, limit) ?? "";
+    body = (
+      <QuizSheet
+        questions={attempt.questions}
+        answers={answers}
+        onChoose={(question, option) =>
+          setAnswers((current) => current.map((value, index) => (index === question ? option : value)))
+        }
+        remaining={remaining}
+        limit={limit}
+        submitting={hand.isPending}
+        error={hand.isError ? apiErrorMessage(hand.error) : null}
+        onSubmit={() => hand.mutate(answers)}
+        firstRef={firstQuestion}
+      />
     );
   }
 
-  // --- The marked paper ---------------------------------------------------
-
-  if (review) {
-    return (
-      <section className="space-y-4">
-        <div
-          className={cn(
-            "rounded-md border p-5",
-            attempt.passed ? "border-emerald-500/40 bg-emerald-500/5" : "border-amber-500/40 bg-amber-500/5",
-          )}
-        >
-          <p className="text-2xl font-semibold">{attempt.score}%</p>
-          <p className="text-sm text-muted-foreground">
-            {attempt.expired
-              ? "Hết giờ trước khi bài được nộp nên lượt này tính 0 điểm."
-              : attempt.passed
-                ? `Đạt — cần ${attempt.pass_score}% và bạn làm được ${attempt.score}%.`
-                : `Chưa đạt — cần ${attempt.pass_score}%. Làm lại được ngay.`}
-          </p>
-        </div>
-
-        <ol className="space-y-4">
-          {review.map((row, index) => (
-            <li key={row.id} className="rounded-md border p-4">
-              <div className="flex items-start gap-2">
-                {row.is_correct ? (
-                  <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-emerald-600" />
-                ) : (
-                  <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" />
-                )}
-                <p className="font-medium">
-                  Câu {index + 1}. {row.question}
-                </p>
-              </div>
-
-              <ul className="mt-3 space-y-1.5 text-sm">
-                {row.options.map((option, optionIndex) => (
-                  <li
-                    key={optionIndex}
-                    className={cn(
-                      "rounded-md border px-3 py-2",
-                      optionIndex === row.correct_index && "border-emerald-500/50 bg-emerald-500/10",
-                      optionIndex === row.your_answer &&
-                        optionIndex !== row.correct_index &&
-                        "border-destructive/50 bg-destructive/10",
-                    )}
-                  >
-                    {option}
-                    {optionIndex === row.correct_index ? (
-                      <span className="ml-2 text-xs text-emerald-700">đáp án đúng</span>
-                    ) : null}
-                    {optionIndex === row.your_answer && optionIndex !== row.correct_index ? (
-                      <span className="ml-2 text-xs text-destructive">bạn chọn</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-
-              {row.your_answer === null ? (
-                <p className="mt-2 text-sm text-muted-foreground">Bạn chưa trả lời câu này.</p>
-              ) : null}
-
-              {row.explanation ? (
-                <p className="mt-3 rounded-md bg-muted px-3 py-2 text-sm">{row.explanation}</p>
-              ) : null}
-            </li>
-          ))}
-        </ol>
-
-        <Button
-          variant="outline"
-          onClick={() => {
-            setAttempt(null);
-            begin.reset();
-          }}
-        >
-          Làm lại
-        </Button>
-      </section>
-    );
-  }
-
-  // --- Sitting it ---------------------------------------------------------
-
-  const answered = answers.filter((answer) => answer !== null).length;
-
   return (
-    <section className="space-y-4">
-      <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background/95 p-3 backdrop-blur">
-        <p className="text-sm text-muted-foreground">
-          Đã trả lời {answered}/{attempt.questions.length} câu
-        </p>
-        {remaining === null ? null : (
-          <p
-            className={cn(
-              "font-mono text-lg tabular-nums",
-              remaining <= 30 && "text-destructive",
-            )}
-            aria-live="polite"
-          >
-            <Clock className="mr-1 inline size-4" />
-            {clock(remaining)}
-          </p>
-        )}
-      </div>
-
-      <ol className="space-y-4">
-        {attempt.questions.map((question, index) => (
-          <li key={question.id} className="rounded-md border p-4">
-            <fieldset>
-              <legend className="font-medium">
-                Câu {index + 1}. {question.question}
-              </legend>
-              <div className="mt-3 space-y-1.5">
-                {question.options.map((option, optionIndex) => (
-                  <label
-                    key={optionIndex}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-3 rounded-md border px-3 py-2 text-sm transition-colors",
-                      answers[index] === optionIndex
-                        ? "border-primary bg-primary/5"
-                        : "hover:bg-muted",
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name={question.id}
-                      className="size-4"
-                      checked={answers[index] === optionIndex}
-                      onChange={() =>
-                        setAnswers((current) =>
-                          current.map((value, position) =>
-                            position === index ? optionIndex : value,
-                          ),
-                        )
-                      }
-                    />
-                    {option}
-                  </label>
-                ))}
-              </div>
-            </fieldset>
-          </li>
-        ))}
-      </ol>
-
-      {hand.isError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{apiErrorMessage(hand.error)}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      <Button onClick={() => hand.mutate(answers)} disabled={hand.isPending}>
-        {hand.isPending ? "Đang nộp..." : "Nộp bài"}
-      </Button>
-    </section>
-  );
-}
-
-function AttemptHistory({
-  rows,
-}: {
-  rows: { id: string; submitted_at: string | null; score: number | null; passed: boolean | null }[];
-}) {
-  const finished = rows.filter((row) => row.submitted_at !== null);
-  if (finished.length === 0) return null;
-
-  return (
-    <div className="space-y-1 border-t pt-3">
-      <p className="text-sm font-medium">Lượt đã làm</p>
-      <ul className="space-y-1 text-sm text-muted-foreground">
-        {finished.map((row) => (
-          <li key={row.id} className="flex items-center gap-2">
-            <span>{new Date(row.submitted_at as string).toLocaleString("vi-VN")}</span>
-            <span className={cn(row.passed ? "text-emerald-600" : "text-muted-foreground")}>
-              {row.score}%{row.passed ? " · đạt" : ""}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="flex flex-col gap-4 sm:gap-5">
+      {body}
+      {/* One live region for the quiz's whole life on the page, so a screen
+          reader hears the clock's warnings and then the score: a region that
+          mounts with its text already in it is not announced. */}
+      <p className="sr-only" aria-live="polite">
+        {announce}
+      </p>
     </div>
   );
 }

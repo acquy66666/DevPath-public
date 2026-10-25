@@ -1,0 +1,138 @@
+{
+  "at": "2026-10-25T11:23:00.110Z",
+  "base": "http://localhost:3000",
+  "passed": 26,
+  "failed": 0,
+  "results": [
+    {
+      "name": "đầu bài ghi số câu của quiz",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "màn trước khi làm có 3 thông tin và nút chính",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "không tràn ngang: trước khi làm",
+      "ok": true,
+      "detail": "trước khi làm: 375 px"
+    },
+    {
+      "name": "dưới 50%: Naomi an ủi, 'Ôn lại chương' là nút chính, trỏ về đầu chương",
+      "ok": true,
+      "detail": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=b416415d-10f8-4353-9a43-780ce061910b"
+    },
+    {
+      "name": "bỏ trống được đếm riêng với câu sai",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "mở bài: focus vào câu 1",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "đang làm: Bài tiếp theo không phải nút chính",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "bàn phím: Tab vào câu 1, Space chọn, mũi tên đổi phương án",
+      "ok": true,
+      "detail": "A → B, vẫn 1/5"
+    },
+    {
+      "name": "code trong dấu backtick hiện thành code",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "dòng trên nút nộp đếm câu bỏ trống",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "nút số câu đưa tới câu đó, không bị thanh dính che",
+      "ok": true,
+      "detail": "câu 4 ở 160 px, thanh tới 98 px"
+    },
+    {
+      "name": "đồng hồ là timer im lặng, vùng đọc không đọc từng giây",
+      "ok": true,
+      "detail": "09:59"
+    },
+    {
+      "name": "không tràn ngang: đang làm",
+      "ok": true,
+      "detail": "đang làm: 375 px"
+    },
+    {
+      "name": "tải lại giữa chừng: tiếp tục, câu đã chọn còn nguyên",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "dưới 1 phút: đồng hồ đổi màu và nói rõ",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "nộp xong: focus và khung nhìn ở dải kết quả",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "vùng đọc báo điểm",
+      "ok": true,
+      "detail": "80%. Đạt. 4/5 câu đúng."
+    },
+    {
+      "name": "Naomi tự hào, phản ứng một lần",
+      "ok": true,
+      "detail": "playing"
+    },
+    {
+      "name": "dòng 'Câu sai: câu 3' đưa tới câu 3",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "lọc 'Câu sai' chỉ còn câu 3",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "đạt rồi: Bài tiếp theo là nút chính, Làm lại là nút viền",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "lịch sử đánh số lượt, lượt đang xem ghi rõ",
+      "ok": true,
+      "detail": "Lượt 280%Đạt18:22 · 25/10/2026Đang xem"
+    },
+    {
+      "name": "không tràn ngang: kết quả",
+      "ok": true,
+      "detail": "kết quả: 375 px"
+    },
+    {
+      "name": "hết giờ: Naomi giật mình, câu nào cũng 'Chưa nộp', không có bộ lọc",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "mở lại lượt cũ: Naomi đứng yên, đóng lại về màn đầu",
+      "ok": true,
+      "detail": null
+    },
+    {
+      "name": "không tính giờ: không có đồng hồ",
+      "ok": true,
+      "detail": null
+    }
+  ]
+}

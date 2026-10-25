@@ -1,13 +1,14 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Clock, Loader2, Pencil, Play, Plus, Trash2 } from "lucide-react";
+import { useState, type FormEvent, type Ref } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   createNote,
@@ -26,12 +27,17 @@ import { formatTimestamp } from "@/lib/format";
  * bookmarks inside the video: clicking the timestamp jumps there. On a lesson
  * with no timeline -- an article -- the timestamp is zero and simply is not
  * shown.
+ *
+ * The box is one card with its button in a footer, the list another card with
+ * a row per note: the two read as "write" and "what you wrote", and the
+ * buttons of a row stay out of the way of its text.
  */
 export function NotesPanel({
   lessonId,
   timed,
   currentTime,
   onSeek,
+  composerRef,
 }: {
   lessonId: string;
   /** Whether this lesson has a timeline worth stamping notes against. */
@@ -39,6 +45,8 @@ export function NotesPanel({
   /** Where the player is now, asked for only at the moment a note is written. */
   currentTime: () => number;
   onSeek: (seconds: number) => void;
+  /** The note box, for "Ghi chú tại …" under the player to put the cursor in. */
+  composerRef?: Ref<HTMLTextAreaElement>;
 }) {
   const { accessToken } = useAuth();
   const queryClient = useQueryClient();
@@ -89,12 +97,20 @@ export function NotesPanel({
     add.mutate();
   }
 
-  return (
-    <section className="space-y-4">
-      <h2 className="text-lg font-semibold tracking-tight">Ghi chú của tôi</h2>
+  const count = notes.data?.length ?? 0;
 
-      <form onSubmit={submit} className="space-y-2">
+  return (
+    <section aria-label="Ghi chú của tôi" className="flex flex-col gap-5">
+      <form
+        onSubmit={submit}
+        className="overflow-hidden rounded-lg border bg-card outline-offset-2 outline-ring has-[textarea:focus-visible]:outline-2"
+      >
+        <label htmlFor={`ghi-chu-${lessonId}`} className="sr-only">
+          Ghi chú mới
+        </label>
         <Textarea
+          id={`ghi-chu-${lessonId}`}
+          ref={composerRef}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           placeholder={
@@ -104,25 +120,47 @@ export function NotesPanel({
           }
           rows={3}
           maxLength={2000}
+          // The card is the field's frame; its own border and ring would
+          // draw a box inside a box. Focus still shows: the card takes it.
+          className="min-h-22 rounded-none border-0 bg-transparent px-4 py-3.5 shadow-none focus-visible:outline-none"
         />
-
-        {add.isError ? (
-          <Alert variant="destructive">
-            <AlertDescription>{apiErrorMessage(add.error)}</AlertDescription>
-          </Alert>
-        ) : null}
-
-        <Button type="submit" size="sm" disabled={add.isPending || draft.trim() === ""}>
-          {add.isPending ? (
-            <>
-              <Loader2 className="animate-spin" aria-hidden />
-              Đang lưu…
-            </>
-          ) : (
-            "Thêm ghi chú"
-          )}
-        </Button>
+        <div className="flex flex-col items-stretch gap-2 border-t border-muted bg-background px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+          <p className="flex items-center gap-1.5 text-caption text-muted-foreground">
+            {timed ? (
+              <>
+                <Clock className="size-3.5 shrink-0" aria-hidden />
+                Ghi chú giữ mốc thời gian của video lúc bạn lưu
+              </>
+            ) : (
+              "Chỉ mình bạn đọc được ghi chú này"
+            )}
+          </p>
+          <Button
+            type="submit"
+            variant="secondary"
+            className="h-11 sm:h-9"
+            disabled={add.isPending || draft.trim() === ""}
+          >
+            {add.isPending ? (
+              <>
+                <Loader2 className="animate-spin" aria-hidden />
+                Đang lưu…
+              </>
+            ) : (
+              <>
+                <Plus aria-hidden />
+                Thêm ghi chú
+              </>
+            )}
+          </Button>
+        </div>
       </form>
+
+      {add.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{apiErrorMessage(add.error)}</AlertDescription>
+        </Alert>
+      ) : null}
 
       {notes.isError ? (
         <Alert variant="destructive">
@@ -130,7 +168,9 @@ export function NotesPanel({
         </Alert>
       ) : null}
 
-      {notes.data && notes.data.length === 0 ? (
+      {notes.isPending ? <Skeleton className="h-28 rounded-lg" /> : null}
+
+      {notes.data && count === 0 ? (
         <EmptyState
           mood="empty-notes"
           size="md"
@@ -143,72 +183,89 @@ export function NotesPanel({
         />
       ) : null}
 
-      <ul className="space-y-3">
-        {notes.data?.map((note) => (
-          <li key={note.id} className="rounded-md border p-3">
-            <div className="flex items-start justify-between gap-3">
-              {timed ? (
-                <button
-                  type="button"
-                  onClick={() => onSeek(note.timestamp_s)}
-                  className="shrink-0 rounded bg-muted px-2 py-0.5 font-mono text-xs hover:bg-muted/70"
-                  aria-label={`Tua tới ${formatTimestamp(note.timestamp_s)}`}
-                >
-                  {formatTimestamp(note.timestamp_s)}
-                </button>
-              ) : null}
-
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Sửa ghi chú"
-                  onClick={() => {
-                    setEditing(note.id);
-                    setEditDraft(note.content);
-                  }}
-                >
-                  <Pencil aria-hidden />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label="Xóa ghi chú"
-                  onClick={() => remove.mutate(note)}
-                  disabled={remove.isPending}
-                >
-                  <Trash2 aria-hidden />
-                </Button>
-              </div>
-            </div>
-
-            {editing === note.id ? (
-              <div className="mt-2 space-y-2">
-                <Textarea
-                  value={editDraft}
-                  onChange={(event) => setEditDraft(event.target.value)}
-                  rows={3}
-                  maxLength={2000}
-                />
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => edit.mutate(note)}
-                    disabled={edit.isPending || editDraft.trim() === ""}
-                  >
-                    Lưu
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
-                    Hủy
-                  </Button>
+      {count > 0 ? (
+        <div className="flex flex-col gap-2.5">
+          <h2 className="text-body-sm font-semibold text-muted-foreground">
+            {count} ghi chú{timed ? " · theo thứ tự trong video" : null}
+          </h2>
+          <ul className="overflow-hidden rounded-lg border bg-card">
+            {notes.data?.map((note) => (
+              <li
+                key={note.id}
+                className="flex flex-col gap-1.5 border-t border-muted py-3 pr-2 pl-3.5 first:border-t-0 sm:flex-row sm:items-start sm:gap-3.5 sm:py-3.5 sm:pr-3 sm:pl-4"
+              >
+                <div className="flex items-center justify-between sm:contents">
+                  {timed ? (
+                    <button
+                      type="button"
+                      onClick={() => onSeek(note.timestamp_s)}
+                      className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full bg-secondary px-2.5 font-mono text-code text-secondary-foreground tabular-nums transition-colors duration-fast hover:bg-secondary-hover sm:order-first"
+                      aria-label={`Tua tới ${formatTimestamp(note.timestamp_s)}`}
+                    >
+                      <Play className="size-3 fill-current" aria-hidden />
+                      {formatTimestamp(note.timestamp_s)}
+                    </button>
+                  ) : (
+                    <span className="sm:hidden" />
+                  )}
+                  <div className="flex shrink-0 gap-0.5 sm:order-last">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-10 text-muted-foreground sm:size-8"
+                      aria-label="Sửa ghi chú"
+                      onClick={() => {
+                        setEditing(note.id);
+                        setEditDraft(note.content);
+                      }}
+                    >
+                      <Pencil aria-hidden />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="size-10 text-muted-foreground sm:size-8"
+                      aria-label="Xóa ghi chú"
+                      onClick={() => remove.mutate(note)}
+                      disabled={remove.isPending}
+                    >
+                      <Trash2 aria-hidden />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className="mt-1 whitespace-pre-line text-sm">{note.content}</p>
-            )}
-          </li>
-        ))}
-      </ul>
+
+                {editing === note.id ? (
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <Textarea
+                      value={editDraft}
+                      onChange={(event) => setEditDraft(event.target.value)}
+                      rows={3}
+                      maxLength={2000}
+                      aria-label="Sửa ghi chú"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => edit.mutate(note)}
+                        disabled={edit.isPending || editDraft.trim() === ""}
+                      >
+                        Lưu
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditing(null)}>
+                        Hủy
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="min-w-0 flex-1 text-body whitespace-pre-line break-words sm:pt-0.5">
+                    {note.content}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
     </section>
   );
 }

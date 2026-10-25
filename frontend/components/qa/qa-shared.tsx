@@ -27,9 +27,9 @@ export function QaByline({
   instructor?: boolean;
 }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 text-sm">
+    <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
       <UserAvatar user={author} className="size-7 text-xs" />
-      <span className="truncate font-medium">{author.full_name}</span>
+      <span className="truncate font-semibold">{author.full_name}</span>
       {instructor ? (
         <Badge variant="default">
           <BadgeCheck aria-hidden />
@@ -49,7 +49,7 @@ export function QaThreadBadges({ thread }: { thread: QaThread }) {
   return (
     <span className="flex flex-wrap gap-1.5">
       {thread.has_instructor_reply ? (
-        <Badge variant="secondary" className="text-emerald-700 dark:text-emerald-400">
+        <Badge variant="success">
           <BadgeCheck aria-hidden />
           Giảng viên đã trả lời
         </Badge>
@@ -60,27 +60,6 @@ export function QaThreadBadges({ thread }: { thread: QaThread }) {
           Đã giải quyết
         </Badge>
       ) : null}
-    </span>
-  );
-}
-
-/** Votes and replies, as numbers beside a list row. */
-export function QaCounts({ thread, className }: { thread: QaThread; className?: string }) {
-  return (
-    <span className={cn("flex items-center gap-3 text-xs text-muted-foreground", className)}>
-      <span
-        className={cn("inline-flex items-center gap-0.5", thread.voted && "text-primary")}
-        title={`${thread.vote_count} người cũng có câu hỏi này`}
-      >
-        <ArrowBigUp className="size-4" aria-hidden />
-        {thread.vote_count}
-        <span className="sr-only"> lượt bình chọn</span>
-      </span>
-      <span className="inline-flex items-center gap-1" title={`${thread.reply_count} câu trả lời`}>
-        <MessageSquare className="size-3.5" aria-hidden />
-        {thread.reply_count}
-        <span className="sr-only"> câu trả lời</span>
-      </span>
     </span>
   );
 }
@@ -103,7 +82,13 @@ export function excerpt(markdown: string): string {
     .trim();
 }
 
-/** One question as a row: title, the start of its body, and its numbers. */
+/**
+ * One question as a row: how many share it on the left, then the title, the
+ * start of its body, who asked, and whether it is answered.
+ *
+ * The whole row is one button, so the count on the left is a figure, not a
+ * second control: voting happens on the question's own page.
+ */
 export function QaThreadRow({
   thread,
   onOpen,
@@ -119,26 +104,46 @@ export function QaThreadRow({
       <button
         type="button"
         onClick={onOpen}
-        className="w-full space-y-1.5 rounded-md border p-3 text-left transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        className="flex w-full items-start gap-3 rounded-lg border bg-card p-3.5 text-left transition-[background-color,box-shadow] duration-fast hover:shadow-md sm:gap-4 sm:p-4"
       >
-        {showPlace ? (
-          <p className="truncate text-xs text-muted-foreground">
-            {thread.course.title} · {thread.lesson.title}
-          </p>
-        ) : null}
-        <p className="font-medium text-pretty break-words">{thread.title}</p>
-        <p className="line-clamp-2 text-sm break-words text-muted-foreground">
-          {excerpt(thread.body)}
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <span className="text-xs text-muted-foreground">
-            {thread.author.full_name} · {formatRelativeTime(thread.created_at)}
+        <span
+          className={cn(
+            "flex w-11 shrink-0 flex-col items-center rounded-md py-1.5 sm:w-12",
+            thread.voted ? "bg-secondary text-secondary-foreground" : "bg-muted text-muted-foreground",
+          )}
+          title={`${thread.vote_count} người cũng có câu hỏi này`}
+        >
+          <ArrowBigUp className="size-4.5" aria-hidden />
+          <span className="text-body-sm font-semibold tabular-nums">{thread.vote_count}</span>
+          <span className="sr-only"> người cũng có câu hỏi này</span>
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+          {showPlace ? (
+            <span className="truncate text-caption text-muted-foreground">
+              {thread.course.title} · {thread.lesson.title}
+            </span>
+          ) : null}
+          <span className="text-title text-pretty break-words">{thread.title}</span>
+          <span className="line-clamp-2 text-body-sm break-words text-muted-foreground">
+            {excerpt(thread.body)}
           </span>
-          <span className="flex flex-wrap items-center gap-2">
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-2 pt-0.5">
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-caption text-muted-foreground">
+              <UserAvatar user={thread.author} className="size-5 text-[0.5625rem]" />
+              <span className="truncate">
+                {thread.author.full_name} · {formatRelativeTime(thread.created_at)}
+              </span>
+            </span>
             <QaThreadBadges thread={thread} />
-            <QaCounts thread={thread} />
+            <span
+              className="ml-auto inline-flex items-center gap-1 text-caption text-muted-foreground"
+              title={`${thread.reply_count} câu trả lời`}
+            >
+              <MessageSquare className="size-3.5" aria-hidden />
+              {thread.reply_count} trả lời
+            </span>
           </span>
-        </div>
+        </span>
       </button>
     </li>
   );

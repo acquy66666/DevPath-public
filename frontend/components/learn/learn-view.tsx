@@ -1,39 +1,30 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Bookmark,
-  BookmarkCheck,
-  Check,
-  ListTree,
-  Loader2,
-  Lock,
-  LogIn,
-  MessageCircleQuestion,
-  NotebookPen,
-  Sparkles,
-  type LucideIcon,
-} from "lucide-react";
+import { ListTree, MessageCircleQuestion, NotebookPen, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
+import { CourseBar } from "@/components/learn/course-bar";
+import { CourseComplete, NEXT_COURSES_ID } from "@/components/learn/course-complete";
+import { LearnSkeleton } from "@/components/learn/learn-skeleton";
+import { LessonActions } from "@/components/learn/lesson-actions";
+import { LessonHeading } from "@/components/learn/lesson-heading";
 import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
+import { VideoPlayer, type PlayerHandle } from "@/components/learn/video-player";
+import { Mascot } from "@/components/mascot/mascot";
 import { QaPanel } from "@/components/qa/qa-panel";
-import {
-  VideoPlayer,
-  type PlayerHandle,
-} from "@/components/learn/video-player";
 import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
 import { NextCourses } from "@/components/recommendations/next-courses";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "@/components/ui/markdown";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
 import { getCourseBySlug } from "@/lib/api/courses";
 import { getCurriculum, getLesson } from "@/lib/api/curriculum";
@@ -41,9 +32,12 @@ import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getCourseProgress, saveProgress } from "@/lib/api/progress";
 import { listBookmarks, setBookmark } from "@/lib/api/study";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { formatTimestamp } from "@/lib/format";
+import { locateLesson, readingMinutes, resumeAt } from "@/lib/learn/position";
 
 /**
- * The learning page: a player on the left, the table of contents on the right.
+ * The learning page: the lesson on the left, the table of contents and the
+ * course assistant on the right; on a phone, one column in that order.
  *
  * Entirely a Client Component, unlike the course page it follows: every call
  * here needs the access token, which lives in memory in the browser. Nothing
@@ -94,6 +88,8 @@ export function LearnView({
   // The player is asked things rather than mirrored into state: its position
   // changes thirty times a second and nothing here needs to re-render for it.
   const player = useRef<PlayerHandle>(null);
+  // "Ghi chú tại …" under the player puts the cursor in the note box.
+  const composer = useRef<HTMLTextAreaElement>(null);
 
   // The assistant is built the first time its tab is opened, then kept: most
   // visits never open it, and the ones that do must not lose an answer to a
@@ -110,6 +106,14 @@ export function LearnView({
   if (threadId !== seenThreadId) {
     setSeenThreadId(threadId);
     if (threadId) setBelowTab("qa");
+  }
+
+  // Naomi graduates only for a course finished while the page is open: the
+  // page must have seen it unfinished first. Reopening a finished course
+  // shows her still.
+  const [sawUnfinished, setSawUnfinished] = useState(false);
+  if (progress.data && progress.data.completed_at === null && !sawUnfinished) {
+    setSawUnfinished(true);
   }
 
   // `?bai=` wins; without it, carry on where this reader stopped.
@@ -178,14 +182,18 @@ export function LearnView({
     router.push(`/hoc/${slug}${lessonQuery}${id ? `&hoi-dap=${id}` : ""}`, { scroll: false });
   }
 
-  if (status === "loading") {
-    return <Skeleton className="h-96 rounded-lg" />;
+  function noteHere() {
+    setBelowTab("notes");
+    // The notes tab may only mount with this change: wait a frame for it.
+    requestAnimationFrame(() => composer.current?.focus());
   }
+
+  if (status === "loading") return <LearnSkeleton />;
 
   if (!signedIn) {
     return (
       <LearnGate
-        icon={LogIn}
+        mood="wave"
         title="Đăng nhập để vào học"
         hint="Tiến độ, ghi chú và bài đã nộp được lưu theo tài khoản của bạn."
         href={`/dang-nhap?next=/hoc/${slug}`}
@@ -201,7 +209,7 @@ export function LearnView({
     if (notEnrolled) {
       return (
         <LearnGate
-          icon={Lock}
+          mood="empty-courses"
           title="Bạn chưa đăng ký khóa học này"
           hint={
             course.data
@@ -226,89 +234,100 @@ export function LearnView({
     );
   }
 
-  if (!course.data || !curriculum.data || !progress.data) {
-    return <Skeleton className="h-96 rounded-lg" />;
-  }
+  if (!course.data || !curriculum.data || !progress.data) return <LearnSkeleton />;
 
   const completedIds = new Set(
     progress.data.lessons
       .filter((row) => row.completed_at !== null)
       .map((row) => row.lesson_id),
   );
-  const percent =
-    progress.data.lesson_count === 0
-      ? 0
-      : Math.round((progress.data.completed_count / progress.data.lesson_count) * 100);
+  const place = locateLesson(curriculum.data, currentId);
+  const courseFinished = progress.data.completed_at !== null;
+  const graduateEvent = sawUnfinished && courseFinished ? progress.data.completed_at : null;
+
+  const data = lesson.data;
+  const length =
+    data?.type === "video" && data.video?.duration_s
+      ? formatTimestamp(data.video.duration_s)
+      : data?.type === "article" && data.article_content?.trim()
+        ? `${readingMinutes(data.article_content)} phút đọc`
+        : null;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-2">
-        <Link
-          href={`/khoa-hoc/${slug}`}
-          className="text-sm text-muted-foreground underline-offset-4 hover:underline"
-        >
-          ← {course.data.title}
-        </Link>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="h-2 w-48 overflow-hidden rounded-full bg-muted">
-            <div className="h-full bg-primary transition-[width]" style={{ width: `${percent}%` }} />
-          </div>
-          <p className="text-sm text-muted-foreground">
-            {progress.data.completed_count}/{progress.data.lesson_count} bài · {percent}%
-            {progress.data.completed_at ? " · đã hoàn thành khóa học 🎉" : null}
-          </p>
-          {progress.data.certificate_code ? (
-            <Link
-              href={`/cert/${progress.data.certificate_code}`}
-              className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-            >
-              Xem chứng chỉ
-            </Link>
-          ) : null}
-        </div>
-      </header>
+    <div className="flex flex-col gap-6">
+      <CourseBar
+        slug={slug}
+        courseId={course.data.id}
+        title={course.data.title}
+        thumbnailUrl={course.data.thumbnail_url}
+        completed={progress.data.completed_count}
+        total={progress.data.lesson_count}
+        certificateCode={courseFinished ? null : progress.data.certificate_code}
+      />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
+      {courseFinished ? (
+        <CourseComplete
+          courseId={course.data.id}
+          courseTitle={course.data.title}
+          accessToken={accessToken as string}
+          certificateCode={progress.data.certificate_code}
+          reactTo={graduateEvent}
+        />
+      ) : null}
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
         {/* `min-w-0` for the same reason as the aside below: on a phone the
             lesson column must not set the width of the whole grid. */}
-        <div className="min-w-0 space-y-4">
+        <div className="flex min-w-0 flex-col gap-5">
           {lesson.isError ? (
             <Alert variant="destructive">
               <AlertDescription>{apiErrorMessage(lesson.error)}</AlertDescription>
             </Alert>
           ) : null}
 
-          {lesson.data ? (
+          {data ? (
             <>
-              <h1 className="text-xl font-semibold tracking-tight">{lesson.data.title}</h1>
+              <LessonHeading
+                place={place}
+                title={data.title}
+                type={data.type}
+                length={length}
+                resumeAt={
+                  data.type === "video"
+                    ? resumeAt(current?.last_position_s, data.video?.duration_s ?? null, finished)
+                    : null
+                }
+                finished={finished}
+              />
 
-              {lesson.data.type === "video" ? (
-                lesson.data.video?.hls_url ? (
+              {data.type === "video" ? (
+                data.video?.hls_url ? (
                   <VideoPlayer
-                    key={lesson.data.id}
+                    key={data.id}
                     ref={player}
-                    src={lesson.data.video.hls_url}
+                    src={data.video.hls_url}
                     startAt={current?.last_position_s ?? 0}
                     onProgress={handleProgress}
                     onEnded={() => setCompleted.mutate(true)}
+                    onNoteHere={noteHere}
                   />
                 ) : (
                   <Alert>
                     <AlertDescription>
-                      {lesson.data.video?.status === "processing"
+                      {data.video?.status === "processing"
                         ? "Video đang được xử lý, vài phút nữa quay lại nhé."
                         : "Bài học này chưa có video."}
                     </AlertDescription>
                   </Alert>
                 )
-              ) : lesson.data.type === "code_exercise" ? (
+              ) : data.type === "code_exercise" ? (
                 <ExerciseWorkspace
                   // Keyed by lesson: moving to another exercise must start a
                   // fresh editor rather than carry the previous answer over.
-                  key={lesson.data.id}
-                  lessonId={lesson.data.id}
+                  key={data.id}
+                  lessonId={data.id}
                   accessToken={accessToken as string}
-                  title={lesson.data.title}
+                  title={data.title}
                   context={course.data.title}
                   // Solving it finishes the lesson, and the worker wrote that
                   // down in the same transaction as the verdict. The page only
@@ -319,13 +338,13 @@ export function LearnView({
                     queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
                   }}
                 />
-              ) : lesson.data.type === "quiz" ? (
+              ) : data.type === "quiz" ? (
                 <QuizWorkspace
                   // Keyed by lesson for the same reason the exercise is:
                   // moving to another quiz must not carry the previous
                   // attempt's answers into a fresh paper.
-                  key={lesson.data.id}
-                  lessonId={lesson.data.id}
+                  key={data.id}
+                  lessonId={data.id}
                   accessToken={accessToken as string}
                   // Passing finishes the lesson, written in the same
                   // transaction as the score. The page only has to go and
@@ -335,95 +354,61 @@ export function LearnView({
                     queryClient.invalidateQueries({ queryKey: ["my-enrollments"] });
                   }}
                 />
-              ) : lesson.data.article_content?.trim() ? (
-                <article className="max-w-prose">
-                  <Markdown>{lesson.data.article_content}</Markdown>
+              ) : data.article_content?.trim() ? (
+                <article className="rounded-lg border bg-card px-5 py-6 sm:px-10 sm:py-8">
+                  <Markdown className="max-w-[68ch] text-body-lg">{data.article_content}</Markdown>
                 </article>
               ) : (
-                <p className="text-muted-foreground">Bài học này chưa có nội dung.</p>
+                // No Naomi: the empty notes under it already have her, and a
+                // screen has one.
+                <p className="rounded-lg border border-dashed border-border-strong px-5 py-8 text-center text-body text-muted-foreground">
+                  Bài học này chưa có nội dung.
+                </p>
               )}
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  // A code exercise finishes itself on an accepted submission,
-                  // and "Nộp bài" is that screen's one primary button; ticking
-                  // it by hand stays possible (certificates work the Udemy way).
-                  variant={finished || lesson.data.type === "code_exercise" ? "outline" : "default"}
-                  onClick={() => setCompleted.mutate(!finished)}
-                  disabled={setCompleted.isPending}
-                >
-                  {setCompleted.isPending ? (
-                    <>
-                      <Loader2 className="animate-spin" aria-hidden />
-                      Đang lưu…
-                    </>
-                  ) : finished ? (
-                    "Bỏ đánh dấu hoàn thành"
-                  ) : (
-                    <>
-                      <Check aria-hidden />
-                      Đánh dấu hoàn thành
-                    </>
-                  )}
-                </Button>
+              <LessonActions
+                slug={slug}
+                type={data.type}
+                finished={finished}
+                saving={setCompleted.isPending}
+                onToggleComplete={() => setCompleted.mutate(!finished)}
+                flagged={flagged}
+                flagging={toggleBookmark.isPending}
+                onToggleFlag={() => toggleBookmark.mutate(!flagged)}
+                previous={place?.previous ?? null}
+                next={place?.next ?? null}
+                error={setCompleted.isError ? apiErrorMessage(setCompleted.error) : null}
+              />
 
-                <Button
-                  variant="outline"
-                  onClick={() => toggleBookmark.mutate(!flagged)}
-                  disabled={toggleBookmark.isPending}
-                  aria-pressed={flagged}
-                >
-                  {flagged ? (
-                    <>
-                      <BookmarkCheck aria-hidden />
-                      Bỏ đánh dấu
-                    </>
-                  ) : (
-                    <>
-                      <Bookmark aria-hidden />
-                      Đánh dấu để xem lại
-                    </>
-                  )}
-                </Button>
-
-                {setCompleted.isError ? (
-                  <p className="text-sm text-destructive">
-                    {apiErrorMessage(setCompleted.error)}
-                  </p>
-                ) : lesson.data.type === "code_exercise" && !finished ? (
-                  <p className="text-caption text-muted-foreground">
-                    Bài code tự hoàn thành khi bạn nộp đúng mọi test.
-                  </p>
-                ) : null}
-              </div>
-
-              <Tabs value={belowTab} onValueChange={setBelowTab} className="pt-2">
-                <TabsList>
-                  <TabsTrigger value="notes">
+              <Tabs value={belowTab} onValueChange={setBelowTab} className="gap-5 pt-2">
+                <TabsList variant="line" aria-label="Dưới bài học">
+                  <TabsTrigger value="notes" className="text-[0.9375rem]">
                     <NotebookPen aria-hidden />
                     Ghi chú
                   </TabsTrigger>
-                  <TabsTrigger value="qa">
+                  <TabsTrigger value="qa" className="text-[0.9375rem]">
                     <MessageCircleQuestion aria-hidden />
                     Hỏi đáp
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="notes" className="pt-2">
+                <TabsContent value="notes">
                   <NotesPanel
-                    lessonId={lesson.data.id}
-                    timed={lesson.data.type === "video"}
+                    lessonId={data.id}
+                    timed={data.type === "video"}
                     currentTime={() => player.current?.currentTime() ?? 0}
                     onSeek={(seconds) => player.current?.seekTo(seconds)}
+                    composerRef={composer}
                   />
                 </TabsContent>
 
-                <TabsContent value="qa" className="pt-2">
+                <TabsContent value="qa">
                   <QaPanel
                     // A fresh board per lesson: sort, page and a half-written
                     // question belong to the lesson they were started on.
-                    key={lesson.data.id}
-                    lessonId={lesson.data.id}
+                    key={data.id}
+                    lessonId={data.id}
+                    lessonTitle={data.title}
                     accessToken={accessToken as string}
                     currentUserId={user?.id ?? null}
                     openThreadId={threadId}
@@ -433,24 +418,27 @@ export function LearnView({
               </Tabs>
             </>
           ) : (
-            <Skeleton className="h-96 rounded-lg" />
+            <div className="flex flex-col gap-5" aria-hidden>
+              <Skeleton className="h-24 w-full max-w-md" />
+              <Skeleton className="aspect-video w-full rounded-lg" />
+            </div>
           )}
         </div>
 
         {/* `min-w-0`: a grid item is at least as wide as its longest
             unbreakable line, and on a phone the table of contents' was wider
             than the screen -- the whole column spilled into the right gutter. */}
-        <aside className="min-w-0 lg:sticky lg:top-8 lg:self-start">
+        <aside className="min-w-0 lg:sticky lg:top-6 lg:self-start">
           <Tabs
             defaultValue="lessons"
             onValueChange={(value) => value === "assistant" && setChatOpened(true)}
           >
-            <TabsList className="w-full">
-              <TabsTrigger value="lessons">
+            <TabsList className="h-11 w-full sm:h-10" aria-label="Bên cạnh bài học">
+              <TabsTrigger value="lessons" className="h-9 sm:h-8">
                 <ListTree aria-hidden />
                 Nội dung
               </TabsTrigger>
-              <TabsTrigger value="assistant">
+              <TabsTrigger value="assistant" className="h-9 sm:h-8">
                 <Sparkles aria-hidden />
                 Trợ giảng AI
               </TabsTrigger>
@@ -474,9 +462,7 @@ export function LearnView({
                   courseId={course.data.id}
                   accessToken={accessToken as string}
                   curriculum={curriculum.data}
-                  currentLesson={
-                    lesson.data ? { id: lesson.data.id, title: lesson.data.title } : null
-                  }
+                  currentLesson={data ? { id: data.id, title: data.title } : null}
                   // A source opens its lesson beside the chat, which stays
                   // put: reading a lesson and asking about it are one activity.
                   onOpenLesson={selectLesson}
@@ -489,37 +475,40 @@ export function LearnView({
 
       {/* Appears the moment the last lesson is ticked: finishing it
           invalidates the progress query, which is what sets this. */}
-      {progress.data.completed_at ? (
-        <NextCourses courseId={course.data.id} accessToken={accessToken as string} />
+      {courseFinished ? (
+        <div id={NEXT_COURSES_ID} className="scroll-mt-6">
+          <NextCourses courseId={course.data.id} accessToken={accessToken as string} />
+        </div>
       ) : null}
     </div>
   );
 }
 
 /**
- * Why there is no lesson to show, and the one thing to do about it. Shaped
- * like the empty states elsewhere -- a dashed card, an icon, one button --
- * because it is one: the page has nothing yet, and this says what fills it.
+ * Why there is no lesson to show, and the one thing to do about it. Naomi
+ * stands beside it still -- waving the reader in to sign in, next to a
+ * closed book for a course not yet joined -- because nothing just happened:
+ * the page simply cannot open yet.
  */
 function LearnGate({
-  icon: Icon,
+  mood,
   title,
   hint,
   href,
   action,
 }: {
-  icon: LucideIcon;
+  mood: "wave" | "empty-courses";
   title: string;
   hint: string;
   href: string;
   action: string;
 }) {
   return (
-    <div className="mx-auto max-w-lg rounded-lg border border-dashed px-6 py-12 text-center">
-      <Icon className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden />
-      <p className="font-medium">{title}</p>
-      <p className="mt-1 text-sm text-pretty text-muted-foreground">{hint}</p>
-      <Button className="mt-4" asChild>
+    <div className="mx-auto flex max-w-lg flex-col items-center gap-2 rounded-lg border bg-card px-6 py-8 text-center sm:py-10">
+      <Mascot mood={mood} className="size-28 sm:size-32" />
+      <h1 className="text-h3 text-balance">{title}</h1>
+      <p className="max-w-[40ch] text-body text-pretty text-muted-foreground">{hint}</p>
+      <Button className="mt-2 h-11 sm:h-10" asChild>
         <Link href={href}>{action}</Link>
       </Button>
     </div>

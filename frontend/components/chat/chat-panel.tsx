@@ -4,8 +4,9 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   ArrowLeft,
   ArrowUp,
+  Check,
   History,
-  Loader2,
+  Info,
   RotateCcw,
   Sparkles,
   Square,
@@ -46,7 +47,9 @@ import {
 import { ApiError } from "@/lib/api/client";
 import type { Curriculum } from "@/lib/api/curriculum";
 import { apiErrorMessage, CHAT_MESSAGES } from "@/lib/api/error-messages";
+import { assistantHeader, isRefusal, readingChips } from "@/lib/chat/assistant-state";
 import { formatRelativeTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * A question still on its way: asked, not yet stored.
@@ -134,6 +137,11 @@ export function ChatPanel({
   const [draft, setDraft] = useState("");
   const [live, setLive] = useState<LiveTurn | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  // What Naomi in the header last reacted to: the question being asked, then
+  // the answer that came back. Cleared when a conversation is opened from
+  // the history, where an old answer is a still picture.
+  const [reaction, setReaction] = useState<string | null>(null);
+  const questionCount = useRef(0);
 
   const abort = useRef<AbortController | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
@@ -194,6 +202,7 @@ export function ChatPanel({
     pinned.current = true;
     setSessionId(id);
     setLive(null);
+    setReaction(null);
     setView("chat");
   }
 
@@ -209,6 +218,8 @@ export function ChatPanel({
     setDraft("");
     setLive({ question: text, phase: "searching", sources: null, text: "", error: null });
     setAnnouncement("Trợ giảng đang trả lời…");
+    questionCount.current += 1;
+    setReaction(`asked-${questionCount.current}`);
 
     const end = (phase: "failed" | "stopped", error: string | null) => {
       setLive((turn) => turn && { ...turn, phase, error });
@@ -251,6 +262,7 @@ export function ChatPanel({
               event.message,
             ]);
             setLive(null);
+            setReaction(event.message.id);
             setAnnouncement("Trợ giảng đã trả lời xong.");
             queryClient.invalidateQueries({ queryKey: sessionsKey(courseId) });
             break;
@@ -293,25 +305,27 @@ export function ChatPanel({
   const stored = sessionId === null ? [] : (messages.data ?? []);
   const loadingMessages = sessionId !== null && messages.isPending;
   const empty = !loadingMessages && !messages.isError && stored.length === 0 && live === null;
-  const current = allSessions.find((session) => session.id === sessionId);
-  const heading =
-    view === "history"
-      ? "Lịch sử trò chuyện"
-      : sessionId === null
-        ? "Cuộc trò chuyện mới"
-        : (current?.title ?? live?.question ?? "Cuộc trò chuyện");
+  const lastAnswer = [...stored].reverse().find((message) => message.role === "assistant") ?? null;
+  const header = assistantHeader({
+    live: live && { phase: live.phase, sources: live.sources?.length ?? 0 },
+    lastAnswer: lastAnswer && {
+      id: lastAnswer.id,
+      content: lastAnswer.content,
+      citations: lastAnswer.citations.length,
+    },
+  });
 
   return (
-    // Sized for where the panel first appears -- about 13rem down, below the
-    // site header, the course title and the tabs -- not for where it sits once
-    // stuck to the top. Sized for the stuck position, the question box opened
-    // below the fold, and the first thing a reader had to do was scroll.
+    // Sized for where the panel first appears -- below the site header, the
+    // course strip and the tabs -- not for where it sits once stuck to the
+    // top. Sized for the stuck position, the question box opened below the
+    // fold, and the first thing a reader had to do was scroll.
     <section
       aria-label="Trợ giảng AI"
-      className="flex h-[34rem] flex-col overflow-hidden rounded-lg border lg:h-[calc(100dvh-14rem)] lg:min-h-[28rem]"
+      className="flex h-[36rem] flex-col overflow-hidden rounded-lg border bg-card lg:h-[calc(100dvh-16rem)] lg:min-h-[30rem]"
     >
-      <header className="flex items-center gap-1 border-b px-2 py-1.5">
-        {view === "history" ? (
+      {view === "history" ? (
+        <header className="flex min-h-16 items-center gap-2 border-b p-2">
           <Button
             size="icon-sm"
             variant="ghost"
@@ -320,34 +334,48 @@ export function ChatPanel({
           >
             <ArrowLeft aria-hidden />
           </Button>
-        ) : (
-          <Sparkles className="mx-1.5 size-4 shrink-0 text-primary" aria-hidden />
-        )}
-        <p className="min-w-0 flex-1 truncate text-sm font-medium" title={heading}>
-          {heading}
-        </p>
-        <Button
-          size="icon-sm"
-          variant={view === "history" ? "secondary" : "ghost"}
-          aria-label="Lịch sử trò chuyện"
-          aria-pressed={view === "history"}
-          title={busy ? "Đợi câu trả lời xong, hoặc bấm Dừng" : "Lịch sử trò chuyện"}
-          disabled={busy}
-          onClick={() => setView(view === "history" ? "chat" : "history")}
-        >
-          <History aria-hidden />
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          aria-label="Cuộc trò chuyện mới"
-          title={busy ? "Đợi câu trả lời xong, hoặc bấm Dừng" : "Cuộc trò chuyện mới"}
-          disabled={busy || (sessionId === null && live === null && view === "chat")}
-          onClick={() => openSession(null)}
-        >
-          <SquarePen aria-hidden />
-        </Button>
-      </header>
+          <p className="min-w-0 flex-1 text-title">Lịch sử trò chuyện</p>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Cuộc trò chuyện mới"
+            title="Cuộc trò chuyện mới"
+            onClick={() => openSession(null)}
+          >
+            <SquarePen aria-hidden />
+          </Button>
+        </header>
+      ) : (
+        <header className="flex items-center gap-3 border-b py-2 pr-2 pl-3">
+          {/* The assistant's face: thinking while it looks things up and
+              writes, holding its book once the answer cites the course. */}
+          <Mascot mood={header.mood} size="sm" event={reaction} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <p className="text-title">Trợ giảng AI</p>
+            <p className="truncate text-caption text-muted-foreground">{header.status}</p>
+          </div>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Lịch sử trò chuyện"
+            title={busy ? "Đợi câu trả lời xong, hoặc bấm Dừng" : "Lịch sử trò chuyện"}
+            disabled={busy}
+            onClick={() => setView("history")}
+          >
+            <History aria-hidden />
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label="Cuộc trò chuyện mới"
+            title={busy ? "Đợi câu trả lời xong, hoặc bấm Dừng" : "Cuộc trò chuyện mới"}
+            disabled={busy || (sessionId === null && live === null)}
+            onClick={() => openSession(null)}
+          >
+            <SquarePen aria-hidden />
+          </Button>
+        </header>
+      )}
 
       <p className="sr-only" aria-live="polite">
         {announcement}
@@ -381,7 +409,7 @@ export function ChatPanel({
         </div>
       ) : (
         <>
-          <div ref={scroller} onScroll={onScroll} className="flex-1 overflow-y-auto px-3 py-4">
+          <div ref={scroller} onScroll={onScroll} className="flex-1 overflow-y-auto p-4">
             {loadingMessages ? (
               <ConversationSkeleton />
             ) : messages.isError && sessionId !== null ? (
@@ -403,24 +431,23 @@ export function ChatPanel({
                 onShowAll={() => setView("history")}
               />
             ) : (
-              <ol className="space-y-5">
+              <ol className="flex flex-col gap-4">
                 {stored.map((message) =>
                   message.role === "user" ? (
                     <Question key={message.id} text={message.content} />
                   ) : (
-                    <li key={message.id}>
-                      <Answer>
-                        <ChatMarkdown
-                          content={message.content}
-                          cited={citedOf(message, lessons)}
-                          onOpenLesson={onOpenLesson}
-                        />
-                        <SourceList
-                          cited={citedOf(message, lessons)}
-                          currentLessonId={currentLesson?.id ?? null}
-                          onOpenLesson={onOpenLesson}
-                        />
-                      </Answer>
+                    <li key={message.id} className="flex flex-col gap-3">
+                      {message.citations.length === 0 && isRefusal(message.content) ? <OutOfScope /> : null}
+                      <ChatMarkdown
+                        content={message.content}
+                        cited={citedOf(message, lessons)}
+                        onOpenLesson={onOpenLesson}
+                      />
+                      <SourceList
+                        cited={citedOf(message, lessons)}
+                        currentLessonId={currentLesson?.id ?? null}
+                        onOpenLesson={onOpenLesson}
+                      />
                     </li>
                   ),
                 )}
@@ -428,14 +455,12 @@ export function ChatPanel({
                 {live ? (
                   <>
                     <Question text={live.question} />
-                    <li>
-                      <Answer>
-                        <LiveAnswer
-                          turn={live}
-                          onOpenLesson={onOpenLesson}
-                          onRetry={() => void send(live.question)}
-                        />
-                      </Answer>
+                    <li className="flex flex-col gap-3">
+                      <LiveAnswer
+                        turn={live}
+                        onOpenLesson={onOpenLesson}
+                        onRetry={() => void send(live.question)}
+                      />
                     </li>
                   </>
                 ) : null}
@@ -443,7 +468,7 @@ export function ChatPanel({
             )}
           </div>
 
-          <form onSubmit={submit} className="space-y-1.5 border-t p-2">
+          <form onSubmit={submit} className="flex flex-col gap-1.5 border-t p-2">
             <div className="relative">
               <Textarea
                 value={draft}
@@ -453,25 +478,25 @@ export function ChatPanel({
                 aria-label="Câu hỏi cho trợ giảng AI"
                 rows={2}
                 maxLength={QUESTION_MAX_CHARS}
-                className="max-h-40 min-h-16 resize-none pr-11 text-sm"
+                className="max-h-40 min-h-16 resize-none pr-12 text-body-sm"
               />
               {busy ? (
                 <Button
                   type="button"
                   size="icon-sm"
                   variant="secondary"
-                  className="absolute right-2 bottom-2"
+                  className="absolute right-2 bottom-2.5"
                   aria-label="Dừng câu trả lời"
                   title="Dừng — câu trả lời dở sẽ không được lưu"
                   onClick={() => abort.current?.abort()}
                 >
-                  <Square className="fill-current" aria-hidden />
+                  <Square className="size-3.5 fill-current" aria-hidden />
                 </Button>
               ) : (
                 <Button
                   type="submit"
                   size="icon-sm"
-                  className="absolute right-2 bottom-2"
+                  className="absolute right-2 bottom-2.5"
                   aria-label="Gửi câu hỏi"
                   disabled={draft.trim() === ""}
                 >
@@ -479,7 +504,7 @@ export function ChatPanel({
                 </Button>
               )}
             </div>
-            <p className="flex justify-between gap-2 px-1 text-[11px] text-muted-foreground">
+            <p className="flex justify-between gap-2 px-1 text-caption text-muted-foreground">
               <span>AI có thể nhầm — bấm vào nguồn để đối chiếu với bài học.</span>
               {draft.length > QUESTION_MAX_CHARS - 200 ? (
                 <span className="shrink-0 tabular-nums">
@@ -497,24 +522,29 @@ export function ChatPanel({
 function Question({ text }: { text: string }) {
   return (
     <li className="flex justify-end">
-      <p className="ml-8 rounded-xl rounded-br-sm bg-primary px-3 py-2 text-sm break-words whitespace-pre-wrap text-primary-foreground">
+      <p className="ml-8 rounded-xl rounded-br-[0.375rem] bg-primary px-3 py-2 text-body-sm break-words whitespace-pre-wrap text-primary-foreground">
         {text}
       </p>
     </li>
   );
 }
 
-function Answer({ children }: { children: ReactNode }) {
+/** Above an answer that declines: said in words, not left to the reader to infer. */
+function OutOfScope() {
   return (
-    <div className="flex gap-2">
-      <span className="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-        <Sparkles className="size-3.5" aria-hidden />
-      </span>
-      <div className="min-w-0 flex-1 space-y-2">{children}</div>
-    </div>
+    <span className="inline-flex h-6 items-center gap-1.5 self-start rounded-full bg-muted px-2.5 text-caption font-semibold text-muted-foreground">
+      <Info className="size-3.5" aria-hidden />
+      Ngoài phạm vi khóa học
+    </span>
   );
 }
 
+/**
+ * An answer on its way, as the three things the assistant does: look the
+ * question up in the course, read the lessons it found, write. Each step is
+ * ticked off as the stream reaches it, so the retrieval behind the answer is
+ * visible while it happens -- not just a spinner.
+ */
 function LiveAnswer({
   turn,
   onOpenLesson,
@@ -525,12 +555,41 @@ function LiveAnswer({
   onRetry: () => void;
 }) {
   const sources = turn.sources ?? [];
+  const running = turn.phase === "searching" || turn.phase === "writing";
+  const chips = readingChips(sources.map((source) => source.lesson_title));
 
   return (
     <>
-      {turn.phase === "searching" ? <Working label="Đang tra cứu tài liệu khóa học…" /> : null}
-      {turn.phase === "writing" && turn.text === "" ? (
-        <Working label="Đang soạn câu trả lời…" />
+      {running ? (
+        <ol
+          aria-label="Các bước trả lời"
+          className="flex flex-col gap-2.5 rounded-md border bg-background p-3"
+        >
+          <Step state={turn.phase === "searching" ? "active" : "done"}>Tra cứu tài liệu khóa học</Step>
+          {turn.phase === "writing" ? (
+            <>
+              <Step state="done">
+                {sources.length > 0 ? `Đọc ${sources.length} bài liên quan` : "Không có bài nào khớp câu hỏi"}
+                {sources.length > 0 ? (
+                  <span className="mt-1.5 flex flex-wrap gap-1">
+                    {chips.titles.map((title) => (
+                      <span
+                        key={title}
+                        className="max-w-full truncate rounded-full border bg-card px-2 py-0.5 text-caption text-muted-foreground"
+                      >
+                        {title}
+                      </span>
+                    ))}
+                    {chips.more > 0 ? (
+                      <span className="px-2 py-0.5 text-caption text-muted-foreground">+{chips.more} bài</span>
+                    ) : null}
+                  </span>
+                ) : null}
+              </Step>
+              <Step state="active">Đang soạn câu trả lời</Step>
+            </>
+          ) : null}
+        </ol>
       ) : null}
 
       {turn.text !== "" ? (
@@ -541,21 +600,14 @@ function LiveAnswer({
         />
       ) : null}
 
-      {turn.phase === "writing" && sources.length > 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Đang đọc {sources.length} bài:{" "}
-          {sources.map((source) => `“${source.lesson_title}”`).join(", ")}
-        </p>
-      ) : null}
-
       {turn.phase === "failed" || turn.phase === "stopped" ? (
-        <div className="space-y-2 rounded-md border border-dashed p-2.5 text-sm">
-          <p className={turn.phase === "failed" ? "text-destructive" : "text-muted-foreground"}>
+        <div className="flex flex-col gap-2 rounded-md border border-dashed border-border-strong p-3 text-body-sm">
+          <p className={turn.phase === "failed" ? "text-destructive-text" : "text-muted-foreground"}>
             {turn.phase === "failed"
               ? turn.error
               : "Đã dừng. Câu hỏi và phần trả lời dở này không được lưu."}
           </p>
-          <Button size="sm" variant="outline" onClick={onRetry}>
+          <Button size="sm" variant="outline" className="self-start" onClick={onRetry}>
             <RotateCcw aria-hidden />
             Hỏi lại
           </Button>
@@ -565,12 +617,28 @@ function LiveAnswer({
   );
 }
 
-function Working({ label }: { label: string }) {
+function Step({ state, children }: { state: "done" | "active"; children: ReactNode }) {
   return (
-    <p className="flex items-center gap-2 text-sm text-muted-foreground">
-      <Loader2 className="size-3.5 animate-spin" aria-hidden />
-      {label}
-    </p>
+    <li className="flex items-start gap-2.5">
+      {state === "done" ? (
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Check className="size-3" strokeWidth={3} aria-hidden />
+        </span>
+      ) : (
+        <span className="flex size-5 shrink-0 items-center justify-center rounded-full border-2 border-primary">
+          <span className="size-2 rounded-full bg-primary" />
+        </span>
+      )}
+      <span
+        className={cn(
+          "flex min-w-0 flex-col text-[0.8125rem] leading-5",
+          state === "active" ? "font-semibold text-foreground" : "text-muted-foreground",
+        )}
+      >
+        {children}
+        <span className="sr-only">{state === "done" ? " — xong" : " — đang làm"}</span>
+      </span>
+    </li>
   );
 }
 
@@ -598,28 +666,28 @@ function EmptyState({
       ]
     : [];
 
+  // No Naomi here: she is already in the header, waiting for the question.
   return (
     <div className="flex min-h-full flex-col justify-center gap-5">
-      <div className="space-y-2 text-center">
-        {/* Waiting for the first question: still, like every empty state. */}
-        <Mascot mood="empty" className="mx-auto size-20" />
-        <p className="font-medium">Hỏi trợ giảng AI về khóa học</p>
-        <p className="text-sm text-pretty text-muted-foreground">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-title">Hỏi về bất cứ bài nào trong khóa</p>
+        <p className="text-body-sm text-pretty text-muted-foreground">
           Trợ giảng trả lời từ bài viết và lời giảng của chính khóa học này, kèm nguồn để
           bạn mở lại đúng bài. Câu hỏi ngoài phạm vi khóa học sẽ được từ chối.
         </p>
       </div>
 
       {suggestions.length > 0 ? (
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground">Thử hỏi</p>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-eyebrow text-muted-foreground uppercase">Thử hỏi</p>
           {suggestions.map((suggestion) => (
             <button
               key={suggestion}
               type="button"
               onClick={() => onAsk(suggestion)}
-              className="block w-full rounded-md border px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+              className="flex w-full items-start gap-2 rounded-md border bg-card px-3 py-2.5 text-left text-body-sm transition-colors duration-fast hover:bg-accent"
             >
+              <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
               {suggestion}
             </button>
           ))}
@@ -627,18 +695,18 @@ function EmptyState({
       ) : null}
 
       {recent.length > 0 ? (
-        <div className="space-y-1.5">
-          <p className="text-xs font-medium text-muted-foreground">Tiếp tục trò chuyện</p>
-          <ul className="space-y-1">
+        <div className="flex flex-col gap-1">
+          <p className="mb-0.5 text-eyebrow text-muted-foreground uppercase">Tiếp tục trò chuyện</p>
+          <ul className="flex flex-col">
             {recent.map((session) => (
               <li key={session.id}>
                 <button
                   type="button"
                   onClick={() => onOpen(session.id)}
-                  className="flex w-full items-baseline gap-2 rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted"
+                  className="flex w-full items-baseline gap-2 rounded-md px-3 py-2 text-left text-body-sm transition-colors duration-fast hover:bg-accent"
                 >
                   <span className="min-w-0 flex-1 truncate">{session.title}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-caption text-muted-foreground">
                     {formatRelativeTime(session.updated_at)}
                   </span>
                 </button>
@@ -646,7 +714,7 @@ function EmptyState({
             ))}
           </ul>
           {total > recent.length ? (
-            <Button variant="link" size="sm" className="px-3" onClick={onShowAll}>
+            <Button variant="link" size="sm" className="self-start px-3" onClick={onShowAll}>
               Xem tất cả {total} cuộc trò chuyện
             </Button>
           ) : null}
@@ -658,9 +726,9 @@ function EmptyState({
 
 function ConversationSkeleton() {
   return (
-    <div className="space-y-5" aria-hidden>
+    <div className="flex flex-col gap-5" aria-hidden>
       <Skeleton className="ml-auto h-9 w-2/3 rounded-xl" />
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         <Skeleton className="h-3 w-full rounded-xs" />
         <Skeleton className="h-3 w-5/6 rounded-xs" />
         <Skeleton className="h-3 w-2/3 rounded-xs" />
@@ -671,9 +739,9 @@ function ConversationSkeleton() {
 
 function HistorySkeleton() {
   return (
-    <div className="space-y-2 p-3" aria-hidden>
+    <div className="flex flex-col gap-2 p-3" aria-hidden>
       {[0, 1, 2].map((row) => (
-        <Skeleton key={row} className="h-10" />
+        <Skeleton key={row} className="h-12" />
       ))}
     </div>
   );

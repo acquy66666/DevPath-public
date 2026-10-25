@@ -1,0 +1,33 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-25T00:30:00Z" },
+  "title": "DevPath — Nhóm 4: Trang học",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1620, "title": "Bài video · Ghi chú · 1440", "expand": "fill" },
+    "Article.dc.html": { "x": 1520, "y": 0, "w": 1440, "h": 1620, "title": "Bài đọc · Hỏi đáp · Trợ giảng đã trả lời · 1440", "expand": "fill" },
+    "Mobile.dc.html": { "x": 3040, "y": 0, "w": 375, "h": 2760, "title": "Bài video · 375" },
+    "Assistant.dc.html": { "x": 0, "y": 1740, "w": 1736, "h": 900, "title": "Trợ giảng AI · 4 trạng thái" },
+    "Qa.dc.html": { "x": 1816, "y": 1740, "w": 1600, "h": 1080, "title": "Hỏi đáp · danh sách và một câu hỏi" },
+    "States.dc.html": { "x": 0, "y": 2940, "w": 1440, "h": 1180, "title": "Trạng thái · hoàn thành khóa, chưa đăng ký, đang tải" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Article.dc.html",
+    "Mobile.dc.html",
+    "Assistant.dc.html",
+    "Qa.dc.html",
+    "States.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": "1792777743-821b",
+      "copiedAt": "2026-10-25T00:30:00Z"
+    }
+  ]
+}

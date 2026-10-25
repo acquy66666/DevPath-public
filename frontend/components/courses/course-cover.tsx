@@ -3,6 +3,8 @@ import { cn } from "@/lib/utils";
 
 /** Bar thickness, gaps and glyph size per place the cover is drawn. */
 const SCALE = {
+  /** A 64px tag beside the course title: the learning page's top bar. */
+  xs: { box: "gap-[3px] px-2 py-[7px]", bar: "h-[3px]", glyph: "right-1.5 bottom-0 text-sm leading-[1.125rem]" },
   /** A thumbnail beside a row: the cart, a wide recommendation card. */
   sm: { box: "gap-1 p-2.5", bar: "h-1", glyph: "right-2 bottom-0 text-2xl" },
   /** A course card. */

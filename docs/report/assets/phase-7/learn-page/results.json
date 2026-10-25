@@ -1,0 +1,101 @@
+{
+  "at": "2026-10-24T17:56:02.602Z",
+  "base": "http://localhost:3000",
+  "results": [
+    {
+      "name": "“x/y bài” chỉ viết một lần trên trang",
+      "ok": true,
+      "detail": "1 chỗ"
+    },
+    {
+      "name": "mục lục mở đúng chương của bài đang học, các chương khác gập",
+      "ok": true,
+      "detail": "chương 3: true, chương 1: false"
+    },
+    {
+      "name": "“Bài trước” / “Bài tiếp theo” trỏ đúng hai bài kề",
+      "ok": true,
+      "detail": "/hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=b416415d-10f8-4353-9a43-780ce061910b · /hoc/python-co-ban-cho-nguoi-moi-bat-dau?bai=bc7702c7-c7b9-485d-99ea-81bd258ec3cb"
+    },
+    {
+      "name": "“Ghi chú tại …” mở tab ghi chú và đặt con trỏ vào ô",
+      "ok": true,
+      "detail": "tab: true, focus: #ghi-chu-4ea7d048-ecd4-43cd-bf0a-94afbd396022"
+    },
+    {
+      "name": "nút đánh dấu xem lại bật/tắt",
+      "ok": true,
+      "detail": "true → false → true"
+    },
+    {
+      "name": "đánh dấu hoàn thành: đếm 5/18, có nhãn “Đã hoàn thành”, “Bài tiếp theo” thành nút chính",
+      "ok": true,
+      "detail": "bg-clip-padding"
+    },
+    {
+      "name": "sang chương mới bằng “Bài tiếp theo”: chương đó mở ra, chương cũ vẫn mở",
+      "ok": true,
+      "detail": "mới: true, cũ: true"
+    },
+    {
+      "name": "bài đọc ghi thời gian đọc",
+      "ok": true,
+      "detail": "Bài đọc · 1 phút đọc"
+    },
+    {
+      "name": "trợ giảng chưa hỏi gì: Naomi rest",
+      "ok": true,
+      "detail": "rest"
+    },
+    {
+      "name": "đang trả lời: hiện các bước tra cứu → đọc → soạn",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Naomi `thinking` rồi `answer`, mỗi dáng phản ứng đúng một lần",
+      "ok": true,
+      "detail": "thinking:playing → thinking:still → answer:playing → answer:still"
+    },
+    {
+      "name": "dòng trạng thái đếm nguồn",
+      "ok": true,
+      "detail": "Trợ giảng AI Đã trả lời · 1 nguồn trong khóa học"
+    },
+    {
+      "name": "nguồn trùng bài đang xem ghi “Đang xem”",
+      "ok": true,
+      "detail": "1 Vòng lặp for và range Rẽ nhánh và vòng lặp Đang xem"
+    },
+    {
+      "name": "mở lại từ lịch sử: Naomi `answer` đứng yên",
+      "ok": true,
+      "detail": "không đổi pha"
+    },
+    {
+      "name": "375 px không tràn ngang",
+      "ok": true,
+      "detail": "0 px"
+    },
+    {
+      "name": "xong khóa: Naomi `graduate` phản ứng đúng một lần",
+      "ok": true,
+      "detail": "graduate:playing → graduate:still"
+    },
+    {
+      "name": "đúng một link “Xem chứng chỉ”",
+      "ok": true,
+      "detail": "1 link"
+    },
+    {
+      "name": "mở lại khóa đã xong: Naomi `graduate` đứng yên",
+      "ok": true,
+      "detail": "không đổi pha"
+    },
+    {
+      "name": "khóa chưa đăng ký: h1 + Naomi cạnh cuốn sách đóng",
+      "ok": true,
+      "detail": "1 Naomi"
+    }
+  ]
+}

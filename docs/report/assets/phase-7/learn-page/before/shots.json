@@ -1,0 +1,18 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-24T17:08:30.967Z",
+  "shots": [
+    "1-video-ghi-chu-1440",
+    "1-video-ghi-chu-375",
+    "2-bai-doc-1440",
+    "2-bai-doc-375",
+    "3-hoi-dap-1440",
+    "4-hoi-dap-cau-hoi-1440",
+    "4-hoi-dap-cau-hoi-375",
+    "5-tro-giang-trong-1440",
+    "6-tro-giang-tra-loi-1440",
+    "6-tro-giang-tra-loi-375",
+    "7-tro-giang-dang-tra-loi-1440",
+    "8-chua-dang-ky-1440"
+  ]
+}

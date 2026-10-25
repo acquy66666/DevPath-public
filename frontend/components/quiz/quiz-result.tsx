@@ -335,7 +335,9 @@ function ReviewRow({
               <span className={cn("min-w-0 flex-1 text-body break-words", (key || yours) && "font-medium")}>
                 <QuizText text={option} />
               </span>
-              {note ? <span className="text-caption font-semibold">{note}</span> : null}
+              {/* Its own line on a phone, under the answer (badge 28 + gap 12
+                  = 40 px in): beside it, it squeezed the answer to a word a line. */}
+              {note ? <span className="w-full pl-10 text-caption font-semibold sm:w-auto sm:pl-0">{note}</span> : null}
             </li>
           );
         })}

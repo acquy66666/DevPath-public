@@ -14,8 +14,8 @@ export function GoogleButton({ label }: { label: string }) {
   if (process.env.NEXT_PUBLIC_GOOGLE_LOGIN_ENABLED !== "true") return null;
 
   return (
-    <div className="space-y-4">
-      <Button variant="outline" className="w-full" asChild>
+    <div className="flex flex-col gap-4">
+      <Button variant="outline" size="lg" className="w-full" asChild>
         <a href={apiUrl("/api/v1/auth/google/authorize")}>
           <GoogleMark />
           {label}
@@ -24,7 +24,7 @@ export function GoogleButton({ label }: { label: string }) {
 
       <div className="flex items-center gap-3">
         <span className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">hoặc</span>
+        <span className="text-caption text-muted-foreground">hoặc dùng email</span>
         <span className="h-px flex-1 bg-border" />
       </div>
     </div>
@@ -32,9 +32,9 @@ export function GoogleButton({ label }: { label: string }) {
 }
 
 /** Google's four-colour G. Inline so the page pulls in no external asset. */
-function GoogleMark() {
+export function GoogleMark({ className = "size-4" }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" className="size-4" aria-hidden focusable="false">
+    <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false">
       <path
         fill="#4285F4"
         d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z"

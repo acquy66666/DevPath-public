@@ -18,6 +18,8 @@ interface FormFieldProps {
   hint?: string;
   disabled?: boolean;
   autoFocus?: boolean;
+  /** For a form that moves focus to the first field it rejects. */
+  ref?: React.Ref<HTMLInputElement>;
 }
 
 /**
@@ -39,6 +41,7 @@ export function FormField({
   hint,
   disabled,
   autoFocus,
+  ref,
 }: FormFieldProps) {
   const id = useId();
   const messageId = `${id}-message`;
@@ -48,6 +51,7 @@ export function FormField({
     <div className="flex min-w-0 flex-col gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input
+        ref={ref}
         id={id}
         type={type}
         value={value}

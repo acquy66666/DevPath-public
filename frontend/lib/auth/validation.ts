@@ -35,6 +35,28 @@ export function validatePassword(value: string): string | null {
   return null;
 }
 
+export interface PasswordProgress {
+  met: boolean;
+  tooLong: boolean;
+  /** The rule as one line under the field, counting down while it is not met. */
+  text: string;
+}
+
+/**
+ * The password rule, said while typing. Uses `validatePassword` for the
+ * verdict so the line and the submit check can never disagree.
+ */
+export function passwordProgress(value: string): PasswordProgress {
+  const rule = `Tối thiểu ${PASSWORD_MIN_LENGTH} ký tự`;
+  const tooLong = byteLength(value) > PASSWORD_MAX_BYTES;
+  if (tooLong) {
+    return { met: false, tooLong, text: validatePassword(value) as string };
+  }
+  const met = validatePassword(value) === null;
+  const left = PASSWORD_MIN_LENGTH - value.length;
+  return { met, tooLong, text: !met && value.length > 0 ? `${rule} · còn ${left}` : rule };
+}
+
 export function validateFullName(value: string): string | null {
   const name = value.trim();
   if (!name) return "Vui lòng nhập họ tên";

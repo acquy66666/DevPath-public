@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Mascot } from "@/components/mascot/mascot";
 import { buttonVariants } from "@/components/ui/button";
 import { getNextCourses } from "@/lib/api/recommendations";
+import { certificateEarnedKey, writeItem } from "@/lib/gamification/seen";
 import { cn } from "@/lib/utils";
 
 /** Where "Học tiếp theo" sits under the lesson, for the banner to jump to. */
@@ -62,7 +63,12 @@ export function CourseComplete({
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           {certificateCode ? (
-            <Link href={`/cert/${certificateCode}`} className={cn(buttonVariants(), "h-10")}>
+            <Link
+              href={`/cert/${certificateCode}`}
+              className={cn(buttonVariants(), "h-10")}
+              // Finished in this tab: the certificate page may celebrate it, once.
+              onClick={reactTo ? () => writeItem("session", certificateEarnedKey(certificateCode), "1") : undefined}
+            >
               <Award aria-hidden />
               Xem chứng chỉ
             </Link>

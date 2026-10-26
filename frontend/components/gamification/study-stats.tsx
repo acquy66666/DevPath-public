@@ -84,7 +84,7 @@ export function StudyStats() {
 
   if (summary.isError) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="destructive" className="lg:w-88">
         <AlertDescription>{apiErrorMessage(summary.error)}</AlertDescription>
       </Alert>
     );
@@ -93,7 +93,7 @@ export function StudyStats() {
   const data = summary.data;
 
   return (
-    <section aria-labelledby="study-stats-title" aria-busy={!data} className="flex min-w-0 flex-col gap-4">
+    <section aria-labelledby="study-stats-title" aria-busy={!data} className="flex min-w-0 flex-col gap-4 lg:w-88">
       <h2 id="study-stats-title" className="sr-only">
         Thành tích học tập
       </h2>

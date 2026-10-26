@@ -962,3 +962,25 @@ Nhóm màn 5 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/quiz.md`
 **Code trong backtick được vẽ thành code, bằng một hàm riêng chứ không qua `<Markdown>`.** Prompt sinh quiz bảo model đặt code trong backtick, và giảng viên cũng gõ như vậy. Một câu hỏi hay một phương án chỉ là một dòng: Markdown đầy đủ sẽ biến "1. range(5)" thành danh sách và "*args" thành chữ nghiêng.
 
 **Lượt cũ mở lại được từ lịch sử, Naomi đứng yên.** Endpoint `GET /quiz-attempts/{id}` đã có từ Phase 4 nhưng trang chưa dùng. Naomi chỉ phản ứng với lượt vừa nộp trên trang (`reactTo`). Mở một lượt khác thì `reactTo` bị xóa, nên quay lại lượt vừa nộp cũng không ăn mừng lần nữa.
+
+## Thành tích: Naomi nhớ đã phản ứng ở trình duyệt, thẻ gợi ý nói rõ nguồn (26/10/2026)
+
+Nhóm màn 6 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/achievements.md` + `achievements/`. Backend không đổi.
+
+**"Vừa xảy ra" của chuỗi ngày, hạng và chứng chỉ được nhớ trong trình duyệt.** Ba sự kiện này không xảy ra trên chính trang hiện chúng: ngày được tính vào chuỗi khi học viên học ở trang học, hạng tăng khi người khác ít học hơn, chứng chỉ được cấp ở trang học. API chỉ trả trạng thái hiện tại. Vì vậy trang nhớ thứ đã phản ứng, theo từng tài khoản: ngày cuối của chuỗi đã thắp đuốc (`devpath:streak-seen:<user>`), hạng đã xem ở từng bảng (`devpath:rank-seen:<user>:<kỳ>:<ngày đầu kỳ>`), và một dấu trong `sessionStorage` khi học viên bấm "Xem chứng chỉ" ngay sau khi xong khóa (`devpath:cert-earned:<mã>`, dùng một lần). Mọi đọc/ghi nằm trong `try/catch` (`lib/gamification/seen.ts`). Đây là tiện ích cho từng người xem: mất thì Naomi phản ứng thêm một lần, hoặc không phản ứng, không có gì sai về dữ liệu. Phản ứng được quyết một lần khi thẻ gắn vào trang với dữ liệu (khởi tạo `useState`); đổi trạng thái hay đổi hạng thì thẻ gắn lại và quyết lại.
+
+**Lần đầu xem bảng xếp hạng không ăn mừng.** Chưa có hạng cũ để so thì không ai biết là lên hay xuống, nên Naomi `levelup` đứng yên; chỉ khi hạng tốt hơn lần trước thì có phản ứng kèm dòng "Lên N hạng từ lần trước bạn xem". Đuốc thì khác: lần đầu thấy ngày hôm nay được tính là một sự kiện thật, dù thấy lần đầu trên máy này.
+
+**Chuỗi "vừa mất" là trong 7 ngày.** API cắt chuỗi về 0 lúc đọc và không còn biết chuỗi cũ dài bao nhiêu, chỉ biết ngày học cuối. Đứt trong vòng một tuần thì Naomi `sad` cùng câu "Ngày học gần nhất là thứ Sáu 23/10", kèm chuỗi dài nhất để động viên. Lâu hơn nữa, hoặc chưa từng học, thì thẻ không có Naomi: danh sách khóa học bên cạnh đã có Naomi ở trạng thái rỗng, mỗi màn một Naomi.
+
+**Dải 7 ngày chỉ tô những ngày chắc chắn.** Ngày thuộc chuỗi hiện tại thì biết chắc; ngày trước đó thì API không nói. Vì vậy ô ngoài chuỗi là ô trơn ("không thuộc chuỗi hiện tại"), không phải dấu "bỏ lỡ". Chuỗi đã đứt thì không vẽ dải.
+
+**Bục 3 hạng xếp theo hạng, không theo vị trí.** Hạng là hạng thi đấu (bằng XP thì bằng hạng). Hai người đồng hạng 1 thì cả hai bậc vàng và cao như nhau. Bục chỉ có ở trang đầu và khi có đủ 3 người: bục thiếu một bậc trông như hỏng. "Cần thêm 20 XP để lên hạng 3" là khoảng cách tới đúng XP của người ngay trên, vì đạt bằng XP là đạt bằng hạng; người đó không có trên trang đang xem thì không đoán.
+
+**Tab bảng xếp hạng có đủ panel.** Mốc "trước" đo được lỗi axe critical: tab không có `TabsContent`. Giờ mỗi tab có panel của nó, chỉ panel đang chọn chứa bảng.
+
+**Thẻ gợi ý nói nửa nào của hệ lai đưa nó vào.** Mỗi thẻ có câu lý do ("Vì bạn đã học …", "Người học … cũng học khóa này", "Gần nội dung với …", "Được nhiều học viên chọn") và nhãn nguồn "Học viên giống bạn" / "Nội dung gần" / "Phổ biến", lấy đúng từ `sources` mà `services/hybrid.py` trả về. Thẻ từ dự phòng phổ biến không bao giờ được viết như thể mô hình biết người đọc. Nút "Cách DevPath gợi ý" mở ba nguồn bằng lời thường và giờ tính gần nhất. Trên CSDL dev chỉ có 4 khóa, nên mọi gợi ý thật đều từ cả hai nguồn; ba kiểu còn lại có test và có trên mockup.
+
+**"Gợi ý cho bạn" thêm ở "Khóa học của tôi"** (user duyệt 26/10). Đây là chỗ học viên hỏi "học gì tiếp". Cùng truy vấn với trang chủ, nên không thêm request khi đi qua lại; ở cột hẹp thì hai cột, một hai khóa thì nằm ngang một cột.
+
+**Chứng chỉ: giấy ngang như PDF, màu của design system, PDF không đổi.** Trang web dựng lại bố cục bản PDF (khung kép, tiêu đề serif, chân trang giảng viên/ngày/mã) bằng ngọc và một con dấu nghệ (chứng chỉ là phần thưởng). Bản PDF vẫn xanh navy của WeasyPrint: đổi nó là đổi backend, để ngoài phase (thiết kế, mục 3). Naomi `graduate` đứng yên với người lạ mở link (nhà tuyển dụng kiểm tra), chỉ phản ứng cho tab vừa nhận chứng chỉ. Máy chủ vẽ Naomi đứng yên, trình duyệt đọc dấu sau khi hydrate (`useSyncExternalStore`), nên không lệch HTML.

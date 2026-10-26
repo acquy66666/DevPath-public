@@ -1,0 +1,37 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-25T13:10:00Z" },
+  "title": "DevPath — Nhóm 6: Thành tích",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1640, "title": "Khóa học của tôi · thành tích · Người mua 08 · 1440", "expand": "fill" },
+    "Mobile.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 2380, "title": "Khóa học của tôi · 375" },
+    "Streak.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 1280, "title": "Khối thành tích · 5 trạng thái chuỗi" },
+    "Leaderboard.dc.html": { "x": 0, "y": 1760, "w": 1440, "h": 1640, "title": "Bảng xếp hạng · tuần này · vừa lên hạng · 1440", "expand": "fill" },
+    "Leaderboard375.dc.html": { "x": 1520, "y": 1760, "w": 375, "h": 1640, "title": "Bảng xếp hạng · tháng này · 375" },
+    "Recommendations.dc.html": { "x": 1975, "y": 1760, "w": 1440, "h": 1640, "title": "Khối gợi ý · lý do theo nguồn · cách DevPath gợi ý" },
+    "Certificate.dc.html": { "x": 0, "y": 3520, "w": 1440, "h": 1480, "title": "Chứng chỉ · /cert/[code] · 1440 · PDF chưa xong · vừa sao chép", "expand": "fill" },
+    "Certificate375.dc.html": { "x": 1520, "y": 3520, "w": 375, "h": 1400, "title": "Chứng chỉ · 375" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Mobile.dc.html",
+    "Streak.dc.html",
+    "Leaderboard.dc.html",
+    "Leaderboard375.dc.html",
+    "Recommendations.dc.html",
+    "Certificate.dc.html",
+    "Certificate375.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": "1792777743-821b",
+      "copiedAt": "2026-10-25T13:10:00Z"
+    }
+  ]
+}

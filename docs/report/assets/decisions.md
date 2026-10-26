@@ -984,3 +984,25 @@ Nhóm màn 6 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/achievem
 **"Gợi ý cho bạn" thêm ở "Khóa học của tôi"** (user duyệt 26/10). Đây là chỗ học viên hỏi "học gì tiếp". Cùng truy vấn với trang chủ, nên không thêm request khi đi qua lại; ở cột hẹp thì hai cột, một hai khóa thì nằm ngang một cột.
 
 **Chứng chỉ: giấy ngang như PDF, màu của design system, PDF không đổi.** Trang web dựng lại bố cục bản PDF (khung kép, tiêu đề serif, chân trang giảng viên/ngày/mã) bằng ngọc và một con dấu nghệ (chứng chỉ là phần thưởng). Bản PDF vẫn xanh navy của WeasyPrint: đổi nó là đổi backend, để ngoài phase (thiết kế, mục 3). Naomi `graduate` đứng yên với người lạ mở link (nhà tuyển dụng kiểm tra), chỉ phản ứng cho tab vừa nhận chứng chỉ. Máy chủ vẽ Naomi đứng yên, trình duyệt đọc dấu sau khi hydrate (`useSyncExternalStore`), nên không lệch HTML.
+
+## Tài khoản: màn chào mừng sau đăng ký, `next` đi theo mọi liên kết, lỗi theo ô (27/10/2026)
+
+Nhóm màn 7 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/account.md` + `account/`. Backend không đổi.
+
+**Đăng ký xong tới `/chao-mung`, không về trang chủ.** Trang chủ vừa là chỗ người đó đến từ, nên quay về đó không nói được gì. Màn chào mừng là chỗ Naomi `wave` phản ứng (bản đồ phản ứng: "Đăng ký xong"), và là chỗ giải thích cách học trên DevPath trong ba bước. Nút chính đưa về `next` ("Quay lại “Python cơ bản…”") nên màn này không chen giữa người học và khóa họ đã chọn; không đến từ đâu thì nút chính mở catalogue. Spec E2E đổi cùng commit.
+
+**Naomi vẫy một lần, cho đúng tài khoản vừa tạo trong tab này.** Form đăng ký ghi id tài khoản mới vào `sessionStorage` (`devpath:just-signed-up`); màn chào mừng đọc một lần mỗi lần tải trang, gỡ dấu ngay, và giữ câu trả lời trong một map cấp module (cùng cách với dấu chứng chỉ của nhóm 6), nên tải lại, mở ở tab khác, hay một tài khoản khác đăng nhập sau đó đều thấy Naomi đứng yên. Ở trang đăng nhập/đăng ký Naomi luôn đứng yên: chưa có gì xảy ra.
+
+**Gọi bằng tên, tức chữ cuối của họ tên.** "Lê Thu Hà" → "Chào Hà". Chữ cuối không phải chữ (như "Người mua 08") thì gọi cả tên, không gọi "08".
+
+**`next` đi theo mọi liên kết giữa đăng nhập và đăng ký.** Trước đây hai liên kết qua lại làm rơi `next`: người được đưa đi đăng nhập từ một khóa, rồi chuyển sang đăng ký, sẽ về trang chủ. Liên kết "Đăng nhập với email này" (khi email đã có tài khoản) mang thêm email để trang đăng nhập điền sẵn và đặt con trỏ vào ô mật khẩu.
+
+**Lỗi theo từng ô: gửi thì con trỏ về ô sai đầu tiên, gõ lại thì lỗi ô đó biến mất.** Trước đây lỗi nằm yên tới lần gửi sau, nên với ô mật khẩu mới, câu lỗi che mất dòng luật đang đếm ngược. Sai mật khẩu thì ô mật khẩu được xóa và nhận con trỏ (mật khẩu được gõ lại, không sửa), email giữ nguyên.
+
+**Nút Hiện/Ẩn mật khẩu không có chữ "mật khẩu" trong tên.** Tên đọc cho trình đọc màn hình là "Hiện ký tự đã gõ" / "Ẩn ký tự đã gõ": bắt đầu bằng đúng chữ trên nút (điều khiển bằng giọng nói tìm được), và không làm `getByLabel("Mật khẩu")` của E2E và mọi script chụp ra hai phần tử. Ô nhập vẫn không có `name`: bấm trước khi hydrate thì form gửi GET, và không gì được nằm trên URL.
+
+**Dòng luật mật khẩu dùng chính `validatePassword` để phán.** "Tối thiểu 8 ký tự · còn 5" rồi thành dấu tích; quá 72 byte (bcrypt) thì đỏ ngay khi gõ. Test kiểm dòng này và kiểm lúc gửi cho cùng một kết quả ở mọi độ dài.
+
+**Hồ sơ: ảnh đổi ngay chỗ nó hiện, chỉ số học tập dẫn sang trang giải thích nó.** Thẻ tài khoản gom ảnh, tên, email, vai trò, ngày tham gia; hai ô "Chuỗi ngày" và "Tổng XP" là liên kết, không phải số đứng một mình. Query thành tích ở hồ sơ có id tài khoản trong khóa, vì cache sống qua lần đăng xuất. Hai mục cài đặt xếp hai cột (tên + câu nói đổi thì sao bên trái, form bên phải). Câu "Tên hiện … trên chứng chỉ cấp sau khi đổi" nói đúng điều `certificates.recipient_name` làm: chứng chỉ cũ giữ tên cũ.
+
+**Tài khoản Google không còn được hứa "đặt mật khẩu riêng sẽ bổ sung sau".** Không có kế hoạch cho tính năng đó; câu mới chỉ nói cách vào tài khoản.

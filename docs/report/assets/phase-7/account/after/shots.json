@@ -1,0 +1,19 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-26T20:18:36.286Z",
+  "shots": [
+    "1-dang-nhap-1440",
+    "1-dang-nhap-375",
+    "2-dang-nhap-sai-1440",
+    "3-dang-ky-1440",
+    "3-dang-ky-375",
+    "4-dang-ky-email-da-co-1440",
+    "5-sau-dang-ky-1440",
+    "5-sau-dang-ky-375",
+    "6-ho-so-1440",
+    "6-ho-so-375",
+    "7-ho-so-google-1440",
+    "7-ho-so-google-375",
+    "8-ho-so-khach-1440"
+  ]
+}

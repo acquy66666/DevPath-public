@@ -107,7 +107,15 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** tab thiếu panel; thẻ khóa học cạnh nhau lệch cao; container query tự hỏi chính nó.
   - **Kiểm:** `npm test` 117/117 (17 mới), lint + tsc sạch, `check.cjs` 38/38, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 12 + 13.
   - Bằng chứng: [`achievements.md`](../report/assets/phase-7/achievements.md)
-- [ ] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave`
+- [x] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave` — xong 27/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/EMciYF4e8wDtYhT81XUKTu), 9 artboard (đăng nhập 1440/375, trạng thái form, đăng ký 1440/375, chào mừng 1440/375, hồ sơ 1440/375-Google); bản repo `docs/ui-ux/account/canvas/`. Chưa có lời duyệt của user khi code — làm theo mockup, giả định ghi ở `decisions.md`.
+  - **Đăng nhập/đăng ký:** thẻ hai cột từ `lg` (bên trái nền ngọc, Naomi `wave` đứng yên, ba điểm), dưới `lg` một cột với Naomi nhỏ cạnh tiêu đề (`components/auth/auth-shell.tsx`). Ô mật khẩu có Hiện/Ẩn (`password-field.tsx`; tên nút không chứa "mật khẩu"), dòng luật đếm ngược → dấu tích (`passwordProgress`). Đến từ trang khóa thì "Xong là bạn quay lại …". Ô nhập vẫn không có `name`, vẫn một form.
+  - **Lỗi theo ô:** con trỏ về ô sai đầu tiên, gõ lại thì lỗi ô đó biến mất; sai mật khẩu → ô trống + con trỏ; email đã có → "Đăng nhập với email này" (mang email + `next`).
+  - **Chào mừng `/chao-mung`:** đăng ký xong tới đây (`afterSignUpPath`), Naomi `wave` phản ứng một lần cho tài khoản vừa tạo trong tab (`sessionStorage devpath:just-signed-up`), "Chào Hà, mình là Naomi!", nút chính về `next`, 3 bước, chủ đề, khóa miễn phí. Logic thuần ở `lib/account/welcome.ts`.
+  - **Hồ sơ:** thẻ tài khoản (ảnh + nút ngay dưới, vai trò, ngày tham gia, ô chuỗi ngày/XP dẫn sang trang của chúng), hai mục cài đặt hai cột; tài khoản Google bỏ lời hứa "đặt mật khẩu sẽ bổ sung sau".
+  - **Lỗi tìm ra:** liên kết qua lại đăng nhập ⇄ đăng ký làm rơi `next`; câu lỗi che dòng luật mật khẩu; stack dev chết vì image backend thiếu `openpyxl`.
+  - **Kiểm:** `npm test` 126/126 (9 mới), lint + tsc sạch, `check.cjs` 37/37, tràn ngang 0/138 (thêm `/chao-mung`), E2E 1 passed (spec chờ `/chao-mung`), `next build` không mạng xanh. Ảnh trước/sau 13 + 13.
+  - Bằng chứng: [`account.md`](../report/assets/phase-7/account.md)
 - [ ] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`)
 - [ ] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào
 - [ ] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state

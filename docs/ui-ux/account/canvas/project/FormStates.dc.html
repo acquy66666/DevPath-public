@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Trạng thái form tài khoản</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 900px; padding: 56px 64px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 48px; align-content: start">
+
+  <!-- 1. Submitted empty: each field says what it needs -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Lỗi từng ô · bấm gửi khi còn trống</p>
+    <form style="box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="e1" style="font-size: 14px; line-height: 20px; font-weight: 500">Email</label>
+        <input id="e1" type="email" aria-invalid="true" value="ban@" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #c3292e; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+        <p style="margin: 0; display: flex; gap: 6px; font-size: 14px; line-height: 20px; color: #a01e23"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Email không hợp lệ</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="p1" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu</label>
+        <input id="p1" type="password" aria-invalid="true" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #c3292e; border-radius: 10px; font: inherit; font-size: 16px">
+        <p style="margin: 0; display: flex; gap: 6px; font-size: 14px; line-height: 20px; color: #a01e23"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Vui lòng nhập mật khẩu</p>
+      </div>
+      <button type="submit" style="height: 40px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Đăng nhập</button>
+    </form>
+    <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Con trỏ nhảy về ô sai đầu tiên.</p>
+  </div>
+
+  <!-- 2. The server said no -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Máy chủ từ chối · sai mật khẩu</p>
+    <form style="box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <div role="alert" style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #fff2f1; color: #a01e23; font-size: 14px; line-height: 20px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Email hoặc mật khẩu không đúng.</div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="e2" style="font-size: 14px; line-height: 20px; font-weight: 500">Email</label>
+        <input id="e2" type="email" value="nguoimua08@sales.devpath.example" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <label for="p2" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu</label>
+        <input id="p2" type="password" value="" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px">
+      </div>
+      <button type="submit" style="height: 40px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Đăng nhập</button>
+    </form>
+    <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Email giữ nguyên, ô mật khẩu được xóa và nhận con trỏ.</p>
+
+    <p style="margin: 24px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Email đã có tài khoản · đăng ký</p>
+    <div role="alert" style="display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 10px; background: #fff2f1; color: #a01e23; font-size: 14px; line-height: 20px">
+      <span style="display: flex; gap: 10px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Email này đã có tài khoản. Bạn đăng nhập nhé?</span>
+      <a href="#" style="margin-left: 26px; font-weight: 600; color: #a01e23">Đăng nhập với email này</a>
+    </div>
+  </div>
+
+  <!-- 3. Too many tries; sending -->
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Quá số lần thử</p>
+    <div role="alert" style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #fff2f1; color: #a01e23; font-size: 14px; line-height: 20px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>Email này vừa được thử đăng nhập quá nhiều lần. Thử lại sau khoảng 12 phút.</div>
+
+    <p style="margin: 24px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Đang gửi</p>
+    <div style="box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <button type="button" disabled style="height: 40px; border: 0; border-radius: 10px; background: #007967; opacity: 0.6; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>Đang đăng nhập…</button>
+    </div>
+
+    <p style="margin: 24px 0 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Mật khẩu đang hiện</p>
+    <div style="box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+      <label for="p3" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu</label>
+      <div style="position: relative; display: flex">
+        <input id="p3" type="text" value="devpath-buyer" style="box-sizing: border-box; flex: 1; min-width: 0; height: 40px; padding: 0 64px 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+        <button type="button" aria-pressed="true" style="position: absolute; top: 4px; right: 4px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: #e7fbf6; font: inherit; font-size: 14px; font-weight: 500; color: #066254; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>Ẩn</button>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

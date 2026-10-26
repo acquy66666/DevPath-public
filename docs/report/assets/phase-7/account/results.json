@@ -1,0 +1,193 @@
+{
+  "at": "2026-10-26T20:21:50.764Z",
+  "base": "http://localhost:3000",
+  "passed": 37,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Đăng nhập: ô nhập không có `name` (gửi trước hydrate không lộ gì)",
+      "ok": true,
+      "detail": "[null,null]"
+    },
+    {
+      "name": "Đăng nhập: đúng một form",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: getByLabel(\"Mật khẩu\") ra đúng một ô",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: 1440 px một Naomi, đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: liên kết sang đăng ký giữ `next`",
+      "ok": true,
+      "detail": "/dang-ky?next=%2Fkhoa-hoc%2Fpython-co-ban-cho-nguoi-moi-bat-dau"
+    },
+    {
+      "name": "Đăng nhập: gửi khi trống → con trỏ về ô Email",
+      "ok": true,
+      "detail": "Email"
+    },
+    {
+      "name": "Đăng nhập: báo lỗi ở cả hai ô",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: nút Hiện/Ẩn đổi kiểu ô và tên nút",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: sai mật khẩu → báo lỗi, ô mật khẩu trống và nhận con trỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng nhập: 360 px không tràn ngang, một Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 1"
+    },
+    {
+      "name": "Đăng ký: nói sẽ quay lại khóa đang xem",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng ký: liên kết sang đăng nhập giữ `next`",
+      "ok": true,
+      "detail": "/dang-nhap?next=%2Fkhoa-hoc%2Fpython-co-ban-cho-nguoi-moi-bat-dau"
+    },
+    {
+      "name": "Đăng ký: gửi khi trống → con trỏ về ô Họ và tên",
+      "ok": true,
+      "detail": "Họ và tên"
+    },
+    {
+      "name": "Đăng ký: dòng luật mật khẩu đếm ngược rồi thành dấu tích",
+      "ok": true,
+      "detail": "Tối thiểu 8 ký tự · còn 5"
+    },
+    {
+      "name": "Đăng ký: email đã có → liên kết đăng nhập mang email và `next`",
+      "ok": true,
+      "detail": "/dang-nhap?next=%2Fkhoa-hoc%2Fpython-co-ban-cho-nguoi-moi-bat-dau&email=nguoimua08%40sales.devpath.example"
+    },
+    {
+      "name": "Đăng nhập từ liên kết đó: email điền sẵn, con trỏ ở ô mật khẩu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng ký: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đăng ký: 360 px không tràn ngang, một Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 1"
+    },
+    {
+      "name": "Sau đăng ký: tới /chao-mung, giữ `next`",
+      "ok": true,
+      "detail": "http://localhost:3000/chao-mung?next=%2Fkhoa-hoc%2Fpython-co-ban-cho-nguoi-moi-bat-dau"
+    },
+    {
+      "name": "Chào mừng: gọi đúng tên (chữ cuối của họ tên)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: wave phản ứng một lần",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: nút chính quay lại khóa đang xem",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: có 3 bước, chủ đề và khóa miễn phí",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: mỗi màn một Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: tải lại thì đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng: 360 px không tràn ngang, một Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 1"
+    },
+    {
+      "name": "Hồ sơ: nút lưu tắt khi chưa đổi gì",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Hồ sơ: lưu tên → dòng trạng thái báo đã lưu, header đổi tên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Hồ sơ: sai mật khẩu hiện tại → ô đó trống và nhận con trỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Hồ sơ: chuỗi ngày + XP dẫn sang trang của chúng",
+      "ok": true,
+      "detail": "[\"/khoa-hoc-cua-toi\",\"/bang-xep-hang\"]"
+    },
+    {
+      "name": "Hồ sơ: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Hồ sơ: 360 px không tràn ngang",
+      "ok": true,
+      "detail": "tràn 0"
+    },
+    {
+      "name": "Hồ sơ (khách): nút đăng nhập quay lại /ho-so",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chào mừng (khách): mời tạo tài khoản, Naomi đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giảm chuyển động: sau đăng ký Naomi đứng yên, 0 animation",
+      "ok": true,
+      "detail": "0 animation"
+    }
+  ]
+}

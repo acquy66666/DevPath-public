@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đăng nhập</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 900px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; gap: 32px">
+
+  <div style="align-self: stretch; display: flex">
+    <a href="#" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 10px; font-size: 14px; line-height: 20px; text-decoration: none; color: #556670"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>Về trang chủ</a>
+  </div>
+
+  <main style="box-sizing: border-box; width: 100%; max-width: 1040px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 440px); border: 1px solid #e3eaee; border-radius: 20px; overflow: hidden; background: #ffffff; box-shadow: 0 1px 2px rgba(16, 32, 41, 0.06), 0 8px 24px rgba(16, 32, 41, 0.06)">
+
+    <!-- Why sign in: what is waiting, said once -->
+    <section aria-label="DevPath" style="box-sizing: border-box; padding: 40px 48px; background: #e7fbf6; display: flex; flex-direction: column; gap: 24px">
+      <a href="#" aria-label="DevPath — về trang chủ" style="font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+      <img src="/_blob/51cea3fb85f7233e8735c8c4ededff3b" alt="" style="width: 176px; height: 176px; margin-top: 8px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em">Chào mừng trở lại</h2>
+        <p style="margin: 0; font-size: 16px; line-height: 24px; color: #3e505a; max-width: 30em">Tiến độ, bài đã nộp, ghi chú và chuỗi ngày học của bạn vẫn ở đây.</p>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 22px; color: #3e505a">
+        <li style="display: flex; gap: 10px; align-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>Chấm trong sandbox Docker</li>
+        <li style="display: flex; gap: 10px; align-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>Gợi ý theo tiến độ</li>
+        <li style="display: flex; gap: 10px; align-items: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007967" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M13 8H7"/><path d="M17 12H7"/></svg>Trợ giảng AI trích nguồn bài giảng</li>
+      </ul>
+    </section>
+
+    <!-- The one form -->
+    <section style="box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700">Đăng nhập</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #556670">Tiếp tục khóa học đang học dở của bạn.</p>
+      </div>
+
+      <a href="#" style="box-sizing: border-box; height: 40px; display: flex; align-items: center; justify-content: center; gap: 8px; border: 1px solid #d2dbe0; border-radius: 10px; background: #ffffff; font-size: 15px; font-weight: 500; text-decoration: none; color: #102029"><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5a5.6 5.6 0 0 1-2.4 3.7v3h3.9c2.3-2.1 3.5-5.2 3.5-8.9z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.9-3c-1.1.7-2.4 1.2-4 1.2-3.1 0-5.7-2.1-6.6-4.9H1.4v3.1A12 12 0 0 0 12 24z"/><path fill="#FBBC05" d="M5.4 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.4a12 12 0 0 0 0 10.8l4-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.4 6.6l4 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg>Đăng nhập bằng Google</a>
+
+      <div aria-hidden="true" style="display: flex; align-items: center; gap: 12px; font-size: 13px; color: #556670"><span style="flex: 1; height: 1px; background: #e3eaee"></span>hoặc dùng email<span style="flex: 1; height: 1px; background: #e3eaee"></span></div>
+
+      <form style="display: flex; flex-direction: column; gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="email" style="font-size: 14px; line-height: 20px; font-weight: 500">Email</label>
+          <input id="email" type="email" value="nguoimua08@sales.devpath.example" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="pw" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu</label>
+          <div style="position: relative; display: flex">
+            <input id="pw" type="password" value="devpath-buyer" style="box-sizing: border-box; flex: 1; min-width: 0; height: 40px; padding: 0 64px 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+            <button type="button" aria-pressed="false" style="position: absolute; top: 4px; right: 4px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: #066254; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>Hiện</button>
+          </div>
+        </div>
+        <button type="submit" style="height: 40px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Đăng nhập</button>
+      </form>
+
+      <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670; text-align: center">Chưa có tài khoản? <a href="#" style="font-weight: 600">Đăng ký miễn phí</a></p>
+    </section>
+  </main>
+
+  <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670"><a href="#" style="color: #556670">Chính sách bảo mật</a></p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

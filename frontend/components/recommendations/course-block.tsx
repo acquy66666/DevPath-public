@@ -20,22 +20,27 @@ export function CourseBlock({
   title,
   description,
   action,
+  intro,
   columns = 4,
   layout = "grid",
   children,
 }: {
   title: string;
   description?: ReactNode;
-  /** A link beside the heading, e.g. "Xem tất cả khóa học". */
+  /** A link or button beside the heading, e.g. "Xem tất cả khóa học". */
   action?: ReactNode;
-  columns?: 3 | 4;
+  /** Between the heading and the cards, e.g. the panel "Cách DevPath gợi ý" opens. */
+  intro?: ReactNode;
+  /** 2 for a block in a narrow column, beside the achievements of "Khóa học của tôi". */
+  columns?: 2 | 3 | 4;
   layout?: "grid" | "rows";
   children: ReactNode;
 }) {
   return (
     <section className="space-y-4" aria-label={title}>
       <BlockHeader title={title} description={description} action={action} />
-      <div className={layout === "rows" ? "grid gap-5 md:grid-cols-2" : gridClass(columns)}>
+      {intro}
+      <div className={layout === "rows" ? rowsClass(columns) : gridClass(columns)}>
         {children}
       </div>
     </section>
@@ -79,7 +84,7 @@ export function CourseBlockSkeleton({
 }: {
   title: string;
   count: number;
-  columns?: 3 | 4;
+  columns?: 2 | 3 | 4;
   /** The block will have a line under its title. */
   described?: boolean;
   /** Each card will say why it is there (the recommender rows). */
@@ -98,10 +103,16 @@ export function CourseBlockSkeleton({
   );
 }
 
-function gridClass(columns: 3 | 4): string {
+function gridClass(columns: 2 | 3 | 4): string {
   // Spelled out rather than interpolated: Tailwind only ships the classes it
   // can find written down in the source.
+  if (columns === 2) return "grid gap-5 sm:grid-cols-2";
   return columns === 3
     ? "grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
     : "grid gap-5 sm:grid-cols-2 lg:grid-cols-4";
+}
+
+/** Cards on their side: two across on a full-width row, one above the other in a narrow column. */
+function rowsClass(columns: 2 | 3 | 4): string {
+  return columns === 2 ? "grid gap-5" : "grid gap-5 md:grid-cols-2";
 }

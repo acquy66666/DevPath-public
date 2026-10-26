@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export default function LeaderboardPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
-      <h1 className="text-3xl font-semibold tracking-tight">Bảng xếp hạng</h1>
-      <p className="mt-2 mb-6 text-muted-foreground">
+      <h1 className="text-h1 text-balance">Bảng xếp hạng</h1>
+      <p className="mt-1 mb-6 text-muted-foreground">
         Xếp theo XP: hoàn thành bài học, vượt qua bài trắc nghiệm và giải bài tập code.
       </p>
       <LeaderboardView />

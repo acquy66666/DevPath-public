@@ -1,0 +1,18 @@
+{
+  "base": "http://localhost:3000",
+  "at": "2026-10-26T04:00:59.171Z",
+  "shots": [
+    "1-khoa-hoc-cua-toi-1440",
+    "1-khoa-hoc-cua-toi-375",
+    "2-chuoi-chua-hoc-1440",
+    "3-chuoi-vua-mat-1440",
+    "4-bang-xep-hang-tuan-1440",
+    "4-bang-xep-hang-tuan-375",
+    "5-bang-xep-hang-thang-1440",
+    "7-chung-chi-1440",
+    "7-chung-chi-375",
+    "8-goi-y-trang-chu-1440",
+    "8-goi-y-trang-chu-375",
+    "9-tai-khoan-moi-1440"
+  ]
+}

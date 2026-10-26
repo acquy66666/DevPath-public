@@ -1,13 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Award } from "lucide-react";
+import { Award, Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { CourseCard, CourseListSkeleton } from "@/components/courses/course-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -20,6 +20,7 @@ import { apiErrorMessage } from "@/lib/api/error-messages";
 import { listMyEnrollments } from "@/lib/api/enrollments";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 /**
  * Guarded here rather than in middleware, for the reason the profile page
@@ -95,28 +96,51 @@ export function MyCourses() {
     Math.ceil(query.data.total / query.data.page_size),
   );
 
+  // "· 2 đã hoàn thành" only when every course is on this page: counting one
+  // page of several would say less than the truth.
+  const finished = query.data.items.filter((item) => item.completed_at).length;
+  const summary =
+    pageCount === 1 && finished > 0
+      ? `${query.data.total} khóa học · ${finished} đã hoàn thành`
+      : `${query.data.total} khóa học`;
+
   return (
     <div className="space-y-6">
-      <p className="text-muted-foreground">{query.data.total} khóa học</p>
+      <p className="text-muted-foreground">{summary}</p>
 
-      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Two across at most: from `lg` the achievements take the right-hand column. */}
+      <ul className="grid gap-x-5 gap-y-6 sm:grid-cols-2">
         {query.data.items.map((item) => (
-          <li key={item.course.id} className="flex h-full flex-col gap-2">
-            <CourseCard course={item.course} />
-            <div className="flex items-center justify-between gap-3 px-1">
-              <p className="text-xs text-muted-foreground">
-                {item.completed_at
-                  ? `Hoàn thành ${formatDate(item.completed_at)}`
-                  : `Đăng ký ${formatDate(item.enrolled_at)}`}
-              </p>
+          <li key={item.course.id} className="flex h-full flex-col gap-2.5">
+            {/* The card takes what the footer leaves: every footer has the same
+                two lines (status, then buttons), so cards side by side line up. */}
+            <div className="flex flex-1 flex-col *:flex-1">
+              <CourseCard course={item.course} />
+            </div>
+            <div className="flex flex-col gap-2 px-1">
+              {item.completed_at ? (
+                <p className="flex items-center gap-1.5 text-caption text-success-text">
+                  <Check className="size-3.5 shrink-0" strokeWidth={2.5} aria-hidden />
+                  Hoàn thành {formatDate(item.completed_at)}
+                </p>
+              ) : (
+                <p className="text-caption text-muted-foreground">
+                  Đăng ký {formatDate(item.enrolled_at)}
+                </p>
+              )}
               <div className="flex shrink-0 gap-2">
                 {item.certificate_code ? (
-                  <Button size="sm" variant="secondary" asChild>
-                    <Link href={`/cert/${item.certificate_code}`}>
-                      <Award aria-hidden />
-                      Chứng chỉ
-                    </Link>
-                  </Button>
+                  // A certificate is a reward: the one button here in the reward tint.
+                  <Link
+                    href={`/cert/${item.certificate_code}`}
+                    className={cn(
+                      buttonVariants({ size: "sm", variant: "ghost" }),
+                      "bg-reward-soft text-reward-foreground hover:bg-reward/20 hover:text-reward-foreground [&_svg]:text-reward-mark",
+                    )}
+                  >
+                    <Award aria-hidden />
+                    Chứng chỉ
+                  </Link>
                 ) : null}
                 <Button size="sm" variant="outline" asChild>
                   <Link href={`/hoc/${item.course.slug}`}>

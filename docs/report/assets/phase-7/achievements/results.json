@@ -1,0 +1,198 @@
+{
+  "at": "2026-10-26T03:52:05.399Z",
+  "base": "http://localhost:3000",
+  "passed": 38,
+  "failed": 0,
+  "results": [
+    {
+      "name": "08: thẻ chuỗi ở trạng thái lit",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "08: fire phản ứng ở lần đầu thấy hôm nay",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "08: mỗi màn một Naomi (Khóa học của tôi)",
+      "ok": true,
+      "detail": "1 Naomi"
+    },
+    {
+      "name": "08: dải tuần đủ 7 ngày, hôm nay đã tính",
+      "ok": true,
+      "detail": "done,later,later,later,later,later,later"
+    },
+    {
+      "name": "08: câu đọc cho trình đọc màn hình",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "08: mở lại cùng ngày thì fire đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Gợi ý: nút đóng lúc đầu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Gợi ý: bấm thì mở panel ba nguồn",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Gợi ý: thẻ có nhãn nguồn",
+      "ok": true,
+      "detail": "learners,content"
+    },
+    {
+      "name": "Khóa học của tôi: 375 px không tràn ngang",
+      "ok": true,
+      "detail": "scrollWidth − innerWidth = 0"
+    },
+    {
+      "name": "BXH: lần đầu xem thì levelup đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: không có dòng lên hạng ở lần đầu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: nhớ hạng đã xem theo tuần",
+      "ok": true,
+      "detail": "devpath:rank-seen:560334d8-b3a2-4d0b-b473-a9e7ff128137:week:2026-10-26"
+    },
+    {
+      "name": "BXH: hạng tốt hơn lần trước thì levelup phản ứng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: có dòng “Lên 2 hạng từ lần trước bạn xem”",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: mở lại thì đứng yên, hết dòng lên hạng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: mỗi màn một Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: tab nào cũng trỏ tới panel có thật",
+      "ok": true,
+      "detail": "[true,true,true]"
+    },
+    {
+      "name": "BXH: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "BXH: tab Mọi thời gian có bục 3 hạng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Bảng xếp hạng: 375 px không tràn ngang",
+      "ok": true,
+      "detail": "scrollWidth − innerWidth = 0"
+    },
+    {
+      "name": "Chứng chỉ: người xem thường thấy Naomi đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: mỗi màn một Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: vừa nhận trong tab này thì graduate phản ứng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: dấu được dùng một lần",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: tải lại thì đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: PDF là nút chính duy nhất",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Chứng chỉ: sao chép đúng địa chỉ trang",
+      "ok": true,
+      "detail": "http://localhost:3000/cert/HK548YYSCGHL6PQT"
+    },
+    {
+      "name": "Chứng chỉ: 375 px không tràn ngang",
+      "ok": true,
+      "detail": "scrollWidth − innerWidth = 0"
+    },
+    {
+      "name": "38: thẻ chuỗi ở trạng thái lost",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "38: sad phản ứng ở lần đầu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "38: mở lại thì sad đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "01: thẻ chuỗi ở trạng thái pending",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "01: chuỗi chờ hôm nay thì fire đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "01: hôm nay là ô mở",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tài khoản mới: thẻ chuỗi ở trạng thái none, không Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Tài khoản mới: một Naomi (trạng thái rỗng của danh sách)",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giảm chuyển động: Naomi đứng yên, 0 animation",
+      "ok": true,
+      "detail": "0 animation"
+    }
+  ]
+}

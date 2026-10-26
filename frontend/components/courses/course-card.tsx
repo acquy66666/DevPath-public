@@ -75,13 +75,14 @@ function Note({ children }: { children: ReactNode }) {
  * `note` is the line a recommender block adds on top -- why this card is
  * here. Text only: it sits inside the link, and a link cannot hold another.
  */
-export function CourseCard({ course, note }: { course: Course; note?: ReactNode }) {
+export function CourseCard({ course, note, tags }: { course: Course; note?: ReactNode; tags?: ReactNode }) {
   return (
     <Link href={`/khoa-hoc/${course.slug}`} className={cn(FRAME, "h-full flex-col")}>
       <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} />
 
       <span className="flex flex-1 flex-col gap-2 p-4">
         {note ? <Note>{note}</Note> : null}
+        {tags}
 
         <span className="line-clamp-1 text-eyebrow text-muted-foreground uppercase">
           {eyebrow(course)}
@@ -116,7 +117,7 @@ export function CourseCard({ course, note }: { course: Course; note?: ReactNode 
  * four-column grid holding a single card leaves three quarters of the row
  * empty and reads as something that failed to load.
  */
-export function CourseRowCard({ course, note }: { course: Course; note?: ReactNode }) {
+export function CourseRowCard({ course, note, tags }: { course: Course; note?: ReactNode; tags?: ReactNode }) {
   return (
     <Link href={`/khoa-hoc/${course.slug}`} className={cn(FRAME, "flex-col sm:flex-row")}>
       <CourseCover
@@ -127,6 +128,7 @@ export function CourseRowCard({ course, note }: { course: Course; note?: ReactNo
 
       <span className="flex min-w-0 flex-1 flex-col gap-1.5 p-4">
         {note ? <Note>{note}</Note> : null}
+        {tags}
         <span className="line-clamp-1 text-eyebrow text-muted-foreground uppercase">
           {eyebrow(course)}
         </span>
@@ -157,6 +159,8 @@ export function CourseCardSkeleton({ note = false, className }: { note?: boolean
       <Skeleton className="aspect-video w-full rounded-none" />
       <div className="flex flex-1 flex-col gap-2 p-4">
         {note ? <SkeletonText size="caption" className="w-2/3" /> : null}
+        {/* A recommender card's source tags: one row of 22px pills. */}
+        {note ? <Skeleton className="h-5.5 w-3/5 rounded-full" /> : null}
         {/* The eyebrow: caption-sized, on its 16px line. */}
         <SkeletonText size="caption" className="h-4 w-1/2" />
         <div>

@@ -97,7 +97,16 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** tải lại giữa quiz có giờ mất hết câu đã chọn; đồng hồ cũ `aria-live` đọc từng giây; backtick in nguyên văn; lượt hết giờ ghi "Bạn chưa trả lời câu này" cho mọi câu.
   - **Kiểm:** `npm test` 100/100 (18 mới), lint + tsc sạch, `check.cjs` 26/26, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 13 + 14.
   - Bằng chứng: [`quiz.md`](../report/assets/phase-7/quiz.md)
-- [ ] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐
+- [x] Nhóm 6 — Thành tích: XP + chuỗi ngày (`fire`/`sad`), bảng xếp hạng (`levelup`), chứng chỉ (`graduate`), khối gợi ý ⭐ — xong 26/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/K2jZHXjnca951AjgXWYfeo), 8 artboard (Khóa học của tôi 1440/375, 5 trạng thái chuỗi, bảng xếp hạng 1440/375, khối gợi ý, chứng chỉ 1440/375). Dữ liệu thật của người mua mẫu trên CSDL dev. Bản trong repo ở `docs/ui-ux/achievements/canvas/`. User duyệt 26/10, giữ cả 5 điểm; canvas bản 10 sửa theo code.
+  - **Khóa học của tôi:** hai cột từ `lg`, thành tích ở cột phải: thẻ chuỗi nền nghệ nhạt có Naomi + dải 7 ngày của tuần, thẻ XP + "Hạng N tuần này" + XP gần đây. Chuỗi vừa đứt (≤ 7 ngày) là thẻ trắng với `sad`. Thêm "Gợi ý cho bạn" dưới danh sách.
+  - **Bảng xếp hạng:** mỗi tab có panel (lỗi axe critical của mốc "trước"), thẻ "Bạn" có `levelup` + khoảng cách tới hạng trên, bục 3 hạng theo hạng (đồng hạng thì cùng bậc).
+  - **Chứng chỉ:** giấy ngang như PDF bằng màu design system, dấu nghệ, khối chia sẻ có `graduate`, "Tải chứng chỉ PDF" + "Sao chép liên kết".
+  - **Gợi ý ⭐:** câu lý do theo nửa của hệ lai + nhãn "Học viên giống bạn" / "Nội dung gần" / "Phổ biến", nút "Cách DevPath gợi ý".
+  - **Naomi** chỉ phản ứng với điều vừa xảy ra; vì chuỗi, hạng, chứng chỉ không xảy ra trên chính trang đó, trình duyệt nhớ thứ đã phản ứng (`lib/gamification/seen.ts`, theo tài khoản). Lần đầu xem bảng xếp hạng không ăn mừng.
+  - **Lỗi tìm ra:** tab thiếu panel; thẻ khóa học cạnh nhau lệch cao; container query tự hỏi chính nó.
+  - **Kiểm:** `npm test` 117/117 (17 mới), lint + tsc sạch, `check.cjs` 38/38, tràn ngang 0/132, E2E 1 passed không sửa spec, `next build` không mạng xanh. Ảnh trước/sau 12 + 13.
+  - Bằng chứng: [`achievements.md`](../report/assets/phase-7/achievements.md)
 - [ ] Nhóm 7 — Tài khoản: đăng ký/đăng nhập (giữ điều kiện "form chỉ gửi sau hydrate" mà `capture.cjs` và E2E dựa vào), hồ sơ, onboarding `wave`
 - [ ] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`)
 - [ ] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào

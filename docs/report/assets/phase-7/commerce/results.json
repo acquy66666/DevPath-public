@@ -1,0 +1,173 @@
+{
+  "at": "2026-10-27T10:05:39.429Z",
+  "base": "http://localhost:3000",
+  "passed": 33,
+  "failed": 0,
+  "results": [
+    {
+      "name": "Khách: nút đăng nhập quay lại giỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: dòng tóm tắt đếm khóa đã có",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: khóa đã có có nhãn và lối vào học",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: nút thanh toán ghi số tiền (898.000 ₫, không tính khóa đã có)",
+      "ok": true,
+      "detail": "Thanh toán 898.000 ₫ qua VNPay"
+    },
+    {
+      "name": "Giỏ: gợi ý từ yêu thích có 2 khóa",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Mã hết hạn: lỗi ngay dưới ô, ô aria-invalid và trỏ tới lỗi, giữ chữ đã gõ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Mã CHAOMUNG50: tổng 449.000 ₫, nút đổi theo",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Mã đã áp: dòng mô tả có hạn dùng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: 360 px không tràn ngang, 0 Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 0"
+    },
+    {
+      "name": "Điện thoại: nút thanh toán dính đáy màn hình, chỉ một nút hiện",
+      "ok": true,
+      "detail": "{\"x\":106.484375,\"y\":756,\"width\":252.515625,\"height\":44}"
+    },
+    {
+      "name": "Để dành sau: rời giỏ, vào yêu thích",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thêm từ gợi ý yêu thích: vào giỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Yêu thích: khóa đã ở trong giỏ dẫn tới giỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Yêu thích: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Yêu thích: 360 px không tràn ngang, 0 Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 0"
+    },
+    {
+      "name": "Yêu thích: nút tim bỏ lưu",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thanh toán: sang VNPay với URL đã ký, đúng số tiền",
+      "ok": true,
+      "detail": "89800000"
+    },
+    {
+      "name": "Thành công: Naomi paid phản ứng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thành công: một Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thành công: mỗi khóa vừa mua có nút Bắt đầu học",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thành công: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thành công: 360 px không tràn ngang, 1 Naomi",
+      "ok": true,
+      "detail": "tràn 0, Naomi 1"
+    },
+    {
+      "name": "Thành công: tải lại thì Naomi đứng yên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giỏ: khóa vừa mua không được mời thêm vào giỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Yêu thích: khóa đã mua thành “Đã có · Vào học”",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thất bại: Naomi oops phản ứng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thất bại: nói lý do bằng chữ và giỏ còn nguyên",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thất bại: nút chính quay lại giỏ",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Thất bại: axe 0 lỗi critical/serious",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đang chờ: không có Naomi",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Đang chờ → tự đổi sang thành công khi IPN tới, Naomi phản ứng",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "Giảm chuyển động: Naomi đứng yên, 0 animation",
+      "ok": true,
+      "detail": "0 animation"
+    }
+  ]
+}

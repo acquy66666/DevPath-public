@@ -116,7 +116,14 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** liên kết qua lại đăng nhập ⇄ đăng ký làm rơi `next`; câu lỗi che dòng luật mật khẩu; stack dev chết vì image backend thiếu `openpyxl`.
   - **Kiểm:** `npm test` 126/126 (9 mới), lint + tsc sạch, `check.cjs` 37/37, tràn ngang 0/138 (thêm `/chao-mung`), E2E 1 passed (spec chờ `/chao-mung`), `next build` không mạng xanh. Ảnh trước/sau 13 + 13.
   - Bằng chứng: [`account.md`](../report/assets/phase-7/account.md)
-- [ ] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`)
+- [x] Nhóm 8 — Thương mại: giỏ, yêu thích, kết quả thanh toán (`paid`/`oops`) — xong 27/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/6XuLZJDYZMZztiJfmbRWJB), 9 artboard (giỏ 1440/375, trạng thái giỏ, yêu thích 1440/375, thành công 1440/375, thất bại, đang chờ); bản repo `docs/ui-ux/commerce/canvas/`. Chưa có lời duyệt của user khi code — làm theo mockup, giả định ghi ở `decisions.md`.
+  - **Giỏ:** dòng có cấp độ + thời lượng, "Để dành sau" + "Bỏ", khóa đã có không tính tiền; thẻ "Tóm tắt đơn hàng", nút ghi số tiền ("Thanh toán 598.500 ₫ qua VNPay"); lỗi mã giảm giá dưới ô; dưới `lg` tổng + nút dính đáy màn hình; "Trong danh sách yêu thích của bạn" (cả khi giỏ trống).
+  - **Yêu thích:** nút tim trên ảnh bìa, một nút dưới thẻ ("Thêm vào giỏ" / "Đã ở trong giỏ" / "Đã có · Vào học" / "Học miễn phí"), `Pager` chung.
+  - **Kết quả thanh toán:** Naomi `paid`/`oops` phản ứng một lần mỗi kết quả khi đơn còn mới (`localStorage devpath:order-seen:<mã>`, logic ở `lib/commerce/order-view.ts`), "Khóa học vừa mua" có nút "Bắt đầu học", thẻ biên nhận; đang chờ không Naomi, sau 90 s có "Kiểm tra lại", IPN tới thì tự đổi.
+  - **Lỗi tìm ra:** khóa vừa mua vẫn được mời "Thêm vào giỏ" (API giữ khóa trong yêu thích — giao diện hỏi ghi danh từng khóa); nút ở thanh đáy 375 px cắt chữ; hai liên kết "Đã có · Vào học" cùng tên; "Vào học ngay" trùng đích với "Khóa học của tôi".
+  - **Kiểm:** `npm test` 133/133 (7 mới), lint + tsc sạch, `check.cjs` 33/33, tràn ngang 0/138, E2E 1 passed (spec tìm nút thanh toán theo mẫu), `next build` không mạng xanh. Ảnh trước/sau 12 + 12.
+  - Bằng chứng: [`commerce.md`](../report/assets/phase-7/commerce.md)
 - [ ] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào
 - [ ] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state
 

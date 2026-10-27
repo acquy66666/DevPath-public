@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Yêu thích</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 960px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <a href="#" aria-label="Giỏ hàng: 1 khóa học" style="position: relative; display: inline-flex; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 10px; background: #f0f4f7; color: #102029"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg><span style="position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: #007967; color: #ffffff; font-size: 11px; line-height: 18px; font-weight: 600; text-align: center">1</span></a>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #ccf5ea; color: #074b40; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600">N</span>
+  </header>
+
+  <main style="box-sizing: border-box; width: 100%; max-width: 1152px; margin: 0 auto; padding: 40px 24px 64px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em">Danh sách yêu thích</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #556670">3 khóa học bạn để dành · 1 khóa đã ở trong giỏ</p>
+      </div>
+      <a href="#" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; color: #102029; font-size: 14px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-sizing: border-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>Xem giỏ hàng</a>
+    </div>
+
+    <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+
+      <li style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+        <div style="position: relative; height: 196px; background: #f0f6ff; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; box-sizing: border-box">
+          <span style="display: block; height: 8px; width: 38%; border-radius: 4px; background: #1b6cc7"></span><span style="display: block; height: 8px; width: 52%; margin-left: 10%; border-radius: 4px; background: #c0dcff"></span><span style="display: block; height: 8px; width: 24%; border-radius: 4px; background: #10427b"></span>
+          <span style="position: absolute; right: 18px; bottom: 6px; font-family: 'Geist Mono', monospace; font-size: 56px; line-height: 64px; font-weight: 600; color: #1b6cc7">TS</span>
+          <button type="button" aria-pressed="true" aria-label="Bỏ TypeScript cho lập trình viên JavaScript khỏi yêu thích" style="position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 0; border-radius: 20px; background: #ffffff; box-shadow: 0 1px 2px rgba(16, 32, 41, 0.12); display: inline-flex; align-items: center; justify-content: center; color: #c3292e"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></button>
+        </div>
+        <div style="flex: 1; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px">
+          <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #066254">JavaScript</p>
+          <a href="#" style="font-size: 17px; line-height: 24px; font-weight: 600; color: #102029; text-decoration: none">TypeScript cho lập trình viên JavaScript</a>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Nguyễn Mai Anh · Trung cấp</p>
+          <p style="margin: 6px 0 0; font-size: 18px; line-height: 26px; font-weight: 700">299.000 ₫</p>
+          <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid #e3eaee; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Lưu ngày 12/10</p>
+            <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px">Thêm vào giỏ</button>
+          </div>
+        </div>
+      </li>
+
+      <li style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+        <div style="position: relative; height: 196px; background: #fff4e9; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; box-sizing: border-box">
+          <span style="display: block; height: 8px; width: 38%; border-radius: 4px; background: #9c5c00"></span><span style="display: block; height: 8px; width: 52%; margin-left: 10%; border-radius: 4px; background: #ffcfa1"></span><span style="display: block; height: 8px; width: 24%; border-radius: 4px; background: #613700"></span>
+          <span style="position: absolute; right: 18px; bottom: 6px; font-family: 'Geist Mono', monospace; font-size: 56px; line-height: 64px; font-weight: 600; color: #9c5c00">$_</span>
+          <button type="button" aria-pressed="true" aria-label="Bỏ Docker cho lập trình viên backend khỏi yêu thích" style="position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 0; border-radius: 20px; background: #ffffff; box-shadow: 0 1px 2px rgba(16, 32, 41, 0.12); display: inline-flex; align-items: center; justify-content: center; color: #c3292e"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></button>
+        </div>
+        <div style="flex: 1; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px">
+          <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #066254">Backend</p>
+          <a href="#" style="font-size: 17px; line-height: 24px; font-weight: 600; color: #102029; text-decoration: none">Docker cho lập trình viên backend</a>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Nguyễn Mai Anh · Trung cấp</p>
+          <p style="margin: 6px 0 0; font-size: 18px; line-height: 26px; font-weight: 700">399.000 ₫</p>
+          <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid #e3eaee; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Lưu ngày 09/10</p>
+            <button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600">Thêm vào giỏ</button>
+          </div>
+        </div>
+      </li>
+
+      <li style="display: flex; flex-direction: column; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+        <div style="position: relative; height: 196px; background: #e7fbf6; display: flex; flex-direction: column; gap: 8px; padding: 20px 22px; box-sizing: border-box">
+          <span style="display: block; height: 8px; width: 38%; border-radius: 4px; background: #039580"></span><span style="display: block; height: 8px; width: 52%; margin-left: 10%; border-radius: 4px; background: #a3ead9"></span><span style="display: block; height: 8px; width: 24%; border-radius: 4px; background: #074b40"></span>
+          <span style="position: absolute; right: 18px; bottom: 6px; font-family: 'Geist Mono', monospace; font-size: 56px; line-height: 64px; font-weight: 600; color: #039580">[ ]</span>
+          <button type="button" aria-pressed="true" aria-label="Bỏ Cấu trúc dữ liệu &amp; giải thuật với Python khỏi yêu thích" style="position: absolute; top: 12px; right: 12px; width: 40px; height: 40px; border: 0; border-radius: 20px; background: #ffffff; box-shadow: 0 1px 2px rgba(16, 32, 41, 0.12); display: inline-flex; align-items: center; justify-content: center; color: #c3292e"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></button>
+        </div>
+        <div style="flex: 1; padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 6px">
+          <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #066254">Cấu trúc dữ liệu &amp; giải thuật</p>
+          <a href="#" style="font-size: 17px; line-height: 24px; font-weight: 600; color: #102029; text-decoration: none">Cấu trúc dữ liệu &amp; giải thuật với Python</a>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Trần Minh Khoa · Trung cấp · 40 học viên</p>
+          <p style="margin: 6px 0 0; font-size: 18px; line-height: 26px; font-weight: 700">499.000 ₫</p>
+          <div style="margin-top: auto; padding-top: 12px; border-top: 1px solid #e3eaee; display: flex; align-items: center; justify-content: space-between; gap: 8px">
+            <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Lưu ngày 02/10</p>
+            <a href="#" style="height: 36px; padding: 0 12px; border-radius: 10px; background: #e7fbf6; color: #074b40; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Đã ở trong giỏ</a>
+          </div>
+        </div>
+      </li>
+    </ul>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

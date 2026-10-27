@@ -171,7 +171,7 @@ export function WishlistView() {
                 <p className="text-caption font-normal text-muted-foreground">Lưu ngày {formatDate(item.added_at)}</p>
                 {owned ? (
                   <Button variant="secondary" asChild>
-                    <Link href={`/hoc/${course.slug}`}>
+                    <Link href={`/hoc/${course.slug}`} aria-label={`Đã có · Vào học ${course.title}`}>
                       <Check aria-hidden />
                       Đã có · Vào học
                     </Link>
@@ -182,7 +182,7 @@ export function WishlistView() {
                   </Button>
                 ) : inCart ? (
                   <Button variant="secondary" asChild>
-                    <Link href="/gio-hang">
+                    <Link href="/gio-hang" aria-label={`${course.title}: đã ở trong giỏ`}>
                       <Check aria-hidden />
                       Đã ở trong giỏ
                     </Link>

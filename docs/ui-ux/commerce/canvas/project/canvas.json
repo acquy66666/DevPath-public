@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-27T10:00:00Z" },
+  "title": "DevPath — Nhóm 8: Thương mại",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1100, "title": "Giỏ hàng · /gio-hang · CHAOMUNG50 · một khóa đã có · 1440", "expand": "fill" },
+    "Cart375.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 1640, "title": "Giỏ hàng · 375" },
+    "CartStates.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 1100, "title": "Giỏ trống · khách · mã bị từ chối · đang chuyển sang VNPay" },
+    "Wishlist.dc.html": { "x": 0, "y": 1220, "w": 1440, "h": 960, "title": "Yêu thích · /yeu-thich · 1440", "expand": "fill" },
+    "Wishlist375.dc.html": { "x": 1520, "y": 1220, "w": 375, "h": 1500, "title": "Yêu thích · 375" },
+    "Paid.dc.html": { "x": 0, "y": 2840, "w": 1440, "h": 1000, "title": "Thanh toán thành công · paid phản ứng · 1440", "expand": "fill" },
+    "Paid375.dc.html": { "x": 1520, "y": 2840, "w": 375, "h": 1560, "title": "Thanh toán thành công · 375" },
+    "Failed.dc.html": { "x": 1975, "y": 2840, "w": 1440, "h": 1000, "title": "Không thành công · oops · mã 24 (đã hủy)" },
+    "Pending.dc.html": { "x": 3495, "y": 2840, "w": 1440, "h": 1000, "title": "Đang chờ ngân hàng xác nhận · rồi quá 90 giây" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Cart375.dc.html",
+    "CartStates.dc.html",
+    "Wishlist.dc.html",
+    "Wishlist375.dc.html",
+    "Paid.dc.html",
+    "Paid375.dc.html",
+    "Failed.dc.html",
+    "Pending.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": null,
+      "copiedAt": "2026-10-27T10:00:00Z"
+    }
+  ]
+}

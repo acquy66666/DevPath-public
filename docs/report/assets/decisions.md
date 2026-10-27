@@ -1022,3 +1022,25 @@ Nhóm màn 8 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/commerce
 **"Để dành sau" lưu trước rồi mới bỏ khỏi giỏ.** Hai lệnh API; hỏng giữa chừng thì khóa còn trong giỏ chứ không mất ở cả hai nơi.
 
 **Lỗi mã giảm giá nằm dưới ô và gắn với ô**, giữ chữ đã gõ để sửa. Mã đã áp nói luôn hạn dùng, vì mã được kiểm lại lúc tạo đơn và hết hạn giữa chừng là lý do hay gặp nhất.
+
+## Khu giảng viên: một thanh điều hướng, việc đang chờ, hai tab soạn khóa, gợi ý trước khi gửi duyệt (27/10/2026)
+
+Nhóm màn 9 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/instructor.md` + `instructor/`. Backend không đổi.
+
+**Một thanh điều hướng thay cho các liên kết quay lại và hàng nút.** Trước đây mỗi trang giảng viên tự có "← Khóa học của tôi" và trang danh sách mang bốn nút (Hỏi đáp, Thống kê, Cấp bậc, Tạo khóa học). Giờ `giang-day/layout.tsx` đặt `InstructorNav` dưới header: "Khóa học · Hỏi đáp · Thống kê · Cấp bậc", trang đang mở có `aria-current="page"`, "Hỏi đáp" có huy hiệu số câu chờ trả lời (cùng query với khối "Việc đang chờ", nằm dưới `QA_KEY` nên trả lời xong là số tự giảm). Trên điện thoại thanh cuộn ngang và nút "Tạo khóa học" chuyển vào trang tổng quan.
+
+**Tổng quan bắt đầu bằng việc đang chờ, không bằng danh sách.** Thứ tự: câu hỏi chưa có câu trả lời của giảng viên → khóa bị trả lại → bản nháp chưa gửi. Khóa đang chờ duyệt không nằm trong đó vì đó là việc của quản trị viên. Danh sách khóa tải một lần (≤ 100 khóa, cùng khóa cache với bộ lọc của Hỏi đáp) và lọc theo trạng thái ngay trên trình duyệt; chỉ hiện chip của trạng thái đang có khóa.
+
+**Naomi ở lời chào, đứng yên.** Plan nhóm 9 cho phép nhân vật "ở empty state và lời chào". `lib/design/site-states.test.ts` giờ cho đúng một ngoại lệ là `components/instructor/instructor-greeting.tsx` và đỏ nếu Naomi ở đó nhận `event` (mở trang tổng quan không phải sự kiện).
+
+**Soạn khóa: hai tab, trạng thái luôn ở bên cạnh.** "Nội dung" (mục lục) và "Thông tin khóa học" là hai việc khác nhau về thời lượng. Tab ở URL (`?tab=thong-tin`) để "Xem lý do" từ tổng quan mở thẳng lý do từ chối; đổi tab chỉ thay địa chỉ (`history.replaceState`), không điều hướng. Hai panel luôn gắn (`forceMount`, ẩn bằng `data-[state=inactive]:hidden`), nên bài đang sửa dở không mất khi xem tab kia — `check.cjs` kiểm điều này. Cột phải (sticky từ `lg`) là thẻ Trạng thái + thẻ Mục lục (đếm chương, từng loại bài, bài học thử). Xóa khóa chuyển xuống cuối tab Thông tin.
+
+**"Trước khi gửi duyệt" là gợi ý, không khóa nút.** Backend không đòi điều kiện nào để gửi duyệt; bốn mục (mô tả ngắn, mô tả chi tiết, mỗi chương có bài, có bài học thử) là những lý do quản trị viên hay trả khóa về. Nút "Gửi duyệt" luôn bấm được.
+
+**Thêm bài: bốn nút chọn loại thay cho ô chọn.** Loại bài quyết định bài đó là gì, nên cả bốn hiện cùng lúc (radio thật, ẩn bằng `sr-only`, viền focus ở nhãn).
+
+**Màu trạng thái khóa theo nghĩa.** `CourseStatusBadge` dùng `success`/`muted`/`info`/`destructive` thay cho biến thể chung chung; badge này dùng chung với khu admin (nhóm 10 sẽ thấy màu mới). Mọi màu viết tay còn lại của khu giảng viên (`emerald`, `amber`, `red` ở thống kê, cấp bậc, soạn quiz) đổi sang token ngữ nghĩa.
+
+**Thanh tỉ lệ chưa có số không còn là `meter`.** Khóa chưa ai học có tỉ lệ `null`; `role="meter"` thiếu `aria-valuenow` là lỗi axe `aria-required-attr` (serious) — có từ Phase 6.5, lộ ra khi kiểm trang thống kê của một giảng viên mới. Giờ thanh đó là trang trí (`aria-hidden`), chữ "—" bên cạnh nói đủ.
+
+**`giang-day/loading.tsx` hỏi đường dẫn.** Tệp này bọc mọi route giảng viên không có `loading.tsx` riêng (soạn khóa, tạo khóa, cấp bậc) nhưng trước đây luôn vẽ skeleton của danh sách; giờ dùng `instructorSkeletonFor(pathname)` như cổng.

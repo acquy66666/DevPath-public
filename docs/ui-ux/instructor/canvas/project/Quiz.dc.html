@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Soạn bài trắc nghiệm — sinh câu hỏi bằng AI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1500px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029">
+  <main style="box-sizing: border-box; width: 100%; max-width: 1152px; margin: 0 auto; padding: 32px 24px 64px; display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-size: 13px; color: #556670">Python cơ bản cho người mới bắt đầu › Chương 2 · Biến, kiểu dữ liệu và toán tử</p>
+
+      <div style="border-radius: 14px; border: 1px solid #007967; background: #ffffff; overflow: hidden">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #e7fbf6">
+          <span style="width: 28px; height: 28px; border-radius: 8px; background: #ffffff; color: #074b40; display: inline-flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg></span>
+          <span style="flex: 1; font-size: 15px; font-weight: 600">Kiểm tra: ép kiểu</span>
+          <span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #fff4e9; color: #613700; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Chưa xuất bản</span>
+          <button type="button" aria-expanded="true" aria-label="Thu gọn bài học Kiểm tra: ép kiểu" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #074b40; display: inline-flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg></button>
+        </div>
+
+        <div style="padding: 20px; display: flex; flex-direction: column; gap: 20px; border-top: 1px solid #ccf5ea">
+          <div style="display: grid; grid-template-columns: minmax(0, 2fr) repeat(2, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="qt" style="font-size: 14px; font-weight: 500">Tên bài học</label><input id="qt" value="Kiểm tra: ép kiểu" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="qm" style="font-size: 14px; font-weight: 500">Thời gian (phút)</label><input id="qm" placeholder="Không tính giờ" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="qp" style="font-size: 14px; font-weight: 500">Điểm đạt (%)</label><input id="qp" value="70" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"></div>
+          </div>
+
+          <!-- AI generator: a tool strip, not a hero -->
+          <section aria-labelledby="ai" style="box-sizing: border-box; border-radius: 12px; background: #f0f6ff; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; gap: 10px; align-items: flex-start">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1b6cc7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/></svg>
+              <div>
+                <h3 id="ai" style="margin: 0; font-size: 15px; font-weight: 600; color: #10427b">Sinh câu hỏi bằng AI</h3>
+                <p style="margin: 2px 0 0; font-size: 13px; line-height: 18px; color: #3e505a">AI đọc một bài của khóa và soạn nháp. Bạn duyệt từng câu trước khi xuất bản.</p>
+              </div>
+            </div>
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 96px auto; gap: 12px; align-items: end">
+              <div style="display: flex; flex-direction: column; gap: 6px"><label for="src" style="font-size: 14px; font-weight: 500">Soạn từ bài học</label><select id="src" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 10px; font: inherit; font-size: 16px; background: #ffffff"><option>Ép kiểu và những cái bẫy quen thuộc</option></select></div>
+              <div style="display: flex; flex-direction: column; gap: 6px"><label for="cnt" style="font-size: 14px; font-weight: 500">Số câu</label><input id="cnt" value="5" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; background: #ffffff"></div>
+              <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px">Sinh câu hỏi</button>
+            </div>
+            <p role="status" style="margin: 0; font-size: 14px; line-height: 20px; color: #102029">Đã thêm 2 câu chờ duyệt vào cuối danh sách. Đọc kỹ đáp án và lời giải thích rồi bấm Duyệt, Sửa hoặc Xóa.</p>
+          </section>
+
+          <section aria-labelledby="qs" style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; align-items: baseline; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #e3eaee">
+              <h3 id="qs" style="margin: 0; font-size: 15px; font-weight: 600">Câu hỏi</h3>
+              <span style="font-size: 13px; color: #556670">4 câu · 2 chờ duyệt</span>
+            </div>
+            <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px">
+              <sc-for list="{{qs}}" as="q" hint-placeholder-count="4">
+                <li style="box-sizing: border-box; border: 1px solid {{q.border}}; border-radius: 12px; background: {{q.bg}}; padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px">
+                  <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0">
+                    <span style="align-self: flex-start; height: 22px; padding: 0 8px; border-radius: 11px; background: {{q.tagBg}}; color: {{q.tagFg}}; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">{{q.tag}}</span>
+                    <p style="margin: 0; font-size: 15px; line-height: 22px; font-weight: 600">Câu {{q.n}}. {{q.text}}</p>
+                    <ul style="margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; font-size: 14px; line-height: 20px">
+                      <sc-for list="{{q.options}}" as="o" hint-placeholder-count="4">
+                        <li style="display: flex; gap: 6px; align-items: center; color: {{o.color}}; font-weight: {{o.weight}}"><span style="width: 16px; flex: none">{{o.mark}}</span>{{o.text}}</li>
+                      </sc-for>
+                    </ul>
+                    <sc-if value="{{q.warn}}" hint-placeholder-val="{{false}}"><p style="margin: 0; display: flex; gap: 6px; font-size: 13px; line-height: 18px; color: #613700"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 1px"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Lời giải thích có vẻ nói về một phương án khác với đáp án đang chọn. Kiểm tra lại trước khi duyệt.</p></sc-if>
+                  </div>
+                  <div style="display: flex; gap: 4px; align-items: flex-start">
+                    <sc-if value="{{q.pending}}" hint-placeholder-val="{{false}}"><button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d2dbe0; border-radius: 10px; background: #ffffff; font: inherit; font-size: 13px; font-weight: 600; color: #102029">Duyệt câu {{q.n}}</button></sc-if>
+                    <button type="button" aria-label="Sửa câu {{q.n}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #3e505a; display: inline-flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/></svg></button>
+                    <button type="button" aria-label="Xóa câu {{q.n}}" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: #3e505a; display: inline-flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg></button>
+                  </div>
+                </li>
+              </sc-for>
+            </ol>
+            <button type="button" style="align-self: flex-start; height: 36px; padding: 0 12px; border: 0; border-radius: 10px; background: transparent; color: #066254; font: inherit; font-size: 14px; font-weight: 500">+ Thêm câu hỏi</button>
+          </section>
+
+          <div style="display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #e3eaee">
+            <button type="button" disabled style="height: 36px; padding: 0 16px; border: 0; border-radius: 10px; background: #d2dbe0; color: #3e505a; font: inherit; font-size: 14px; font-weight: 600">Xuất bản cho học viên</button>
+            <p style="margin: 0; font-size: 14px; color: #3e505a; flex: 1">Còn 2 câu AI soạn chưa duyệt.</p>
+            <button type="button" style="height: 36px; padding: 0 16px; border: 1px solid #d2dbe0; border-radius: 10px; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500">Lưu bài học</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 10px; margin-top: 30px">
+      <h2 style="margin: 0; font-size: 16px; font-weight: 600">Nhãn câu hỏi</h2>
+      <p style="margin: 0; display: flex; gap: 8px; align-items: center; font-size: 14px"><span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #fff4e9; color: #613700; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">AI soạn · chờ duyệt</span></p>
+      <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Câu còn nhãn này thì bài chưa xuất bản được.</p>
+      <p style="margin: 0; display: flex; gap: 8px; align-items: center; font-size: 14px"><span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #f0f4f7; color: #3e505a; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">AI soạn · đã duyệt</span></p>
+      <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Đáp án đúng: chữ xanh đậm có dấu tích.</p>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const opts = (list, right) => list.map((text, i) => ({ text, mark: i === right ? '✓' : '', color: i === right ? '#194f29' : '#3e505a', weight: i === right ? 600 : 400 }));
+    const done = { tag: 'AI soạn · đã duyệt', tagBg: '#f0f4f7', tagFg: '#3e505a', border: '#e3eaee', bg: '#ffffff', pending: false };
+    const wait = { tag: 'AI soạn · chờ duyệt', tagBg: '#fff4e9', tagFg: '#613700', border: '#f2d3ad', bg: '#fffcf8', pending: true };
+    return {
+      qs: [
+        Object.assign({ n: 1, text: 'Hàm input() trong Python luôn trả về kiểu dữ liệu nào?', options: opts(['Số thực', 'Chuỗi', 'Boolean', 'Số nguyên'], 1), warn: false }, done),
+        Object.assign({ n: 2, text: 'Kết quả của biểu thức int(12.9) là bao nhiêu?', options: opts(['12.9', '12', 'Lỗi', '13'], 1), warn: false }, done),
+        Object.assign({ n: 3, text: 'Để chuyển chuỗi "12.5" thành số nguyên bằng hàm int(), cần làm gì trước?', options: opts(['Dùng hàm round() trước', 'Cộng thêm 1', 'Không thể chuyển đổi', 'Phải qua float trước'], 3), warn: false }, wait),
+        Object.assign({ n: 4, text: 'Khi làm việc với tiền, nên dùng kiểu gì để tránh sai số xấp xỉ nhị phân?', options: opts(['str', 'float', 'int', 'Decimal'], 1), warn: true }, wait)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

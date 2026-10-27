@@ -475,7 +475,7 @@ async function student(browser, courses) {
     await open(page, "/gio-hang");
     // Trang ngân hàng là site của người khác: đứng thay nó, như E2E.
     await page.route(VNPAY, (route) => route.fulfill({ contentType: "text/html; charset=utf-8", body: "<h1>VNPay (giả lập)</h1>" }));
-    await page.getByRole("button", { name: "Thanh toán qua VNPay" }).click();
+    await page.getByRole("button", { name: /^Thanh toán .+ qua VNPay$/ }).click();
     await page.waitForURL(VNPAY, { timeout: 30_000 });
     return new URL(page.url()).hostname;
   });

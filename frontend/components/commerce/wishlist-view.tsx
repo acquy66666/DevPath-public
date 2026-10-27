@@ -1,21 +1,17 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ShoppingCart } from "lucide-react";
+import { Check, Heart, Loader2, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
+import { useOwnedCourses } from "@/components/commerce/use-owned-courses";
 import { CourseCard, CourseListSkeleton } from "@/components/courses/course-card";
+import { Mascot } from "@/components/mascot/mascot";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Pager } from "@/components/ui/pager";
 import {
   addToCart,
   getCart,
@@ -37,25 +33,29 @@ export function WishlistView() {
   const { accessToken, status } = useAuth();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
+  const signedIn = status === "authenticated" && accessToken !== null;
 
   const query = useQuery({
     queryKey: ["wishlist", page],
     queryFn: () => listWishlist(accessToken as string, page),
-    enabled: status === "authenticated" && accessToken !== null,
+    enabled: signedIn,
   });
 
   // The same cache entry the header badge fills, so this costs no request and
-  // lets each card say whether its course is already in the cart -- the only
-  // feedback "Thêm vào giỏ" gets, since the card itself stays put.
+  // lets each card say whether its course is already in the cart.
   const cart = useQuery({
     queryKey: ["cart"],
     queryFn: () => getCart(accessToken as string),
-    enabled: status === "authenticated" && accessToken !== null,
+    enabled: signedIn,
   });
 
+  const ownership = useOwnedCourses(
+    signedIn ? accessToken : null,
+    query.data?.items.map((item) => item.course.id) ?? [],
+  );
+
   const unsave = useMutation({
-    mutationFn: (courseId: string) =>
-      removeFromWishlist(accessToken as string, courseId),
+    mutationFn: (courseId: string) => removeFromWishlist(accessToken as string, courseId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       queryClient.invalidateQueries({ queryKey: ["wishlist-ids"] });
@@ -67,27 +67,26 @@ export function WishlistView() {
     onSuccess: (updated: Cart) => queryClient.setQueryData(["cart"], updated),
   });
 
-  if (status === "loading") {
-    return (
-      <CourseListSkeleton label="Đang tải danh sách yêu thích…" />
-    );
-  }
+  if (status === "loading") return <CourseListSkeleton label="Đang tải danh sách yêu thích…" />;
 
   if (status === "anonymous") {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Đăng nhập để xem danh sách yêu thích</CardTitle>
-          <CardDescription>
-            Danh sách này gắn với tài khoản nên bạn mở được trên mọi thiết bị.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button asChild>
-            <Link href="/dang-nhap?next=/yeu-thich">Đăng nhập</Link>
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="@container rounded-lg border bg-card">
+        <div className="flex flex-col items-center gap-4 px-6 py-10 text-center @md:flex-row @md:justify-center @md:gap-8 @md:px-10 @md:text-left">
+          <Mascot mood="empty-courses" size="md" />
+          <div className="flex min-w-0 flex-col items-center gap-1 @md:items-start">
+            <h2 className="text-title text-foreground">Đăng nhập để xem danh sách yêu thích</h2>
+            <p className="max-w-md text-body-sm text-muted-foreground">
+              Danh sách này gắn với tài khoản nên bạn mở được trên mọi thiết bị.
+            </p>
+            <div className="mt-3">
+              <Button asChild>
+                <Link href="/dang-nhap?next=/yeu-thich">Đăng nhập</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -99,11 +98,7 @@ export function WishlistView() {
     );
   }
 
-  if (!query.data) {
-    return (
-      <CourseListSkeleton label="Đang tải danh sách yêu thích…" />
-    );
-  }
+  if (!query.data) return <CourseListSkeleton label="Đang tải danh sách yêu thích…" />;
 
   if (query.data.items.length === 0) {
     return (
@@ -120,89 +115,91 @@ export function WishlistView() {
     );
   }
 
-  const pageCount = Math.max(1, Math.ceil(query.data.total / query.data.page_size));
+  const cartIds = new Set(cart.data?.items.map((line) => line.course.id) ?? []);
+  const inCartHere = query.data.items.filter((item) => cartIds.has(item.course.id)).length;
 
   return (
     <div className="space-y-6">
-      {toCart.isError ? (
+      <div className="-mt-4 flex flex-wrap items-end justify-between gap-3">
+        <p className="text-body text-muted-foreground">
+          {query.data.total} khóa học bạn để dành
+          {inCartHere > 0 ? ` · ${inCartHere} khóa đã ở trong giỏ` : ""}
+        </p>
+        {cart.data && cart.data.items.length > 0 ? (
+          <Button variant="outline" asChild>
+            <Link href="/gio-hang">
+              <ShoppingCart aria-hidden />
+              Xem giỏ hàng
+            </Link>
+          </Button>
+        ) : null}
+      </div>
+
+      {toCart.isError || unsave.isError ? (
         <Alert variant="destructive">
-          <AlertDescription>{apiErrorMessage(toCart.error)}</AlertDescription>
+          <AlertDescription>{apiErrorMessage(toCart.isError ? toCart.error : unsave.error)}</AlertDescription>
         </Alert>
       ) : null}
 
-      <p className="text-muted-foreground">{query.data.total} khóa học</p>
-
-      <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {query.data.items.map((item) => {
-          const inCart = cart.data?.items.some(
-            (line) => line.course.id === item.course.id,
-          );
+          const { course } = item;
+          const inCart = cartIds.has(course.id);
+          const free = Number(course.price) === 0;
+          const owned = ownership.owned.has(course.id);
+          const adding = toCart.isPending && toCart.variables === course.id;
+          const removing = unsave.isPending && unsave.variables === course.id;
 
           return (
-            <li key={item.course.id} className="flex h-full flex-col gap-2">
-              <CourseCard course={item.course} />
+            <li key={course.id} className="relative flex h-full flex-col gap-3">
+              <CourseCard course={course} />
+
+              {/* Over the cover, beside the card's link rather than inside it. */}
+              <Button
+                variant="outline"
+                size="icon-lg"
+                className="absolute top-3 right-3 rounded-full border-transparent text-destructive shadow-sm"
+                onClick={() => unsave.mutate(course.id)}
+                disabled={removing}
+                aria-pressed
+                aria-label={`Bỏ ${course.title} khỏi yêu thích`}
+              >
+                {removing ? <Loader2 className="animate-spin" aria-hidden /> : <Heart className="fill-current" aria-hidden />}
+              </Button>
+
               <div className="flex items-center justify-between gap-3 px-1">
-                <p className="text-xs text-muted-foreground">
-                  Lưu {formatDate(item.added_at)}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => unsave.mutate(item.course.id)}
-                    disabled={unsave.isPending}
-                    aria-label={`Bỏ ${item.course.title} khỏi yêu thích`}
-                  >
-                    Bỏ lưu
+                <p className="text-caption font-normal text-muted-foreground">Lưu ngày {formatDate(item.added_at)}</p>
+                {owned ? (
+                  <Button variant="secondary" asChild>
+                    <Link href={`/hoc/${course.slug}`}>
+                      <Check aria-hidden />
+                      Đã có · Vào học
+                    </Link>
                   </Button>
-                  {inCart ? (
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href="/gio-hang">
-                        <ShoppingCart aria-hidden />
-                        Đã ở trong giỏ
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toCart.mutate(item.course.id)}
-                      disabled={toCart.isPending}
-                    >
-                      <ShoppingCart aria-hidden />
-                      Thêm vào giỏ
-                    </Button>
-                  )}
-                </div>
+                ) : free ? (
+                  <Button variant="secondary" asChild>
+                    <Link href={`/khoa-hoc/${course.slug}`}>Học miễn phí</Link>
+                  </Button>
+                ) : inCart ? (
+                  <Button variant="secondary" asChild>
+                    <Link href="/gio-hang">
+                      <Check aria-hidden />
+                      Đã ở trong giỏ
+                    </Link>
+                  </Button>
+                ) : (
+                  <Button onClick={() => toCart.mutate(course.id)} disabled={adding}>
+                    {adding ? <Loader2 className="animate-spin" aria-hidden /> : <ShoppingCart aria-hidden />}
+                    Thêm vào giỏ
+                  </Button>
+                )}
               </div>
             </li>
           );
         })}
       </ul>
 
-      {pageCount > 1 ? (
-        <div className="flex items-center justify-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page === 1}
-            onClick={() => setPage((current) => current - 1)}
-          >
-            Trang trước
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            Trang {page} / {pageCount}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= pageCount}
-            onClick={() => setPage((current) => current + 1)}
-          >
-            Trang sau
-          </Button>
-        </div>
-      ) : null}
+      <Pager page={page} pageSize={query.data.page_size} total={query.data.total} onPage={setPage} />
     </div>
   );
 }

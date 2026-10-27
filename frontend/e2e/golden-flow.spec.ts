@@ -122,7 +122,7 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
         body: "<h1>VNPay sandbox (giả lập trong E2E)</h1>",
       }),
     );
-    await page.getByRole("button", { name: "Thanh toán qua VNPay" }).click();
+    await page.getByRole("button", { name: /^Thanh toán .+ qua VNPay$/ }).click();
     await page.waitForURL(VNPAY);
 
     const sent = new URL(page.url());

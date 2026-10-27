@@ -104,7 +104,7 @@ export function CourseFunnelDialog({
                   <div
                     className={
                       drop === index
-                        ? "rounded-md border border-amber-500/60 bg-amber-50 p-3 dark:bg-amber-950/30"
+                        ? "rounded-md border border-warning/60 bg-warning-soft p-3"
                         : "rounded-md border p-3"
                     }
                   >
@@ -119,15 +119,15 @@ export function CourseFunnelDialog({
                       </span>
                     </div>
                     <div
-                      role="meter"
-                      aria-label={`Hoàn thành bài ${lesson.title}`}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={
-                        lesson.completion_rate === null
-                          ? undefined
-                          : Math.round(lesson.completion_rate * 100)
-                      }
+                      {...(lesson.completion_rate === null
+                        ? { "aria-hidden": true }
+                        : {
+                            role: "meter",
+                            "aria-label": `Hoàn thành bài ${lesson.title}`,
+                            "aria-valuemin": 0,
+                            "aria-valuemax": 100,
+                            "aria-valuenow": Math.round(lesson.completion_rate * 100),
+                          })}
                       className="mt-2 h-2 overflow-hidden rounded-full bg-primary/15"
                     >
                       <div
@@ -151,7 +151,7 @@ export function CourseFunnelDialog({
                       {lesson.notes > 0 ? <span>{formatCount(lesson.notes)} ghi chú</span> : null}
                     </p>
                     {drop === index ? (
-                      <p className="mt-1 text-xs font-medium text-amber-800 dark:text-amber-300">
+                      <p className="mt-1 text-xs font-medium text-warning-text">
                         Rơi nhiều nhất so với bài trước — nên xem lại bài này.
                       </p>
                     ) : null}

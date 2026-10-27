@@ -49,8 +49,8 @@ export function StatTile({
           <p
             className={cn(
               "mt-1 flex items-center gap-1 text-xs",
-              delta > 0 && "text-emerald-700 dark:text-emerald-400",
-              delta < 0 && "text-red-700 dark:text-red-400",
+              delta > 0 && "text-success-text",
+              delta < 0 && "text-destructive-text",
               delta === 0 && "text-muted-foreground",
             )}
           >

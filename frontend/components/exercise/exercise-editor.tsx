@@ -52,7 +52,7 @@ export function ExerciseEditor({ lessonId }: { lessonId: string }) {
 
     return (
       <div className="space-y-4">
-        <div className="flex items-start gap-3 rounded-md border border-dashed p-3">
+        <div className="flex items-start gap-3 rounded-md border border-dashed border-border-strong p-3">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted">
             <Code2 className="size-4 text-muted-foreground" aria-hidden />
           </div>
@@ -74,7 +74,12 @@ export function ExerciseEditor({ lessonId }: { lessonId: string }) {
     <div className="space-y-6">
       {/* Keyed by id so a freshly created exercise seeds the fields by
           mounting, the same way the lesson editor does. */}
-      <ExerciseForm key={query.data.id} lessonId={lessonId} exercise={query.data} />
+      <section aria-labelledby={`${lessonId}-statement`} className="space-y-4">
+        <h3 id={`${lessonId}-statement`} className="border-b pb-2 text-body font-semibold">
+          Đề bài và code mở đầu
+        </h3>
+        <ExerciseForm key={query.data.id} lessonId={lessonId} exercise={query.data} />
+      </section>
       <TestCaseManager exerciseId={query.data.id} />
     </div>
   );

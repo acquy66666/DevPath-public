@@ -1,7 +1,7 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Award, ChevronRight, Plus } from "lucide-react";
+import { Award, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -78,15 +78,8 @@ export function StatsDashboard() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <Link
-            href="/giang-day"
-            className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" aria-hidden />
-            Khóa học của tôi
-          </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Thống kê giảng dạy</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-h2 sm:text-h1">Thống kê giảng dạy</h1>
+          <p className="mt-1.5 text-body text-muted-foreground">
             {overview.data
               ? `${formatDay(overview.data.start)} – ${formatDay(overview.data.end)} · giờ Việt Nam`
               : "Học viên, mức độ học và phản hồi của các khóa học bạn dạy."}

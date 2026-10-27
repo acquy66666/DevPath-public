@@ -27,13 +27,6 @@ import { useMemo, useState } from "react";
 import { AddSectionForm } from "@/components/curriculum/add-section-form";
 import { SectionCard } from "@/components/curriculum/section-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
@@ -43,6 +36,7 @@ import {
   reorderSections,
 } from "@/lib/api/curriculum";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { sectionSummary } from "@/lib/instructor/teaching-view";
 import {
   EMPTY_SLOT_PREFIX,
   findLesson,
@@ -192,18 +186,18 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
   const activeLesson = activeId ? findLesson(tree, activeId) : undefined;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Nội dung khóa học</CardTitle>
-        <CardDescription>
+    <section aria-labelledby="curriculum-heading" className="space-y-4">
+      <div>
+        <h2 id="curriculum-heading" className="sr-only">
+          Mục lục
+        </h2>
+        <p className="text-body-sm text-muted-foreground">
           Kéo tay nắm{" "}
-          <GripVertical className="inline size-4 align-text-bottom" aria-hidden /> để
-          sắp xếp lại. Dùng bàn phím: chọn tay nắm, bấm phím cách, di chuyển bằng phím
-          mũi tên rồi bấm phím cách lần nữa để thả.
-        </CardDescription>
-      </CardHeader>
-
-      <CardContent className="space-y-4">
+          <GripVertical className="inline size-4 align-text-bottom" aria-hidden /> để đổi
+          thứ tự. Bằng bàn phím: chọn tay nắm, phím cách để nhấc, mũi tên để di chuyển, phím
+          cách để thả.
+        </p>
+      </div>
         {orderError ? (
           <Alert variant="destructive">
             <AlertDescription>{orderError}</AlertDescription>
@@ -213,7 +207,7 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
         {query.isPending ? (
           <div className="space-y-3">
             {[0, 1].map((row) => (
-              <Skeleton key={row} className="h-28 rounded-lg" />
+              <Skeleton key={row} className="h-40 rounded-lg" />
             ))}
           </div>
         ) : query.isError ? (
@@ -243,7 +237,7 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
               items={tree.map((section) => section.id)}
               strategy={verticalListSortingStrategy}
             >
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {tree.map((section, index) => (
                   <SectionCard
                     key={section.id}
@@ -258,13 +252,13 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
             <DragOverlay>
               {activeSection ? (
                 <div className="rounded-lg border bg-card px-4 py-3 shadow-lg">
-                  <p className="font-medium">{activeSection.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {activeSection.lessons.length} bài học
+                  <p className="text-title">{activeSection.title}</p>
+                  <p className="text-caption text-muted-foreground">
+                    {sectionSummary(activeSection)}
                   </p>
                 </div>
               ) : activeLesson ? (
-                <div className="rounded-md border bg-card px-3 py-2 text-sm shadow-lg">
+                <div className="rounded-md border bg-card px-3 py-2.5 text-body-sm shadow-lg">
                   {activeLesson.title}
                 </div>
               ) : null}
@@ -273,8 +267,7 @@ export function CurriculumBuilder({ courseId }: { courseId: string }) {
         )}
 
         <AddSectionForm courseId={courseId} sectionCount={tree.length} />
-      </CardContent>
-    </Card>
+    </section>
   );
 }
 
@@ -284,7 +277,8 @@ function EmptyCurriculum() {
       mood="empty-notes"
       size="md"
       title="Chưa có chương nào"
-      description="Khóa học được chia thành chương, mỗi chương chứa các bài học. Tạo chương đầu tiên bên dưới, ví dụ “Nhập môn”."
+      description="Khóa học chia thành chương, mỗi chương chứa bài học. Bắt đầu bằng một chương như “Nhập môn” ở ô bên dưới."
+      className="bg-card"
     />
   );
 }

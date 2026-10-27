@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Soạn khóa học — thông tin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1640px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #ccf5ea; color: #074b40; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600">K</span>
+  </header>
+  <div style="border-bottom: 1px solid #e3eaee; background: #ffffff">
+    <div style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 24px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Giảng dạy</span>
+      <nav aria-label="Khu giảng viên" style="display: flex; gap: 4px; flex: 1">
+        <a href="Main.dc.html" aria-current="page" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; font-weight: 600; color: #102029; text-decoration: none; border-bottom: 2px solid #007967">Khóa học</a>
+        <a href="Qa.dc.html" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Hỏi đáp</a>
+        <a href="#" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Thống kê</a>
+        <a href="#" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Cấp bậc</a>
+      </nav>
+    </div>
+  </div>
+
+  <main style="box-sizing: border-box; width: 100%; max-width: 1152px; margin: 0 auto; padding: 24px 24px 64px; display: flex; flex-direction: column; gap: 20px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <nav aria-label="Vị trí" style="font-size: 14px; color: #556670; display: flex; gap: 6px"><a href="Main.dc.html" style="color: #556670">Khóa học</a><span aria-hidden="true">/</span><span style="color: #102029">Kiểm thử Python với pytest</span></nav>
+      <div style="display: flex; align-items: center; gap: 12px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em">Kiểm thử Python với pytest</h1>
+        <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #fff2f1; color: #a01e23; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Bị từ chối</span>
+      </div>
+    </div>
+
+    <div role="tablist" aria-label="Soạn khóa học" style="display: flex; gap: 4px; border-bottom: 1px solid #e3eaee">
+      <a href="Editor.dc.html" role="tab" aria-selected="false" style="box-sizing: border-box; height: 44px; padding: 0 14px; border-bottom: 2px solid transparent; font-size: 15px; color: #3e505a; text-decoration: none; display: inline-flex; align-items: center">Nội dung</a>
+      <button role="tab" aria-selected="true" type="button" style="height: 44px; padding: 0 14px; border: 0; border-bottom: 2px solid #007967; background: transparent; font: inherit; font-size: 15px; font-weight: 600; color: #102029">Thông tin khóa học</button>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start">
+
+      <div style="display: flex; flex-direction: column; gap: 20px">
+        <form style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div>
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Học viên thấy gì trước khi đăng ký</h2>
+            <p style="margin: 4px 0 0; font-size: 14px; color: #556670">Tên, mô tả và giá hiện ở thẻ khóa học và trang chi tiết.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="n" style="font-size: 14px; font-weight: 500">Tên khóa học</label><input id="n" value="Kiểm thử Python với pytest" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><label for="sub" style="font-size: 14px; font-weight: 500">Mô tả ngắn</label><input id="sub" value="Viết test tự động cho code Python: fixture, parametrize và mock." style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"></div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="d" style="font-size: 14px; font-weight: 500">Mô tả chi tiết <span style="font-weight: 400; color: #556670">· Markdown</span></label>
+            <textarea id="d" rows="6" aria-describedby="dh" style="box-sizing: border-box; border: 1px solid #6f7e88; border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 15px; line-height: 22px; resize: vertical">Bạn sẽ học cách viết test bằng pytest cho một dự án nhỏ:
+
+- Viết test đầu tiên và đọc kết quả
+- Fixture dùng chung dữ liệu
+- parametrize để thử nhiều trường hợp</textarea>
+            <p id="dh" style="margin: 0; font-size: 13px; color: #556670">Học viên sẽ làm được gì, cần biết trước những gì.</p>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="c" style="font-size: 14px; font-weight: 500">Danh mục</label><select id="c" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 10px; font: inherit; font-size: 16px; background: #ffffff"><option>Python</option></select></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="lv" style="font-size: 14px; font-weight: 500">Trình độ</label><select id="lv" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 10px; font: inherit; font-size: 16px; background: #ffffff"><option>Trung cấp</option></select></div>
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="p" style="font-size: 14px; font-weight: 500">Giá (VND)</label><input id="p" value="0" aria-describedby="ph" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px"><p id="ph" style="margin: 0; font-size: 13px; color: #556670">0 là miễn phí.</p></div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 12px; padding-top: 16px; border-top: 1px solid #e3eaee">
+            <button type="button" style="height: 40px; padding: 0 18px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Lưu thay đổi</button>
+            <p role="status" style="margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #194f29"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Đã lưu lúc 18:42</p>
+          </div>
+        </form>
+
+        <section aria-labelledby="danger" style="box-sizing: border-box; border: 1px solid #f5c9c7; border-radius: 14px; background: #ffffff; padding: 20px 24px; display: flex; align-items: center; gap: 16px">
+          <div style="flex: 1">
+            <h2 id="danger" style="margin: 0; font-size: 15px; font-weight: 600">Xóa khóa học</h2>
+            <p style="margin: 4px 0 0; font-size: 14px; line-height: 20px; color: #3e505a">Biến mất khỏi danh sách của bạn và trang công khai. Học viên đã mua vẫn học tiếp được.</p>
+          </div>
+          <button type="button" style="height: 36px; padding: 0 14px; border: 1px solid #d2dbe0; border-radius: 10px; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; color: #a01e23">Xóa khóa học</button>
+        </section>
+      </div>
+
+      <aside style="display: flex; flex-direction: column; gap: 16px">
+        <section aria-labelledby="st2" style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <h2 id="st2" style="margin: 0; font-size: 16px; font-weight: 600">Trạng thái</h2>
+          <div role="alert" style="border-radius: 10px; background: #fff2f1; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #a01e23">Quản trị viên trả lại khóa học</p>
+            <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">“Chương 2 chưa có bài nào, và mô tả chưa nói học viên cần biết Python tới đâu.”</p>
+          </div>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">Sửa theo góp ý rồi gửi duyệt lại.</p>
+          <button type="button" style="height: 40px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Gửi duyệt lại</button>
+        </section>
+
+        <section aria-labelledby="ck" style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+          <div>
+            <h2 id="ck" style="margin: 0; font-size: 16px; font-weight: 600">Trước khi gửi duyệt</h2>
+            <p style="margin: 4px 0 0; font-size: 13px; color: #556670">Gợi ý, không bắt buộc · 3/5</p>
+          </div>
+          <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; font-size: 14px; line-height: 20px">
+            <sc-for list="{{checks}}" as="k" hint-placeholder-count="5">
+              <li style="display: flex; gap: 10px; align-items: flex-start; color: {{k.color}}">
+                <sc-if value="{{k.ok}}" hint-placeholder-val="{{true}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#238142" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="Đã có" role="img" style="flex: none"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></sc-if>
+                <sc-if value="{{k.missing}}" hint-placeholder-val="{{false}}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6f7e88" stroke-width="2" aria-label="Chưa có" role="img" style="flex: none"><circle cx="12" cy="12" r="10"/></svg></sc-if>
+                <span>{{k.label}}</span>
+              </li>
+            </sc-for>
+          </ul>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const row = (label, ok) => ({ label, ok, missing: !ok, color: ok ? '#102029' : '#3e505a' });
+    return {
+      checks: [
+        row('Có mô tả ngắn', true),
+        row('Có mô tả chi tiết', true),
+        row('Mỗi chương có ít nhất một bài', false),
+        row('Có ít nhất một bài cho học thử', false),
+        row('Đã chọn trình độ và giá', true)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

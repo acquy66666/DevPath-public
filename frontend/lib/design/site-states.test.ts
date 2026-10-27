@@ -51,8 +51,18 @@ test("every error boundary retries, with Naomi sorry outside the work areas", ()
   }
 });
 
-test("Naomi in the instructor and admin areas only in empty states", () => {
+// The one exception is the instructor overview's "Chào …" (Phase 7 plan,
+// group 9: "Nhân vật chỉ ở empty state và lời chào"), and there she stands
+// still: opening the overview is not an event.
+const GREETING = join("components", "instructor", "instructor-greeting.tsx");
+
+test("Naomi in the instructor and admin areas only in empty states and the greeting", () => {
   for (const file of files.filter((f) => /components[\\/](admin|instructor)[\\/]/.test(f))) {
+    if (file.endsWith(GREETING)) {
+      assert.match(code(file), /<Mascot\b/, "the greeting has Naomi");
+      assert.doesNotMatch(code(file), /<Mascot\b[^>]*\bevent=/, "the greeting's Naomi reacts to nothing");
+      continue;
+    }
     assert.doesNotMatch(code(file), /<Mascot\b/, `${relative(root, file)}: Naomi outside an empty state`);
   }
 });

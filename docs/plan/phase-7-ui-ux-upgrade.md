@@ -124,7 +124,14 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** khóa vừa mua vẫn được mời "Thêm vào giỏ" (API giữ khóa trong yêu thích — giao diện hỏi ghi danh từng khóa); nút ở thanh đáy 375 px cắt chữ; hai liên kết "Đã có · Vào học" cùng tên; "Vào học ngay" trùng đích với "Khóa học của tôi".
   - **Kiểm:** `npm test` 133/133 (7 mới), lint + tsc sạch, `check.cjs` 33/33, tràn ngang 0/138, E2E 1 passed (spec tìm nút thanh toán theo mẫu), `next build` không mạng xanh. Ảnh trước/sau 12 + 12.
   - Bằng chứng: [`commerce.md`](../report/assets/phase-7/commerce.md)
-- [ ] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào
+- [x] Nhóm 9 — Giảng viên: tổng quan, soạn khóa, curriculum kéo-thả, soạn bài code, sinh quiz AI, thống kê, Hỏi đáp. Nhân vật chỉ ở empty state và lời chào — xong 27/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/2iru9SgcxvnJi3qzSAEYZU), 7 artboard (tổng quan 1440/375, tạo khóa + 3 trạng thái trống, soạn khóa tab Nội dung, tab Thông tin bị từ chối, soạn quiz có câu AI chờ duyệt, Hỏi đáp); bản repo `docs/ui-ux/instructor/canvas/`. Chưa có lời duyệt của user khi code — làm theo mockup, giả định ghi ở `decisions.md`.
+  - **Khung:** thanh "Giảng dạy" (Khóa học · Hỏi đáp có huy hiệu số câu chờ · Thống kê · Cấp bậc + "Tạo khóa học") thay mọi liên kết quay lại; skeleton dựng lại, `giang-day/loading.tsx` chọn theo đường dẫn.
+  - **Tổng quan:** lời chào có Naomi `wave` đứng yên (ngoại lệ duy nhất, `site-states.test.ts` chặn `event`), "Việc đang chờ" (câu hỏi → bị từ chối → nháp), chip lọc theo trạng thái, dòng khóa có ảnh bìa; logic ở `lib/instructor/teaching-view.ts`.
+  - **Soạn khóa:** tab Nội dung / Thông tin ở URL `?tab=thong-tin` (hai panel luôn gắn), cột phải Trạng thái + "Trước khi gửi duyệt" (gợi ý, không khóa nút) + Mục lục; chương có tóm tắt theo loại bài; thêm bài bằng 4 nút loại; soạn quiz/bài code theo token ngữ nghĩa.
+  - **Lỗi tìm ra:** thanh tỉ lệ `role="meter"` không có giá trị ở thống kê (axe serious, có từ Phase 6.5); `loading.tsx` vẽ skeleton danh sách cho mọi route con.
+  - **Kiểm:** `npm test` 139/139 (6 mới), lint sạch, `check.cjs` 35/35, tràn ngang 0/138, CLS trang giảng viên < 0,1 (soạn khóa 0,111 → 0,040), E2E 1 passed, `next build` không mạng xanh. Ảnh trước/sau 14 + 14.
+  - Bằng chứng: [`instructor.md`](../report/assets/phase-7/instructor.md)
 - [ ] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state
 
 ## Chuyển động và chất lượng

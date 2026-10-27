@@ -1,0 +1,35 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-27T18:00:00Z" },
+  "title": "DevPath — Nhóm 9: Giảng viên",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1180, "title": "Tổng quan · /giang-day · lời chào + việc đang chờ · 1440", "expand": "fill" },
+    "Overview375.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 1560, "title": "Tổng quan · 375" },
+    "States.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 1180, "title": "Tạo khóa học · chưa có khóa · chương trống · hộp thư trống" },
+    "Editor.dc.html": { "x": 0, "y": 1300, "w": 1440, "h": 1640, "title": "Soạn khóa · tab Nội dung · bài tập code đang mở · 1440", "expand": "fill" },
+    "EditorInfo.dc.html": { "x": 1520, "y": 1300, "w": 1440, "h": 1640, "title": "Soạn khóa · tab Thông tin · bị từ chối · gợi ý trước khi gửi duyệt", "expand": "fill" },
+    "Quiz.dc.html": { "x": 0, "y": 3060, "w": 1440, "h": 1500, "title": "Bài trắc nghiệm · sinh câu hỏi bằng AI · 2 câu chờ duyệt", "expand": "fill" },
+    "Qa.dc.html": { "x": 1520, "y": 3060, "w": 1440, "h": 1100, "title": "Hỏi đáp · /giang-day/hoi-dap · Chờ trả lời", "expand": "fill" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Overview375.dc.html",
+    "States.dc.html",
+    "Editor.dc.html",
+    "EditorInfo.dc.html",
+    "Quiz.dc.html",
+    "Qa.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": null,
+      "copiedAt": "2026-10-27T18:00:00Z"
+    }
+  ]
+}

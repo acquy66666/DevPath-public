@@ -17,6 +17,7 @@ import { deleteSection, updateSection, type SectionWithLessons } from "@/lib/api
 import { useAuth } from "@/lib/auth/auth-provider";
 import { emptySlotId } from "@/lib/curriculum/tree";
 import { validateSectionTitle } from "@/lib/courses/validation";
+import { sectionSummary } from "@/lib/instructor/teaching-view";
 
 export function SectionCard({
   section,
@@ -69,7 +70,7 @@ export function SectionCard({
       // being dragged; leaving both at full opacity reads as two rows.
       className={`rounded-lg border bg-card ${isDragging ? "opacity-40" : ""}`}
     >
-      <div className="flex items-start gap-2 border-b p-3">
+      <div className="flex items-start gap-1.5 border-b py-3 pr-3 pl-2 sm:items-center sm:gap-2">
         <Button
           ref={setActivatorNodeRef}
           variant="ghost"
@@ -82,10 +83,8 @@ export function SectionCard({
           <GripVertical aria-hidden />
         </Button>
 
-        <div className="min-w-0 flex-1 pt-1">
-          <p className="text-xs font-medium text-muted-foreground">
-            Chương {index + 1}
-          </p>
+        <div className="min-w-0 flex-1 pt-0.5 sm:pt-0">
+          <p className="text-eyebrow text-muted-foreground">Chương {index + 1}</p>
 
           {renaming ? (
             <div className="mt-1 flex items-start gap-2">
@@ -108,7 +107,7 @@ export function SectionCard({
                   autoFocus
                 />
                 {titleError ? (
-                  <p className="mt-1 text-sm text-destructive">{titleError}</p>
+                  <p className="mt-1 text-sm text-destructive-text">{titleError}</p>
                 ) : null}
               </div>
               <Button
@@ -138,13 +137,19 @@ export function SectionCard({
               </Button>
             </div>
           ) : (
-            <p className="truncate font-medium">{section.title}</p>
+            <h3 className="text-title text-pretty break-words">{section.title}</h3>
           )}
 
-          <p className="mt-1 text-xs text-muted-foreground">
-            {section.lessons.length} bài học
+          <p className="mt-0.5 text-caption text-muted-foreground lg:hidden">
+            {sectionSummary(section)}
           </p>
         </div>
+
+        {!renaming ? (
+          <p className="hidden shrink-0 text-caption text-muted-foreground lg:block">
+            {sectionSummary(section)}
+          </p>
+        ) : null}
 
         {!renaming ? (
           <div className="flex shrink-0 items-center gap-1">
@@ -169,7 +174,7 @@ export function SectionCard({
       </div>
 
       {confirmingDelete ? (
-        <div className="flex flex-wrap items-center gap-2 border-b bg-destructive/5 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-b bg-destructive-soft px-3 py-2.5">
           <span className="text-sm">
             Xóa chương này cùng {section.lessons.length} bài học trong đó?
           </span>
@@ -207,12 +212,12 @@ export function SectionCard({
         </div>
       ) : null}
 
-      <div className="space-y-2 p-3">
+      <div className="space-y-2 p-2 sm:p-3">
         <SortableContext
           items={section.lessons.map((lesson) => lesson.id)}
           strategy={verticalListSortingStrategy}
         >
-          <ul className="space-y-2">
+          <ul className="space-y-1.5">
             {section.lessons.map((lesson) => (
               <LessonRow
                 key={lesson.id}
@@ -249,8 +254,8 @@ function EmptyLessonSlot({ sectionId }: { sectionId: string }) {
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-md border border-dashed px-3 py-4 text-center text-sm text-muted-foreground transition-colors ${
-        isOver ? "border-primary bg-primary/5 text-foreground" : ""
+      className={`rounded-md border border-dashed border-border-strong px-3 py-4 text-center text-body-sm text-muted-foreground transition-colors ${
+        isOver ? "border-primary bg-secondary text-foreground" : ""
       }`}
     >
       Chưa có bài học nào — thêm bên dưới, hoặc kéo một bài từ chương khác vào đây.

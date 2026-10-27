@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { instructorSkeletonFor } from "@/components/instructor/instructor-skeletons";
+import { InstructorNavSkeleton, instructorSkeletonFor } from "@/components/instructor/instructor-skeletons";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -31,7 +31,14 @@ export function InstructorGate({ children }: { children: ReactNode }) {
 
   // The skeleton of the screen being opened, not a generic block: the same
   // one its loading.tsx and its first query show.
-  if (status === "loading") return instructorSkeletonFor(pathname);
+  if (status === "loading") {
+    return (
+      <>
+        <InstructorNavSkeleton />
+        {instructorSkeletonFor(pathname)}
+      </>
+    );
+  }
 
   if (user === null) {
     return (

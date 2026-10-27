@@ -120,15 +120,6 @@ export function ExerciseForm({
         </Alert>
       ) : null}
 
-      {save.isSuccess ? (
-        <Alert>
-          <AlertDescription className="flex items-center gap-2">
-            <Check className="size-4" aria-hidden />
-            Đã lưu bài tập.
-          </AlertDescription>
-        </Alert>
-      ) : null}
-
       <div className="space-y-2">
         <Label htmlFor={statementId}>Đề bài</Label>
         <Textarea
@@ -141,7 +132,7 @@ export function ExerciseForm({
           disabled={save.isPending}
         />
         {errors.statement ? (
-          <p className="text-sm text-destructive">{errors.statement}</p>
+          <p className="text-sm text-destructive-text">{errors.statement}</p>
         ) : (
           <p className="text-sm text-muted-foreground">
             Markdown được hỗ trợ. Viết rõ định dạng đầu vào và đầu ra — học viên
@@ -180,7 +171,7 @@ export function ExerciseForm({
           />
           <p
             className={
-              errors.time ? "text-sm text-destructive" : "text-sm text-muted-foreground"
+              errors.time ? "text-sm text-destructive-text" : "text-sm text-muted-foreground"
             }
           >
             {errors.time ?? `Mỗi test case, từ ${MIN_TIME_LIMIT_MS} đến ${MAX_TIME_LIMIT_MS} ms.`}
@@ -200,7 +191,7 @@ export function ExerciseForm({
           <p
             className={
               errors.memory
-                ? "text-sm text-destructive"
+                ? "text-sm text-destructive-text"
                 : "text-sm text-muted-foreground"
             }
           >
@@ -215,7 +206,8 @@ export function ExerciseForm({
         chỉ chấm Python, mỗi ngôn ngữ cần một image sandbox riêng.
       </p>
 
-      <Button size="sm" onClick={handleSave} disabled={save.isPending}>
+      <div className="flex flex-wrap items-center gap-3">
+      <Button size="sm" variant={exercise === null ? "default" : "outline"} onClick={handleSave} disabled={save.isPending}>
         {save.isPending ? (
           <>
             <Loader2 className="animate-spin" aria-hidden />
@@ -227,6 +219,15 @@ export function ExerciseForm({
           "Lưu bài tập"
         )}
       </Button>
+        <p role="status" className="flex items-center gap-1.5 text-body-sm text-success-text">
+          {save.isSuccess && !save.isPending ? (
+            <>
+              <Check className="size-4" aria-hidden />
+              Đã lưu bài tập.
+            </>
+          ) : null}
+        </p>
+      </div>
     </div>
   );
 }

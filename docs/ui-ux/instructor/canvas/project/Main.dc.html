@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Khu giảng viên — tổng quan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1180px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #ccf5ea; color: #074b40; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600">K</span>
+  </header>
+
+  <!-- Instructor area: one bar of places, the same on every screen -->
+  <div style="border-bottom: 1px solid #e3eaee; background: #ffffff">
+    <div style="box-sizing: border-box; max-width: 1152px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; gap: 24px">
+      <span style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Giảng dạy</span>
+      <nav aria-label="Khu giảng viên" style="display: flex; gap: 4px; flex: 1; overflow-x: auto">
+        <a href="#" aria-current="page" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; color: #102029; text-decoration: none; border-bottom: 2px solid #007967">Khóa học</a>
+        <a href="#" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Hỏi đáp<span style="min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px; background: #007967; color: #ffffff; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">3</span></a>
+        <a href="#" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Thống kê</a>
+        <a href="#" style="box-sizing: border-box; height: 52px; padding: 0 12px; display: inline-flex; align-items: center; font-size: 15px; color: #3e505a; text-decoration: none; border-bottom: 2px solid transparent">Cấp bậc</a>
+      </nav>
+      <a href="#" style="height: 36px; padding: 0 14px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>Tạo khóa học</a>
+    </div>
+  </div>
+
+  <main style="box-sizing: border-box; width: 100%; max-width: 1152px; margin: 0 auto; padding: 32px 24px 64px; display: flex; flex-direction: column; gap: 32px">
+
+    <!-- Greeting + what is waiting -->
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 440px; gap: 24px; align-items: stretch">
+      <section style="box-sizing: border-box; border-radius: 20px; background: #e7fbf6; padding: 28px 32px; display: flex; gap: 24px; align-items: center">
+        <img src="/_blob/d13af9ba1303538d299ceeea0b66b4fd" alt="" style="width: 112px; height: 112px; flex: none">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700; letter-spacing: -0.01em">Chào Khoa</h1>
+          <p style="margin: 0; font-size: 16px; line-height: 24px; color: #3e505a; max-width: 30em">7 khóa học, 57 học viên. Có 3 việc đang chờ bạn ở bên phải.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="todo" style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 20px; display: flex; flex-direction: column; gap: 12px">
+        <h2 id="todo" style="margin: 0; font-size: 16px; line-height: 24px; font-weight: 600">Việc đang chờ</h2>
+        <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column">
+          <li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e3eaee">
+            <span style="width: 32px; height: 32px; border-radius: 8px; background: #f0f6ff; color: #10427b; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span>
+            <span style="flex: 1; min-width: 0; font-size: 14px; line-height: 20px">3 câu hỏi chưa có câu trả lời của bạn</span>
+            <a href="#" style="font-size: 14px; font-weight: 500; white-space: nowrap">Trả lời</a>
+          </li>
+          <li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #e3eaee">
+            <span style="width: 32px; height: 32px; border-radius: 8px; background: #fff2f1; color: #a01e23; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+            <span style="flex: 1; min-width: 0; font-size: 14px; line-height: 20px">“Kiểm thử Python với pytest” bị từ chối</span>
+            <a href="#" style="font-size: 14px; font-weight: 500; white-space: nowrap">Xem lý do</a>
+          </li>
+          <li style="display: flex; align-items: center; gap: 12px; padding: 10px 0">
+            <span style="width: 32px; height: 32px; border-radius: 8px; background: #f0f4f7; color: #3e505a; display: inline-flex; align-items: center; justify-content: center; flex: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg></span>
+            <span style="flex: 1; min-width: 0; font-size: 14px; line-height: 20px">“Đệ quy và quy hoạch động” còn là bản nháp</span>
+            <a href="#" style="font-size: 14px; font-weight: 500; white-space: nowrap">Soạn tiếp</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Courses -->
+    <section aria-labelledby="courses" style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap">
+        <h2 id="courses" style="margin: 0; font-size: 20px; line-height: 28px; font-weight: 600">Khóa học của bạn</h2>
+        <div role="group" aria-label="Lọc theo trạng thái" style="display: flex; gap: 6px; flex-wrap: wrap">
+          <button type="button" aria-pressed="true" style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #007967; background: #e7fbf6; color: #074b40; font: inherit; font-size: 13px; font-weight: 600">Tất cả · 7</button>
+          <button type="button" aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #d2dbe0; background: #ffffff; color: #3e505a; font: inherit; font-size: 13px">Đã xuất bản · 5</button>
+          <button type="button" aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #d2dbe0; background: #ffffff; color: #3e505a; font: inherit; font-size: 13px">Bản nháp · 1</button>
+          <button type="button" aria-pressed="false" style="height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid #d2dbe0; background: #ffffff; color: #3e505a; font: inherit; font-size: 13px">Bị từ chối · 1</button>
+        </div>
+      </div>
+
+      <ul style="margin: 0; padding: 0; list-style: none; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; overflow: hidden">
+        <sc-for list="{{courses}}" as="c" hint-placeholder-count="7">
+          <li style="border-top: 1px solid #e3eaee">
+            <a href="Editor.dc.html" style="display: grid; grid-template-columns: 128px minmax(0, 1fr) 132px 20px; gap: 20px; align-items: center; padding: 14px 20px; text-decoration: none; color: #102029">
+              <span style="width: 128px; height: 72px; border-radius: 10px; background: {{c.cover}}; display: flex; align-items: flex-end; padding: 8px; box-sizing: border-box; font-size: 12px; font-weight: 600; color: #3e505a">{{c.short}}</span>
+              <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+                <span style="font-size: 16px; line-height: 24px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{c.title}}</span>
+                <span style="font-size: 13px; line-height: 18px; color: #556670">{{c.meta}}</span>
+              </span>
+              <span style="justify-self: start; height: 24px; padding: 0 10px; border-radius: 12px; background: {{c.badgeBg}}; color: {{c.badgeFg}}; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">{{c.status}}</span>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6f7e88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+          </li>
+        </sc-for>
+      </ul>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pub = { status: 'Đã xuất bản', badgeBg: '#e8fceb', badgeFg: '#194f29' };
+    const draft = { status: 'Bản nháp', badgeBg: '#f0f4f7', badgeFg: '#3e505a' };
+    const rej = { status: 'Bị từ chối', badgeBg: '#fff2f1', badgeFg: '#a01e23' };
+    return {
+      courses: [
+        Object.assign({ title: 'Cấu trúc dữ liệu & giải thuật với Python', short: 'CTDL', cover: '#ccf5ea', meta: '499.000 ₫ · 40 học viên · 1 giờ 55 phút · cập nhật 18/09/2026' }, pub),
+        Object.assign({ title: 'Python cơ bản cho người mới bắt đầu', short: 'Python', cover: '#f0f6ff', meta: 'Miễn phí · 16 học viên · 1 giờ 40 phút · cập nhật 19/09/2026' }, pub),
+        Object.assign({ title: 'Kiểm thử Python với pytest', short: 'pytest', cover: '#fff4e9', meta: 'Miễn phí · chưa có học viên · cập nhật 27/10/2026' }, rej),
+        Object.assign({ title: 'Đệ quy và quy hoạch động', short: 'Đệ quy', cover: '#f0f4f7', meta: '399.000 ₫ · chưa có học viên · cập nhật 27/10/2026' }, draft),
+        Object.assign({ title: 'Python nâng cao: hàm, decorator và generator', short: 'Nâng cao', cover: '#e7fbf6', meta: '299.000 ₫ · chưa có học viên · cập nhật 27/10/2026' }, pub),
+        Object.assign({ title: 'Lập trình hướng đối tượng với Python', short: 'OOP', cover: '#f0f6ff', meta: '199.000 ₫ · chưa có học viên · cập nhật 27/10/2026' }, pub),
+        Object.assign({ title: 'Demo CSDL Python', short: 'Demo', cover: '#fff4e9', meta: 'Miễn phí · 1 học viên · cập nhật 27/10/2026' }, pub)
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

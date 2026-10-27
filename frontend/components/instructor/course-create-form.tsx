@@ -8,7 +8,6 @@ import { useState, type FormEvent } from "react";
 import { CategorySelect } from "@/components/instructor/category-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { createCourse } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/error-messages";
@@ -55,9 +54,8 @@ export function CourseCreateForm() {
   const busy = mutation.isPending || mutation.isSuccess;
 
   return (
-    <Card>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <div className="rounded-lg border bg-card p-5 sm:p-6">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           {mutation.isError ? (
             <Alert variant="destructive">
               <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
@@ -97,7 +95,6 @@ export function CourseCreateForm() {
             )}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+    </div>
   );
 }

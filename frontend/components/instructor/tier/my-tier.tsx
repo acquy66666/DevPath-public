@@ -1,8 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Award, CheckCircle2, Circle, Lock } from "lucide-react";
-import Link from "next/link";
+import { Award, CheckCircle2, Circle, Lock } from "lucide-react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -42,15 +41,8 @@ export function MyTier() {
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href="/giang-day/thong-ke"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          Thống kê giảng dạy
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Cấp giảng viên</h1>
-        <p className="text-sm text-muted-foreground">
+        <h1 className="text-h2 sm:text-h1">Cấp giảng viên</h1>
+        <p className="mt-1.5 text-body text-muted-foreground">
           Cấp càng cao, phần bạn nhận trên mỗi lượt bán càng lớn. Quản trị viên xét lên cấp dựa
           trên các tiêu chí dưới đây.
         </p>
@@ -124,7 +116,7 @@ export function MyTier() {
                     <li key={criterion.key} className="flex items-start gap-3 py-3 text-sm">
                       {criterion.met ? (
                         <CheckCircle2
-                          className="mt-0.5 size-4 shrink-0 text-emerald-600"
+                          className="mt-0.5 size-4 shrink-0 text-success"
                           aria-label="Đạt"
                         />
                       ) : (

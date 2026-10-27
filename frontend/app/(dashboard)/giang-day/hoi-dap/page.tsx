@@ -17,7 +17,7 @@ export default async function InstructorQaPage({
   const threadId = Array.isArray(raw) ? (raw[0] ?? null) : (raw ?? null);
 
   return (
-    <div className="px-4 py-12">
+    <div className="px-4 py-6 sm:py-8">
       <QaInbox openThreadId={threadId} />
     </div>
   );

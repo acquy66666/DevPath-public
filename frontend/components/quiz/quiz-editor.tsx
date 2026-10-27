@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, CheckCircle2, ListChecks, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, Check, CheckCircle2, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
 import { useId, useState } from "react";
 
 import { QuestionForm } from "@/components/quiz/question-form";
@@ -205,9 +205,22 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
         </Alert>
       ) : null}
 
+      <div className="flex flex-wrap items-baseline gap-2 border-b pb-2">
+        <h3 className="text-body font-semibold">Câu hỏi</h3>
+        <span className="text-body-sm text-muted-foreground">
+          {rows.length} câu{unreviewed > 0 ? ` · ${unreviewed} chờ duyệt` : ""}
+        </span>
+      </div>
+
       <ol className="space-y-2">
         {rows.map((row, index) => (
-          <li key={row.id} className="rounded-md border p-3">
+          <li
+            key={row.id}
+            className={cn(
+              "rounded-md border p-3.5 sm:px-4",
+              row.ai_generated && row.reviewed_at === null && "border-warning/40 bg-warning-soft/40",
+            )}
+          >
             {editing?.id === row.id ? (
               <QuestionForm
                 quizId={data.id}
@@ -216,32 +229,29 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
               />
             ) : (
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
+                <div className="min-w-0 space-y-2">
                   {row.ai_generated ? (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        row.reviewed_at === null &&
-                          "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200",
-                      )}
-                    >
+                    <Badge variant={row.reviewed_at === null ? "warning" : "muted"}>
                       {row.reviewed_at === null ? "AI soạn · chờ duyệt" : "AI soạn · đã duyệt"}
                     </Badge>
                   ) : null}
-                  <p className="font-medium">
+                  <p className="text-[0.9375rem] font-semibold text-pretty break-words">
                     Câu {index + 1}. {row.question}
                   </p>
-                  <ul className="space-y-0.5 text-sm text-muted-foreground">
+                  <ul className="grid gap-x-4 gap-y-1 text-body-sm text-muted-foreground sm:grid-cols-2">
                     {row.options.map((option, optionIndex) => (
                       <li
                         key={optionIndex}
                         className={cn(
-                          "flex items-center gap-1.5",
-                          optionIndex === row.correct_index && "text-emerald-700",
+                          "flex items-start gap-1.5 break-words",
+                          optionIndex === row.correct_index && "font-semibold text-success-text",
                         )}
                       >
                         {optionIndex === row.correct_index ? (
-                          <CheckCircle2 className="size-3.5 shrink-0" aria-hidden />
+                          <>
+                            <CheckCircle2 className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                            <span className="sr-only">Đáp án đúng: </span>
+                          </>
                         ) : (
                           <span className="inline-block size-3.5 shrink-0" />
                         )}
@@ -255,7 +265,7 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
                     </p>
                   ) : null}
                   {row.key_warning ? (
-                    <p className="flex items-start gap-1.5 text-sm text-amber-700 dark:text-amber-300">
+                    <p className="flex items-start gap-1.5 text-sm text-warning-text">
                       <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
                       Lời giải thích có vẻ nói về một phương án khác với đáp án đang chọn.
                       Kiểm tra lại đáp án trước khi duyệt.
@@ -267,6 +277,7 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
                     <Button
                       variant="outline"
                       size="sm"
+                      className="bg-card"
                       disabled={frozen || approve.isPending}
                       onClick={() => approve.mutate(row.id)}
                       aria-label={`Duyệt câu ${index + 1}`}
@@ -303,12 +314,13 @@ export function QuizEditor({ lessonId, courseId }: { lessonId: string; courseId:
       {adding ? (
         <QuestionForm quizId={data.id} question={null} onDone={() => setAdding(false)} />
       ) : (
-        <Button variant="outline" disabled={frozen} onClick={() => setAdding(true)}>
+        <Button variant="ghost" size="sm" className="text-link" disabled={frozen} onClick={() => setAdding(true)}>
+          <Plus aria-hidden />
           Thêm câu hỏi
         </Button>
       )}
 
-      <div className="flex items-center gap-2 border-t pt-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted px-3 py-2.5">
         <Button
           variant={frozen ? "outline" : "default"}
           disabled={settings.isPending || (!frozen && (rows.length === 0 || unreviewed > 0))}

@@ -1,0 +1,177 @@
+[
+  {
+    "name": "Thanh điều hướng: “Khóa học” là trang hiện tại",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thanh điều hướng: “Hỏi đáp” đếm 1 câu chờ trả lời",
+    "ok": true,
+    "detail": "Hỏi đáp 1 câu chờ trả lời"
+  },
+  {
+    "name": "Tổng quan: lời chào gọi tên",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tổng quan: một Naomi, đứng yên",
+    "ok": true,
+    "detail": "1 Naomi, 0 hoạt ảnh"
+  },
+  {
+    "name": "Việc đang chờ: câu hỏi → khóa bị từ chối → 2 bản nháp",
+    "ok": true,
+    "detail": "1 câu hỏi chưa có câu trả lời của bạn Trả lời | “Kiểm thử Python với pytest” bị từ chối Xem lý do | “Thuật toán đồ thị với Python” còn là bản nháp Soạn tiếp | “Trực quan hóa dữ liệu với matplotlib” còn là bản nháp Soạn tiếp"
+  },
+  {
+    "name": "Lọc: chỉ hiện trạng thái có khóa (không có “Chờ duyệt”)",
+    "ok": true,
+    "detail": "Tất cả · 4|Đã xuất bản · 1|Bản nháp · 2|Bị từ chối · 1"
+  },
+  {
+    "name": "Lọc “Bản nháp”: 2 dòng, nút được nhấn",
+    "ok": true,
+    "detail": "2 dòng"
+  },
+  {
+    "name": "Tổng quan: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tổng quan: 360 px không tràn ngang",
+    "ok": true,
+    "detail": "tràn 0"
+  },
+  {
+    "name": "“Xem lý do” mở thẳng tab Thông tin, có lý do của quản trị viên",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Gợi ý trước khi gửi duyệt: 1/4 (có mô tả ngắn, chương 2 trống, chưa có bài học thử)",
+    "ok": true,
+    "detail": "Gợi ý, không bắt buộc · 1/4"
+  },
+  {
+    "name": "Nút “Gửi duyệt lại” không bị khóa vì gợi ý",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thông tin khóa học: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Mở không có ?tab: tab Nội dung",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Đổi tab: địa chỉ thành ?tab=thong-tin, không tải lại trang",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Quay lại tab Nội dung: bài đang sửa dở còn nguyên",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Soạn bài tập code: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thêm bài: 4 loại là 4 nút chọn",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Bấm nhãn “Trắc nghiệm” chọn đúng loại",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thêm bài “Trắc nghiệm”: dòng mới mang loại Trắc nghiệm",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tóm tắt chương cập nhật theo",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Soạn khóa: 360 px không tràn ngang",
+    "ok": true,
+    "detail": "tràn 0"
+  },
+  {
+    "name": "Quiz: 2 câu AI chờ duyệt có nút Duyệt",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Quiz: chưa xuất bản được khi còn câu chờ duyệt",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Soạn quiz: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hỏi đáp: mở ở tab “Chờ trả lời · 1”",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hỏi đáp: thấy câu hỏi của học viên",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hỏi đáp: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hỏi đáp: 360 px không tràn ngang",
+    "ok": true,
+    "detail": "tràn 0"
+  },
+  {
+    "name": "Tạo khóa: không có nút “Tạo khóa học” trên thanh điều hướng",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tạo khóa: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tạo khóa: 360 px không tràn ngang",
+    "ok": true,
+    "detail": "tràn 0"
+  },
+  {
+    "name": "Thống kê: là trang hiện tại, axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Cấp bậc: là trang hiện tại, axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Giảm chuyển động: tổng quan 0 hoạt ảnh",
+    "ok": true,
+    "detail": "0"
+  }
+]

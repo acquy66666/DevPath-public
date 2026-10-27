@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tạo khóa học và các trạng thái trống</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 1180px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; padding: 48px; display: grid; grid-template-columns: 760px minmax(0, 1fr); gap: 48px">
+
+  <!-- /giang-day/moi -->
+  <div style="display: flex; flex-direction: column; gap: 12px">
+    <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">/giang-day/moi</p>
+    <div style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 20px; background: #f8fafc; padding: 32px; display: flex; flex-direction: column; gap: 20px">
+      <nav aria-label="Vị trí" style="font-size: 14px; color: #556670; display: flex; gap: 6px"><a href="#" style="color: #556670">Khóa học</a><span aria-hidden="true">/</span><span style="color: #102029">Khóa học mới</span></nav>
+      <div style="display: flex; flex-direction: column; gap: 6px">
+        <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700">Tạo khóa học mới</h1>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #3e505a">Chỉ cần tên và danh mục. Khóa học ở dạng nháp cho tới khi bạn gửi duyệt.</p>
+      </div>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; align-items: start">
+        <form style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 24px; display: flex; flex-direction: column; gap: 18px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="t" style="font-size: 14px; font-weight: 500">Tên khóa học</label>
+            <input id="t" value="Thuật toán đồ thị với Python" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: #102029">
+            <p style="margin: 0; font-size: 13px; color: #556670">Đổi tên lúc nào cũng được — đường dẫn khóa học giữ nguyên.</p>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <label for="cat" style="font-size: 14px; font-weight: 500">Danh mục</label>
+            <select id="cat" style="box-sizing: border-box; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px; color: #102029; background: #ffffff"><option>Lập trình › Python</option></select>
+          </div>
+          <button type="button" style="align-self: flex-start; height: 40px; padding: 0 18px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Tạo khóa học</button>
+        </form>
+        <aside aria-labelledby="next" style="display: flex; flex-direction: column; gap: 12px">
+          <h2 id="next" style="margin: 0; font-size: 14px; font-weight: 600">Sau bước này</h2>
+          <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 20px; color: #3e505a">
+            <li style="display: flex; gap: 10px"><span style="width: 24px; height: 24px; border-radius: 12px; background: #e7fbf6; color: #074b40; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: none">1</span>Soạn mục lục: chương, rồi bài học</li>
+            <li style="display: flex; gap: 10px"><span style="width: 24px; height: 24px; border-radius: 12px; background: #e7fbf6; color: #074b40; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: none">2</span>Viết mô tả, chọn trình độ và giá</li>
+            <li style="display: flex; gap: 10px"><span style="width: 24px; height: 24px; border-radius: 12px; background: #e7fbf6; color: #074b40; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex: none">3</span>Gửi duyệt — quản trị viên xem rồi đưa lên trang công khai</li>
+          </ol>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty states: Naomi still, small, beside the words -->
+  <div style="display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Chưa có khóa học</p>
+      <div style="box-sizing: border-box; border: 1px dashed #d2dbe0; border-radius: 14px; background: #ffffff; padding: 28px 32px; display: flex; gap: 24px; align-items: center">
+        <img src="/_blob/e7554beb17769b52f06f076db930ece0" alt="" style="width: 80px; height: 80px; flex: none">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <p style="margin: 0; font-size: 17px; font-weight: 600">Chưa có khóa học nào</p>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">Khóa học đầu tiên chỉ cần một cái tên và một danh mục. Nội dung soạn dần sau.</p>
+          <a href="#" style="margin-top: 8px; height: 36px; padding: 0 14px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center">Tạo khóa học đầu tiên</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Mục lục trống</p>
+      <div style="box-sizing: border-box; border: 1px dashed #d2dbe0; border-radius: 14px; background: #ffffff; padding: 28px 32px; display: flex; gap: 24px; align-items: center">
+        <img src="/_blob/005b818f814ce9367b2c92014b2b536f" alt="" style="width: 80px; height: 80px; flex: none">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <p style="margin: 0; font-size: 17px; font-weight: 600">Chưa có chương nào</p>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">Khóa học chia thành chương, mỗi chương chứa bài học. Bắt đầu bằng một chương như “Nhập môn”.</p>
+          <div style="margin-top: 8px; display: flex; gap: 8px; width: 100%">
+            <label for="sec" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tên chương mới</label>
+            <input id="sec" placeholder="Tên chương mới" style="box-sizing: border-box; flex: 1; height: 40px; border: 1px solid #6f7e88; border-radius: 10px; padding: 0 12px; font: inherit; font-size: 16px">
+            <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 14px; font-weight: 600">Thêm chương</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <p style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Hộp thư hỏi đáp trống</p>
+      <div style="box-sizing: border-box; border: 1px dashed #d2dbe0; border-radius: 14px; background: #ffffff; padding: 28px 32px; display: flex; gap: 24px; align-items: center">
+        <img src="/_blob/f5b79030f8d540d4a9b6e0d9f9db5717" alt="" style="width: 80px; height: 80px; flex: none">
+        <div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start">
+          <p style="margin: 0; font-size: 17px; font-weight: 600">Không còn câu hỏi nào chờ bạn</p>
+          <p style="margin: 0; font-size: 14px; line-height: 20px; color: #3e505a">Mọi câu hỏi đã có câu trả lời của bạn hoặc được người hỏi đánh dấu đã giải quyết.</p>
+          <a href="#" style="margin-top: 4px; font-size: 14px; font-weight: 500">Xem tất cả câu hỏi</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

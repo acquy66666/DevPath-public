@@ -1006,3 +1006,19 @@ Nhóm màn 7 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/account.
 **Hồ sơ: ảnh đổi ngay chỗ nó hiện, chỉ số học tập dẫn sang trang giải thích nó.** Thẻ tài khoản gom ảnh, tên, email, vai trò, ngày tham gia; hai ô "Chuỗi ngày" và "Tổng XP" là liên kết, không phải số đứng một mình. Query thành tích ở hồ sơ có id tài khoản trong khóa, vì cache sống qua lần đăng xuất. Hai mục cài đặt xếp hai cột (tên + câu nói đổi thì sao bên trái, form bên phải). Câu "Tên hiện … trên chứng chỉ cấp sau khi đổi" nói đúng điều `certificates.recipient_name` làm: chứng chỉ cũ giữ tên cũ.
 
 **Tài khoản Google không còn được hứa "đặt mật khẩu riêng sẽ bổ sung sau".** Không có kế hoạch cho tính năng đó; câu mới chỉ nói cách vào tài khoản.
+
+## Thương mại: số tiền trên nút, Naomi chỉ cho kết quả vừa xảy ra, khóa đã mua không được mời lại (27/10/2026)
+
+Nhóm màn 8 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/commerce.md` + `commerce/`. Backend không đổi.
+
+**Nút thanh toán ghi số tiền.** "Thanh toán 598.500 ₫ qua VNPay" nói bấm vào thì tốn bao nhiêu và đi đâu; đơn 0đ thì "Nhận khóa học". Trên điện thoại, tổng tiền và nút nằm ở thanh dính đáy màn hình, nên nút ở đó chỉ ghi "Thanh toán qua VNPay" (số tiền đứng ngay bên trái); nút trong thẻ tóm tắt chỉ hiện từ `lg`, lúc nào cũng chỉ một nút. E2E tìm nút theo mẫu.
+
+**Naomi `paid`/`oops` phản ứng một lần cho mỗi kết quả, khi đơn còn mới.** Trang kết quả là nơi việc thanh toán vừa xảy ra, nhưng cùng URL đó cũng là biên nhận mở lại về sau. Trình duyệt nhớ trạng thái đã phản ứng của từng đơn (`localStorage devpath:order-seen:<mã>`), và chỉ phản ứng khi đơn đặt trong vòng 1 giờ (hạn thanh toán là 30 phút). Đang chờ là chưa có gì xảy ra nên không có Naomi; chờ rồi thành công thì phản ứng ngay lúc đó. Đơn bị hủy dùng `oops` đứng yên.
+
+**Đang chờ: hỏi 90 giây rồi nói thật và cho hỏi lại.** Sau 90 giây không có IPN, trang thôi hỏi, đổi tiêu đề thành "Ngân hàng chưa báo kết quả", nói rằng tiền đã trừ thì khóa sẽ vào khi VNPay báo (IPN vẫn được ghi nhận, kể cả muộn) và có nút "Kiểm tra lại".
+
+**Khóa đã mua không được mời thêm vào giỏ.** API giữ khóa trong yêu thích sau khi mua. Giao diện hỏi ghi danh của từng khóa trên trang (`["enrollment", id]`, khóa cache của trang khóa học, nên thanh toán xong là tự làm mới) thay vì đổi backend: gợi ý ở giỏ bỏ khóa đã có, trang yêu thích đổi nút thành "Đã có · Vào học". Gợi ý chỉ hiện khi đã biết đủ, để khóa vừa mua không nháy lên rồi biến mất.
+
+**"Để dành sau" lưu trước rồi mới bỏ khỏi giỏ.** Hai lệnh API; hỏng giữa chừng thì khóa còn trong giỏ chứ không mất ở cả hai nơi.
+
+**Lỗi mã giảm giá nằm dưới ô và gắn với ô**, giữ chữ đã gõ để sửa. Mã đã áp nói luôn hạn dùng, vì mã được kiểm lại lúc tạo đơn và hết hạn giữa chừng là lý do hay gặp nhất.

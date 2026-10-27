@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Đang chờ xác nhận</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; height: 1000px; background: #f0f4f7; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; padding: 40px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; align-items: start">
+
+  <section aria-label="Đang chờ" style="box-sizing: border-box; background: #f8fafc; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Vừa quay về từ VNPay · IPN chưa tới</p>
+    <div style="border: 1px solid #e3eaee; border-radius: 20px; background: #ffffff; padding: 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+      <span style="width: 56px; height: 56px; border-radius: 28px; background: #fff4e9; color: #9c5c00; display: inline-flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+      <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700">Đang chờ ngân hàng xác nhận</h1>
+      <p role="status" style="margin: 0; font-size: 16px; line-height: 24px; color: #3e505a">Thường mất vài giây. Trang này tự cập nhật, bạn không cần tải lại.</p>
+      <div aria-hidden="true" style="align-self: stretch; height: 6px; border-radius: 3px; background: #f0f4f7; overflow: hidden"><span style="display: block; width: 35%; height: 100%; border-radius: 3px; background: #be7100"></span></div>
+      <dl style="margin: 8px 0 0; display: flex; gap: 24px; font-size: 14px; line-height: 20px"><div><dt style="color: #556670">Mã đơn</dt><dd style="margin: 0; font-family: 'Geist Mono', monospace; font-weight: 500">DP261027K3QX7M</dd></div><div><dt style="color: #556670">Số tiền</dt><dd style="margin: 0; font-weight: 600">598.500 ₫</dd></div></dl>
+    </div>
+  </section>
+
+  <section aria-label="Quá lâu" style="box-sizing: border-box; background: #f8fafc; border-radius: 14px; padding: 28px; display: flex; flex-direction: column; gap: 20px">
+    <p style="margin: 0; font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #556670">Sau 90 giây vẫn chưa có kết quả</p>
+    <div style="border: 1px solid #e3eaee; border-radius: 20px; background: #ffffff; padding: 32px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+      <span style="width: 56px; height: 56px; border-radius: 28px; background: #fff4e9; color: #9c5c00; display: inline-flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+      <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 700">Ngân hàng chưa báo kết quả</h1>
+      <p style="margin: 0; font-size: 16px; line-height: 24px; color: #3e505a">Nếu tiền đã bị trừ, khóa học sẽ vào tài khoản ngay khi VNPay báo về — bạn không cần trả lại lần nữa.</p>
+      <div style="display: flex; gap: 8px; margin-top: 4px">
+        <button type="button" style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Kiểm tra lại</button>
+        <a href="#" style="height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; color: #102029; font-size: 15px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; box-sizing: border-box">Khóa học của tôi</a>
+      </div>
+      <p style="margin: 8px 0 0; font-size: 14px; line-height: 20px; color: #556670">Cần hỏi lại? Gửi kèm mã đơn <span style="font-family: 'Geist Mono', monospace; font-weight: 500; color: #102029">DP261027K3QX7M</span>.</p>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

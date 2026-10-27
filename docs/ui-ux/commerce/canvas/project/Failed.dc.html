@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Thanh toán không thành công</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;family=Geist+Mono:wght@500&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 1440px; min-height: 1000px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px">
+    <a href="#" style="font-size: 20px; font-weight: 700; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+  </header>
+  <main style="box-sizing: border-box; width: 100%; max-width: 1152px; margin: 0 auto; padding: 40px 24px 64px; display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; align-items: start">
+    <section style="box-sizing: border-box; border-radius: 20px; background: #ffffff; border: 1px solid #e3eaee; padding: 32px 40px; display: flex; gap: 32px; align-items: center">
+      <img src="/_blob/69d556f605ab698f0da6e98759efc54e" alt="" style="width: 200px; height: 200px; flex: none">
+      <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start">
+        <p style="margin: 0; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; line-height: 18px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #a01e23"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>Chưa thanh toán</p>
+        <h1 style="margin: 0; font-size: 36px; line-height: 44px; font-weight: 700; letter-spacing: -0.015em">Thanh toán không thành công</h1>
+        <p style="margin: 0; font-size: 17px; line-height: 26px; color: #273842; max-width: 30em">Bạn đã hủy giao dịch trên trang của VNPay.</p>
+        <p style="margin: 0; font-size: 15px; line-height: 22px; color: #556670; max-width: 32em">Chưa có khoản nào bị trừ, và giỏ hàng của bạn vẫn còn nguyên 3 khóa học.</p>
+        <div style="margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap">
+          <a href="#" style="height: 44px; padding: 0 18px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 15px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center">Quay lại giỏ hàng</a>
+          <a href="#" style="height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; color: #102029; font-size: 15px; font-weight: 500; text-decoration: none; display: inline-flex; align-items: center; box-sizing: border-box">Xem khóa học khác</a>
+        </div>
+      </div>
+    </section>
+    <aside aria-labelledby="order-failed" style="box-sizing: border-box; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff; padding: 24px; display: flex; flex-direction: column; gap: 16px">
+      <h2 id="order-failed" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Đơn hàng</h2>
+      <dl style="margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 14px; line-height: 20px">
+        <dt style="color: #556670">Mã đơn</dt><dd style="margin: 0; text-align: right; font-family: 'Geist Mono', monospace; font-weight: 500">DP261027K3QX7M</dd>
+        <dt style="color: #556670">Trạng thái</dt><dd style="margin: 0; text-align: right; color: #a01e23; font-weight: 500">Không thành công · mã 24</dd>
+        <dt style="color: #556670">Số tiền</dt><dd style="margin: 0; text-align: right; font-weight: 600">598.500 ₫</dd>
+      </dl>
+      <ul style="margin: 0; padding: 12px 0 0; list-style: none; border-top: 1px solid #e3eaee; display: flex; flex-direction: column; gap: 8px; font-size: 14px; line-height: 20px; color: #3e505a">
+        <li>Cấu trúc dữ liệu &amp; giải thuật với Python</li>
+        <li>Đệ quy và quy hoạch động</li>
+        <li>Python nâng cao: hàm, decorator và generator</li>
+      </ul>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

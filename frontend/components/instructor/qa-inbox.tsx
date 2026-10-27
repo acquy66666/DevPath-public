@@ -1,17 +1,18 @@
 "use client";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { QA_KEY, QaThreadRow } from "@/components/qa/qa-shared";
 import { QA_MESSAGES, QaThreadView } from "@/components/qa/qa-thread-view";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Pager } from "@/components/ui/pager";
 import { EmptyState } from "@/components/ui/empty-state";
+import { useUnansweredCount } from "@/components/instructor/instructor-nav";
 import { QaRowsSkeleton } from "@/components/instructor/instructor-skeletons";
 import { listMyCourses } from "@/lib/api/courses";
 import { apiErrorMessage } from "@/lib/api/error-messages";
@@ -50,6 +51,8 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
     placeholderData: keepPreviousData,
   });
 
+  const unansweredCount = useUnansweredCount();
+
   function open(id: string | null) {
     router.push(id ? `/giang-day/hoi-dap?cau-hoi=${id}` : "/giang-day/hoi-dap", {
       scroll: false,
@@ -72,31 +75,49 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
     );
   }
 
+  const waiting = unansweredCount.data;
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <Link
-          href="/giang-day"
-          className="mb-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="size-4" aria-hidden />
-          Khóa học của tôi
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">Hỏi đáp của học viên</h1>
-        <p className="text-sm text-muted-foreground">
-          Câu hỏi học viên đặt dưới các bài học trong khóa bạn dạy. Câu trả lời của bạn
-          được gắn nhãn “Giảng viên” và người hỏi nhận được thông báo.
+    <div className="mx-auto max-w-3xl space-y-5">
+      <div className="space-y-1.5">
+        <h1 className="text-h2 sm:text-h1">Hỏi đáp của học viên</h1>
+        <p className="text-body text-muted-foreground">
+          Câu trả lời của bạn mang nhãn “Giảng viên” và người hỏi nhận được thông báo.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <label htmlFor="qa-course" className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 border-b sm:flex-row sm:items-end sm:justify-between">
+        <Tabs
+          value={unanswered ? "waiting" : "all"}
+          onValueChange={(value) => {
+            setUnanswered(value === "waiting");
+            setPage(1);
+          }}
+          className="order-last gap-0 sm:order-none"
+        >
+          <TabsList variant="line" aria-label="Lọc câu hỏi" className="shadow-none">
+            <TabsTrigger value="waiting" className="text-[0.9375rem]">
+              Chờ trả lời{typeof waiting === "number" ? ` · ${waiting}` : ""}
+            </TabsTrigger>
+            <TabsTrigger value="all" className="text-[0.9375rem]">
+              Tất cả
+            </TabsTrigger>
+          </TabsList>
+          {/* The list below is the panel of both tabs. */}
+          <TabsContent value="waiting" className="sr-only">
+            Câu hỏi chưa có câu trả lời của bạn và chưa được đánh dấu đã giải quyết.
+          </TabsContent>
+          <TabsContent value="all" className="sr-only">
+            Mọi câu hỏi trong các khóa bạn dạy.
+          </TabsContent>
+        </Tabs>
+        <div className="flex items-center gap-2 sm:pb-2">
+          <label htmlFor="qa-course" className="shrink-0 text-body-sm text-muted-foreground">
             Khóa học
           </label>
           <NativeSelect
             id="qa-course"
-            className="w-auto max-w-72"
+            className="w-full sm:w-auto sm:max-w-72"
             value={courseId ?? ""}
             onChange={(event) => {
               setCourseId(event.target.value || null);
@@ -111,18 +132,6 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
             ))}
           </NativeSelect>
         </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            className="size-4 accent-primary"
-            checked={unanswered}
-            onChange={(event) => {
-              setUnanswered(event.target.checked);
-              setPage(1);
-            }}
-          />
-          Chỉ câu chưa trả lời
-        </label>
       </div>
 
       {threads.isError ? (
@@ -131,18 +140,30 @@ export function QaInbox({ openThreadId }: { openThreadId: string | null }) {
         </Alert>
       ) : null}
 
-      {threads.isPending ? (
-        <QaRowsSkeleton />
-      ) : null}
+      {threads.isPending ? <QaRowsSkeleton /> : null}
 
       {threads.data && threads.data.total === 0 ? (
         <EmptyState
           size="md"
-          title={unanswered ? "Không còn câu hỏi nào chờ bạn trả lời" : "Chưa có câu hỏi nào"}
+          title={unanswered ? "Không còn câu hỏi nào chờ bạn" : "Chưa có câu hỏi nào"}
           description={
             unanswered
-              ? "Bỏ chọn “Chỉ câu chưa trả lời” để xem lại những câu đã trả lời."
+              ? "Mọi câu hỏi đã có câu trả lời của bạn hoặc được người hỏi đánh dấu đã giải quyết."
               : "Khi học viên đặt câu hỏi dưới một bài học, câu hỏi sẽ hiện ở đây."
+          }
+          action={
+            unanswered ? (
+              <Button
+                variant="link"
+                className="h-auto p-0"
+                onClick={() => {
+                  setUnanswered(false);
+                  setPage(1);
+                }}
+              >
+                Xem tất cả câu hỏi
+              </Button>
+            ) : null
           }
         />
       ) : null}

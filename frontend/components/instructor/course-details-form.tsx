@@ -7,13 +7,6 @@ import { useId, useState, type FormEvent } from "react";
 import { CategorySelect } from "@/components/instructor/category-select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { FormField } from "@/components/ui/form-field";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
@@ -77,66 +70,59 @@ export function CourseDetailsForm({ course }: { course: Course }) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Thông tin khóa học</CardTitle>
-        <CardDescription>
-          Đây là những gì học viên thấy trước khi quyết định đăng ký.
-        </CardDescription>
-      </CardHeader>
+    <section aria-labelledby="course-details" className="rounded-lg border bg-card p-5 sm:p-6">
+      <h2 id="course-details" className="text-h3">
+        Học viên thấy gì trước khi đăng ký
+      </h2>
+      <p className="mt-1 text-body-sm text-muted-foreground">
+        Tên, mô tả và giá hiện trên thẻ khóa học và trang chi tiết.
+      </p>
 
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
-            </Alert>
-          ) : null}
+      <form onSubmit={handleSubmit} className="mt-5 space-y-5" noValidate>
+        {mutation.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
+          </Alert>
+        ) : null}
 
-          {mutation.isSuccess ? (
-            <Alert>
-              <AlertDescription className="flex items-center gap-2">
-                <Check className="size-4" aria-hidden />
-                Đã lưu thay đổi.
-              </AlertDescription>
-            </Alert>
-          ) : null}
+        <FormField
+          label="Tên khóa học"
+          type="text"
+          value={title}
+          onChange={setTitle}
+          error={errors.title}
+          disabled={mutation.isPending}
+        />
 
-          <FormField
-            label="Tên khóa học"
-            type="text"
-            value={title}
-            onChange={setTitle}
-            error={errors.title}
+        <FormField
+          label="Mô tả ngắn"
+          type="text"
+          value={subtitle}
+          onChange={setSubtitle}
+          error={errors.subtitle}
+          placeholder="Một câu tóm tắt khóa học dạy được điều gì"
+          disabled={mutation.isPending}
+        />
+
+        <div className="space-y-1.5">
+          <Label htmlFor={descriptionId}>
+            Mô tả chi tiết <span className="font-normal text-muted-foreground">· Markdown</span>
+          </Label>
+          <Textarea
+            id={descriptionId}
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            rows={7}
+            placeholder="Học viên sẽ làm được gì sau khóa học, cần biết trước những gì…"
+            aria-describedby={`${descriptionId}-hint`}
             disabled={mutation.isPending}
           />
+          <p id={`${descriptionId}-hint`} className="text-sm text-muted-foreground">
+            Học viên sẽ làm được gì, cần biết trước những gì. Trang chi tiết hiện đúng định dạng.
+          </p>
+        </div>
 
-          <FormField
-            label="Mô tả ngắn"
-            type="text"
-            value={subtitle}
-            onChange={setSubtitle}
-            error={errors.subtitle}
-            placeholder="Một câu tóm tắt khóa học dạy được điều gì"
-            disabled={mutation.isPending}
-          />
-
-          <div className="space-y-2">
-            <Label htmlFor={descriptionId}>Mô tả chi tiết</Label>
-            <Textarea
-              id={descriptionId}
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              rows={6}
-              placeholder="Học viên sẽ làm được gì sau khóa học, cần biết trước những gì…"
-              disabled={mutation.isPending}
-            />
-            <p className="text-sm text-muted-foreground">
-              Viết được bằng Markdown — trang chi tiết khóa học sẽ hiển thị đúng định
-              dạng.
-            </p>
-          </div>
-
+        <div className="grid gap-5 sm:grid-cols-3 sm:gap-4">
           <CategorySelect
             value={categoryId}
             onChange={setCategoryId}
@@ -144,34 +130,34 @@ export function CourseDetailsForm({ course }: { course: Course }) {
             disabled={mutation.isPending}
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor={levelId}>Trình độ</Label>
-              <NativeSelect
-                id={levelId}
-                value={level}
-                onChange={(event) => setLevel(event.target.value as CourseLevel)}
-                disabled={mutation.isPending}
-              >
-                {LEVEL_ORDER.map((value) => (
-                  <option key={value} value={value}>
-                    {LEVEL_LABELS[value]}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
-
-            <FormField
-              label="Giá (VND)"
-              type="text"
-              value={price}
-              onChange={setPrice}
-              error={errors.price}
-              hint="Nhập 0 nếu khóa học miễn phí."
+          <div className="space-y-2">
+            <Label htmlFor={levelId}>Trình độ</Label>
+            <NativeSelect
+              id={levelId}
+              value={level}
+              onChange={(event) => setLevel(event.target.value as CourseLevel)}
               disabled={mutation.isPending}
-            />
+            >
+              {LEVEL_ORDER.map((value) => (
+                <option key={value} value={value}>
+                  {LEVEL_LABELS[value]}
+                </option>
+              ))}
+            </NativeSelect>
           </div>
 
+          <FormField
+            label="Giá (VND)"
+            type="text"
+            value={price}
+            onChange={setPrice}
+            error={errors.price}
+            hint="0 là miễn phí."
+            disabled={mutation.isPending}
+          />
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 border-t pt-5">
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? (
               <>
@@ -182,8 +168,16 @@ export function CourseDetailsForm({ course }: { course: Course }) {
               "Lưu thay đổi"
             )}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+          <p role="status" className="flex items-center gap-1.5 text-body-sm text-success-text">
+            {mutation.isSuccess && !mutation.isPending ? (
+              <>
+                <Check className="size-4" aria-hidden />
+                Đã lưu thay đổi.
+              </>
+            ) : null}
+          </p>
+        </div>
+      </form>
+    </section>
   );
 }

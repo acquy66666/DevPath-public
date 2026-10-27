@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { CourseEditor } from "@/components/instructor/course-editor";
+import { CourseEditor, type EditorTab } from "@/components/instructor/course-editor";
 
 export const metadata: Metadata = {
   title: "Chỉnh sửa khóa học — DevPath",
@@ -11,13 +11,16 @@ export const metadata: Metadata = {
 
 export default async function EditCoursePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ courseId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { courseId } = await params;
+  const [{ courseId }, { tab }] = await Promise.all([params, searchParams]);
+  const initialTab: EditorTab = tab === "thong-tin" ? "thong-tin" : "noi-dung";
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12">
-      <CourseEditor courseId={courseId} />
+    <div className="mx-auto max-w-6xl px-4 py-6 sm:py-8">
+      <CourseEditor courseId={courseId} initialTab={initialTab} />
     </div>
   );
 }

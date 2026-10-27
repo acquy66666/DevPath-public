@@ -14,60 +14,98 @@ import { cn } from "@/lib/utils";
  */
 function Frame({ width, label, children }: { width: string; label: string; children: ReactNode }) {
   return (
-    <SkeletonRegion label={label} className={cn("mx-auto space-y-6 px-4 py-12", width)}>
+    <SkeletonRegion label={label} className={cn("mx-auto space-y-6 px-4 py-6 sm:py-8", width)}>
       {children}
     </SkeletonRegion>
   );
 }
 
-/** Back link, title, one line of description: the head of most screens. */
-function Heading({ back = true, lines = 1 }: { back?: boolean; lines?: 1 | 2 }) {
+/** Title and one or two lines of description: the head of most screens. */
+function Heading({ lines = 1 }: { lines?: 1 | 2 }) {
   return (
-    <div>
-      {back ? <SkeletonText size="body-sm" className="mb-2 w-36" /> : null}
-      <SkeletonText size="h2" className="w-64 max-w-full" />
-      <SkeletonText size="body-sm" className="w-full max-w-md" />
-      {lines === 2 ? <SkeletonText size="body-sm" className="w-2/3 max-w-sm" /> : null}
+    <div className="space-y-1.5">
+      <SkeletonText size="h1" className="w-64 max-w-full" />
+      <SkeletonText className="w-full max-w-md" />
+      {lines === 2 ? <SkeletonText className="w-2/3 max-w-sm" /> : null}
     </div>
   );
 }
 
-/** A row of the course list, the Q&A inbox: bordered, title, a line, a meta line. */
-function RowSkeleton({ className }: { className?: string }) {
+/** The bar of places under the header, while the session is restored. */
+export function InstructorNavSkeleton() {
   return (
-    <div className={cn("space-y-1.5 rounded-lg border p-4", className)}>
-      <SkeletonText className="w-2/3" />
-      <SkeletonText size="body-sm" className="w-1/2" />
-      <SkeletonText size="caption" className="h-4 w-48" />
+    <div className="border-b bg-card" aria-hidden>
+      <div className="mx-auto flex h-12 max-w-6xl items-center gap-6 px-4 md:h-13">
+        <SkeletonText size="caption" className="hidden w-20 md:flex" />
+        <div className="flex flex-1 gap-6">
+          <SkeletonText size="body-sm" className="w-16" />
+          <SkeletonText size="body-sm" className="w-14" />
+          <SkeletonText size="body-sm" className="w-16" />
+          <SkeletonText size="body-sm" className="w-14" />
+        </div>
+        <Skeleton className="hidden h-9 w-36 sm:block" />
+      </div>
     </div>
   );
 }
 
-/** `/giang-day`: the course list. */
+/** `/giang-day`: the overview. */
 export function TeachingSkeleton() {
   return (
-    <Frame width="max-w-4xl" label="Đang tải khóa học của bạn…">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Heading back={false} lines={2} />
-        <div className="flex flex-wrap gap-2 sm:max-w-80 sm:justify-end">
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-36" />
-        </div>
-      </div>
-      <TeachingRowsSkeleton />
+    <Frame width="max-w-6xl" label="Đang tải khóa học của bạn…">
+      <OverviewBodySkeleton />
     </Frame>
   );
 }
 
-/** The rows alone, for the list while its query is in flight. */
-export function TeachingRowsSkeleton() {
+/** The overview inside its page: greeting, waiting tasks, the course rows. */
+export function OverviewBodySkeleton() {
   return (
-    <div className="space-y-3" aria-hidden>
-      {[0, 1, 2].map((row) => (
-        <RowSkeleton key={row} />
-      ))}
+    <div className="space-y-8" aria-hidden>
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_26rem] lg:gap-6">
+        <div className="flex items-center gap-4 rounded-xl bg-secondary p-5 sm:gap-6 sm:px-8 sm:py-7">
+          <Skeleton className="size-18 rounded-full bg-card sm:size-28" />
+          <div className="flex-1 space-y-1.5">
+            <SkeletonText size="h1" className="w-48" />
+            <SkeletonText className="w-full max-w-sm" />
+          </div>
+        </div>
+        <div className="space-y-3 rounded-lg border bg-card p-4 sm:p-5">
+          <SkeletonText size="title" className="w-32" />
+          {[0, 1, 2].map((row) => (
+            <div key={row} className="flex items-center gap-3">
+              <Skeleton className="size-8" />
+              <SkeletonText size="body-sm" className="flex-1" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <Skeleton className="h-11 sm:hidden" />
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <SkeletonText size="h3" className="w-48" />
+          <div className="flex gap-1.5">
+            <Skeleton className="h-8 w-24 rounded-full" />
+            <Skeleton className="h-8 w-32 rounded-full" />
+            <Skeleton className="h-8 w-24 rounded-full" />
+          </div>
+        </div>
+        <div className="divide-y rounded-xl border bg-card">
+          {[0, 1, 2, 3].map((row) => (
+            <div
+              key={row}
+              className="grid grid-cols-[5rem_minmax(0,1fr)] items-center gap-3 p-3 sm:grid-cols-[8rem_minmax(0,1fr)_6rem] sm:gap-5 sm:px-5 sm:py-3.5"
+            >
+              <Skeleton className="aspect-video w-full rounded-md" />
+              <div className="space-y-1.5">
+                <SkeletonText size="title" className="w-2/3" />
+                <SkeletonText size="caption" className="w-1/2" />
+              </div>
+              <Skeleton className="hidden h-[22px] w-24 rounded-full sm:block" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -76,10 +114,13 @@ export function TeachingRowsSkeleton() {
 export function QaInboxSkeleton() {
   return (
     <Frame width="max-w-[50rem]" label="Đang tải hỏi đáp…">
-      <Heading lines={2} />
-      <div className="flex flex-wrap items-center gap-4">
-        <Skeleton className="h-10 w-64" />
-        <SkeletonText size="body-sm" className="w-40" />
+      <Heading />
+      <div className="flex flex-col gap-3 border-b sm:flex-row sm:items-end sm:justify-between">
+        <div className="order-last flex h-10 items-center gap-4 sm:order-none">
+          <SkeletonText size="body-sm" className="w-32" />
+          <SkeletonText size="body-sm" className="w-12" />
+        </div>
+        <Skeleton className="h-10 w-full sm:mb-2 sm:w-64" />
       </div>
       <QaRowsSkeleton />
     </Frame>
@@ -91,7 +132,15 @@ export function QaRowsSkeleton() {
   return (
     <div className="space-y-3" aria-hidden>
       {[0, 1, 2].map((row) => (
-        <RowSkeleton key={row} className="rounded-md p-3" />
+        <div key={row} className="flex gap-4 rounded-lg border bg-card p-4">
+          <Skeleton className="h-16 w-12" />
+          <div className="flex-1 space-y-1.5">
+            <SkeletonText size="caption" className="w-1/2" />
+            <SkeletonText size="title" className="w-2/3" />
+            <SkeletonText size="body-sm" className="w-full" />
+            <SkeletonText size="caption" className="w-40" />
+          </div>
+        </div>
       ))}
     </div>
   );
@@ -179,10 +228,10 @@ export function TierBodySkeleton() {
   );
 }
 
-/** `/giang-day/[courseId]`: back link, title and badge, the details form, the curriculum. */
+/** `/giang-day/[courseId]`: breadcrumb, title, tabs, the curriculum and its side cards. */
 export function CourseEditorSkeleton() {
   return (
-    <Frame width="max-w-4xl" label="Đang tải khóa học…">
+    <Frame width="max-w-6xl" label="Đang tải khóa học…">
       <CourseEditorBodySkeleton />
     </Frame>
   );
@@ -191,16 +240,29 @@ export function CourseEditorSkeleton() {
 /** The editor alone, inside the page's own container. */
 export function CourseEditorBodySkeleton() {
   return (
-    <div className="space-y-8" aria-hidden>
-      <div>
-        <SkeletonText size="body-sm" className="w-36" />
-        <div className="mt-4 flex items-center gap-3">
-          <SkeletonText size="h2" className="w-80 max-w-full" />
-          <Skeleton className="h-[22px] w-20 rounded-full" />
+    <div className="space-y-5" aria-hidden>
+      <div className="space-y-2.5">
+        <SkeletonText size="body-sm" className="w-56" />
+        <div className="flex items-center gap-3">
+          <SkeletonText size="h1" className="w-96 max-w-full" />
+          <Skeleton className="h-[22px] w-24 rounded-full" />
         </div>
       </div>
-      <Skeleton className="h-[30rem] rounded-lg" />
-      <Skeleton className="h-96 rounded-lg" />
+      <div className="flex h-10 items-center gap-4 shadow-[inset_0_-1px_0_var(--color-border)]">
+        <SkeletonText size="body-sm" className="w-20" />
+        <SkeletonText size="body-sm" className="w-36" />
+      </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_18.75rem]">
+        <div className="space-y-4">
+          <SkeletonText size="body-sm" className="w-full max-w-xl" />
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-48 rounded-lg" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="h-44 rounded-lg" />
+          <Skeleton className="h-60 rounded-lg" />
+        </div>
+      </div>
     </div>
   );
 }
@@ -213,9 +275,13 @@ export function instructorSkeletonFor(pathname: string): ReactNode {
   if (pathname.startsWith("/giang-day/cap-bac")) return <TierSkeleton />;
   if (pathname.startsWith("/giang-day/moi")) {
     return (
-      <Frame width="max-w-2xl" label="Đang mở biểu mẫu…">
+      <Frame width="max-w-4xl" label="Đang mở biểu mẫu…">
+        <SkeletonText size="body-sm" className="w-44" />
         <Heading />
-        <Skeleton className="h-[28rem] rounded-lg" />
+        <div className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_15rem]">
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-40 rounded-lg" />
+        </div>
       </Frame>
     );
   }

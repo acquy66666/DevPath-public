@@ -120,7 +120,7 @@ export function TestCaseRow({
       </div>
 
       {confirmingDelete ? (
-        <div className="flex flex-wrap items-center gap-2 border-t bg-destructive/5 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-t bg-destructive-soft px-3 py-2.5">
           <span className="text-sm">Xóa test case này?</span>
           <Button
             size="sm"
@@ -251,7 +251,7 @@ function TestCaseEditor({
         </div>
       </div>
 
-      {weightError ? <p className="text-sm text-destructive">{weightError}</p> : null}
+      {weightError ? <p className="text-sm text-destructive-text">{weightError}</p> : null}
 
       <div className="flex gap-2">
         <Button

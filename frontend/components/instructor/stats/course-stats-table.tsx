@@ -144,7 +144,7 @@ export function CourseStatsTable({
                 <td
                   className={cn(
                     "px-3 py-3 text-right tabular-nums",
-                    row.open_questions > 0 && "font-medium text-amber-700 dark:text-amber-400",
+                    row.open_questions > 0 && "font-medium text-warning-text",
                   )}
                 >
                   {formatCount(row.open_questions)}
@@ -176,12 +176,18 @@ export function CourseStatsTable({
 export function Meter({ value, label }: { value: number | null; label: string }) {
   return (
     <div className="flex items-center gap-2">
+      {/* No value yet (nobody enrolled): a meter must carry one, so the bar is
+          decoration and the "—" beside it says so. */}
       <div
-        role="meter"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={value === null ? undefined : Math.round(value * 100)}
-        aria-label={label}
+        {...(value === null
+          ? { "aria-hidden": true }
+          : {
+              role: "meter",
+              "aria-valuemin": 0,
+              "aria-valuemax": 100,
+              "aria-valuenow": Math.round(value * 100),
+              "aria-label": label,
+            })}
         className="h-1.5 w-16 overflow-hidden rounded-full bg-primary/15"
       >
         <div

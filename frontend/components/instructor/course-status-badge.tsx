@@ -1,14 +1,18 @@
 import { Badge } from "@/components/ui/badge";
 import type { CourseStatus } from "@/lib/api/courses";
 
-/** Vietnamese label and a colour per status, so the list reads at a glance. */
+/**
+ * Vietnamese label and a semantic colour per status, so a list reads at a
+ * glance: live is green, sent back is red, waiting on the admin is blue, a
+ * draft is plain.
+ */
 const STATUS: Record<
   CourseStatus,
-  { label: string; variant: "default" | "secondary" | "outline" | "destructive" }
+  { label: string; variant: "success" | "muted" | "info" | "destructive" }
 > = {
-  draft: { label: "Bản nháp", variant: "secondary" },
-  pending_review: { label: "Chờ duyệt", variant: "outline" },
-  published: { label: "Đã xuất bản", variant: "default" },
+  draft: { label: "Bản nháp", variant: "muted" },
+  pending_review: { label: "Chờ duyệt", variant: "info" },
+  published: { label: "Đã xuất bản", variant: "success" },
   rejected: { label: "Bị từ chối", variant: "destructive" },
 };
 

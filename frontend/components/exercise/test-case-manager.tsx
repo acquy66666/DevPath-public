@@ -72,8 +72,8 @@ export function TestCaseManager({ exerciseId }: { exerciseId: string }) {
 
   return (
     <section className="space-y-3">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h4 className="font-medium">Test case</h4>
+      <div className="flex flex-wrap items-baseline justify-between gap-2 border-b pb-2">
+        <h3 className="text-body font-semibold">Test case</h3>
         {cases.length > 0 ? (
           <p className="text-sm text-muted-foreground">
             {cases.length} test case · {samples} mẫu, {cases.length - samples} ẩn ·
@@ -272,7 +272,7 @@ function AddTestCaseForm({ exerciseId }: { exerciseId: string }) {
         </div>
       </div>
 
-      {weightError ? <p className="text-sm text-destructive">{weightError}</p> : null}
+      {weightError ? <p className="text-sm text-destructive-text">{weightError}</p> : null}
 
       <div className="flex gap-2">
         <Button type="submit" size="sm" disabled={create.isPending}>

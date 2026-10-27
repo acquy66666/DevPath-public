@@ -43,7 +43,11 @@ export function AddSectionForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-2 rounded-lg border border-dashed border-border-strong bg-card p-3"
+      noValidate
+    >
       {create.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(create.error)}</AlertDescription>
@@ -51,7 +55,7 @@ export function AddSectionForm({
       ) : null}
 
       <div className="flex items-start gap-2">
-        <div className="flex-1">
+        <div className="min-w-0 flex-1">
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -64,9 +68,9 @@ export function AddSectionForm({
             aria-invalid={Boolean(error)}
             disabled={create.isPending}
           />
-          {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="mt-1 text-sm text-destructive-text">{error}</p> : null}
         </div>
-        <Button type="submit" variant="outline" disabled={create.isPending}>
+        <Button type="submit" variant={sectionCount === 0 ? "default" : "outline"} disabled={create.isPending}>
           {create.isPending ? (
             <>
               <Loader2 className="animate-spin" aria-hidden />

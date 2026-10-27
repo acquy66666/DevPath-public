@@ -5,6 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
+  ChevronUp,
   Code2,
   FileText,
   GripVertical,
@@ -23,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { deleteLesson, type LessonSummary, type LessonType } from "@/lib/api/curriculum";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<LessonType, string> = {
   video: "Video",
@@ -38,9 +40,20 @@ const TYPE_ICONS: Record<LessonType, typeof FileText> = {
   code_exercise: Code2,
 };
 
-function TypeIcon({ type }: { type: LessonType }) {
+/** The lesson type as a small tile: plain, since a list of colours would shout over the titles. */
+function TypeIcon({ type, open }: { type: LessonType; open: boolean }) {
   const Icon = TYPE_ICONS[type];
-  return <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />;
+  return (
+    <span
+      className={cn(
+        "flex size-7 shrink-0 items-center justify-center rounded-sm",
+        open ? "bg-card text-secondary-foreground" : "bg-muted text-muted-foreground",
+      )}
+      aria-hidden
+    >
+      <Icon className="size-3.5" />
+    </span>
+  );
 }
 
 export function LessonRow({
@@ -87,14 +100,18 @@ export function LessonRow({
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform), transition }}
-      className={`rounded-md border bg-background ${isDragging ? "opacity-40" : ""}`}
+      className={cn(
+        "overflow-hidden rounded-md border bg-card",
+        open && "border-primary",
+        isDragging && "opacity-40",
+      )}
     >
-      <div className="flex items-center gap-2 p-2">
+      <div className={cn("flex items-center gap-1.5 py-1.5 pr-1.5 pl-1 sm:gap-2", open && "bg-secondary")}>
         <Button
           ref={setActivatorNodeRef}
           variant="ghost"
           size="icon"
-          className="cursor-grab touch-none active:cursor-grabbing"
+          className="cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
           aria-label={`Kéo để sắp xếp bài học ${lesson.title}`}
           {...attributes}
           {...listeners}
@@ -102,17 +119,23 @@ export function LessonRow({
           <GripVertical aria-hidden />
         </Button>
 
-        <TypeIcon type={lesson.type} />
+        <TypeIcon type={lesson.type} open={open} />
 
         {/* A column on a phone: beside the badge and three buttons, one line
             left the title three letters wide. */}
         <span className="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-2">
-          <span className="line-clamp-2 min-w-0 text-sm sm:flex-1 sm:truncate">
+          <span
+            className={cn(
+              "line-clamp-2 min-w-0 text-body-sm sm:flex-1 sm:truncate sm:text-[0.9375rem]",
+              open && "font-semibold",
+            )}
+          >
             {lesson.title}
           </span>
 
-          <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">
+          <span className="hidden shrink-0 text-caption text-muted-foreground sm:inline">
             {TYPE_LABELS[lesson.type]}
+            {open ? " · đang sửa" : ""}
           </span>
 
           {lesson.is_preview ? (
@@ -129,7 +152,7 @@ export function LessonRow({
           aria-expanded={open}
           aria-label={`Sửa bài học ${lesson.title}`}
         >
-          <Pencil aria-hidden />
+          {open ? <ChevronUp aria-hidden /> : <Pencil aria-hidden />}
         </Button>
         <Button
           size="icon"
@@ -142,7 +165,7 @@ export function LessonRow({
       </div>
 
       {confirmingDelete ? (
-        <div className="flex flex-wrap items-center gap-2 border-t bg-destructive/5 px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-t bg-destructive-soft px-3 py-2.5">
           <span className="text-sm">Xóa bài học này?</span>
           <Button
             size="sm"

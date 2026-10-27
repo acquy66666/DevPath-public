@@ -95,19 +95,19 @@ export function QuizGenerator({
 
   if (curriculum.isSuccess && sections.length === 0) {
     return (
-      <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+      <p className="rounded-md border border-dashed border-border-strong p-3 text-body-sm text-muted-foreground">
         Khóa học chưa có bài viết hay video nào để AI soạn câu hỏi từ đó.
       </p>
     );
   }
 
   return (
-    <section className="space-y-3 rounded-md border bg-muted/20 p-3">
-      <div className="flex items-start gap-2">
-        <Sparkles className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+    <section className="space-y-3 rounded-lg bg-info-soft p-4">
+      <div className="flex items-start gap-2.5">
+        <Sparkles className="mt-0.5 size-4.5 shrink-0 text-info" aria-hidden />
         <div>
-          <p className="text-sm font-medium">Sinh câu hỏi bằng AI</p>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="text-body font-semibold text-info-text">Sinh câu hỏi bằng AI</h3>
+          <p className="text-caption text-muted-foreground">
             AI đọc một bài học của khóa và soạn nháp. Bạn duyệt từng câu trước khi xuất bản.
           </p>
         </div>
@@ -126,6 +126,7 @@ export function QuizGenerator({
             id={`${fieldId}-source`}
             value={source}
             onChange={(event) => setPicked(event.target.value)}
+            className="bg-card"
             disabled={curriculum.isPending || generate.isPending}
           >
             {sections.map((section) => (
@@ -150,6 +151,7 @@ export function QuizGenerator({
             max={GENERATE_MAX}
             value={count}
             onChange={(event) => setCount(event.target.value)}
+            className="bg-card"
             disabled={generate.isPending}
             aria-invalid={!countValid}
           />
@@ -185,7 +187,7 @@ export function QuizGenerator({
       ) : null}
 
       {!countValid ? (
-        <p className="text-xs text-destructive">
+        <p className="text-caption text-destructive-text">
           Số câu từ {GENERATE_MIN} đến {GENERATE_MAX}.
         </p>
       ) : null}
@@ -197,7 +199,7 @@ export function QuizGenerator({
       ) : null}
 
       {result ? (
-        <Alert>
+        <Alert className="bg-card">
           <AlertDescription className="space-y-1">
             <p>
               Đã thêm {result.created} câu hỏi do AI soạn vào cuối danh sách. Đọc kỹ đáp án và

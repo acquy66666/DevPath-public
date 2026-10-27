@@ -44,15 +44,15 @@ export function LessonEditor({
 
   if (query.isPending) {
     return (
-      <div className="border-t p-3">
-        <Skeleton className="h-32" />
+      <div className="border-t p-4 sm:p-5">
+        <Skeleton className="h-40" />
       </div>
     );
   }
 
   if (query.isError) {
     return (
-      <div className="border-t p-3">
+      <div className="border-t p-4 sm:p-5">
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(query.error)}</AlertDescription>
         </Alert>
@@ -110,19 +110,10 @@ function LessonForm({
   });
 
   return (
-    <div className="space-y-4 border-t bg-muted/20 p-3">
+    <div className="space-y-5 border-t p-4 sm:p-5">
       {save.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(save.error)}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {save.isSuccess ? (
-        <Alert>
-          <AlertDescription className="flex items-center gap-2">
-            <Check className="size-4" aria-hidden />
-            Đã lưu bài học.
-          </AlertDescription>
         </Alert>
       ) : null}
 
@@ -135,7 +126,7 @@ function LessonForm({
           aria-invalid={Boolean(titleError)}
           disabled={save.isPending}
         />
-        {titleError ? <p className="text-sm text-destructive">{titleError}</p> : null}
+        {titleError ? <p className="text-sm text-destructive-text">{titleError}</p> : null}
       </div>
 
       {lesson.type === "article" ? (
@@ -165,7 +156,8 @@ function LessonForm({
         </div>
       )}
 
-      <div className="flex items-start gap-2">
+      <div className="flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center">
+      <div className="flex flex-1 items-start gap-2">
         <input
           id={previewId}
           type="checkbox"
@@ -183,7 +175,18 @@ function LessonForm({
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <p role="status" className="flex items-center gap-1.5 text-body-sm text-success-text">
+          {save.isSuccess && !save.isPending ? (
+            <>
+              <Check className="size-4" aria-hidden />
+              Đã lưu bài học.
+            </>
+          ) : null}
+        </p>
+        <Button size="sm" variant="ghost" onClick={onClose} disabled={save.isPending}>
+          Đóng
+        </Button>
         <Button
           size="sm"
           onClick={() => {
@@ -206,9 +209,7 @@ function LessonForm({
             "Lưu bài học"
           )}
         </Button>
-        <Button size="sm" variant="ghost" onClick={onClose} disabled={save.isPending}>
-          Đóng
-        </Button>
+      </div>
       </div>
     </div>
   );

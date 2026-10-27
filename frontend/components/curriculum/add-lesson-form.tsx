@@ -7,11 +7,11 @@ import { useId, useState, type FormEvent } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { createLesson, type BuildableLessonType } from "@/lib/api/curriculum";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { validateLessonTitle } from "@/lib/courses/validation";
+import { cn } from "@/lib/utils";
 
 /**
  * Every lesson type the backend knows, now that each one has an editor.
@@ -62,7 +62,7 @@ export function AddLessonForm({
 
   if (!open) {
     return (
-      <Button variant="ghost" size="sm" onClick={() => setOpen(true)}>
+      <Button variant="ghost" size="sm" className="text-link" onClick={() => setOpen(true)}>
         <Plus aria-hidden />
         Thêm bài học
       </Button>
@@ -70,15 +70,48 @@ export function AddLessonForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-2 rounded-md border p-2" noValidate>
+    <form
+      onSubmit={handleSubmit}
+      className="space-y-3 rounded-md border border-border-strong p-3"
+      noValidate
+    >
       {create.isError ? (
         <Alert variant="destructive">
           <AlertDescription>{apiErrorMessage(create.error)}</AlertDescription>
         </Alert>
       ) : null}
 
+      {/* Four buttons rather than a dropdown: the type decides what the
+          lesson will be, and seeing all four at once is the choice. */}
+      <fieldset className="flex flex-wrap items-center gap-1.5" disabled={create.isPending}>
+        <legend className="float-left mr-1.5 text-body-sm font-medium text-muted-foreground">
+          Loại bài
+        </legend>
+        {TYPES.map((option) => (
+          <label
+            key={option.value}
+            className={cn(
+              "relative inline-flex h-8 cursor-pointer items-center rounded-full border px-3 text-[0.8125rem] transition-colors duration-fast has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-ring",
+              type === option.value
+                ? "border-primary bg-secondary font-semibold text-secondary-foreground"
+                : "border-border-strong text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            <input
+              type="radio"
+              name={`${typeId}-type`}
+              value={option.value}
+              checked={type === option.value}
+              onChange={() => setType(option.value)}
+              className="sr-only"
+            />
+            {option.label}
+          </label>
+        ))}
+      </fieldset>
+
       <div className="flex flex-wrap items-start gap-2">
-        <div className="min-w-48 flex-1">
+        <div className="min-w-0 flex-1 basis-48">
           <Input
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -88,37 +121,21 @@ export function AddLessonForm({
             disabled={create.isPending}
             autoFocus
           />
-          {error ? <p className="mt-1 text-sm text-destructive">{error}</p> : null}
+          {error ? <p className="mt-1 text-sm text-destructive-text">{error}</p> : null}
         </div>
 
-        <NativeSelect
-          id={typeId}
-          value={type}
-          onChange={(event) => setType(event.target.value as BuildableLessonType)}
-          aria-label="Loại bài học"
-          disabled={create.isPending}
-          className="w-40"
-        >
-          {TYPES.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </NativeSelect>
-
-        <Button type="submit" size="sm" disabled={create.isPending}>
+        <Button type="submit" disabled={create.isPending}>
           {create.isPending ? (
             <>
               <Loader2 className="animate-spin" aria-hidden />
               Đang thêm…
             </>
           ) : (
-            "Thêm"
+            "Thêm bài"
           )}
         </Button>
         <Button
           type="button"
-          size="sm"
           variant="ghost"
           onClick={() => {
             setOpen(false);

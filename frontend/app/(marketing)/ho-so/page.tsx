@@ -9,8 +9,8 @@ export const metadata: Metadata = {
 
 export default function ProfilePage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-10">
-      <h1 className="mb-6 text-3xl font-semibold tracking-tight">Hồ sơ của tôi</h1>
+    <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 pt-8 pb-16 md:gap-8 md:pt-10 md:pb-20">
+      <h1 className="text-h1">Hồ sơ của tôi</h1>
       <ProfileView />
     </div>
   );

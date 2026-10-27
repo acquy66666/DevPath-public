@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Hồ sơ của tôi</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1280px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029">
+
+  <header style="box-sizing: border-box; height: 64px; background: #ffffff; border-bottom: 1px solid #e3eaee">
+    <div style="box-sizing: border-box; max-width: 1152px; height: 64px; margin: 0 auto; padding: 0 16px; display: flex; align-items: center; gap: 24px">
+      <a href="#" style="font-size: 20px; line-height: 28px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+      <nav aria-label="Điều hướng chính" style="display: flex; gap: 4px">
+        <a href="#" style="padding: 8px 12px; border-radius: 10px; font-size: 15px; line-height: 20px; font-weight: 500; text-decoration: none; color: #3e505a">Khóa học</a>
+        <a href="#" style="padding: 8px 12px; border-radius: 10px; font-size: 15px; line-height: 20px; font-weight: 500; text-decoration: none; color: #3e505a">Bảng xếp hạng</a>
+      </nav>
+      <div style="margin-left: auto; display: flex; align-items: center; gap: 8px">
+        <button type="button" aria-label="Tài khoản: Người mua 08" style="height: 40px; border: 0; border-radius: 9999px; background: transparent; display: inline-flex; align-items: center; gap: 8px; padding: 0 8px 0 0; font: inherit; font-size: 15px; font-weight: 600; color: #102029"><span style="width: 32px; height: 32px; border-radius: 9999px; background: #007967; color: #ffffff; font-size: 13px; display: inline-flex; align-items: center; justify-content: center">N0</span>Người mua 08</button>
+      </div>
+    </div>
+  </header>
+
+  <main style="box-sizing: border-box; max-width: 1024px; margin: 0 auto; padding: 40px 16px 80px; display: flex; flex-direction: column; gap: 32px">
+    <h1 style="margin: 0; font-size: 30px; line-height: 40px; font-weight: 700; letter-spacing: -0.01em">Hồ sơ của tôi</h1>
+
+    <!-- Who: the picture is changed where it is shown -->
+    <section aria-label="Tài khoản" style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px 32px; padding: 28px; border: 1px solid #e3eaee; border-radius: 20px; background: #ffffff">
+      <div style="display: flex; align-items: center; gap: 20px; flex: 999 1 420px; min-width: 0">
+        <div style="flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <span style="width: 96px; height: 96px; border-radius: 9999px; background: #007967; color: #ffffff; font-size: 32px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">N0</span>
+          <button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #d2dbe0; border-radius: 8px; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; color: #102029; display: inline-flex; align-items: center; gap: 6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m17 8-5-5-5 5"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/></svg>Tải ảnh lên</button>
+        </div>
+        <div style="min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <p style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700">Người mua 08</p>
+          <p style="margin: 0; font-size: 15px; line-height: 22px; color: #556670">nguoimua08@sales.devpath.example</p>
+          <p style="margin: 0; display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; line-height: 18px">
+            <span style="padding: 3px 10px; border-radius: 9999px; background: #e7fbf6; color: #074b40; font-weight: 600">Học viên</span>
+            <span style="padding: 3px 10px; border-radius: 9999px; background: #f0f4f7; color: #3e505a">Tham gia 20/08/2026</span>
+          </p>
+          <p style="margin: 0; font-size: 13px; line-height: 18px; color: #556670">Ảnh JPG, PNG hoặc WebP, tối đa 5 MB.</p>
+        </div>
+      </div>
+      <dl style="margin: 0; flex: 1 1 260px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 14px; background: #fff7e7; text-decoration: none; color: #44320a">
+          <dt style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase">Chuỗi ngày</dt>
+          <dd style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; font-variant-numeric: tabular-nums">7 ngày</dd>
+        </a>
+        <a href="#" style="display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border-radius: 14px; background: #f0f4f7; text-decoration: none; color: #102029">
+          <dt style="font-size: 12px; line-height: 16px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #556670">Tổng XP</dt>
+          <dd style="margin: 0; font-size: 24px; line-height: 32px; font-weight: 700; font-variant-numeric: tabular-nums">350 XP</dd>
+        </a>
+      </dl>
+    </section>
+
+    <!-- Settings: what it is on the left, the form on the right -->
+    <section aria-labelledby="info" style="display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 32px; padding-top: 8px; border-top: 1px solid #e3eaee">
+      <div style="padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+        <h2 id="info" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Thông tin cá nhân</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Tên hiện ở thanh điều hướng, phần hỏi đáp và trên chứng chỉ cấp sau khi đổi.</p>
+      </div>
+      <form style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="name" style="font-size: 14px; line-height: 20px; font-weight: 500">Họ và tên</label>
+          <input id="name" type="text" value="Người mua 08" style="box-sizing: border-box; height: 40px; padding: 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px; color: #102029">
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <span style="font-size: 14px; line-height: 20px; font-weight: 500">Email</span>
+          <span style="box-sizing: border-box; height: 40px; padding: 0 12px; border-radius: 10px; background: #f0f4f7; font-size: 16px; line-height: 40px; color: #3e505a">nguoimua08@sales.devpath.example</span>
+          <span style="font-size: 14px; line-height: 20px; color: #556670">Chưa đổi được email: địa chỉ mới phải xác thực xong mới dùng được.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px">
+          <button type="submit" disabled style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; opacity: 0.5; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Lưu thay đổi</button>
+          <span style="font-size: 14px; color: #556670">Chưa có gì thay đổi</span>
+        </div>
+      </form>
+    </section>
+
+    <section aria-labelledby="pw" style="display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 32px; padding-top: 8px; border-top: 1px solid #e3eaee">
+      <div style="padding-top: 16px; display: flex; flex-direction: column; gap: 6px">
+        <h2 id="pw" style="margin: 0; font-size: 18px; line-height: 26px; font-weight: 600">Đổi mật khẩu</h2>
+        <p style="margin: 0; font-size: 14px; line-height: 20px; color: #556670">Đổi xong, mọi thiết bị khác sẽ bị đăng xuất. Thiết bị này thì không.</p>
+      </div>
+      <form style="margin-top: 16px; display: flex; flex-direction: column; gap: 16px; padding: 24px; border: 1px solid #e3eaee; border-radius: 14px; background: #ffffff">
+        <div role="status" style="display: flex; gap: 10px; padding: 12px 14px; border-radius: 10px; background: #e8fceb; color: #194f29; font-size: 14px; line-height: 20px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: none; margin-top: 2px"><path d="M20 6 9 17l-5-5"/></svg>Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.</div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="cur" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu hiện tại</label>
+          <div style="position: relative; display: flex">
+            <input id="cur" type="password" style="box-sizing: border-box; flex: 1; min-width: 0; height: 40px; padding: 0 64px 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px">
+            <button type="button" aria-pressed="false" style="position: absolute; top: 4px; right: 4px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: #066254">Hiện</button>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <label for="new" style="font-size: 14px; line-height: 20px; font-weight: 500">Mật khẩu mới</label>
+          <div style="position: relative; display: flex">
+            <input id="new" type="password" style="box-sizing: border-box; flex: 1; min-width: 0; height: 40px; padding: 0 64px 0 12px; border: 1px solid #6f7e88; border-radius: 10px; font: inherit; font-size: 16px">
+            <button type="button" aria-pressed="false" style="position: absolute; top: 4px; right: 4px; height: 32px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; font: inherit; font-size: 14px; font-weight: 500; color: #066254">Hiện</button>
+          </div>
+          <p style="margin: 0; display: flex; align-items: center; gap: 6px; font-size: 14px; line-height: 20px; color: #556670"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f7e88" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/></svg>Tối thiểu 8 ký tự</p>
+        </div>
+        <div><button type="submit" style="height: 40px; padding: 0 16px; border: 0; border-radius: 10px; background: #007967; color: #ffffff; font: inherit; font-size: 15px; font-weight: 600">Đổi mật khẩu</button></div>
+      </form>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1280}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

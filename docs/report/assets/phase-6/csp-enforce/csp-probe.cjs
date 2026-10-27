@@ -390,7 +390,8 @@ async function student(browser, courses) {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Mật khẩu").fill(`csp-${Date.now()}-probe`);
     await page.getByRole("button", { name: "Tạo tài khoản" }).click();
-    await page.waitForURL((url) => url.pathname === "/", { timeout: 45_000 });
+    // Sign-up lands on the welcome page since Phase 7 group 7; on the home page before.
+    await page.waitForURL((url) => ["/", "/chao-mung"].includes(url.pathname), { timeout: 45_000 });
     await settle(page);
     return email;
   });

@@ -348,7 +348,8 @@ function median(rows) {
     await page.getByLabel("Email").fill(email);
     await page.getByLabel("Mật khẩu").fill(password);
     await page.getByRole("button", { name: "Tạo tài khoản" }).click();
-    await page.waitForURL((url) => url.pathname === "/", { timeout: 45_000 });
+    // Sign-up lands on the welcome page since Phase 7 group 7; on the home page before.
+    await page.waitForURL((url) => ["/", "/chao-mung"].includes(url.pathname), { timeout: 45_000 });
     await page.goto(`${BASE}/khoa-hoc/${PYTHON}`, { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Đăng ký học miễn phí" }).click();
     await page.waitForURL((url) => url.pathname.startsWith("/hoc/"), { timeout: 30_000 });

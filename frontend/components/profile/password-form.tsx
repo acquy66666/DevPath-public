@@ -2,29 +2,27 @@
 
 import { useMutation } from "@tanstack/react-query";
 import { Check, Loader2 } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
 
-import { FormField } from "@/components/ui/form-field";
+import { GoogleMark } from "@/components/auth/google-button";
+import { PasswordField } from "@/components/auth/password-field";
+import { SettingsSection } from "@/components/profile/settings-section";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import type { User } from "@/lib/api/auth";
+import { ApiError } from "@/lib/api/client";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { changePassword } from "@/lib/api/users";
 import { useAuth } from "@/lib/auth/auth-provider";
-import { PASSWORD_MIN_LENGTH, validatePassword } from "@/lib/auth/validation";
+import { validatePassword } from "@/lib/auth/validation";
 
 export function PasswordForm({ user }: { user: User }) {
   const { accessToken, refreshSession } = useAuth();
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [fieldErrors, setFieldErrors] = useState<Record<string, string | null>>({});
+  const currentInput = useRef<HTMLInputElement>(null);
+  const newInput = useRef<HTMLInputElement>(null);
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -40,7 +38,22 @@ export function PasswordForm({ user }: { user: User }) {
       setCurrentPassword("");
       setNewPassword("");
     },
+    onError: (error) => {
+      // The current password was wrong: that is the field to retype.
+      if (error instanceof ApiError && error.code === "INVALID_CURRENT_PASSWORD") {
+        setCurrentPassword("");
+        requestAnimationFrame(() => currentInput.current?.focus());
+      }
+    },
   });
+
+  /** Typing in a field takes back what was said about it. */
+  function edit(key: string, set: (value: string) => void) {
+    return (value: string) => {
+      set(value);
+      setFieldErrors((errors) => (errors[key] ? { ...errors, [key]: null } : errors));
+    };
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,7 +63,8 @@ export function PasswordForm({ user }: { user: User }) {
       new_password: validatePassword(newPassword),
     };
     setFieldErrors(errors);
-    if (errors.current_password || errors.new_password) return;
+    if (errors.current_password) return currentInput.current?.focus();
+    if (errors.new_password) return newInput.current?.focus();
 
     mutation.mutate();
   }
@@ -59,65 +73,60 @@ export function PasswordForm({ user }: { user: User }) {
   // answer 409. Say so instead of showing a form that cannot work.
   if (!user.has_password) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Mật khẩu</CardTitle>
-          <CardDescription>
-            Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu. Đặt mật khẩu
-            riêng là tính năng sẽ bổ sung sau.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <SettingsSection id="profile-password" title="Mật khẩu">
+        <p className="flex items-start gap-3 text-body text-foreground/80">
+          <GoogleMark className="mt-0.5 size-5 shrink-0" />
+          <span>
+            Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu riêng. Bạn vào DevPath bằng nút
+            “Đăng nhập bằng Google”.
+          </span>
+        </p>
+      </SettingsSection>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Đổi mật khẩu</CardTitle>
-        <CardDescription>
-          Đổi xong, mọi thiết bị khác sẽ bị đăng xuất. Thiết bị này thì không.
-        </CardDescription>
-      </CardHeader>
+    <SettingsSection
+      id="profile-password"
+      title="Đổi mật khẩu"
+      description="Đổi xong, mọi thiết bị khác sẽ bị đăng xuất. Thiết bị này thì không."
+    >
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {mutation.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          {mutation.isError ? (
-            <Alert variant="destructive">
-              <AlertDescription>{apiErrorMessage(mutation.error)}</AlertDescription>
-            </Alert>
-          ) : null}
+        {mutation.isSuccess ? (
+          <Alert variant="success">
+            <Check aria-hidden />
+            <AlertDescription>Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.</AlertDescription>
+          </Alert>
+        ) : null}
 
-          {mutation.isSuccess ? (
-            <Alert>
-              <AlertDescription className="flex items-center gap-2">
-                <Check className="size-4" aria-hidden />
-                Đã đổi mật khẩu. Các thiết bị khác đã bị đăng xuất.
-              </AlertDescription>
-            </Alert>
-          ) : null}
+        <PasswordField
+          ref={currentInput}
+          label="Mật khẩu hiện tại"
+          value={currentPassword}
+          onChange={edit("current_password", setCurrentPassword)}
+          error={fieldErrors.current_password}
+          autoComplete="current-password"
+          disabled={mutation.isPending}
+        />
 
-          <FormField
-            label="Mật khẩu hiện tại"
-            type="password"
-            value={currentPassword}
-            onChange={setCurrentPassword}
-            error={fieldErrors.current_password}
-            autoComplete="current-password"
-            disabled={mutation.isPending}
-          />
+        <PasswordField
+          ref={newInput}
+          label="Mật khẩu mới"
+          value={newPassword}
+          onChange={edit("new_password", setNewPassword)}
+          error={fieldErrors.new_password}
+          autoComplete="new-password"
+          rule
+          disabled={mutation.isPending}
+        />
 
-          <FormField
-            label="Mật khẩu mới"
-            type="password"
-            value={newPassword}
-            onChange={setNewPassword}
-            error={fieldErrors.new_password}
-            hint={`Tối thiểu ${PASSWORD_MIN_LENGTH} ký tự`}
-            autoComplete="new-password"
-            disabled={mutation.isPending}
-          />
-
+        <div>
           <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? (
               <>
@@ -128,8 +137,8 @@ export function PasswordForm({ user }: { user: User }) {
               "Đổi mật khẩu"
             )}
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </div>
+      </form>
+    </SettingsSection>
   );
 }

@@ -9,26 +9,29 @@ import type { ReactNode } from "react";
  * But not a dead end. The logo always led home, and nobody could tell --
  * it reads as a title, not as a link. Someone who opened this page by
  * mistake, or changed their mind, gets a way out that says what it does.
+ * The privacy policy stays one click away too: it is what an account agrees to.
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center gap-8 px-4 py-16">
-      <Link
-        href="/"
-        className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:top-6 sm:left-6"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        Về trang chủ
-      </Link>
+    <main className="flex flex-1 flex-col items-center gap-6 px-4 pt-4 pb-10 sm:gap-8 sm:pt-6">
+      <div className="flex w-full">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-body-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          Về trang chủ
+        </Link>
+      </div>
+
+      <div className="flex w-full flex-1 flex-col items-center justify-center">{children}</div>
 
       <Link
-        href="/"
-        aria-label="DevPath — về trang chủ"
-        className="text-2xl font-semibold tracking-tight transition-opacity hover:opacity-70"
+        href="/chinh-sach-bao-mat"
+        className="text-caption text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
       >
-        Dev<span className="text-muted-foreground">Path</span>
+        Chính sách bảo mật
       </Link>
-      <div className="w-full max-w-sm">{children}</div>
     </main>
   );
 }

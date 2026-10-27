@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-27T09:00:00Z" },
+  "title": "DevPath — Nhóm 7: Tài khoản",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 900, "title": "Đăng nhập · /dang-nhap · 1440", "expand": "fill" },
+    "SignIn375.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 900, "title": "Đăng nhập · 375" },
+    "FormStates.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 900, "title": "Trạng thái form · lỗi ô · sai mật khẩu · quá số lần · đang gửi" },
+    "Register.dc.html": { "x": 0, "y": 1020, "w": 1440, "h": 960, "title": "Đăng ký · đến từ trang khóa học · mật khẩu đạt · 1440", "expand": "fill" },
+    "Register375.dc.html": { "x": 1520, "y": 1020, "w": 375, "h": 1000, "title": "Đăng ký · 375" },
+    "Welcome.dc.html": { "x": 0, "y": 2140, "w": 1440, "h": 1320, "title": "Chào mừng · /chao-mung · ngay sau đăng ký · wave phản ứng · 1440", "expand": "fill" },
+    "Welcome375.dc.html": { "x": 1520, "y": 2140, "w": 375, "h": 2000, "title": "Chào mừng · 375" },
+    "Profile.dc.html": { "x": 0, "y": 4260, "w": 1440, "h": 1280, "title": "Hồ sơ · /ho-so · Người mua 08 · 1440", "expand": "fill" },
+    "Profile375.dc.html": { "x": 1520, "y": 4260, "w": 375, "h": 2160, "title": "Hồ sơ · 375 · tài khoản Google" }
+  },
+  "order": [
+    "Main.dc.html",
+    "SignIn375.dc.html",
+    "FormStates.dc.html",
+    "Register.dc.html",
+    "Register375.dc.html",
+    "Welcome.dc.html",
+    "Welcome375.dc.html",
+    "Profile.dc.html",
+    "Profile375.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": null,
+      "copiedAt": "2026-10-27T09:00:00Z"
+    }
+  ]
+}

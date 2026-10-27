@@ -96,7 +96,9 @@ test("đăng ký → mua → học → nộp code → nhận chứng chỉ", asy
     await page.getByLabel("Mật khẩu").fill(PASSWORD);
     await snap(page, "01-dang-ky");
     await page.getByRole("button", { name: "Tạo tài khoản" }).click();
-    await page.waitForURL((url) => url.pathname === "/");
+    // A new account lands on the welcome page, greeted by name.
+    await page.waitForURL((url) => url.pathname === "/chao-mung");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("mình là Naomi");
   });
 
   await test.step("thêm khóa học vào giỏ", async () => {

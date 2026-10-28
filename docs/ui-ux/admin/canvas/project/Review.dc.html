@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quản trị — duyệt một khóa học</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1320px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #102029; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">QV</span>
+  </header>
+  <div style="box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+    <dc-import name="Sidebar" active="queue" hint-size="248px,720px"></dc-import>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <nav aria-label="Vị trí" style="font-size: 14px; color: #556670"><a href="Queue.dc.html" style="color: #066254; text-decoration: none">Duyệt khóa học</a> <span aria-hidden="true">/</span> Git từ số 0</nav>
+      <div style="display: flex; gap: 20px; align-items: flex-start">
+        <span aria-hidden="true" style="flex: none; width: 160px; height: 90px; border-radius: 14px; background: #ccf5ea; color: #074b40; display: inline-flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700">Git</span>
+        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center">
+            <h1 style="margin: 0; font-size: 28px; line-height: 36px; font-weight: 600; letter-spacing: -0.01em">Git từ số 0: làm việc nhóm không sợ xung đột</h1>
+            <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #fff4e9; color: #613700; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Chờ duyệt · 3 ngày</span>
+          </div>
+          <p style="margin: 0; font-size: 15px; color: #3e505a">Từ commit đầu tiên tới rebase, pull request và gỡ xung đột khi làm nhóm.</p>
+          <p style="margin: 0; font-size: 14px; color: #556670">Giảng viên: <span style="color: #102029; font-weight: 500">Nguyễn Mai Anh</span> · Công cụ › Git · Cơ bản · 349.000 ₫ · tạo 12/10/2026</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+        <div style="flex: 999 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+          <section style="padding: 18px 20px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; flex-direction: column; gap: 8px">
+            <h2 style="margin: 0; font-size: 17px; font-weight: 600">Mô tả</h2>
+            <p style="margin: 0; font-size: 15px; line-height: 25px; color: #3e505a">Khóa học dành cho người mới: cài Git, hiểu ba vùng làm việc, nhánh và cách gộp. Phần hai là làm việc nhóm trên GitHub: pull request, review, và xử lý xung đột không mất code.</p>
+            <p style="margin: 0; font-size: 14px; font-weight: 600; color: #102029">Học xong bạn sẽ</p>
+            <ul style="margin: 0; padding-left: 20px; font-size: 15px; line-height: 25px; color: #3e505a"><li>Dùng Git hằng ngày mà không phải tra lệnh</li><li>Gỡ được xung đột khi gộp nhánh</li></ul>
+          </section>
+
+          <section style="padding: 18px 20px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; flex-direction: column; gap: 12px">
+            <div style="display: flex; justify-content: space-between; align-items: baseline">
+              <h2 style="margin: 0; font-size: 17px; font-weight: 600">Nội dung</h2>
+              <span style="font-size: 14px; color: #556670">4 chương · 18 bài · 2 giờ 40 phút video</span>
+            </div>
+            <div style="border: 1px solid #e3eaee; border-radius: 10px; overflow: hidden">
+              <button type="button" aria-expanded="true" style="width: 100%; height: 48px; padding: 0 16px; border: 0; background: #f0f4f7; font: inherit; font-size: 15px; font-weight: 600; color: #102029; display: flex; align-items: center; gap: 10px; text-align: left"><span style="flex: 1">Chương 1 · Bắt đầu với Git</span><span style="font-size: 13px; font-weight: 400; color: #556670">3 video · 1 bài đọc · 1 quiz</span></button>
+              <ul style="list-style: none; margin: 0; padding: 0">
+                <li style="height: 48px; padding: 0 16px; border-top: 1px solid #e3eaee; display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="width: 64px; font-size: 12px; font-weight: 600; color: #556670; text-transform: uppercase; letter-spacing: 0.04em">Video</span><span style="flex: 1">Git là gì, vì sao cần</span><span style="font-size: 13px; color: #556670">6:12</span><a href="#" style="font-size: 14px; color: #066254">Xem</a></li>
+                <li style="height: 48px; padding: 0 16px; border-top: 1px solid #e3eaee; display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="width: 64px; font-size: 12px; font-weight: 600; color: #556670; text-transform: uppercase; letter-spacing: 0.04em">Video</span><span style="flex: 1">Cài Git và cấu hình lần đầu</span><span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #fff2f1; color: #a01e23; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Chuyển mã thất bại</span></li>
+                <li style="height: 48px; padding: 0 16px; border-top: 1px solid #e3eaee; display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="width: 64px; font-size: 12px; font-weight: 600; color: #556670; text-transform: uppercase; letter-spacing: 0.04em">Đọc</span><span style="flex: 1">Ba vùng: thư mục làm việc, staging, kho</span><span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #f0f4f7; color: #3e505a; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center">Học thử</span><a href="#" style="font-size: 14px; color: #066254">Đọc</a></li>
+                <li style="height: 48px; padding: 0 16px; border-top: 1px solid #e3eaee; display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="width: 64px; font-size: 12px; font-weight: 600; color: #556670; text-transform: uppercase; letter-spacing: 0.04em">Video</span><span style="flex: 1">Commit đầu tiên</span><span style="font-size: 13px; color: #556670">9:40</span><a href="#" style="font-size: 14px; color: #066254">Xem</a></li>
+                <li style="height: 48px; padding: 0 16px; border-top: 1px solid #e3eaee; display: flex; align-items: center; gap: 12px; font-size: 15px"><span style="width: 64px; font-size: 12px; font-weight: 600; color: #556670; text-transform: uppercase; letter-spacing: 0.04em">Quiz</span><span style="flex: 1">Kiểm tra chương 1</span><span style="font-size: 13px; color: #556670">5 câu</span></li>
+              </ul>
+            </div>
+            <button type="button" aria-expanded="false" style="height: 48px; padding: 0 16px; border-radius: 10px; border: 1px solid #e3eaee; background: #ffffff; font: inherit; font-size: 15px; font-weight: 600; color: #102029; display: flex; align-items: center; text-align: left"><span style="flex: 1">Chương 2 · Nhánh và gộp nhánh</span><span style="font-size: 13px; font-weight: 400; color: #556670">4 video · 1 bài code</span></button>
+            <button type="button" aria-expanded="false" style="height: 48px; padding: 0 16px; border-radius: 10px; border: 1px solid #e3eaee; background: #ffffff; font: inherit; font-size: 15px; font-weight: 600; color: #102029; display: flex; align-items: center; text-align: left"><span style="flex: 1">Chương 3 · Làm việc nhóm trên GitHub</span><span style="font-size: 13px; font-weight: 400; color: #556670">4 video · 1 bài đọc</span></button>
+            <button type="button" aria-expanded="false" style="height: 48px; padding: 0 16px; border-radius: 10px; border: 1px solid #e3eaee; background: #ffffff; font: inherit; font-size: 15px; font-weight: 600; color: #102029; display: flex; align-items: center; text-align: left"><span style="flex: 1">Chương 4 · Gỡ xung đột</span><span style="font-size: 13px; font-weight: 400; color: #556670">2 video · 1 quiz</span></button>
+          </section>
+        </div>
+
+        <!-- The decision stays beside the content while the admin scrolls it -->
+        <aside aria-labelledby="decision-title" style="flex: 1 1 300px; max-width: 340px; display: flex; flex-direction: column; gap: 16px">
+          <section style="padding: 18px 20px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; flex-direction: column; gap: 10px">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600">Kiểm tra nhanh</h2>
+            <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px">
+              <li style="display: flex; gap: 8px; color: #194f29"><span aria-hidden="true">✓</span><span style="color: #3e505a">Có mô tả và mục “Học xong bạn sẽ”</span></li>
+              <li style="display: flex; gap: 8px; color: #194f29"><span aria-hidden="true">✓</span><span style="color: #3e505a">Mỗi chương đều có bài</span></li>
+              <li style="display: flex; gap: 8px; color: #a01e23"><span aria-hidden="true">!</span><span style="color: #102029">1 video chuyển mã thất bại — học viên sẽ không xem được</span></li>
+            </ul>
+            <p style="margin: 0; font-size: 13px; color: #556670">Chỉ để gợi ý; quyết định là của bạn.</p>
+          </section>
+
+          <section style="padding: 18px 20px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; flex-direction: column; gap: 14px">
+            <h2 id="decision-title" style="margin: 0; font-size: 17px; font-weight: 600">Quyết định</h2>
+            <button type="button" style="height: 40px; border-radius: 10px; border: 0; background: #007967; font: inherit; font-size: 15px; font-weight: 600; color: #ffffff">Duyệt và xuất bản</button>
+            <p style="margin: -6px 0 0; font-size: 13px; line-height: 20px; color: #556670">Khóa học hiện công khai ngay; giảng viên nhận thông báo.</p>
+            <div style="height: 1px; background: #e3eaee"></div>
+            <div style="display: flex; flex-direction: column; gap: 8px">
+              <label for="reject" style="font-size: 14px; font-weight: 600">Lý do từ chối</label>
+              <textarea id="reject" rows="4" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border-radius: 10px; border: 2px solid #007967; background: #ffffff; font: inherit; font-size: 15px; line-height: 23px; color: #102029; resize: vertical">Video “Cài Git và cấu hình lần đầu” không phát được. Tải lại video rồi gửi duyệt lần nữa nhé.</textarea>
+              <span style="font-size: 13px; color: #556670">Giảng viên đọc nguyên văn câu này.</span>
+              <div style="display: flex; gap: 8px">
+                <button type="button" style="flex: 1; height: 36px; border-radius: 10px; border: 1px solid #a01e23; background: #ffffff; font: inherit; font-size: 14px; font-weight: 600; color: #a01e23">Gửi từ chối</button>
+                <button type="button" style="height: 36px; padding: 0 14px; border-radius: 10px; border: 0; background: transparent; font: inherit; font-size: 14px; color: #3e505a">Hủy</button>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

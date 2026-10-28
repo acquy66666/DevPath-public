@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quản trị — duyệt khóa học</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1000px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #102029; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">QV</span>
+  </header>
+  <div style="box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+    <dc-import name="Sidebar" active="queue" hint-size="248px,720px"></dc-import>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <div>
+        <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 600; letter-spacing: -0.01em">Duyệt khóa học</h1>
+        <p style="margin: 4px 0 0; font-size: 15px; line-height: 24px; color: #556670">Khóa học chỉ hiện với học viên sau khi được duyệt. Chờ lâu nhất đứng đầu.</p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+        <div role="group" aria-label="Lọc theo trạng thái" style="display: flex; flex-wrap: wrap; gap: 8px">
+          <button type="button" aria-pressed="true" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #007967; background: #e7fbf6; font: inherit; font-size: 14px; font-weight: 600; color: #074b40; display: inline-flex; align-items: center; gap: 8px">Chờ duyệt<span style="font-variant-numeric: tabular-nums">2</span></button>
+          <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; color: #3e505a">Đang bán</button>
+          <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; color: #3e505a">Bị từ chối</button>
+          <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; color: #3e505a">Bản nháp</button>
+          <button type="button" aria-pressed="false" style="height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; color: #3e505a">Tất cả</button>
+        </div>
+        <form role="search" style="flex: 1 1 280px; display: flex; gap: 8px">
+          <label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Tìm khóa học</label>
+          <input id="q" type="search" placeholder="Tên khóa học, tên hoặc email giảng viên" style="box-sizing: border-box; flex: 1; min-width: 0; height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 15px; color: #102029">
+          <button type="submit" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; color: #102029">Tìm</button>
+        </form>
+      </div>
+
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+        <li style="padding: 16px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; gap: 16px; align-items: center">
+          <span aria-hidden="true" style="flex: none; width: 128px; height: 72px; border-radius: 10px; background: #ccf5ea; color: #074b40; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700">Git</span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <a href="Review.dc.html" style="font-size: 17px; font-weight: 600; color: #102029; text-decoration: none">Git từ số 0: làm việc nhóm không sợ xung đột</a>
+              <span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #fff4e9; color: #613700; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Chờ duyệt</span>
+            </div>
+            <span style="font-size: 14px; color: #3e505a">Nguyễn Mai Anh · mai.nguyen@devpath.example</span>
+            <span style="font-size: 13px; color: #556670">Gửi duyệt 26/10 · <span style="color: #613700; font-weight: 500">chờ 3 ngày</span> · 4 chương · 18 bài · 349.000 ₫</span>
+          </div>
+          <a href="Review.dc.html" style="flex: none; height: 36px; padding: 0 16px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center">Xem và duyệt</a>
+        </li>
+        <li style="padding: 16px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; gap: 16px; align-items: center">
+          <span aria-hidden="true" style="flex: none; width: 128px; height: 72px; border-radius: 10px; background: #f0f6ff; color: #10427b; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 700">SQL</span>
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <a href="#" style="font-size: 17px; font-weight: 600; color: #102029; text-decoration: none">SQL thực chiến với PostgreSQL</a>
+              <span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #fff4e9; color: #613700; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center">Chờ duyệt</span>
+              <span style="height: 22px; padding: 0 8px; border-radius: 11px; background: #f0f4f7; color: #3e505a; font-size: 12px; font-weight: 500; display: inline-flex; align-items: center">Gửi lại sau khi bị từ chối</span>
+            </div>
+            <span style="font-size: 14px; color: #3e505a">Trần Minh Khoa · khoa.tran@devpath.example</span>
+            <span style="font-size: 13px; color: #556670">Gửi duyệt 28/10 · chờ 1 ngày · 6 chương · 31 bài · Miễn phí</span>
+          </div>
+          <a href="#" style="flex: none; height: 36px; padding: 0 16px; border-radius: 10px; background: #007967; color: #ffffff; font-size: 14px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center">Xem và duyệt</a>
+        </li>
+      </ul>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+[
+  {
+    "name": "Hàng đợi trống: bỏ qua, CSDL dev đang có khóa chờ duyệt",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thanh bên: 12 mục trong 4 nhóm, “Tổng quan” là trang hiện tại",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thanh bên: “Duyệt khóa học” đếm ít nhất 2 khóa chờ",
+    "ok": true,
+    "detail": "Duyệt khóa học 2 đang chờ"
+  },
+  {
+    "name": "Thanh bên nằm cạnh nội dung ở 1440 px (không chiếm một hàng riêng)",
+    "ok": true,
+    "detail": "105 / 105"
+  },
+  {
+    "name": "Cần xử lý: 3 thẻ, thẻ đầu gọi tên khóa chờ lâu nhất",
+    "ok": true,
+    "detail": "Khóa học chờ duyệt 2 Chờ lâu nhất: “Git từ số 0: làm việc nhóm không sợ xung đột”, chờ 4 ngày Mở hàng đợi →"
+  },
+  {
+    "name": "Tổng quan: không có Naomi",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hàng đợi: chip “Chờ duyệt” đang nhấn",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Hàng đợi: khóa chờ 4 ngày ghi “chờ 4 ngày”",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Đổi chip “Đang bán”: khóa chờ duyệt rời danh sách",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Trang duyệt: đường dẫn vị trí về hàng đợi + h1 là tên khóa",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thanh bên: trang duyệt thuộc mục “Duyệt khóa học”",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Kiểm tra nhanh (khóa đủ): 4/4 đạt",
+    "ok": true,
+    "detail": "4"
+  },
+  {
+    "name": "Kiểm tra nhanh (khóa thiếu): 4/4 chưa có, nút duyệt vẫn bấm được",
+    "ok": true,
+    "detail": "4"
+  },
+  {
+    "name": "Báo cáo: tab “Hàng đợi” đang nhấn",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Ô chọn ở thanh lọc cao ≥ 40 px (không cắt dấu)",
+    "ok": true,
+    "detail": "40"
+  },
+  {
+    "name": "Báo cáo: thấy nguyên văn đánh giá bị báo cáo",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Khóa: hỏi lại bằng hộp thoại",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Esc đóng hộp thoại, tài khoản chưa bị khóa",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "375 px: thanh bên gập thành một nút ghi tên trang",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Bấm nút: mở đủ 12 mục",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Esc gập lại và trả focus về nút",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "375 px: nút khóa nằm trong màn hình",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tổng quan: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Tổng quan: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Duyệt khóa học: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Duyệt khóa học: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Báo cáo vi phạm: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Báo cáo vi phạm: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Người dùng: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Người dùng: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Doanh thu: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Doanh thu: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Xếp hạng: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Xếp hạng: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Cấp giảng viên: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Cấp giảng viên: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Thanh toán giảng viên: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Thanh toán giảng viên: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Lợi nhuận: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Lợi nhuận: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Danh mục: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Danh mục: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Mã giảm giá: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Mã giảm giá: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Banner: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Banner: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  },
+  {
+    "name": "Trang duyệt: axe 0 lỗi critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "name": "Trang duyệt: 360/375/1440 px không tràn ngang",
+    "ok": true,
+    "detail": "{\"360\":0,\"375\":0,\"1440\":0}"
+  }
+]

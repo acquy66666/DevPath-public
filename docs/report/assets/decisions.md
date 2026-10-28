@@ -1044,3 +1044,23 @@ Nhóm màn 9 của Phase 7. Bằng chứng: `docs/report/assets/phase-7/instruct
 **Thanh tỉ lệ chưa có số không còn là `meter`.** Khóa chưa ai học có tỉ lệ `null`; `role="meter"` thiếu `aria-valuenow` là lỗi axe `aria-required-attr` (serious) — có từ Phase 6.5, lộ ra khi kiểm trang thống kê của một giảng viên mới. Giờ thanh đó là trang trí (`aria-hidden`), chữ "—" bên cạnh nói đủ.
 
 **`giang-day/loading.tsx` hỏi đường dẫn.** Tệp này bọc mọi route giảng viên không có `loading.tsx` riêng (soạn khóa, tạo khóa, cấp bậc) nhưng trước đây luôn vẽ skeleton của danh sách; giờ dùng `instructorSkeletonFor(pathname)` như cổng.
+
+## Khu quản trị: thanh bên chia nhóm, việc cần xử lý lên đầu, khóa tài khoản phải hỏi lại (29/10/2026)
+
+Nhóm màn 10 của Phase 7, cũng là nhóm cuối. Bằng chứng: `docs/report/assets/phase-7/admin.md` + `admin/`. Backend không đổi.
+
+**Thanh bên chia nhóm thay cho hàng tab.** Bản "trước" (`phase-7/before.md`) đo được hàng tab quản trị tràn ở 1440 px. Từ Phase 6.5 khu này có 12 mục, nên tab ngang không cứu được. Giờ 12 mục chia 4 nhóm: Tổng quan · Kiểm duyệt (Duyệt khóa học, Báo cáo vi phạm, Người dùng) · Tài chính (5 mục) · Nội dung sàn (Danh mục, Mã giảm giá, Banner). Việc cần quyết đứng trước tiền và cấu hình. Từ `lg` thanh bên nằm cạnh màn, dính đầu trang. Dưới `lg` nó gập thành một nút ghi tên mục đang mở kèm tổng số việc chờ; bấm thì mở cùng danh sách, Esc gập lại và trả focus về nút. Danh sách nhóm và luật "đường dẫn thuộc mục nào" nằm ở `lib/admin/admin-view.ts`: trang duyệt một khóa thuộc "Duyệt khóa học", bảng kê thuộc "Thanh toán giảng viên", còn `/quan-tri` chỉ là chính nó. Logic này có test.
+
+**Khung cùng bề rộng với header.** Khung admin là `max-w-6xl` như header, thanh bên lùi `-ml-3` để chữ trong mục thẳng mép với logo. Bản đầu dùng `max-w-7xl` cho nội dung rộng hơn, nhưng mép thanh bên lệch logo 52 px, nên đã bỏ. Bảng tài chính 12 tháng vốn đã rộng hơn khung, từ trước tới giờ vẫn cuộn ngang trong khung riêng.
+
+**Tổng quan bắt đầu bằng "Cần xử lý".** Có ba thẻ: khóa chờ duyệt (kèm tên khóa chờ lâu nhất, lấy từ đầu hàng đợi vốn được sắp chờ lâu nhất trước), báo cáo chờ xử lý, tài khoản đang khóa. Thẻ thứ ba vẽ nhạt vì chỉ để biết. Số lấy từ `GET /admin/summary` có sẵn, không thêm endpoint. Mockup ghi "Mới nhất: đánh giá · nội dung xúc phạm" cho thẻ báo cáo; bản code ghi luật đóng báo cáo thay vào, để khỏi gọi thêm một API chỉ vì một dòng chữ.
+
+**Số ngày chờ đếm từ `updated_at`.** Backend không có cột "gửi duyệt lúc". Khóa ở `pending_review` thì giảng viên không sửa được, nên `updated_at` chính là lúc gửi. Chờ từ 3 ngày (`LONG_WAIT_DAYS`) thì chữ chuyển sang `warning-text`. Badge "Chờ duyệt" giữ màu `info` của `CourseStatusBadge` dùng chung (mockup vẽ cam), để một trạng thái chỉ có một màu trên toàn site.
+
+**"Kiểm tra nhanh" ở trang duyệt dùng lại đúng bốn gợi ý của giảng viên** (`reviewChecklist` ở `lib/instructor/teaching-view.ts`). Hai bên thấy cùng một thước đo, và nút duyệt không bị khóa. Mockup có thêm dòng "video chuyển mã thất bại". Danh sách mục lục không mang trạng thái video, nên muốn có dòng đó phải gọi API cho từng bài. Dòng này bị bỏ; lỗi video vẫn hiện khi mở bài đó.
+
+**Khóa tài khoản hỏi lại bằng hộp thoại; mở khóa thì không.** Trước đây câu hỏi nằm ngay trong dòng. Giờ là `Dialog`: nó nói người đó bị đăng xuất khỏi mọi thiết bị và khóa học đang bán của họ giữ nguyên. Mở khóa chỉ trả lại quyền truy cập nên làm luôn. Danh sách người dùng là bảng từ `md`; dưới `md` là thẻ, vì bảng 5 cột trên điện thoại đẩy nút "Khóa" ra ngoài màn hình (thấy trong ảnh 375 lần chụp đầu).
+
+**Lọc bằng chip thay cho ô chọn** ở hàng đợi duyệt và mã giảm giá (`components/admin/filter-chips.tsx`, cùng kiểu với danh sách khóa của giảng viên). Ô chọn còn lại (loại nội dung báo cáo, vai trò, trạng thái tài khoản, các bộ lọc tài chính) bỏ `h-9`. Ô bị ép 36 px cắt dấu tiếng Việt (ghi từ nhóm "Trạng thái toàn site"); giờ ô cao 40 px theo design system, `check.cjs` đo.
+
+**Hai lỗi axe có sẵn được sửa.** Dải sao của đánh giá bị báo cáo có `aria-label` gắn trên `<p>` (`aria-prohibited-attr`), giờ thành `role="img"`. Bảng lãi lỗ 12 tháng cuộn ngang mà bàn phím không vào được (`scrollable-region-focusable`), giờ khung cuộn là `role="region"` có tên và `tabIndex={0}`.

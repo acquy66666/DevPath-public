@@ -1,0 +1,39 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-10-29T09:00:00Z" },
+  "title": "DevPath — Nhóm 10: Quản trị",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1440, "h": 1260, "title": "Tổng quan · /quan-tri · thanh bên nhóm mục + việc cần xử lý · 1440", "expand": "fill" },
+    "Overview375.dc.html": { "x": 1520, "y": 0, "w": 375, "h": 1700, "title": "Tổng quan · 375 · menu mục quản trị đang mở" },
+    "States.dc.html": { "x": 1975, "y": 0, "w": 1440, "h": 1000, "title": "Trạng thái trống · hàng đợi trống · tìm không thấy · chưa có banner", "expand": "fill" },
+    "Queue.dc.html": { "x": 0, "y": 1380, "w": 1440, "h": 1000, "title": "Duyệt khóa học · Chờ duyệt · chờ lâu nhất đứng đầu", "expand": "fill" },
+    "Review.dc.html": { "x": 1520, "y": 1380, "w": 1440, "h": 1320, "title": "Duyệt một khóa · cột Quyết định · đang viết lý do từ chối", "expand": "fill" },
+    "Reports.dc.html": { "x": 0, "y": 2820, "w": 1440, "h": 1160, "title": "Báo cáo vi phạm · Chờ xử lý · một báo cáo đang mở", "expand": "fill" },
+    "Users.dc.html": { "x": 1520, "y": 2820, "w": 1440, "h": 1000, "title": "Người dùng · lọc vai trò/trạng thái · hộp thoại khóa", "expand": "fill" },
+    "Coupons.dc.html": { "x": 0, "y": 4100, "w": 1440, "h": 1040, "title": "Mã giảm giá · trạng thái theo thời gian + lượt dùng", "expand": "fill" },
+    "Sidebar.dc.html": { "x": 3495, "y": 0, "w": 248, "h": 720, "title": "Component · thanh bên quản trị (4 nhóm, 12 mục)" }
+  },
+  "order": [
+    "Main.dc.html",
+    "Overview375.dc.html",
+    "States.dc.html",
+    "Queue.dc.html",
+    "Review.dc.html",
+    "Reports.dc.html",
+    "Users.dc.html",
+    "Coupons.dc.html",
+    "Sidebar.dc.html"
+  ],
+  "notes": {},
+  "designSystems": [
+    {
+      "title": "DevPath",
+      "namespace": "devpath",
+      "artifact": "https://claude.ai/artifact/EYuvEMN1fJ2pJpZiNp3S3Q",
+      "version": null,
+      "copiedAt": "2026-10-29T09:00:00Z"
+    }
+  ]
+}

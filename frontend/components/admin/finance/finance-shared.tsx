@@ -79,7 +79,7 @@ export function DateRangePicker({
           onChange={(event) =>
             event.target.value && onChange({ ...value, start: event.target.value })
           }
-          className="h-9 w-40"
+          className="w-40"
         />
       </div>
       <div className="space-y-1">
@@ -92,7 +92,7 @@ export function DateRangePicker({
           value={value.end}
           min={value.start}
           onChange={(event) => event.target.value && onChange({ ...value, end: event.target.value })}
-          className="h-9 w-40"
+          className="w-40"
         />
       </div>
       <div role="group" aria-label="Khoảng có sẵn" className="flex flex-wrap gap-1">

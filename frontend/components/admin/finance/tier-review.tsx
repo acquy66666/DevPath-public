@@ -45,8 +45,8 @@ import { money } from "./finance-shared";
 const TIERS_KEY = [...ADMIN_KEY, "tiers"] as const;
 
 const FLAGS: Record<TierFlag, { label: string; tone: string }> = {
-  eligible: { label: "Đủ điều kiện lên cấp", tone: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" },
-  below_maintenance: { label: "Dưới ngưỡng duy trì", tone: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
+  eligible: { label: "Đủ điều kiện lên cấp", tone: "bg-success-soft text-success-text" },
+  below_maintenance: { label: "Dưới ngưỡng duy trì", tone: "bg-warning-soft text-warning-text" },
   recently_changed: { label: "Vừa đổi cấp < 6 tháng", tone: "bg-muted text-muted-foreground" },
   top_tier_skips_a_step: { label: "Đề xuất vượt cấp lên cao nhất", tone: "bg-muted text-muted-foreground" },
 };
@@ -86,10 +86,10 @@ export function TierReview() {
     <section className="space-y-6" aria-labelledby="tiers-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="tiers-title" className="font-semibold">
+          <h1 id="tiers-title" className="text-h2 text-pretty sm:text-h1">
             Cấp giảng viên
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             Hệ thống đề xuất cấp cao nhất mà mọi tiêu chí đều đạt; quản trị viên quyết định. Tỉ lệ
             mới áp dụng cho đơn thanh toán từ lúc đổi.
           </p>
@@ -100,7 +100,7 @@ export function TierReview() {
       {tiers.data ? (
         <ol className="grid gap-2 sm:grid-cols-5" aria-label="Bậc thang">
           {tiers.data.map((tier) => (
-            <li key={tier.id} className="rounded-lg border p-3 text-sm">
+            <li key={tier.id} className="rounded-lg border bg-card p-3 text-sm">
               <div className="flex items-start justify-between gap-1">
                 <span>
                   <span className="text-xs text-muted-foreground">Cấp {tier.rank}</span>
@@ -195,7 +195,7 @@ function EvaluationRow({ row, onDecide }: { row: Evaluation; onDecide: () => voi
   });
 
   return (
-    <li className="rounded-lg border">
+    <li className="rounded-lg border bg-card">
       <div className="flex flex-wrap items-start justify-between gap-3 p-4">
         <div className="min-w-0">
           <p className="font-medium">{row.instructor.full_name}</p>
@@ -270,7 +270,7 @@ function EvaluationRow({ row, onDecide }: { row: Evaluation; onDecide: () => voi
             {history.data && history.data.length > 0 ? (
               <ul className="space-y-2 text-sm">
                 {history.data.map((change) => (
-                  <li key={change.id} className="rounded-md bg-muted/40 p-2">
+                  <li key={change.id} className="rounded-md bg-muted p-2">
                     <span className="font-medium">
                       {change.from_tier?.name ?? "Khởi hành"} → {change.to_tier.name}
                     </span>{" "}
@@ -298,7 +298,7 @@ function Metric({ label, value, warn }: { label: string; value: string; warn?: b
   return (
     <div className="flex justify-between gap-2">
       <dt className="text-muted-foreground">{label}</dt>
-      <dd className={cn("tabular-nums", warn && "font-medium text-red-700 dark:text-red-400")}>{value}</dd>
+      <dd className={cn("tabular-nums", warn && "font-medium text-destructive-text")}>{value}</dd>
     </div>
   );
 }

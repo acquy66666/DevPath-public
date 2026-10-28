@@ -132,7 +132,13 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Lỗi tìm ra:** thanh tỉ lệ `role="meter"` không có giá trị ở thống kê (axe serious, có từ Phase 6.5); `loading.tsx` vẽ skeleton danh sách cho mọi route con.
   - **Kiểm:** `npm test` 139/139 (6 mới), lint sạch, `check.cjs` 35/35, tràn ngang 0/138, CLS trang giảng viên < 0,1 (soạn khóa 0,111 → 0,040), E2E 1 passed, `next build` không mạng xanh. Ảnh trước/sau 14 + 14.
   - Bằng chứng: [`instructor.md`](../report/assets/phase-7/instructor.md)
-- [ ] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state
+- [x] Nhóm 10 — Admin: tổng quan, duyệt, báo cáo, người dùng, danh mục/mã giảm giá/banner. Nhân vật chỉ ở empty state — xong 29/10:
+  - **Mockup:** [artifact Design](https://claude.ai/artifact/XvGnpgHB1uBCCvuGjgkv67), 8 artboard + component thanh bên; bản repo `docs/ui-ux/admin/canvas/`. User duyệt 29/10.
+  - **Khung:** thanh bên 4 nhóm / 12 mục (thay hàng tab tràn ở 1440 px), dưới `lg` gập thành một nút; khung cùng bề rộng header; mỗi màn một `h1` (`AdminTitle`); skeleton theo khung mới. Logic ở `lib/admin/admin-view.ts`.
+  - **Màn:** tổng quan có "Cần xử lý" (khóa chờ lâu nhất + số ngày); hàng đợi chip lọc + "chờ N ngày"; trang duyệt có đường dẫn vị trí + "Kiểm tra nhanh" (gợi ý của giảng viên); báo cáo có tab + badge theo mức nặng; người dùng là bảng (thẻ dưới `md`) + hộp thoại khóa; mã giảm giá chip + thanh lượt; danh mục/banner/5 trang tài chính theo token.
+  - **Lỗi tìm ra:** ô chọn thanh lọc cắt dấu (`h-9`); axe `aria-prohibited-attr` (dải sao) và `scrollable-region-focusable` (bảng lãi lỗ), có từ trước.
+  - **Kiểm:** `npm test` 144/144 (5 mới), lint sạch, `check.cjs` 48/48 (axe + tràn ngang trên 13 màn), tràn ngang 0/138, CLS admin < 0,1, E2E 1 passed, `next build` không mạng xanh. Ảnh trước/sau 23 + 25.
+  - Bằng chứng: [`admin.md`](../report/assets/phase-7/admin.md)
 
 ## Chuyển động và chất lượng
 

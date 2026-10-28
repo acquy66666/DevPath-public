@@ -120,17 +120,17 @@ export function RevenuePage() {
     <section className="space-y-6" aria-labelledby="revenue-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="revenue-title" className="font-semibold">
+          <h1 id="revenue-title" className="text-h2 text-pretty sm:text-h1">
             Doanh thu theo thời gian
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             Theo lúc đơn được thanh toán, giờ Việt Nam. So với khoảng cùng độ dài ngay trước.
           </p>
         </div>
         <ExportButton path={revenuePath(params, "/export.xlsx")} filename="devpath_doanh-thu.xlsx" />
       </div>
 
-      <div className="flex flex-wrap items-end gap-4 rounded-lg border p-4">
+      <div className="flex flex-wrap items-end gap-4 rounded-lg border bg-card p-4">
         <DateRangePicker value={range} onChange={setRange} />
         <div className="space-y-1">
           <Label htmlFor="granularity" className="text-xs">
@@ -140,7 +140,7 @@ export function RevenuePage() {
             id="granularity"
             value={effective}
             onChange={(event) => setGranularity(event.target.value as FinanceGranularity)}
-            className="h-9 w-28"
+            className="w-28"
           >
             {GRANULARITIES.map((option) => (
               <option key={option.value} value={option.value} disabled={span > option.maxDays}>
@@ -157,7 +157,7 @@ export function RevenuePage() {
             id="instructor"
             value={instructorId}
             onChange={(event) => setInstructorId(event.target.value)}
-            className="h-9"
+           
           >
             <option value="">Toàn sàn</option>
             {(instructors.data ?? []).map((row) => (

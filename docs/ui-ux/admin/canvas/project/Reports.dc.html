@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Quản trị — báo cáo vi phạm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#066254}a:hover{color:#074b40}
+</style>
+</helmet>
+<div style="box-sizing: border-box; min-height: 1160px; background: #f8fafc; font-family: 'Lexend', 'Segoe UI', system-ui, sans-serif; color: #102029; display: flex; flex-direction: column">
+  <header style="box-sizing: border-box; height: 64px; border-bottom: 1px solid #e3eaee; background: #ffffff; display: flex; align-items: center; padding: 0 32px; gap: 28px">
+    <a href="#" style="font-size: 20px; font-weight: 700; text-decoration: none; color: #102029">Dev<span style="color: #007967">Path</span></a>
+    <nav style="display: flex; gap: 20px; font-size: 15px"><a href="#" style="text-decoration: none; color: #3e505a">Khóa học</a><a href="#" style="text-decoration: none; color: #3e505a">Bảng xếp hạng</a></nav>
+    <span style="flex: 1"></span>
+    <span style="width: 36px; height: 36px; border-radius: 18px; background: #102029; color: #ffffff; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600">QV</span>
+  </header>
+  <div style="box-sizing: border-box; width: 100%; max-width: 1320px; margin: 0 auto; padding: 32px 32px 56px; display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start">
+    <dc-import name="Sidebar" active="reports" hint-size="248px,720px"></dc-import>
+    <main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+      <div>
+        <h1 style="margin: 0; font-size: 30px; line-height: 38px; font-weight: 600; letter-spacing: -0.01em">Báo cáo vi phạm</h1>
+        <p style="margin: 4px 0 0; font-size: 15px; line-height: 24px; color: #556670">Học viên báo cáo khóa học, đánh giá hoặc nội dung hỏi đáp. Một quyết định đóng mọi báo cáo về cùng nội dung.</p>
+      </div>
+
+      <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between">
+        <div role="tablist" aria-label="Báo cáo" style="display: flex; gap: 4px; border-bottom: 1px solid #e3eaee">
+          <button type="button" role="tab" aria-selected="true" style="height: 44px; padding: 0 12px; border: 0; border-bottom: 2px solid #007967; background: none; font: inherit; font-size: 15px; font-weight: 600; color: #102029; display: inline-flex; align-items: center; gap: 8px">Hàng đợi<span style="min-width: 22px; height: 22px; padding: 0 7px; box-sizing: border-box; border-radius: 11px; background: #007967; color: #ffffff; font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center">2</span></button>
+          <button type="button" role="tab" aria-selected="false" style="height: 44px; padding: 0 12px; border: 0; border-bottom: 2px solid transparent; background: none; font: inherit; font-size: 15px; color: #3e505a">Đã xử lý</button>
+        </div>
+        <label style="display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: #3e505a">Loại nội dung
+          <select style="height: 40px; padding: 0 12px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 15px; color: #102029"><option>Mọi loại nội dung</option></select>
+        </label>
+      </div>
+
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+        <li style="border-radius: 14px; background: #ffffff; border: 1px solid #007967; box-shadow: 0 0 0 3px #e7fbf6; display: flex; flex-direction: column">
+          <div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #f0f4f7; color: #3e505a; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center">Đánh giá</span>
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #fff2f1; color: #a01e23; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Nội dung xúc phạm</span>
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #f0f6ff; color: #10427b; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Đang xem xét</span>
+              <span style="flex: 1"></span>
+              <span style="font-size: 13px; color: #556670">2 người báo cáo · gần nhất 28/10, 21:14</span>
+            </div>
+            <p style="margin: 0; font-size: 14px; color: #556670">Trên khóa <a href="#" style="color: #066254">Cấu trúc dữ liệu &amp; giải thuật với Python</a> · Tác giả: <span style="color: #102029">Lê Hoàng</span> · ★ 1</p>
+            <blockquote style="margin: 0; padding: 12px 16px; border-radius: 10px; background: #f0f4f7; font-size: 15px; line-height: 24px; color: #102029">[Nội dung đánh giá bị báo cáo hiện nguyên văn ở đây, để admin đọc trước khi quyết định.]</blockquote>
+            <p style="margin: 0; font-size: 14px; color: #3e505a"><span style="color: #556670">Người báo cáo:</span> Phạm Thu · “Lời lẽ công kích giảng viên, không nói gì về khóa học.”</p>
+          </div>
+          <div style="padding: 16px 20px; border-top: 1px solid #e3eaee; background: #f8fafc; border-radius: 0 0 14px 14px; display: flex; flex-direction: column; gap: 12px">
+            <label style="display: flex; gap: 10px; align-items: center; font-size: 15px"><input type="checkbox" checked style="width: 18px; height: 18px; accent-color: #007967; margin: 0">Xóa đánh giá này khỏi khóa học</label>
+            <label for="note" style="font-size: 14px; font-weight: 600">Ghi chú xử lý <span style="font-weight: 400; color: #556670">(không bắt buộc)</span></label>
+            <textarea id="note" rows="2" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 15px; color: #102029; resize: vertical"></textarea>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px">
+              <button type="button" style="height: 36px; padding: 0 16px; border-radius: 10px; border: 0; background: #a01e23; font: inherit; font-size: 14px; font-weight: 600; color: #ffffff">Xác nhận vi phạm</button>
+              <button type="button" style="height: 36px; padding: 0 16px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; color: #102029">Bỏ qua, không vi phạm</button>
+            </div>
+          </div>
+        </li>
+
+        <li style="padding: 18px 20px; border-radius: 14px; background: #ffffff; border: 1px solid #e3eaee; display: flex; flex-wrap: wrap; gap: 12px; align-items: center">
+          <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center">
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #f0f4f7; color: #3e505a; font-size: 13px; font-weight: 500; display: inline-flex; align-items: center">Câu hỏi Hỏi đáp</span>
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #fff4e9; color: #613700; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Spam</span>
+              <span style="height: 24px; padding: 0 10px; border-radius: 12px; background: #e7fbf6; color: #074b40; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center">Mới</span>
+            </div>
+            <span style="font-size: 15px; font-weight: 500">“Ai cần tài liệu ôn thi thì inbox mình nhé”</span>
+            <span style="font-size: 13px; color: #556670">Bài “Danh sách liên kết” · khóa Cấu trúc dữ liệu &amp; giải thuật với Python · 1 người báo cáo · 29/10, 08:02</span>
+          </div>
+          <button type="button" style="height: 36px; padding: 0 16px; border-radius: 10px; border: 1px solid #d2dbe0; background: #ffffff; font: inherit; font-size: 14px; font-weight: 500; color: #102029">Bắt đầu xem xét</button>
+        </li>
+      </ul>
+    </main>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1160}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

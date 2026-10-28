@@ -5,8 +5,8 @@ import { ExternalLink, Loader2, Lock, Star } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
-import { ADMIN_KEY } from "@/components/admin/admin-nav";
-import { EmptyState, ListSkeleton, PersonLine } from "@/components/admin/admin-shared";
+import { ADMIN_KEY, useAdminSummary } from "@/components/admin/admin-nav";
+import { AdminTitle, EmptyState, ListSkeleton, PersonLine } from "@/components/admin/admin-shared";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ import {
   type ReportQueue,
 } from "@/lib/api/admin";
 import { apiErrorMessage } from "@/lib/api/error-messages";
-import { REPORT_REASON_LABELS, type ReportTargetType } from "@/lib/api/reports";
+import { REPORT_REASON_LABELS, type ReportReason, type ReportTargetType } from "@/lib/api/reports";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { formatRelativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,24 @@ const STATUS_LABELS: Record<AdminReport["status"], string> = {
   dismissed: "Không vi phạm",
 };
 
+type Tone = "destructive" | "warning" | "muted" | "secondary" | "info" | "success";
+
+/** How serious a reason reads: an insult is red, misleading or spam orange, the rest plain. */
+const REASON_VARIANTS: Record<ReportReason, Tone> = {
+  offensive: "destructive",
+  spam: "warning",
+  misleading: "warning",
+  copyright: "muted",
+  other: "muted",
+};
+
+const STATUS_VARIANTS: Record<AdminReport["status"], Tone> = {
+  open: "secondary",
+  reviewing: "info",
+  resolved: "success",
+  dismissed: "muted",
+};
+
 const NOTE_MAX_LENGTH = 1000;
 
 /**
@@ -64,6 +82,7 @@ export function AdminReportQueue() {
   const [targetType, setTargetType] = useState<ReportTargetType | null>(null);
   const [page, setPage] = useState(1);
 
+  const summary = useAdminSummary();
   const reports = useQuery({
     queryKey: [...ADMIN_KEY, "reports", queue, targetType, page],
     queryFn: () => listAdminReports(accessToken as string, { status: queue, targetType, page }),
@@ -72,16 +91,18 @@ export function AdminReportQueue() {
   });
 
   return (
-    <section className="space-y-4" aria-labelledby="admin-reports-title">
-      <h2 id="admin-reports-title" className="sr-only">
-        Báo cáo vi phạm
-      </h2>
+    <section className="space-y-5" aria-labelledby="admin-reports-title">
+      <AdminTitle
+        id="admin-reports-title"
+        title="Báo cáo vi phạm"
+        description="Học viên báo cáo khóa học, đánh giá hoặc nội dung hỏi đáp. Một quyết định đóng mọi báo cáo về cùng nội dung."
+      />
 
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Hàng đợi">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="relative flex gap-1 border-b" role="group" aria-label="Hàng đợi">
           {(
             [
-              ["pending", "Chờ xử lý"],
+              ["pending", "Hàng đợi"],
               ["closed", "Đã xử lý"],
             ] as const
           ).map(([value, label]) => (
@@ -94,13 +115,19 @@ export function AdminReportQueue() {
                 setPage(1);
               }}
               className={cn(
-                "rounded-md px-3 py-1 text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                "relative -mb-px inline-flex h-11 items-center gap-2 px-3 text-body transition-colors duration-fast after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full",
                 queue === value
-                  ? "bg-primary text-primary-foreground"
+                  ? "font-semibold text-foreground after:bg-primary"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
               {label}
+              {value === "pending" && (summary.data?.pending_reports ?? 0) > 0 ? (
+                <span className="inline-flex h-5.5 min-w-5.5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
+                  {summary.data?.pending_reports}
+                  <span className="sr-only"> đang chờ</span>
+                </span>
+              ) : null}
             </button>
           ))}
         </div>
@@ -109,7 +136,7 @@ export function AdminReportQueue() {
         </label>
         <NativeSelect
           id="admin-report-type"
-          className="h-9 w-auto"
+          className="w-auto"
           value={targetType ?? ""}
           onChange={(event) => {
             setTargetType((event.target.value || null) as ReportTargetType | null);
@@ -188,20 +215,21 @@ function ReportCard({ report }: { report: AdminReport }) {
   const href = targetHref(report);
 
   return (
-    <article className="space-y-3 rounded-lg border p-4">
-      <header className="flex flex-wrap items-center gap-2 text-sm">
-        <Badge variant="destructive">{REPORT_REASON_LABELS[report.reason]}</Badge>
-        <Badge variant="outline">{TARGET_LABELS[report.target_type]}</Badge>
-        <Badge variant={pending ? "secondary" : "outline"}>{STATUS_LABELS[report.status]}</Badge>
+    <article className="overflow-hidden rounded-lg border bg-card">
+      <div className="space-y-3 p-4 sm:p-5">
+      <header className="flex flex-wrap items-center gap-2 text-body-sm">
+        <Badge variant="muted">{TARGET_LABELS[report.target_type]}</Badge>
+        <Badge variant={REASON_VARIANTS[report.reason]}>{REPORT_REASON_LABELS[report.reason]}</Badge>
+        <Badge variant={STATUS_VARIANTS[report.status]}>{STATUS_LABELS[report.status]}</Badge>
         <span className="text-muted-foreground">{formatRelativeTime(report.created_at)}</span>
         {pending && report.pending_on_target > 1 ? (
-          <span className="font-medium text-destructive">
+          <span className="font-semibold text-destructive-text">
             {report.pending_on_target} báo cáo cho cùng nội dung
           </span>
         ) : null}
       </header>
 
-      <div className="space-y-2 rounded-md bg-muted/40 p-3 text-sm">
+      <div className="space-y-2 rounded-md bg-muted p-3 text-body-sm sm:p-4">
         {target.exists ? (
           <>
             {target.course && report.target_type !== "course" ? (
@@ -209,15 +237,15 @@ function ReportCard({ report }: { report: AdminReport }) {
             ) : null}
             {target.title ? <p className="font-medium break-words">{target.title}</p> : null}
             {target.rating !== null ? (
-              <p className="flex items-center gap-1 text-xs" aria-label={`${target.rating} sao`}>
+              <p className="flex items-center gap-1 text-xs" role="img" aria-label={`${target.rating} sao`}>
                 {Array.from({ length: 5 }, (_, index) => (
                   <Star
                     key={index}
                     className={cn(
                       "size-3.5",
                       index < (target.rating ?? 0)
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-muted-foreground/40",
+                        ? "fill-reward-mark text-reward-mark"
+                        : "text-border-strong",
                     )}
                     aria-hidden
                   />
@@ -225,7 +253,7 @@ function ReportCard({ report }: { report: AdminReport }) {
               </p>
             ) : null}
             {target.excerpt ? (
-              <p className="whitespace-pre-line break-words text-muted-foreground">
+              <p className="text-body whitespace-pre-line break-words text-foreground">
                 {target.excerpt}
               </p>
             ) : null}
@@ -236,7 +264,7 @@ function ReportCard({ report }: { report: AdminReport }) {
               <Link
                 href={href}
                 target={href.startsWith("/quan-tri") ? undefined : "_blank"}
-                className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                className="inline-flex items-center gap-1 text-body-sm text-link hover:underline"
               >
                 <ExternalLink className="size-3" aria-hidden />
                 {report.target_type === "course" ? "Mở trang duyệt khóa học" : "Mở trang khóa học"}
@@ -250,19 +278,20 @@ function ReportCard({ report }: { report: AdminReport }) {
         )}
       </div>
 
-      <div className="space-y-1 text-sm">
+      <div className="space-y-1 text-body-sm">
         <PersonLine person={report.reporter} label="Người báo cáo:" />
         {report.details ? (
-          <p className="border-l-2 pl-3 whitespace-pre-line break-words text-muted-foreground">
-            {report.details}
+          <p className="whitespace-pre-line break-words text-muted-foreground">
+            “{report.details}”
           </p>
         ) : null}
       </div>
 
+      </div>
       {pending ? (
         <Decision report={report} />
       ) : (
-        <p className="text-sm text-muted-foreground">
+        <p className="border-t bg-muted px-4 py-3 text-body-sm text-muted-foreground sm:px-5">
           {report.status === "resolved" ? "Xác nhận vi phạm" : "Bỏ qua, không vi phạm"}
           {report.resolved_by ? ` bởi ${report.resolved_by.full_name}` : ""}
           {report.resolved_at ? `, ${formatRelativeTime(report.resolved_at)}` : ""}
@@ -304,8 +333,8 @@ function AuthorLine({ report }: { report: AdminReport }) {
         ) : null}
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2">
-          <span className="min-w-0 flex-1 text-xs">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive-soft p-2">
+          <span className="min-w-0 flex-1 text-caption text-destructive-text">
             Khóa {author.full_name}: đăng xuất khỏi mọi thiết bị và không đăng nhập được nữa.
           </span>
           <Button
@@ -323,7 +352,7 @@ function AuthorLine({ report }: { report: AdminReport }) {
         </div>
       ) : null}
       {lock.isError ? (
-        <p className="text-xs text-destructive">{apiErrorMessage(lock.error)}</p>
+        <p className="text-caption text-destructive-text">{apiErrorMessage(lock.error)}</p>
       ) : null}
     </div>
   );
@@ -361,9 +390,9 @@ function Decision({ report }: { report: AdminReport }) {
     target.exists && (report.target_type !== "course" || target.course?.status === "published");
 
   return (
-    <div className="space-y-2 border-t pt-3">
-      <label htmlFor={`note-${report.id}`} className="sr-only">
-        Ghi chú xử lý
+    <div className="space-y-2 border-t bg-muted px-4 py-4 sm:px-5">
+      <label htmlFor={`note-${report.id}`} className="text-body-sm font-semibold">
+        Ghi chú xử lý <span className="font-normal text-muted-foreground">(không bắt buộc)</span>
       </label>
       <Textarea
         id={`note-${report.id}`}
@@ -373,8 +402,8 @@ function Decision({ report }: { report: AdminReport }) {
         rows={2}
         placeholder={
           report.target_type === "course"
-            ? "Ghi chú xử lý (không bắt buộc) — nếu gỡ khóa học, giảng viên đọc được câu này"
-            : "Ghi chú xử lý (không bắt buộc)"
+            ? "Nếu gỡ khóa học, giảng viên đọc được câu này"
+            : undefined
         }
       />
       {error ? (

@@ -70,10 +70,10 @@ export function AdminCategories() {
   return (
     <section className="space-y-4" aria-labelledby="admin-categories-title">
       <div>
-        <h2 id="admin-categories-title" className="font-semibold">
+        <h1 id="admin-categories-title" className="text-h2 text-pretty sm:text-h1">
           Danh mục khóa học
-        </h2>
-        <p className="text-sm text-muted-foreground">
+        </h1>
+        <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
           Hai cấp. Giảng viên chọn danh mục khi tạo khóa học, trang danh sách khóa học lọc theo
           đây. Chỉ xóa được danh mục trống.
         </p>
@@ -103,7 +103,7 @@ export function AdminCategories() {
 
       <ul className="space-y-3" aria-busy={reorder.isPending}>
         {parents.map((parent, index) => (
-          <li key={parent.id} className="rounded-lg border">
+          <li key={parent.id} className="overflow-hidden rounded-lg border bg-card">
             <CategoryRow
               category={parent}
               parents={parents}
@@ -113,7 +113,7 @@ export function AdminCategories() {
               onMove={(step) => move(parents, null, index, step)}
               onChanged={refresh}
             />
-            <div className="space-y-1 border-t bg-muted/20 px-3 py-2 sm:pl-10">
+            <div className="space-y-1 border-t bg-muted px-3 py-2 sm:pl-10">
               {parent.children.length > 0 ? (
                 <ul className="space-y-1">
                   {parent.children.map((child, childIndex) => (
@@ -193,15 +193,15 @@ function AddCategory({
           onChange={(event) => setName(event.target.value)}
           maxLength={NAME_MAX_LENGTH}
           placeholder={parentId ? "Tên danh mục con" : "Tên danh mục mới, ví dụ: Khoa học dữ liệu"}
-          className="h-9"
+         
           autoFocus={compact}
         />
-        <Button type="submit" className="h-9" disabled={add.isPending || name.trim() === ""}>
+        <Button type="submit" disabled={add.isPending || name.trim() === ""}>
           {add.isPending ? <Loader2 className="animate-spin" aria-hidden /> : <Plus aria-hidden />}
           <span className="hidden sm:inline">Thêm</span>
         </Button>
         {compact ? (
-          <Button type="button" variant="ghost" className="h-9" onClick={() => setOpen(false)}>
+          <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
             Hủy
           </Button>
         ) : null}
@@ -276,7 +276,7 @@ function CategoryRow({
             value={name}
             onChange={(event) => setName(event.target.value)}
             maxLength={NAME_MAX_LENGTH}
-            className="h-9 min-w-0 flex-1 basis-48"
+            className="min-w-0 flex-1 basis-48"
             autoFocus
           />
           <label className="sr-only" htmlFor={`parent-${category.id}`}>
@@ -284,7 +284,7 @@ function CategoryRow({
           </label>
           <NativeSelect
             id={`parent-${category.id}`}
-            className="h-9 w-auto max-w-56"
+            className="w-auto max-w-56"
             value={parentId}
             onChange={(event) => setParentId(event.target.value)}
             disabled={hasChildren}
@@ -376,7 +376,7 @@ function CategoryRow({
         </div>
       </div>
       {confirming ? (
-        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
+        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-destructive-soft p-2 text-body-sm text-destructive-text">
           <span className="min-w-0 flex-1">Xóa danh mục “{category.name}”?</span>
           <Button
             size="sm"

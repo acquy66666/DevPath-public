@@ -95,10 +95,10 @@ export function PayoutsPage() {
     <section className="space-y-6" aria-labelledby="payouts-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="payouts-title" className="font-semibold">
+          <h1 id="payouts-title" className="text-h2 text-pretty sm:text-h1">
             Hoa hồng & thanh toán giảng viên
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             {settings
               ? `Chi tối thiểu ${money(settings.minimum)} mỗi kỳ (tháng 12 trả hết). Thuế TNCN ước tính ${formatRate(Number(settings.pit_rate))} khi một lần chi từ ${money(settings.pit_threshold)}.`
               : "Số dư, bảng kê theo tháng và lịch sử chi trả."}
@@ -133,7 +133,7 @@ export function PayoutsPage() {
                 value={month}
                 max={lastMonth(vietnamToday())}
                 onChange={(event) => event.target.value && setMonth(event.target.value)}
-                className="h-9 w-44"
+                className="w-44"
               />
             </div>
             <Button type="submit" disabled={create.isPending}>
@@ -236,7 +236,7 @@ export function PayoutsPage() {
               setStatus(event.target.value as PayoutStatus | "");
               setPage(1);
             }}
-            className="h-9 w-44"
+            className="w-44"
           >
             <option value="">Mọi trạng thái</option>
             {(Object.keys(PAYOUT_STATUS_LABELS) as PayoutStatus[]).map((value) => (

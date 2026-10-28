@@ -68,17 +68,17 @@ export function RankingsPage() {
     <section className="space-y-6" aria-labelledby="rankings-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="rankings-title" className="font-semibold">
+          <h1 id="rankings-title" className="text-h2 text-pretty sm:text-h1">
             Bảng xếp hạng
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             Mỗi khoản mục một bảng. Đồng hạng kiểu thi đấu (1, 2, 2, 4); cột cuối là kỳ ngay trước.
           </p>
         </div>
         <ExportButton path={rankingsPath(range, "/export.xlsx")} filename="devpath_xep-hang.xlsx" />
       </div>
 
-      <div className="rounded-lg border p-4">
+      <div className="rounded-lg border bg-card p-4">
         <DateRangePicker value={range} onChange={setRange} />
       </div>
 
@@ -182,8 +182,8 @@ function RankingCard({ ranking, previousLabel }: { ranking: Ranking; previousLab
                       <span
                         className={cn(
                           "flex items-center justify-end gap-0.5 text-xs",
-                          better === true && "text-emerald-700 dark:text-emerald-400",
-                          better === false && now !== before && "text-red-700 dark:text-red-400",
+                          better === true && "text-success-text",
+                          better === false && now !== before && "text-destructive-text",
                           now === before && "text-muted-foreground",
                         )}
                       >

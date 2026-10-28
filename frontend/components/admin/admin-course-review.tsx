@@ -2,8 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   CheckCircle2,
+  CircleAlert,
   Code2,
   ExternalLink,
   FileText,
@@ -17,6 +17,7 @@ import { useState } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
 import { ListSkeleton, PersonLine } from "@/components/admin/admin-shared";
+import { CourseCover } from "@/components/courses/course-cover";
 import { CourseStatusBadge } from "@/components/instructor/course-status-badge";
 import { VideoPlayer } from "@/components/learn/video-player";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -38,6 +39,8 @@ import { apiErrorMessage } from "@/lib/api/error-messages";
 import { useAuth } from "@/lib/auth/auth-provider";
 import { LEVEL_LABELS } from "@/lib/courses/labels";
 import { formatDate, formatDuration, formatPrice } from "@/lib/format";
+import { LONG_WAIT_DAYS, waitedDays, waitLabel } from "@/lib/admin/admin-view";
+import { reviewChecklist, sectionSummary } from "@/lib/instructor/teaching-view";
 import { cn } from "@/lib/utils";
 
 const TYPE_LABELS: Record<LessonType, string> = {
@@ -75,13 +78,19 @@ export function AdminCourseReview({ courseId }: { courseId: string }) {
 
   return (
     <div className="space-y-6">
-      <Link
-        href="/quan-tri/khoa-hoc"
-        className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        Hàng đợi duyệt
-      </Link>
+      <nav aria-label="Vị trí" className="text-body-sm text-muted-foreground">
+        <ol className="flex flex-wrap items-center gap-1.5">
+          <li>
+            <Link href="/quan-tri/khoa-hoc" className="text-link hover:underline">
+              Duyệt khóa học
+            </Link>
+          </li>
+          <li aria-hidden>/</li>
+          <li aria-current="page" className="min-w-0 truncate">
+            {course.data?.title ?? "Khóa học"}
+          </li>
+        </ol>
+      </nav>
 
       {course.isError ? (
         <Alert variant="destructive">
@@ -92,27 +101,35 @@ export function AdminCourseReview({ courseId }: { courseId: string }) {
       {course.isPending ? <ListSkeleton rows={2} height="h-40" /> : null}
 
       {course.data ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="lg:order-2">
-            <DecisionPanel course={course.data} />
+        <>
+          <CourseHeader course={course.data} />
+          {/* Two columns only from xl: beside the side menu, lg leaves the
+              curriculum too narrow to read. */}
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+            <div className="space-y-4 xl:order-2">
+              <QuickCheck course={course.data} />
+              <DecisionPanel course={course.data} />
+            </div>
+            <div className="min-w-0 space-y-4 xl:order-1">
+              <section
+                className="space-y-2 rounded-lg border bg-card p-4 sm:p-5"
+                aria-labelledby="review-description"
+              >
+                <h2 id="review-description" className="text-h3">
+                  Mô tả
+                </h2>
+                {course.data.description ? (
+                  <Markdown className="text-body">{course.data.description}</Markdown>
+                ) : (
+                  <p className="text-body-sm text-muted-foreground italic">
+                    Giảng viên chưa viết mô tả cho khóa học này.
+                  </p>
+                )}
+              </section>
+              <CurriculumPreview courseId={courseId} />
+            </div>
           </div>
-          <div className="min-w-0 space-y-6 lg:order-1">
-            <CourseHeader course={course.data} />
-            <section className="space-y-2" aria-labelledby="review-description">
-              <h2 id="review-description" className="font-semibold">
-                Mô tả
-              </h2>
-              {course.data.description ? (
-                <Markdown className="text-sm">{course.data.description}</Markdown>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Giảng viên chưa viết mô tả cho khóa học này.
-                </p>
-              )}
-            </section>
-            <CurriculumPreview courseId={courseId} />
-          </div>
-        </div>
+        </>
       ) : null}
     </div>
   );
@@ -120,35 +137,76 @@ export function AdminCourseReview({ courseId }: { courseId: string }) {
 
 function CourseHeader({ course }: { course: AdminCourse }) {
   const duration = formatDuration(course.duration_total_s);
+  const pending = course.status === "pending_review";
+  const days = waitedDays(course.updated_at, new Date());
   return (
-    <div className="space-y-3">
-      {course.thumbnail_url ? (
-        // eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here
-        <img
-          src={course.thumbnail_url}
-          alt=""
-          className="aspect-video w-full max-w-md rounded-lg border object-cover"
-        />
-      ) : null}
-      <div className="flex flex-wrap items-center gap-2">
-        <CourseStatusBadge status={course.status} />
-        <Badge variant="outline">{course.category.name}</Badge>
-        <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>
+    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-5">
+      <div className="w-full max-w-xs shrink-0 overflow-hidden rounded-lg border sm:w-44">
+        <CourseCover thumbnailUrl={course.thumbnail_url} colorKey={course.id} size="sm" />
       </div>
-      <h2 className="text-xl font-semibold tracking-tight break-words">{course.title}</h2>
-      {course.subtitle ? (
-        <p className="text-muted-foreground break-words">{course.subtitle}</p>
-      ) : null}
-      <div className="text-sm">
-        <PersonLine person={course.instructor} label="Giảng viên:" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <CourseStatusBadge status={course.status} />
+          {pending ? (
+            <Badge variant={days >= LONG_WAIT_DAYS ? "warning" : "muted"}>{waitLabel(days)}</Badge>
+          ) : null}
+          <Badge variant="outline">{course.category.name}</Badge>
+          <Badge variant="outline">{LEVEL_LABELS[course.level]}</Badge>
+        </div>
+        <h1 className="text-h2 text-pretty break-words sm:text-h1">{course.title}</h1>
+        {course.subtitle ? (
+          <p className="text-body-lg text-pretty break-words text-muted-foreground">{course.subtitle}</p>
+        ) : null}
+        <div className="text-body-sm">
+          <PersonLine person={course.instructor} label="Giảng viên:" />
+        </div>
+        <p className="text-body-sm text-muted-foreground">
+          {formatPrice(course.price)} · {course.lessons_count} bài học
+          {duration ? ` · ${duration} video` : ""} · {course.students_count} học viên · tạo{" "}
+          {formatDate(course.created_at)}
+          {course.published_at ? ` · lên sàn lần đầu ${formatDate(course.published_at)}` : ""}
+        </p>
       </div>
-      <p className="text-sm text-muted-foreground">
-        {formatPrice(course.price)} · {course.lessons_count} bài học
-        {duration ? ` · ${duration} video` : ""} · {course.students_count} học viên · tạo{" "}
-        {formatDate(course.created_at)}
-        {course.published_at ? ` · lên sàn lần đầu ${formatDate(course.published_at)}` : ""}
-      </p>
     </div>
+  );
+}
+
+/**
+ * The hints an instructor sees before sending, read back to the admin: what
+ * courses get sent back for. Suggestions only -- the decision is the admin's.
+ */
+function QuickCheck({ course }: { course: AdminCourse }) {
+  const { accessToken } = useAuth();
+  const curriculum = useQuery({
+    queryKey: [...ADMIN_KEY, "curriculum", course.id],
+    queryFn: () => getCurriculum(course.id, accessToken),
+    enabled: accessToken !== null,
+  });
+  if (!curriculum.data) return null;
+  const checks = reviewChecklist(course, curriculum.data.sections);
+
+  return (
+    <section className="space-y-3 rounded-lg border bg-card p-4" aria-labelledby="review-checks">
+      <h2 id="review-checks" className="text-title">
+        Kiểm tra nhanh
+      </h2>
+      <ul className="space-y-2 text-body-sm">
+        {checks.map((check) => (
+          <li key={check.label} className="flex items-start gap-2">
+            {check.done ? (
+              <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-success" aria-hidden />
+            ) : (
+              <CircleAlert className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden />
+            )}
+            <span>
+              {check.label}
+              <span className="sr-only">{check.done ? ": đạt" : ": chưa có"}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-caption text-muted-foreground">Chỉ để gợi ý; quyết định là của bạn.</p>
+    </section>
   );
 }
 
@@ -196,7 +254,7 @@ function DecisionPanel({ course }: { course: AdminCourse }) {
   const trimmed = reason.trim();
 
   return (
-    <Card className="lg:sticky lg:top-20">
+    <Card className="xl:sticky xl:top-6">
       <CardHeader>
         <CardTitle>Quyết định</CardTitle>
         <CardDescription>
@@ -326,8 +384,11 @@ function CurriculumPreview({ courseId }: { courseId: string }) {
   });
 
   return (
-    <section className="space-y-2" aria-labelledby="review-curriculum">
-      <h2 id="review-curriculum" className="font-semibold">
+    <section
+      className="space-y-3 rounded-lg border bg-card p-4 sm:p-5"
+      aria-labelledby="review-curriculum"
+    >
+      <h2 id="review-curriculum" className="text-h3">
         Nội dung khóa học
       </h2>
       {curriculum.isError ? (
@@ -345,8 +406,9 @@ function CurriculumPreview({ courseId }: { courseId: string }) {
         <div className="overflow-hidden rounded-md border">
           {curriculum.data.sections.map((section) => (
             <div key={section.id} className="border-b last:border-b-0">
-              <p className="bg-muted/40 px-4 py-2 text-sm font-medium break-words">
-                {section.title}
+              <p className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5 bg-muted px-4 py-2.5">
+                <span className="min-w-0 text-body font-semibold break-words">{section.title}</span>
+                <span className="text-caption text-muted-foreground">{sectionSummary(section)}</span>
               </p>
               {section.lessons.length === 0 ? (
                 <p className="border-t px-4 py-2 text-sm text-muted-foreground">
@@ -364,8 +426,8 @@ function CurriculumPreview({ courseId }: { courseId: string }) {
                           aria-expanded={expanded}
                           onClick={() => setOpen(expanded ? null : lesson.id)}
                           className={cn(
-                            "flex w-full items-center gap-3 px-4 py-2 text-left text-sm hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                            expanded && "bg-muted/50",
+                            "flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left text-body-sm hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                            expanded && "bg-accent",
                           )}
                         >
                           <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />

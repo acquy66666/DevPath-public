@@ -5,8 +5,8 @@ import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
 
-import { ADMIN_KEY } from "@/components/admin/admin-nav";
-import { EmptyState, ListSkeleton } from "@/components/admin/admin-shared";
+import { ADMIN_KEY, useAdminSummary } from "@/components/admin/admin-nav";
+import { AdminTitle, EmptyState, ListSkeleton } from "@/components/admin/admin-shared";
 import { CourseStatusBadge } from "@/components/instructor/course-status-badge";
 import { ColumnChart, type Column } from "@/components/instructor/stats/column-chart";
 import {
@@ -27,8 +27,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { attentionCards, waitedDays } from "@/lib/admin/admin-view";
 import {
   getPlatformOverview,
+  listAdminCourses,
   listHotCourses,
   type HotCourse,
   type PlatformOverview,
@@ -62,10 +65,13 @@ export function AdminDashboard() {
   });
 
   return (
+    <>
+      <AdminTitle title="Tổng quan" description="Việc đang chờ bạn quyết định, rồi số liệu toàn sàn." />
+      <Attention />
     <section className="space-y-6" aria-labelledby="admin-overview-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="admin-overview-title" className="font-semibold">
+          <h2 id="admin-overview-title" className="text-h3">
             Toàn sàn
           </h2>
           <p className="text-sm text-muted-foreground">
@@ -93,6 +99,67 @@ export function AdminDashboard() {
       )}
 
       <HotCourses period={period} periodLabel={choice.label} />
+    </section>
+    </>
+  );
+}
+
+/**
+ * What waits for the admin, above the numbers: the reason most visits to
+ * this page happen. The oldest course is the head of the review queue, which
+ * the backend sorts longest-waiting first.
+ */
+function Attention() {
+  const { accessToken } = useAuth();
+  const summary = useAdminSummary();
+  const waiting = (summary.data?.pending_courses ?? 0) > 0;
+  const head = useQuery({
+    queryKey: [...ADMIN_KEY, "courses", "pending_review", "", 1],
+    queryFn: () => listAdminCourses(accessToken as string, { status: "pending_review", q: "", page: 1 }),
+    enabled: accessToken !== null && waiting,
+  });
+  const oldest = head.data?.items[0];
+
+  return (
+    <section className="space-y-3" aria-labelledby="admin-attention-title">
+      <h2 id="admin-attention-title" className="text-h3">
+        Cần xử lý
+      </h2>
+      {summary.isError ? (
+        <Alert variant="destructive">
+          <AlertDescription>{apiErrorMessage(summary.error)}</AlertDescription>
+        </Alert>
+      ) : summary.data ? (
+        <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+          {attentionCards(
+            summary.data,
+            oldest ? { title: oldest.title, days: waitedDays(oldest.updated_at, new Date()) } : null,
+          ).map((card) => (
+            <li key={card.kind}>
+              <Link
+                href={card.href}
+                className={cn(
+                  "flex h-full flex-col gap-1 rounded-lg border p-4 transition-colors duration-fast sm:p-5",
+                  card.quiet ? "bg-muted hover:bg-accent" : "bg-card hover:border-primary",
+                )}
+              >
+                <span className="text-body-sm text-muted-foreground">{card.label}</span>
+                <span className="text-h1 tabular-nums">{formatCount(card.count)}</span>
+                <span className="text-body-sm text-pretty">{card.detail}</span>
+                <span className="mt-auto pt-2 text-body-sm font-semibold text-link">
+                  {card.action} <span aria-hidden>→</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4" aria-hidden>
+          {[0, 1, 2].map((tile) => (
+            <Skeleton key={tile} className="h-36 rounded-lg sm:h-40" />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -283,8 +350,9 @@ function HotRow({ course, rank }: { course: HotCourse; rank: number }) {
           {course.title}
         </Link>
         <span className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          {course.instructor_name} · {formatCount(course.students_count)} học viên · ★{" "}
-          {Number(course.rating_avg).toFixed(1)}
+          {course.instructor_name} · {formatCount(course.students_count)} học viên ·{" "}
+          {/* Ratings run 1–5, so an average of 0 means nobody has rated yet. */}
+          {Number(course.rating_avg) > 0 ? `★ ${DECIMAL.format(Number(course.rating_avg))}` : "chưa có đánh giá"}
           {course.status !== "published" || course.is_deleted ? (
             <CourseStatusBadge status={course.status} />
           ) : null}

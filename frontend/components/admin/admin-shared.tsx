@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 
 import { UserAvatar } from "@/components/auth/user-avatar";
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,9 @@ export function SearchBox({
         onChange={(event) => setValue(event.target.value)}
         placeholder={placeholder}
         maxLength={100}
-        className="h-9 min-w-0"
+        className="min-w-0"
       />
-      <Button type="submit" variant="outline" className="h-9">
+      <Button type="submit" variant="outline" className="h-10">
         <Search aria-hidden />
         <span className="hidden sm:inline">Tìm</span>
       </Button>
@@ -91,38 +91,77 @@ export function ListSkeleton({
 }
 
 /**
- * An admin screen before anything is known: a toolbar and rows. The body of
- * `quan-tri/loading.tsx`, and what `AdminGate` shows under its tabs. Most
- * admin screens are longer than one screen, so it reserves one (`fill`).
+ * The top of every admin screen: what it is called, one line on what it is
+ * for, and the screen's own buttons on the right. The one `h1` of the page --
+ * sections below it are `h2`.
  */
-export function AdminBodySkeleton() {
+export function AdminTitle({
+  id,
+  title,
+  description,
+  actions,
+}: {
+  id?: string;
+  title: string;
+  description?: ReactNode;
+  actions?: ReactNode;
+}) {
   return (
-    <div className="space-y-3">
-      <Skeleton className="h-9 w-80 max-w-full" />
-      <ListSkeleton fill />
+    <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="min-w-0 space-y-1">
+        <h1 id={id} className="text-h2 text-pretty sm:text-h1">
+          {title}
+        </h1>
+        {description ? (
+          <p className="max-w-3xl text-body text-pretty text-muted-foreground">{description}</p>
+        ) : null}
+      </div>
+      {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
   );
 }
 
 /**
- * The admin tabs before the session is known: title, the description, the
- * row of tabs -- in bars, since the visitor may turn out not to be an admin.
+ * An admin screen before anything is known: its title, a toolbar and rows.
+ * The body of `quan-tri/loading.tsx`, and what `AdminGate` shows beside its
+ * menu. Most admin screens are longer than one screen, so it reserves one
+ * (`fill`).
+ */
+export function AdminBodySkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <SkeletonText size="h1" className="h-8 w-64 max-w-full sm:h-10" />
+        <SkeletonText className="w-full max-w-xl" />
+      </div>
+      <div className="space-y-3">
+        <Skeleton className="h-10 w-80 max-w-full" />
+        <ListSkeleton fill />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The admin menu before the session is known, in bars, since the visitor may
+ * turn out not to be an admin: four groups beside the screen from `lg`, the
+ * folded button below.
  */
 export function AdminNavSkeleton() {
   return (
-    <div className="space-y-4" aria-hidden>
-      <div>
-        <SkeletonText size="h2" className="w-32" />
-        <SkeletonText size="body-sm" className="w-full max-w-3xl" />
-        <SkeletonText size="body-sm" className="w-3/4 sm:hidden" />
-        <SkeletonText size="body-sm" className="w-1/2 sm:hidden" />
-      </div>
-      <div className="flex h-[38px] gap-1 overflow-hidden border-b pb-2">
-        {[0, 1, 2, 3, 4, 5, 6].map((tab) => (
-          <Skeleton key={tab} className="h-7 w-28 shrink-0" />
+    <>
+      <div className="-ml-3 hidden w-60 shrink-0 space-y-5 lg:block" aria-hidden>
+        {[1, 3, 5, 3].map((rows, group) => (
+          <div key={group} className="space-y-1">
+            <Skeleton className="mx-3 mb-2.5 h-3 w-20" />
+            {Array.from({ length: rows }, (_, row) => (
+              <Skeleton key={row} className="h-10 rounded-md" />
+            ))}
+          </div>
         ))}
       </div>
-    </div>
+      <Skeleton className="h-11 rounded-md lg:hidden" aria-hidden />
+    </>
   );
 }
 

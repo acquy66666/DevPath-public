@@ -102,10 +102,10 @@ export function ProfitPage() {
     <section className="space-y-6" aria-labelledby="profit-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 id="profit-title" className="font-semibold">
+          <h1 id="profit-title" className="text-h2 text-pretty sm:text-h1">
             Lợi nhuận giữ lại
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             Ghi nhận theo ngày đơn được thanh toán. Hoa hồng giảng viên và phí cổng tính tự động;
             các chi phí khác do quản trị viên nhập.
           </p>
@@ -115,7 +115,7 @@ export function ProfitPage() {
             aria-label="Năm"
             value={year}
             onChange={(event) => setYear(Number(event.target.value))}
-            className="h-9 w-24"
+            className="w-24"
           >
             {Array.from({ length: 6 }, (_, i) => thisYear - i).map((value) => (
               <option key={value} value={value}>
@@ -127,7 +127,7 @@ export function ProfitPage() {
             aria-label="Chia theo"
             value={granularity}
             onChange={(event) => setGranularity(event.target.value as "month" | "quarter")}
-            className="h-9 w-36"
+            className="w-36"
           >
             <option value="month">Theo tháng</option>
             <option value="quarter">Theo quý</option>
@@ -169,7 +169,14 @@ export function ProfitPage() {
               <CardTitle>Báo cáo lãi lỗ năm {profit.data.year}</CardTitle>
               <CardDescription>{profit.data.fee_source}</CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            {/* Twelve months do not fit beside the menu: the box scrolls, so the
+                keyboard has to be able to reach it (axe scrollable-region-focusable). */}
+            <CardContent
+              className="overflow-x-auto"
+              tabIndex={0}
+              role="region"
+              aria-label={`Báo cáo lãi lỗ năm ${profit.data.year}, cuộn ngang để xem đủ 12 tháng`}
+            >
               <table className="w-full min-w-[1180px] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
@@ -191,7 +198,7 @@ export function ProfitPage() {
                       className={cn(
                         "border-b last:border-0",
                         line.tone === "total" && "font-medium",
-                        line.tone === "result" && "bg-muted/40 font-semibold",
+                        line.tone === "result" && "bg-muted font-semibold",
                       )}
                     >
                       <th
@@ -228,7 +235,7 @@ function ProfitCell({ value }: { value: string }) {
       className={cn(
         "px-2 py-1.5 text-right tabular-nums",
         amount === 0 && "text-muted-foreground/60",
-        amount < 0 && "text-red-700 dark:text-red-400",
+        amount < 0 && "text-destructive-text",
       )}
     >
       {amount === 0 ? "–" : new Intl.NumberFormat("vi-VN").format(amount)}
@@ -253,7 +260,7 @@ function Tile({
       <p
         className={cn(
           "mt-1 text-2xl font-semibold tracking-tight",
-          tone === "loss" && "text-red-700 dark:text-red-400",
+          tone === "loss" && "text-destructive-text",
         )}
       >
         {value}
@@ -300,7 +307,7 @@ function Expenses({ year }: { year: number }) {
               setMonth(event.target.value ? Number(event.target.value) : null);
               setPage(1);
             }}
-            className="h-9 w-32"
+            className="w-32"
           >
             <option value="">Cả năm</option>
             {Array.from({ length: 12 }, (_, i) => i + 1).map((value) => (
@@ -316,7 +323,7 @@ function Expenses({ year }: { year: number }) {
               setCategory(event.target.value as ExpenseCategory | "");
               setPage(1);
             }}
-            className="h-9 w-52"
+            className="w-52"
           >
             <option value="">Mọi nhóm</option>
             {(Object.keys(CATEGORY_LABELS) as ExpenseCategory[]).map((value) => (
@@ -342,7 +349,7 @@ function Expenses({ year }: { year: number }) {
         ) : expenses.data.items.length === 0 ? (
           <EmptyState title="Chưa có khoản chi nào" hint="Thêm hóa đơn máy chủ, API AI, marketing… để tính lợi nhuận." />
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Các khoản chi">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b text-left text-xs text-muted-foreground">

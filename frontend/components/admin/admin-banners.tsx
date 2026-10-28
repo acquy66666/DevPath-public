@@ -81,10 +81,10 @@ export function AdminBanners() {
     <section className="space-y-4" aria-labelledby="admin-banners-title">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 id="admin-banners-title" className="font-semibold">
+          <h1 id="admin-banners-title" className="text-h2 text-pretty sm:text-h1">
             Banner trang chủ
-          </h2>
-          <p className="text-sm text-muted-foreground">
+          </h1>
+          <p className="mt-1 max-w-3xl text-body text-pretty text-muted-foreground">
             Trang chủ xoay vòng tối đa 5 banner đang bật và trong lịch, theo thứ tự dưới đây.
           </p>
         </div>
@@ -175,7 +175,7 @@ function BannerRow({
   const { label, variant } = STATUS[banner.status];
 
   return (
-    <div className="space-y-2 rounded-lg border p-3">
+    <div className="space-y-2 rounded-lg border bg-card p-3">
       <div className="flex flex-wrap gap-3">
         {/* eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here */}
         <img
@@ -216,7 +216,7 @@ function BannerRow({
         </div>
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive-soft p-2 text-body-sm text-destructive-text">
           <span className="min-w-0 flex-1">Xóa banner “{banner.title}” và ảnh của nó?</span>
           <Button size="sm" variant="destructive" onClick={() => remove.mutate()} disabled={remove.isPending}>
             {remove.isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}

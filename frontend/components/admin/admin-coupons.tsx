@@ -5,7 +5,8 @@ import { Loader2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { ADMIN_KEY } from "@/components/admin/admin-nav";
-import { EmptyState, ListSkeleton, SearchBox } from "@/components/admin/admin-shared";
+import { AdminTitle, EmptyState, ListSkeleton, SearchBox } from "@/components/admin/admin-shared";
+import { FilterChips } from "@/components/admin/filter-chips";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,18 +43,18 @@ import { cn } from "@/lib/utils";
 const COUPONS_KEY = [...ADMIN_KEY, "coupons"] as const;
 
 const FILTERS: { value: CouponFilter; label: string }[] = [
-  { value: "all", label: "Mọi trạng thái" },
+  { value: "all", label: "Tất cả" },
   { value: "live", label: "Đang chạy" },
   { value: "scheduled", label: "Sắp chạy" },
   { value: "exhausted", label: "Hết lượt" },
   { value: "ended", label: "Đã kết thúc" },
 ];
 
-const STATUS: Record<CouponStatus, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-  live: { label: "Đang chạy", variant: "default" },
-  scheduled: { label: "Sắp chạy", variant: "outline" },
-  exhausted: { label: "Hết lượt", variant: "secondary" },
-  ended: { label: "Đã kết thúc", variant: "secondary" },
+const STATUS: Record<CouponStatus, { label: string; variant: "success" | "info" | "warning" | "muted" }> = {
+  live: { label: "Đang chạy", variant: "success" },
+  scheduled: { label: "Sắp chạy", variant: "info" },
+  exhausted: { label: "Hết lượt", variant: "warning" },
+  ended: { label: "Đã kết thúc", variant: "muted" },
 };
 
 function describeValue(coupon: Pick<AdminCoupon, "discount_type" | "value">): string {
@@ -83,41 +84,29 @@ export function AdminCoupons() {
   });
 
   return (
-    <section className="space-y-4" aria-labelledby="admin-coupons-title">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 id="admin-coupons-title" className="font-semibold">
-            Mã giảm giá toàn sàn
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            Học viên nhập mã ở giỏ hàng. Lượt dùng chỉ tăng khi đơn được thanh toán.
-          </p>
-        </div>
-        <Button onClick={() => setEditing("new")}>
-          <Plus aria-hidden />
-          Tạo mã
-        </Button>
-      </div>
+    <section className="space-y-5" aria-labelledby="admin-coupons-title">
+      <AdminTitle
+        id="admin-coupons-title"
+        title="Mã giảm giá"
+        description="Học viên nhập mã ở giỏ hàng. Gõ mã không tiêu lượt; lượt chỉ tính khi đơn được thanh toán."
+        actions={
+          <Button onClick={() => setEditing("new")}>
+            <Plus aria-hidden />
+            Tạo mã
+          </Button>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="coupon-status" className="sr-only">
-          Trạng thái
-        </label>
-        <NativeSelect
-          id="coupon-status"
-          className="h-9 w-auto"
+        <FilterChips
+          label="Lọc theo trạng thái"
           value={status}
-          onChange={(event) => {
-            setStatus(event.target.value as CouponFilter);
+          onChange={(value) => {
+            setStatus(value);
             setPage(1);
           }}
-        >
-          {FILTERS.map((filter) => (
-            <option key={filter.value} value={filter.value}>
-              {filter.label}
-            </option>
-          ))}
-        </NativeSelect>
+          options={FILTERS}
+        />
         <SearchBox
           id="coupon-search"
           placeholder="Tìm theo mã"
@@ -203,26 +192,31 @@ function CouponRow({ coupon, onEdit }: { coupon: AdminCoupon; onEdit: () => void
   const { label, variant } = STATUS[coupon.status];
 
   return (
-    <div className="space-y-2 rounded-lg border p-3">
+    <div
+      className={cn(
+        "space-y-2 rounded-lg border bg-card p-3 sm:p-4",
+        coupon.status === "ended" && "bg-muted",
+      )}
+    >
       <div className="flex flex-wrap items-start gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <p className="flex flex-wrap items-center gap-2">
-            <span className="font-mono font-semibold tracking-wide">{coupon.code}</span>
+            <span className="rounded-sm bg-muted px-2 py-0.5 font-mono text-code font-semibold tracking-wide">
+              {coupon.code}
+            </span>
             <Badge variant={variant}>{label}</Badge>
-            <span className="text-sm">{describeValue(coupon)}</span>
+            <span className="text-body-sm font-medium">{describeValue(coupon)}</span>
           </p>
-          <p className="text-sm break-words text-muted-foreground">
+          <p className="text-body-sm break-words text-muted-foreground">
             {coupon.scope === "site"
               ? "Toàn sàn"
               : `${coupon.courses.length} khóa: ${coupon.courses.map((c) => c.title).join(", ")}`}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {coupon.max_uses === null
-              ? `${coupon.used_count} lượt đã dùng · không giới hạn`
-              : `${coupon.used_count} / ${coupon.max_uses} lượt`}
-            {" · "}từ {formatDate(coupon.valid_from)}
+          <p className="text-caption text-muted-foreground">
+            Từ {formatDate(coupon.valid_from)}
             {coupon.valid_to ? ` đến ${formatDate(coupon.valid_to)}` : " · không hạn kết thúc"}
           </p>
+          <Uses coupon={coupon} />
         </div>
         <div className="flex items-center">
           <Button variant="ghost" size="icon" className="size-8" aria-label={`Sửa ${coupon.code}`} onClick={onEdit}>
@@ -247,7 +241,7 @@ function CouponRow({ coupon, onEdit }: { coupon: AdminCoupon; onEdit: () => void
         </div>
       </div>
       {confirming ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive/5 p-2 text-sm">
+        <div className="flex flex-wrap items-center gap-2 rounded-md bg-destructive-soft p-2 text-body-sm text-destructive-text">
           <span className="min-w-0 flex-1">
             {confirming === "end"
               ? `Kết thúc ${coupon.code} ngay bây giờ? Giỏ hàng đang áp mã sẽ không thanh toán được với mã này nữa.`
@@ -267,7 +261,35 @@ function CouponRow({ coupon, onEdit }: { coupon: AdminCoupon; onEdit: () => void
           </Button>
         </div>
       ) : null}
-      {error ? <p className="text-sm text-destructive">{apiErrorMessage(error)}</p> : null}
+      {error ? <p className="text-body-sm text-destructive-text">{apiErrorMessage(error)}</p> : null}
+    </div>
+  );
+}
+
+/** Uses so far, with a bar when there is a ceiling to fill. */
+function Uses({ coupon }: { coupon: AdminCoupon }) {
+  if (coupon.max_uses === null) {
+    return (
+      <p className="text-caption text-muted-foreground">
+        {coupon.used_count} lượt đã dùng · không giới hạn
+      </p>
+    );
+  }
+  const share = coupon.max_uses === 0 ? 1 : Math.min(1, coupon.used_count / coupon.max_uses);
+  return (
+    <div className="flex max-w-xs items-center gap-2 pt-0.5">
+      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted" aria-hidden>
+        <span
+          className={cn(
+            "block h-full rounded-full",
+            coupon.status === "exhausted" ? "bg-warning" : "bg-primary",
+          )}
+          style={{ width: `${Math.max(share * 100, coupon.used_count > 0 ? 4 : 0)}%` }}
+        />
+      </span>
+      <span className="text-caption text-muted-foreground tabular-nums">
+        {coupon.used_count} / {coupon.max_uses} lượt
+      </span>
     </div>
   );
 }

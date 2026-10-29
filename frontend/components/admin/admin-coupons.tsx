@@ -468,7 +468,7 @@ function CoursePicker({
                 <span className="truncate">{course.title}</span>
                 <button
                   type="button"
-                  className="rounded-full p-0.5 hover:bg-background"
+                  className="rounded-full p-0.5 transition-colors hover:bg-background"
                   aria-label={`Bỏ ${course.title}`}
                   onClick={() => onChange(chosen.filter((c) => c.id !== course.id))}
                 >
@@ -515,7 +515,7 @@ function CoursePicker({
                   disabled={chosenIds.has(course.id)}
                   onClick={() => onChange([...chosen, { id: course.id, title: course.title }])}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-muted disabled:opacity-50",
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm transition-colors hover:bg-muted disabled:opacity-50",
                   )}
                 >
                   <Plus className="size-3.5 shrink-0" aria-hidden />

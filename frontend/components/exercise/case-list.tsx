@@ -146,7 +146,7 @@ export function CaseList({
                   }
                 >
                   <ChevronDown
-                    className={cn("transition-transform duration-fast", isOpen && "rotate-180")}
+                    className={cn("transition-transform duration-fast motion-reduce:transition-none", isOpen && "rotate-180")}
                     aria-hidden
                   />
                 </Button>

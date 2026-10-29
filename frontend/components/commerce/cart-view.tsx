@@ -14,6 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/toast";
 import {
   addToCart,
   addToWishlist,
@@ -85,9 +86,22 @@ export function CartView() {
     retry: false,
   });
 
+  // The row leaves the list, so a toast says which course went and offers it
+  // back: putting it in again is the same request as "Thêm vào giỏ".
   const remove = useMutation({
     mutationFn: (courseId: string) => removeFromCart(accessToken as string, courseId),
-    onSuccess: (updated: Cart) => queryClient.setQueryData(["cart"], updated),
+    onSuccess: (updated: Cart, courseId) => {
+      const title = courseTitle(queryClient.getQueryData<Cart>(["cart"]), courseId);
+      queryClient.setQueryData(["cart"], updated);
+      toast({
+        title: title ? `Đã bỏ “${title}” khỏi giỏ hàng` : "Đã bỏ khóa học khỏi giỏ hàng",
+        action: {
+          label: "Hoàn tác",
+          altText: "Thêm lại khóa học vừa bỏ vào giỏ hàng",
+          onSelect: () => add.mutate(courseId),
+        },
+      });
+    },
   });
 
   // "Để dành sau": saved first, then taken out, so a failure halfway leaves
@@ -97,10 +111,15 @@ export function CartView() {
       await addToWishlist(accessToken as string, courseId);
       return removeFromCart(accessToken as string, courseId);
     },
-    onSuccess: (updated: Cart) => {
+    onSuccess: (updated: Cart, courseId) => {
+      const title = courseTitle(queryClient.getQueryData<Cart>(["cart"]), courseId);
       queryClient.setQueryData(["cart"], updated);
       queryClient.invalidateQueries({ queryKey: ["wishlist"] });
       queryClient.invalidateQueries({ queryKey: ["wishlist-ids"] });
+      toast({
+        title: title ? `Đã để dành “${title}”` : "Đã để dành khóa học",
+        description: "Khóa học nằm trong danh sách yêu thích của bạn.",
+      });
     },
   });
 
@@ -355,6 +374,11 @@ export function CartView() {
 }
 
 /** One line of the cart: the course, its price, and ways to take it out. */
+/** The title of a course in the cart as it was before a change. */
+function courseTitle(cart: Cart | undefined, courseId: string): string | null {
+  return cart?.items.find((item) => item.course.id === courseId)?.course.title ?? null;
+}
+
 function CartRow({
   item,
   discounted,

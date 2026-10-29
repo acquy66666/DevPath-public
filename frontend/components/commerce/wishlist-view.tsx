@@ -12,8 +12,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pager } from "@/components/ui/pager";
+import { toast } from "@/components/ui/toast";
 import {
   addToCart,
+  addToWishlist,
   getCart,
   listWishlist,
   removeFromWishlist,
@@ -54,12 +56,31 @@ export function WishlistView() {
     query.data?.items.map((item) => item.course.id) ?? [],
   );
 
+  const refreshSaved = () => {
+    queryClient.invalidateQueries({ queryKey: ["wishlist"] });
+    queryClient.invalidateQueries({ queryKey: ["wishlist-ids"] });
+  };
+
+  // The card leaves the page, so a toast names it and offers it back.
   const unsave = useMutation({
     mutationFn: (courseId: string) => removeFromWishlist(accessToken as string, courseId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["wishlist"] });
-      queryClient.invalidateQueries({ queryKey: ["wishlist-ids"] });
+    onSuccess: (_: void, courseId) => {
+      const title = query.data?.items.find((item) => item.course.id === courseId)?.course.title;
+      refreshSaved();
+      toast({
+        title: title ? `Đã bỏ “${title}” khỏi yêu thích` : "Đã bỏ khóa học khỏi yêu thích",
+        action: {
+          label: "Hoàn tác",
+          altText: "Lưu lại khóa học vừa bỏ vào yêu thích",
+          onSelect: () => resave.mutate(courseId),
+        },
+      });
     },
+  });
+
+  const resave = useMutation({
+    mutationFn: (courseId: string) => addToWishlist(accessToken as string, courseId),
+    onSuccess: refreshSaved,
   });
 
   const toCart = useMutation({

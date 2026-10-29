@@ -1,0 +1,218 @@
+[
+  {
+    "mode": "normal",
+    "name": "trình duyệt nhận đúng chế độ",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "nút: lún 1px khi nhấn",
+    "ok": true,
+    "detail": "0px 1px"
+  },
+  {
+    "mode": "normal",
+    "name": "bỏ khỏi giỏ: toast nêu tên khóa",
+    "ok": true,
+    "detail": "Đã bỏ “Cấu trúc dữ liệu & giải thuật với Python” khỏi giỏ hàng"
+  },
+  {
+    "mode": "normal",
+    "name": "toast vào: trượt 1rem trong duration-slow",
+    "ok": true,
+    "detail": "enter 0.32s x=calc(4*.25rem)"
+  },
+  {
+    "mode": "normal",
+    "name": "toast không chắn chuột ngoài thẻ của nó",
+    "ok": true,
+    "detail": "none"
+  },
+  {
+    "mode": "normal",
+    "name": "toast có trong cây truy cập (Radix: role=status)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "axe khi toast đang mở: 0 critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "Hoàn tác: khóa quay lại giỏ",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "toast đóng xong thì rời DOM",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "360 px: toast không đè nút thanh toán, không tràn ngang",
+    "ok": true,
+    "detail": "toast 72–166, nút 704, tràn 0"
+  },
+  {
+    "mode": "normal",
+    "name": "toast tự đóng sau ~6 s",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "bỏ khỏi yêu thích: toast nêu tên khóa",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "Hoàn tác: khóa quay lại yêu thích",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "thanh tiến độ: trượt transform trong duration-progress",
+    "ok": true,
+    "detail": "transform, translate, scale, rotate 0.6s"
+  },
+  {
+    "mode": "normal",
+    "name": "tab: panel đầu không mờ vào lúc tải trang",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "normal",
+    "name": "tab: panel mới mờ vào và nhích 4px trong duration-base",
+    "ok": true,
+    "detail": "enter 0.22s y=calc(1*.25rem)"
+  },
+  {
+    "mode": "normal",
+    "name": "tab: vạch dưới giãn ra trong duration-base",
+    "ok": true,
+    "detail": "chọn 1 transform, translate, scale, rotate 0.22s, bỏ 0 1"
+  },
+  {
+    "mode": "reduce",
+    "name": "trình duyệt nhận đúng chế độ",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "giỏ hàng: không còn hoạt ảnh CSS nào chạy hay lặp",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "nút: không lún khi nhấn",
+    "ok": true,
+    "detail": "none"
+  },
+  {
+    "mode": "reduce",
+    "name": "bỏ khỏi giỏ: toast nêu tên khóa",
+    "ok": true,
+    "detail": "Đã bỏ “Cấu trúc dữ liệu & giải thuật với Python” khỏi giỏ hàng"
+  },
+  {
+    "mode": "reduce",
+    "name": "toast vào: chỉ mờ dần, xong ngay",
+    "ok": true,
+    "detail": "enter 0.001s x=0"
+  },
+  {
+    "mode": "reduce",
+    "name": "toast không chắn chuột ngoài thẻ của nó",
+    "ok": true,
+    "detail": "none"
+  },
+  {
+    "mode": "reduce",
+    "name": "toast có trong cây truy cập (Radix: role=status)",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "axe khi toast đang mở: 0 critical/serious",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "Hoàn tác: khóa quay lại giỏ",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "toast đóng xong thì rời DOM",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "360 px: toast không đè nút thanh toán, không tràn ngang",
+    "ok": true,
+    "detail": "toast 72–166, nút 704, tràn 0"
+  },
+  {
+    "mode": "reduce",
+    "name": "toast tự đóng sau ~6 s",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "bỏ khỏi yêu thích: toast nêu tên khóa",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "Hoàn tác: khóa quay lại yêu thích",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "trang học: không còn hoạt ảnh CSS nào chạy hay lặp",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "thanh tiến độ: nhảy thẳng tới giá trị",
+    "ok": true,
+    "detail": "none 0.6s"
+  },
+  {
+    "mode": "reduce",
+    "name": "tab: panel đầu không mờ vào lúc tải trang",
+    "ok": true,
+    "detail": ""
+  },
+  {
+    "mode": "reduce",
+    "name": "tab: panel mới chỉ mờ vào, xong ngay",
+    "ok": true,
+    "detail": "enter 0.001s y=0"
+  },
+  {
+    "mode": "reduce",
+    "name": "tab: vạch dưới hiện ngay",
+    "ok": true,
+    "detail": "chọn 1 none 0.22s, bỏ 0 1"
+  }
+]

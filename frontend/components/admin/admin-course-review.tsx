@@ -426,7 +426,7 @@ function CurriculumPreview({ courseId }: { courseId: string }) {
                           aria-expanded={expanded}
                           onClick={() => setOpen(expanded ? null : lesson.id)}
                           className={cn(
-                            "flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left text-body-sm hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                            "flex min-h-12 w-full items-center gap-3 px-4 py-2 text-left text-body-sm transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
                             expanded && "bg-accent",
                           )}
                         >

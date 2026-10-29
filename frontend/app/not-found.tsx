@@ -17,7 +17,7 @@ export default function NotFound() {
   return (
     <>
       <SiteHeader />
-      <main className="flex flex-1 items-center">
+      <main id="noi-dung" className="flex flex-1 items-center">
         <StatePanel
           mood="lost"
           code="404"

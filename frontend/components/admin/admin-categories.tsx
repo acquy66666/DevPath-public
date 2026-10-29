@@ -198,7 +198,7 @@ function AddCategory({
         />
         <Button type="submit" disabled={add.isPending || name.trim() === ""}>
           {add.isPending ? <Loader2 className="animate-spin" aria-hidden /> : <Plus aria-hidden />}
-          <span className="hidden sm:inline">Thêm</span>
+          <span className="max-sm:sr-only">Thêm</span>
         </Button>
         {compact ? (
           <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

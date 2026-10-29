@@ -70,7 +70,7 @@ export function CourseStatsTable({
 
   return (
     <div className={cn("space-y-4 transition-opacity", query.isFetching && "opacity-60")}>
-      <div className="relative overflow-x-auto">
+      <div className="relative overflow-x-auto" tabIndex={0} role="region" aria-label="Thống kê từng khóa học">
         <table className="w-full min-w-[920px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs text-muted-foreground">

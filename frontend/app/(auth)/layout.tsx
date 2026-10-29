@@ -13,7 +13,7 @@ import type { ReactNode } from "react";
  */
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <main className="flex flex-1 flex-col items-center gap-6 px-4 pt-4 pb-10 sm:gap-8 sm:pt-6">
+    <main id="noi-dung" className="flex flex-1 flex-col items-center gap-6 px-4 pt-4 pb-10 sm:gap-8 sm:pt-6">
       <div className="flex w-full">
         <Link
           href="/"

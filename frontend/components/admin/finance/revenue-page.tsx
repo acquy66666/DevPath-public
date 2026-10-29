@@ -251,7 +251,7 @@ export function RevenuePage() {
                 <CardTitle>Theo giảng viên</CardTitle>
                 <CardDescription>Bấm tên để xem riêng doanh thu của giảng viên đó.</CardDescription>
               </CardHeader>
-              <CardContent className="overflow-x-auto">
+              <CardContent className="overflow-x-auto" tabIndex={0} role="region" aria-label="Doanh thu theo giảng viên">
                 <table className="w-full min-w-[760px] text-sm">
                   <thead>
                     <tr className="border-b text-left text-xs text-muted-foreground">
@@ -306,7 +306,7 @@ export function RevenuePage() {
                 {day(breakdown.data.start)} – {day(breakdown.data.end)}
               </CardDescription>
             </CardHeader>
-            <CardContent className="overflow-x-auto">
+            <CardContent className="overflow-x-auto" tabIndex={0} role="region" aria-label="Doanh thu theo khóa học">
               {breakdown.data.courses.length === 0 ? (
                 <p className="py-6 text-center text-sm text-muted-foreground">
                   Không có khóa học nào bán được trong khoảng này.

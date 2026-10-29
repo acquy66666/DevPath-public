@@ -1,5 +1,7 @@
 # Hồi quy hình ảnh — bằng chứng (29/10/2026)
 
+> **Đính chính (29/10, nhánh `feature/phase7-accessibility`):** bộ baseline đầu tiên (PR #132) **không tái tạo được trên stack sạch khác**. Ảnh bìa dự phòng lấy màu theo id khóa, mà id do seed sinh ngẫu nhiên. Mọi lượt "xanh" dưới đây đều chạy trên đúng stack đã sinh baseline. Đã sửa: seed gán id khóa theo `uuid5` của slug, baseline sinh lại, và kiểm bằng hai stack sạch nối tiếp (24/24 trên stack thứ hai). Số đo ở [`accessibility.md`](accessibility.md) §4.
+
 Nhánh `feature/phase7-visual-regression`. Task Phase 7 "Hồi quy hình ảnh".
 
 ## Cách làm
@@ -17,7 +19,7 @@ Nhánh `feature/phase7-visual-regression`. Task Phase 7 "Hồi quy hình ảnh".
 - **Ngưỡng:** `maxDiffPixelRatio: 0.001` cho cả trang (hai phía cùng một image, nên lệch thật là đổi thật), `maxDiffPixels: 0` cho logo. Project ảnh `retries: 0`.
 - Mỗi vai đăng nhập một lần cho mỗi project (giới hạn 10 lần/15 phút/email). `visual.sh` xóa bộ đếm đăng nhập của đúng ba email đó trước mỗi lượt, để chạy liền nhiều lượt trên máy dev không bị `AUTH_RATE_LIMITED`.
 - **Không dùng Git LFS:** 24 ảnh tổng 2,6 MB. LFS sẽ buộc thêm `lfs: true` cho checkout CI và tốn hạn mức băng thông LFS. Nếu bộ ảnh lớn lên quá vài chục MB thì xét lại.
-- `npm run test:e2e` giờ là `--project=chromium` (chỉ luồng vàng). Project ảnh bị `testIgnore` ở project luồng vàng, nên chạy trên Windows không đụng tới baseline Linux.
+- `npm run test:e2e` giờ là `--project=chromium` (từ 29/10 gồm luồng vàng, luồng bàn phím và quét axe — xem `accessibility.md`). Project ảnh bị `testIgnore` ở project luồng vàng, nên chạy trên Windows không đụng tới baseline Linux.
 
 ## CI
 

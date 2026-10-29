@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Pager } from "@/components/ui/pager";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
@@ -79,23 +79,26 @@ export function NotificationList() {
     );
   }
 
+  const tab = unread ? "unread" : "all";
+
   return (
-    <div className="space-y-4">
+    // The list is the tabs' panel: a selected tab has to point at what it
+    // controls (axe `aria-valid-attr-value` when there is no panel behind it).
+    <Tabs
+      value={tab}
+      onValueChange={(value) => {
+        setUnread(value === "unread");
+        setPage(1);
+      }}
+      className="gap-4"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs
-          value={unread ? "unread" : "all"}
-          onValueChange={(value) => {
-            setUnread(value === "unread");
-            setPage(1);
-          }}
-        >
-          <TabsList>
-            <TabsTrigger value="all">Tất cả</TabsTrigger>
-            <TabsTrigger value="unread">
-              Chưa đọc{unreadCount > 0 ? ` (${unreadCount})` : ""}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <TabsList>
+          <TabsTrigger value="all">Tất cả</TabsTrigger>
+          <TabsTrigger value="unread">
+            Chưa đọc{unreadCount > 0 ? ` (${unreadCount})` : ""}
+          </TabsTrigger>
+        </TabsList>
         <Button
           variant="outline"
           size="sm"
@@ -111,51 +114,53 @@ export function NotificationList() {
         </Button>
       </div>
 
-      {list.isError ? (
-        <Alert variant="destructive">
-          <AlertDescription>{apiErrorMessage(list.error)}</AlertDescription>
-        </Alert>
-      ) : null}
+      <TabsContent value={tab} className="space-y-4">
+        {list.isError ? (
+          <Alert variant="destructive">
+            <AlertDescription>{apiErrorMessage(list.error)}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {list.isPending ? (
-        <NotificationRowsSkeleton />
-      ) : null}
+        {list.isPending ? (
+          <NotificationRowsSkeleton />
+        ) : null}
 
-      {list.data && list.data.total === 0 ? (
-        <EmptyState
-          mood="empty-notifications"
-          title={unread ? "Bạn đã đọc hết thông báo" : "Chưa có thông báo nào"}
-          description="Khi có người trả lời câu hỏi của bạn, hoặc học viên hỏi trong khóa bạn dạy, thông báo sẽ hiện ở đây."
-        />
-      ) : null}
+        {list.data && list.data.total === 0 ? (
+          <EmptyState
+            mood="empty-notifications"
+            title={unread ? "Bạn đã đọc hết thông báo" : "Chưa có thông báo nào"}
+            description="Khi có người trả lời câu hỏi của bạn, hoặc học viên hỏi trong khóa bạn dạy, thông báo sẽ hiện ở đây."
+          />
+        ) : null}
 
-      {list.data && list.data.items.length > 0 ? (
-        <ul
-          className={cn("divide-y rounded-lg border", list.isPlaceholderData && "opacity-60")}
-          aria-busy={list.isFetching}
-        >
-          {list.data.items.map((notification) => (
-            <li key={notification.id}>
-              <NotificationLink
-                notification={notification}
-                onFollow={(followed) => {
-                  if (followed.read_at === null) one.mutate(followed.id);
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      ) : null}
+        {list.data && list.data.items.length > 0 ? (
+          <ul
+            className={cn("divide-y rounded-lg border", list.isPlaceholderData && "opacity-60")}
+            aria-busy={list.isFetching}
+          >
+            {list.data.items.map((notification) => (
+              <li key={notification.id}>
+                <NotificationLink
+                  notification={notification}
+                  onFollow={(followed) => {
+                    if (followed.read_at === null) one.mutate(followed.id);
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-      {list.data ? (
-        <Pager
-          page={list.data.page}
-          pageSize={list.data.page_size}
-          total={list.data.total}
-          onPage={setPage}
-        />
-      ) : null}
-    </div>
+        {list.data ? (
+          <Pager
+            page={list.data.page}
+            pageSize={list.data.page_size}
+            total={list.data.total}
+            onPage={setPage}
+          />
+        ) : null}
+      </TabsContent>
+    </Tabs>
   );
 }
 

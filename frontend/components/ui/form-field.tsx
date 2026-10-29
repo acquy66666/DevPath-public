@@ -62,6 +62,8 @@ export function FormField({
         placeholder={placeholder}
         disabled={disabled}
         autoFocus={autoFocus}
+        // An address is not a word: no red squiggle under it.
+        spellCheck={type === "email" ? false : undefined}
       />
       {error ? (
         <p id={messageId} className="flex items-start gap-1.5 text-sm text-destructive-text">

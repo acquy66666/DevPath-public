@@ -303,7 +303,7 @@ function HotCourses({ period, periodLabel }: { period: StatsPeriod; periodLabel:
             hint="Chọn khoảng thời gian dài hơn để xem khóa học nào đang thu hút học viên."
           />
         ) : (
-          <div className={cn("-mx-4 overflow-x-auto px-4", hot.isPlaceholderData && "opacity-60")}>
+          <div className={cn("-mx-4 overflow-x-auto px-4", hot.isPlaceholderData && "opacity-60")} tabIndex={0} role="region" aria-label="Khóa học hot">
             <table className="w-full min-w-[36rem] text-sm">
               <thead>
                 <tr className="border-b text-left text-muted-foreground">

@@ -6,10 +6,15 @@ import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
 import { cn } from "@/lib/utils"
 import { CheckIcon, ChevronRightIcon } from "lucide-react"
 
+// Not modal by default. A menu is not a dialog (WAI-ARIA menu pattern), and
+// Radix's modal mode hides the rest of the page with aria-hidden while leaving
+// it focusable -- axe `aria-hidden-focus` on header, main and footer at once.
+// Escape, a click outside and Tab still close it.
 function DropdownMenu({
+  modal = false,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
-  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+  return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" modal={modal} {...props} />
 }
 
 function DropdownMenuPortal({

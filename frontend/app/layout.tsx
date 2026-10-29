@@ -39,6 +39,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             crossOrigin="anonymous"
           />
         ))}
+        {/* First stop of the tab order: past the header straight to the page.
+            The target is the <main id="noi-dung"> of every layout; no tabIndex
+            needed there -- following the link moves where Tab starts from. */}
+        <a
+          href="#noi-dung"
+          className="sr-only rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+        >
+          Bỏ qua tới nội dung chính
+        </a>
         <Providers>{children}</Providers>
       </body>
     </html>

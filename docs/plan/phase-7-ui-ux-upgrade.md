@@ -153,7 +153,13 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - CI: bước "Visual regression" trước luồng vàng trong job E2E. **Chưa có lượt CI thật** (Actions bị chặn tới 01/11).
   - **Kiểm:** 24/24 ba lượt liền, thử đỏ (một chữ ở chân trang → 2.210 điểm ảnh lệch), luồng vàng 1 passed rồi bộ ảnh vẫn 24/24.
   - Bằng chứng: [`visual-regression.md`](../report/assets/phase-7/visual-regression.md)
-- [ ] Rà truy cập: axe-core trên các trang chính → 0 lỗi `critical`/`serious`; đi hết luồng vàng bằng bàn phím; rà skill `web-design-guidelines`
+  - **Đính chính 29/10 (nhánh rà truy cập):** baseline đầu không tái tạo được trên stack sạch khác, vì màu ảnh bìa đi theo id khóa ngẫu nhiên. Seed giờ gán id khóa theo `uuid5` của slug, baseline sinh lại, kiểm bằng hai stack sạch nối tiếp: 24/24.
+- [x] Rà truy cập: axe-core trên các trang chính → 0 lỗi `critical`/`serious`; đi hết luồng vàng bằng bàn phím; rà skill `web-design-guidelines` — xong 29/10:
+  - `e2e/a11y/pages.a11y.spec.ts`: 4 vai × 1440/375, 82 lượt quét (cả menu/chuông/thanh bên đang mở). Lượt đầu ra 5 loại lỗi: nút không tên ở admin @375 (`hidden sm:inline` → `max-sm:sr-only`), 7 bảng cuộn ngang không với tới bằng bàn phím, tab thông báo không có panel, `aria-hidden-focus` của DropdownMenu modal (wrapper giờ mặc định `modal={false}`), tương phản đo lúc menu đang mờ dần (lỗi đo, không phải lỗi màu).
+  - `e2e/keyboard-flow.spec.ts`: luồng vàng không chuột, focus nhìn thấy được ở mọi điểm dừng, Monaco ra bằng Ctrl+M; axe ở giỏ có hàng / đơn đã trả / bài code AC / chứng chỉ. Thử đỏ: "Nộp bài" `tabIndex={-1}` → đỏ.
+  - `web-design-guidelines`: thêm liên kết "Bỏ qua tới nội dung chính" (đích `<main id="noi-dung">`), email tắt kiểm chính tả trong `FormField`.
+  - **Kiểm:** `npm run test:e2e` 10 passed, bộ ảnh 24/24 trên stack sạch, ESLint sạch, `npm test` 156/156.
+  - Bằng chứng: [`accessibility.md`](../report/assets/phase-7/accessibility.md)
 - [ ] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu
 - [ ] Viết skill dự án **`devpath-ui`** (`.claude/skills/devpath-ui/`, dùng `skill-creator`, khuôn `brand-guidelines`): luật token, component, nhân vật (khi nào dùng `mood` nào, ở đâu không dùng), chuyển động. Skill `nextjs-feature` trỏ sang nó
 

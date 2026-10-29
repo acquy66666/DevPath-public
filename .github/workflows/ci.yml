@@ -689,7 +689,7 @@ jobs:
         working-directory: frontend
         run: npm run test:visual
 
-      - name: Golden flow
+      - name: Golden flow, keyboard-only flow, axe sweep
         # Runs even when a screenshot differs: two separate answers.
         if: ${{ !cancelled() }}
         working-directory: frontend

@@ -170,7 +170,7 @@ export function PayoutsPage() {
           <CardTitle>Số dư từng giảng viên</CardTitle>
           <CardDescription>Hoa hồng tính trên số tiền học viên thực trả, theo tỉ lệ chốt lúc bán.</CardDescription>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="overflow-x-auto" tabIndex={0} role="region" aria-label="Số dư từng giảng viên">
           {balances.isPending ? (
             <ListSkeleton rows={2} height="h-10" />
           ) : balances.isError ? (
@@ -256,7 +256,7 @@ export function PayoutsPage() {
           ) : statements.data.items.length === 0 ? (
             <EmptyState title="Chưa có bảng kê nào" hint="Chọn một tháng đã qua rồi bấm “Lập bảng kê”." />
           ) : (
-            <div className={cn("overflow-x-auto transition-opacity", statements.isFetching && "opacity-60")}>
+            <div className={cn("overflow-x-auto transition-opacity", statements.isFetching && "opacity-60")} tabIndex={0} role="region" aria-label="Các bảng kê">
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">

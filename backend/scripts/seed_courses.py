@@ -19,6 +19,7 @@ it is, including any edits somebody made to it by hand.
 """
 
 import os
+import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -480,6 +481,19 @@ async def _instructor(session: AsyncSession, spec: InstructorSpec) -> tuple[User
     return user, True
 
 
+#: Seeded course ids are derived from the slug, so every database seeded from
+#: nothing holds the same ids. Screens draw from them -- a course's fallback
+#: cover picks its tint by id (frontend/lib/courses/cover.ts) and ties are
+#: broken by it -- so the visual baselines in frontend/e2e/visual only match a
+#: fresh stack when the ids do. A database seeded before this keeps its random
+#: ones: the seed matches courses by slug and never rewrites one.
+SEED_COURSE_NAMESPACE = uuid.UUID("5f6d8b8e-2f43-4c56-9a3b-7c1e0d2a9b41")
+
+
+def seed_course_id(slug: str) -> uuid.UUID:
+    return uuid.uuid5(SEED_COURSE_NAMESPACE, slug)
+
+
 async def _build_course(
     session: AsyncSession,
     spec: CourseSpec,
@@ -491,6 +505,7 @@ async def _build_course(
     published_at = datetime.now(UTC)
 
     course = Course(
+        id=seed_course_id(spec.slug),
         instructor_id=instructor.id,
         category_id=category.id,
         title=spec.title,

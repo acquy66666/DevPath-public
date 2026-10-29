@@ -25,7 +25,7 @@ export default function AppError({
   retry: () => void;
 }) {
   return (
-    <main className="flex flex-1 items-center">
+    <main id="noi-dung" className="flex flex-1 items-center">
       <StatePanel
         mood="sorry"
         title="Trang này đang gặp lỗi"

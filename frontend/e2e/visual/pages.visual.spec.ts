@@ -18,55 +18,20 @@
  */
 import path from "node:path";
 
-import { type APIRequestContext, type Browser, type Page, type TestInfo, expect, test } from "@playwright/test";
+import { type Browser, type Page, type TestInfo, expect, test } from "@playwright/test";
 
-import { API_URL, PASSWORD } from "../support/stack";
+import {
+  ADMIN,
+  FREE_COURSE,
+  INSTRUCTOR,
+  type Json,
+  PAID_COURSE,
+  STUDENT,
+  api,
+  signIn,
+} from "../support/accounts";
 
 const STYLE = path.join(__dirname, "screenshot.css");
-
-const ADMIN = { email: "admin@devpath.example", password: "devpath-admin" };
-const INSTRUCTOR = { email: "khoa.tran@devpath.example", password: "devpath-instructor" };
-const STUDENT = { email: "visual-hocvien@e2e.devpath.example", password: PASSWORD };
-
-const FREE_COURSE = "python-co-ban-cho-nguoi-moi-bat-dau";
-const PAID_COURSE = "cau-truc-du-lieu-va-giai-thuat-voi-python";
-
-type Json = Record<string, unknown>;
-
-async function api(
-  request: APIRequestContext,
-  method: string,
-  url: string,
-  { token, data, ok = [] }: { token?: string; data?: Json; ok?: number[] } = {},
-): Promise<Json> {
-  const response = await request.fetch(`${API_URL}/api/v1${url}`, {
-    method,
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    data,
-  });
-  const accepted = response.ok() || ok.includes(response.status());
-  expect(accepted, `${method} ${url}: ${response.status()} ${await response.text()}`).toBe(true);
-  return response.status() === 204 || !response.ok() ? {} : ((await response.json()) as Json);
-}
-
-/**
- * Sign in through the page's own request context, so the refresh cookie lands
- * in the browser's jar and the next page load comes up signed in -- the same
- * way a reloaded tab does.
- */
-async function signIn(page: Page, who: { email: string; password: string }): Promise<string> {
-  const login = await page.request.post(`${API_URL}/api/v1/auth/login`, {
-    data: { email: who.email, password: who.password },
-  });
-  if (login.ok()) return ((await login.json()) as Json).access_token as string;
-  // Only the student may be missing: it is created here, once per database.
-  const missingStudent = who === STUDENT && login.status() === 401;
-  expect(missingStudent, `login ${who.email}: ${login.status()} ${await login.text()}`).toBe(true);
-  const registered = await api(page.request, "POST", "/auth/register", {
-    data: { email: who.email, password: who.password, full_name: "Học Viên Ảnh" },
-  });
-  return registered.access_token as string;
-}
 
 /** Rewrite every date and clock time on the page to the same fixed text. */
 async function freezeTimes(page: Page) {

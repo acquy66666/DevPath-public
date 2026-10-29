@@ -53,7 +53,7 @@ export function SearchBox({
       />
       <Button type="submit" variant="outline" className="h-10">
         <Search aria-hidden />
-        <span className="hidden sm:inline">Tìm</span>
+        <span className="max-sm:sr-only">Tìm</span>
       </Button>
     </form>
   );

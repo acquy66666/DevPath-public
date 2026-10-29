@@ -220,7 +220,7 @@ export function StatementDetail({ id }: { id: string }) {
           </tbody>
         </table>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Các dòng của bảng kê">
           <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-b text-left text-xs text-muted-foreground">

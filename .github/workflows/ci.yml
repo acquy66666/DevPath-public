@@ -682,7 +682,16 @@ jobs:
           docker compose exec -T backend alembic upgrade head
           docker compose exec -T backend python -m scripts.seed
 
+      # Before the golden flow, on the stack exactly as the seed left it: the
+      # baselines are pictures of that data. Inside Playwright's own Linux
+      # image, the one the baselines were drawn in (scripts/visual.sh).
+      - name: Visual regression
+        working-directory: frontend
+        run: npm run test:visual
+
       - name: Golden flow
+        # Runs even when a screenshot differs: two separate answers.
+        if: ${{ !cancelled() }}
         working-directory: frontend
         run: npm run test:e2e
 

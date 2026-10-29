@@ -404,4 +404,23 @@
   h3 {
     text-wrap: balance;
   }
+
+  /* Reduced motion (components/Motion): the safety net under the
+     `motion-safe:` / `motion-reduce:` rules each component carries.
+     - Every CSS animation finishes at once: a dialog or toast is simply
+       there, a spinner stands still beside its words. 1ms rather than 0 so
+       `animationend` still fires and Radix unmounts what has closed.
+     - No smooth scrolling.
+     Colour transitions stay: they are a change of colour, not movement.
+     Naomi runs on the Web Animations API and stands still by her own rule. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 1ms !important;
+      animation-delay: 0ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }

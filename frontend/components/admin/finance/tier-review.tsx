@@ -218,7 +218,7 @@ function EvaluationRow({ row, onDecide }: { row: Evaluation; onDecide: () => voi
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" size="sm" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
-            <ChevronDown className={cn("transition-transform", open && "rotate-180")} aria-hidden />
+            <ChevronDown className={cn("transition-transform duration-fast motion-reduce:transition-none", open && "rotate-180")} aria-hidden />
             Chi tiết
           </Button>
           <Button size="sm" onClick={onDecide}>

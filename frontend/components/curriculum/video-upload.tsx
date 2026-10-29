@@ -6,6 +6,7 @@ import { useRef, useState, type ChangeEvent } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import type { Lesson } from "@/lib/api/curriculum";
 import { uploadToStorage } from "@/lib/api/storage";
@@ -168,12 +169,13 @@ export function VideoUpload({ lesson }: { lesson: Lesson }) {
 
       {busy ? (
         <div className="space-y-2">
-          <div className="h-2 overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-[width] duration-200"
-              style={{ width: `${phase === "sending" ? percent : 100}%` }}
-            />
-          </div>
+          {/* Bytes arrive many times a second: a short glide keeps up with them. */}
+          <Progress
+            value={phase === "sending" ? percent : 100}
+            aria-label="Tiến độ tải video lên"
+            className="bg-muted"
+            indicatorClassName="duration-fast"
+          />
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
             {phase === "signing"

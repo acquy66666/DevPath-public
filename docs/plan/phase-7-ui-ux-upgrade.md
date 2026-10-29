@@ -142,7 +142,12 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
 
 ## Chuyển động và chất lượng
 
-- [ ] Micro-interaction theo token chuyển động: hover/press, toast, thanh tiến độ, chuyển tab. Không có hoạt ảnh nào chặn thao tác; mọi hoạt ảnh tắt được bằng `prefers-reduced-motion` (kiểm bằng `page.emulateMedia({ reducedMotion: "reduce" })`)
+- [x] Micro-interaction theo token chuyển động: hover/press, toast, thanh tiến độ, chuyển tab. Không có hoạt ảnh nào chặn thao tác; mọi hoạt ảnh tắt được bằng `prefers-reduced-motion` (kiểm bằng `page.emulateMedia({ reducedMotion: "reduce" })`) — xong 29/10:
+  - **Toast mới** (`components/ui/toast.tsx`, Radix Toast, không thêm gói): bỏ khỏi giỏ / yêu thích có "Hoàn tác", để dành sang yêu thích; góc phải trên dưới header (không đè thanh thanh toán dính đáy ở 360 px). Vá lỗi Radix 1.2.23: sau "Hoàn tác" mọi toast sau không tự đóng.
+  - **Thanh tiến độ** `components/ui/progress.tsx` đi bằng `translateX` + `duration-progress` (trang học, ô tải video); **tab**: vạch `line` giãn ra, panel vừa chuyển tới mờ vào (panel đầu không); hover thiếu transition ở 3 dòng admin; 3 mũi tên xoay thiếu `motion-reduce`; carousel về token.
+  - **Giảm chuyển động:** lưới an toàn trong `globals.css` (mọi CSS animation 1 ms, lặp 1 lần, không cuộn mượt). Lỗi tìm ra: vạch tab vẫn trượt vì `motion-reduce:` thua độ ưu tiên của lớp `group-data-*`.
+  - **Kiểm:** `motion/check.cjs` 36/36 (hai lượt `emulateMedia`), `npm test` 156/156 (11 mới, `motion.test.ts` + `toast-store.test.ts`), lint sạch, E2E 1 passed, `next build` không mạng xanh.
+  - Bằng chứng: [`motion.md`](../report/assets/phase-7/motion.md)
 - [ ] Hồi quy hình ảnh: Playwright `toHaveScreenshot` cho ~10 trang khóa (che vùng động: giờ, avatar, số liệu), baseline commit vào repo, chạy trong CI. Baseline sinh **trên Linux** (job CI hoặc image Playwright), vì baseline chụp trên Windows render font khác và sẽ đỏ trên CI
 - [ ] Rà truy cập: axe-core trên các trang chính → 0 lỗi `critical`/`serious`; đi hết luồng vàng bằng bàn phím; rà skill `web-design-guidelines`
 - [ ] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu

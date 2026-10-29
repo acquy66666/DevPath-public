@@ -1064,3 +1064,21 @@ Nhóm màn 10 của Phase 7, cũng là nhóm cuối. Bằng chứng: `docs/repor
 **Lọc bằng chip thay cho ô chọn** ở hàng đợi duyệt và mã giảm giá (`components/admin/filter-chips.tsx`, cùng kiểu với danh sách khóa của giảng viên). Ô chọn còn lại (loại nội dung báo cáo, vai trò, trạng thái tài khoản, các bộ lọc tài chính) bỏ `h-9`. Ô bị ép 36 px cắt dấu tiếng Việt (ghi từ nhóm "Trạng thái toàn site"); giờ ô cao 40 px theo design system, `check.cjs` đo.
 
 **Hai lỗi axe có sẵn được sửa.** Dải sao của đánh giá bị báo cáo có `aria-label` gắn trên `<p>` (`aria-prohibited-attr`), giờ thành `role="img"`. Bảng lãi lỗ 12 tháng cuộn ngang mà bàn phím không vào được (`scrollable-region-focusable`), giờ khung cuộn là `role="region"` có tên và `tabIndex={0}`.
+
+## Micro-interaction: toast có "Hoàn tác", thanh tiến độ đi bằng transform, lưới an toàn cho giảm chuyển động (29/10/2026)
+
+Task đầu của mục "Chuyển động và chất lượng" (Phase 7). Bằng chứng: `docs/report/assets/phase-7/motion.md` + `motion/`. Backend không đổi.
+
+**Toast chỉ cho thứ vừa rời màn hình.** Trước task, site không có toast nào: bỏ một khóa khỏi giỏ hay yêu thích thì dòng đó biến mất mà không một chữ nào xác nhận. Giờ ba thao tác đó hiện toast nêu tên khóa; hai cái kèm "Hoàn tác", vì làm lại chỉ là đúng một request đã có (thêm vào giỏ, lưu yêu thích). Toast không dùng cho lỗi (lỗi đứng cạnh chỗ hỏng, bằng Alert), và không thay "Đã lưu thay đổi." cạnh form: câu đó đúng chỗ hơn, và các script kiểm cũ còn tìm nó. Dùng Radix Toast có sẵn trong gói `radix-ui`, không thêm thư viện. Radix lo đọc cho trình đọc màn hình, dừng khi con trỏ/focus ở trên, phím F8 và vuốt để đóng.
+
+**Toast ở góc phải trên, dưới header.** Ở đáy màn hình điện thoại nó sẽ đè thanh "Thanh toán qua VNPay" dính đáy của giỏ hàng, trái luật "không che nút hành động". Đo ở 360 px: toast nằm ở y 72–166, nút ở y 704.
+
+**Vá một lỗi của Radix Toast 1.2.23 ở phía mình.** Radix chỉ gắn bộ nghe "con trỏ/focus đã rời" khi còn toast trên màn hình. Toast đóng trong lúc con trỏ đang nằm trên nó (chính là cú bấm "Hoàn tác") thì cờ tạm dừng kẹt lại, và mọi toast sau đó không tự đóng nữa. `Toaster` giờ gửi cho vùng toast một `pointerleave` mỗi khi có toast mới mà con trỏ không ở trên vùng đó. Focus còn trong vùng toast thì Radix vẫn giữ dừng, đúng thiết kế cho người dùng bàn phím. Lên bản Radix có sửa lỗi này thì xóa đoạn vá đi.
+
+**Thanh tiến độ đi bằng `translateX`, không bằng `width`.** Luật Motion chỉ cho động `transform`/`opacity`, nhưng thanh ở trang học lại động `width`. `components/ui/progress.tsx` dùng cho cả trang học lẫn ô tải video: `duration-progress` (0,6 s), riêng ô tải video ghi đè thành `duration-fast` vì byte tới nhiều lần mỗi giây. Giảm chuyển động thì thanh nhảy thẳng tới giá trị. Các thanh số liệu ở thống kê giảng viên/admin không đổi: chúng là biểu đồ, không phải tiến độ, và khu đó không có hoạt ảnh trang trí.
+
+**Panel tab chỉ mờ vào khi người đọc chuyển tab.** `Tabs` đánh dấu `data-switched` sau lần đổi tab đầu tiên. Panel đầu là một phần của trang, nếu cũng mờ vào lúc tải thì chỉ làm chậm lần vẽ đầu (Lighthouse "trước" đã vượt LCP 2,5 s). Vạch dưới tab `line` giãn từ giữa tab ra.
+
+**Lưới an toàn ở `globals.css` thay vì sửa từng chỗ.** Với `prefers-reduced-motion: reduce`, mọi CSS animation xong trong 1 ms, lặp một lần. Đặt 1 ms chứ không đặt 0 vì cần `animationend` vẫn phát, để Radix gỡ được thứ đã đóng. Cuộn mượt cũng tắt. Vòng xoay tải đứng yên cạnh chữ "Đang…", vốn đã nói đủ. Transition đổi màu được giữ lại vì đó là đổi màu, không phải chuyển động. Transition có `transform` thì phải tự tắt bằng `motion-reduce:`, và `motion.test.ts` chặn khi thiếu. Naomi chạy bằng Web Animations nên không chịu ảnh hưởng của lưới này; cô có luật đứng yên riêng.
+
+**Lớp tắt phải mang cùng tiền tố với lớp bật.** Kiểm trên Chrome cho thấy `motion-reduce:after:transition-none` không tắt được `group-data-[variant=line]/tabs-list:after:transition-transform`, vì bộ chọn group cụ thể hơn. Test đọc mã nguồn để lọt lỗi này, nên `motion.test.ts` có thêm một luật bắt đúng kiểu đó.

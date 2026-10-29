@@ -15,14 +15,29 @@ import { cn } from "@/lib/utils"
 // Every TabsTrigger needs its TabsContent: a trigger whose panel is missing is
 // the axe "critical" measured on the leaderboard before Phase 7.
 
+//
+// Motion (components/Motion: tab = duration-base): the `line` bar grows from
+// the middle of the chosen tab, and a panel the reader switches to fades in
+// rising 4px. The first panel does not: it is part of the page, and a fade on
+// load would only hold back the first paint. With reduced motion the bar
+// simply appears and the panel only fades.
+
 function Tabs({
   className,
+  onValueChange,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Root>) {
+  const [switched, setSwitched] = React.useState(false)
+
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
-      className={cn("flex flex-col gap-3", className)}
+      data-switched={switched ? "" : undefined}
+      className={cn("group/tabs flex flex-col gap-3", className)}
+      onValueChange={(value) => {
+        setSwitched(true)
+        onValueChange?.(value)
+      }}
       {...props}
     />
   )
@@ -70,7 +85,7 @@ function TabsTrigger({
         // tray
         "group-data-[variant=tray]/tabs-list:h-8 group-data-[variant=tray]/tabs-list:flex-1 group-data-[variant=tray]/tabs-list:rounded-sm group-data-[variant=tray]/tabs-list:px-3 group-data-[variant=tray]/tabs-list:data-[state=active]:bg-card group-data-[variant=tray]/tabs-list:data-[state=active]:shadow-sm",
         // line
-        "group-data-[variant=line]/tabs-list:h-10 group-data-[variant=line]/tabs-list:shrink-0 group-data-[variant=line]/tabs-list:px-0.5 group-data-[variant=line]/tabs-list:after:absolute group-data-[variant=line]/tabs-list:after:inset-x-0 group-data-[variant=line]/tabs-list:after:bottom-0 group-data-[variant=line]/tabs-list:after:h-0.5 group-data-[variant=line]/tabs-list:after:rounded-full group-data-[variant=line]/tabs-list:data-[state=active]:after:bg-primary",
+        "group-data-[variant=line]/tabs-list:h-10 group-data-[variant=line]/tabs-list:shrink-0 group-data-[variant=line]/tabs-list:px-0.5 group-data-[variant=line]/tabs-list:after:absolute group-data-[variant=line]/tabs-list:after:inset-x-0 group-data-[variant=line]/tabs-list:after:bottom-0 group-data-[variant=line]/tabs-list:after:h-0.5 group-data-[variant=line]/tabs-list:after:rounded-full group-data-[variant=line]/tabs-list:after:bg-primary group-data-[variant=line]/tabs-list:after:scale-x-0 group-data-[variant=line]/tabs-list:data-[state=active]:after:scale-x-100 group-data-[variant=line]/tabs-list:after:transition-transform group-data-[variant=line]/tabs-list:after:duration-base group-data-[variant=line]/tabs-list:after:ease-standard motion-reduce:group-data-[variant=line]/tabs-list:after:transition-none",
         className
       )}
       {...props}
@@ -85,7 +100,10 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       data-slot="tabs-content"
-      className={cn("flex-1", className)}
+      className={cn(
+        "flex-1 group-data-switched/tabs:data-[state=active]:animate-in group-data-switched/tabs:data-[state=active]:fade-in-0 group-data-switched/tabs:data-[state=active]:duration-base group-data-switched/tabs:data-[state=active]:ease-enter motion-safe:group-data-switched/tabs:data-[state=active]:slide-in-from-bottom-1",
+        className
+      )}
       {...props}
     />
   )

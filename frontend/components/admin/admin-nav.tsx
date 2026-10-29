@@ -188,7 +188,7 @@ function FoldedNav({ current, summary }: { current: Place; summary: AdminSummary
         <span className="min-w-0 flex-1 truncate font-semibold">{current.label}</span>
         {waiting > 0 ? <CountBadge count={waiting} label="việc đang chờ" /> : null}
         <ChevronDown
-          className={cn("size-4.5 shrink-0 transition-transform duration-fast", open && "rotate-180")}
+          className={cn("size-4.5 shrink-0 transition-transform duration-fast motion-reduce:transition-none", open && "rotate-180")}
           aria-hidden
         />
       </button>

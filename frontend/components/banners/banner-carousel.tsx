@@ -55,7 +55,7 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
       onBlur={() => setPaused(false)}
     >
       <div
-        className="flex transition-transform duration-500 ease-out motion-reduce:transition-none"
+        className="flex transition-transform duration-slow ease-standard motion-reduce:transition-none"
         style={{ transform: `translateX(-${index * 100}%)` }}
       >
         {banners.map((banner, position) => (

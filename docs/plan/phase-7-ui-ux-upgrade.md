@@ -148,7 +148,11 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - **Giảm chuyển động:** lưới an toàn trong `globals.css` (mọi CSS animation 1 ms, lặp 1 lần, không cuộn mượt). Lỗi tìm ra: vạch tab vẫn trượt vì `motion-reduce:` thua độ ưu tiên của lớp `group-data-*`.
   - **Kiểm:** `motion/check.cjs` 36/36 (hai lượt `emulateMedia`), `npm test` 156/156 (11 mới, `motion.test.ts` + `toast-store.test.ts`), lint sạch, E2E 1 passed, `next build` không mạng xanh.
   - Bằng chứng: [`motion.md`](../report/assets/phase-7/motion.md)
-- [ ] Hồi quy hình ảnh: Playwright `toHaveScreenshot` cho ~10 trang khóa (che vùng động: giờ, avatar, số liệu), baseline commit vào repo, chạy trong CI. Baseline sinh **trên Linux** (job CI hoặc image Playwright), vì baseline chụp trên Windows render font khác và sẽ đỏ trên CI
+- [x] Hồi quy hình ảnh: Playwright `toHaveScreenshot` cho ~10 trang khóa (che vùng động: giờ, avatar, số liệu), baseline commit vào repo, chạy trong CI. Baseline sinh **trên Linux** (job CI hoặc image Playwright), vì baseline chụp trên Windows render font khác và sẽ đỏ trên CI — xong 29/10:
+  - 10 màn × 1440/375 px + logo `maxDiffPixels: 0` = 24 baseline (2,6 MB, không LFS) ở `frontend/e2e/visual/`. Chụp trong image `mcr.microsoft.com/playwright:v1.63.0-noble` qua `scripts/visual.sh` (`npm run test:visual`), trên stack chỉ có `scripts.seed`. Ngày/giờ trong chữ được viết lại thành giá trị cố định, hoạt ảnh tắt, chỉ báo dev ẩn; ngưỡng 0,1 %.
+  - CI: bước "Visual regression" trước luồng vàng trong job E2E. **Chưa có lượt CI thật** (Actions bị chặn tới 01/11).
+  - **Kiểm:** 24/24 ba lượt liền, thử đỏ (một chữ ở chân trang → 2.210 điểm ảnh lệch), luồng vàng 1 passed rồi bộ ảnh vẫn 24/24.
+  - Bằng chứng: [`visual-regression.md`](../report/assets/phase-7/visual-regression.md)
 - [ ] Rà truy cập: axe-core trên các trang chính → 0 lỗi `critical`/`serious`; đi hết luồng vàng bằng bàn phím; rà skill `web-design-guidelines`
 - [ ] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu
 - [ ] Viết skill dự án **`devpath-ui`** (`.claude/skills/devpath-ui/`, dùng `skill-creator`, khuôn `brand-guidelines`): luật token, component, nhân vật (khi nào dùng `mood` nào, ở đâu không dùng), chuyển động. Skill `nextjs-feature` trỏ sang nó

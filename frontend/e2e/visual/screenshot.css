@@ -1,0 +1,11 @@
+/*
+ * Injected at capture time only. Hides what is not the page: Next's dev
+ * indicator and error overlay (the E2E stack runs `next dev`), and the caret.
+ */
+nextjs-portal {
+  display: none !important;
+}
+
+* {
+  caret-color: transparent !important;
+}

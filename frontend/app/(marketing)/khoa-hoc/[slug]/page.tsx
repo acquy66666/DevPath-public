@@ -33,6 +33,7 @@ import { summarizeCurriculum } from "@/lib/courses/curriculum-summary";
 import { LEVEL_LABELS, languageLabel } from "@/lib/courses/labels";
 import { formatDate, formatDuration, formatPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { CodeFontPreload } from "@/components/layout/code-font-preload";
 
 /**
  * The public page for one course, server-rendered so a crawler reads the whole
@@ -158,6 +159,7 @@ export default async function CourseDetailPage({
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-16">
+      <CodeFontPreload />
       {/* Three grid items, not two columns: on a phone the price card has to
           come straight after the title -- below the curriculum and the reviews
           nobody finds the button -- while on a wide screen it is the sticky

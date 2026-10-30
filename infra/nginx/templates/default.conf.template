@@ -80,6 +80,11 @@ server {
 
     gzip on;
     gzip_vary on;
+    # Level 5 rather than nginx's default 1: on the home page's first load
+    # (HTML, CSS and JS before the first paint) that is ~15 KB less on the
+    # wire, at a CPU cost too small to see on these sizes. Measured 30/10,
+    # docs/report/assets/phase-7/performance.md.
+    gzip_comp_level 5;
     gzip_min_length 1024;
     gzip_proxied any;
     gzip_types

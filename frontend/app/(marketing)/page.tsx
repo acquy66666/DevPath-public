@@ -5,8 +5,9 @@ import { HomeBanners, HomeBannersSkeleton } from "@/components/banners/home-bann
 import { NewestCourses, NewestCoursesSkeleton } from "@/components/courses/newest-courses";
 import { GradingShowcase } from "@/components/home/grading-showcase";
 import { HeroActions } from "@/components/home/hero-actions";
+import { HomeRecommendations } from "@/components/home/home-recommendations";
 import { HomeTopics, HomeTopicsSkeleton } from "@/components/home/home-topics";
-import { RecommendedForYou } from "@/components/recommendations/recommended-for-you";
+import { CodeFontPreload } from "@/components/layout/code-font-preload";
 
 /** The three things DevPath does that a plain video course does not. */
 const PROMISES = [
@@ -18,6 +19,7 @@ const PROMISES = [
 export default function HomePage() {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 px-4 pt-10 pb-16 md:gap-16 md:pt-14 md:pb-24">
+      <CodeFontPreload />
       {/* The promise on the left, one graded submission on the right: the
           page opens on what the site is for, not on a promotion. */}
       <section className="grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:gap-12">
@@ -49,7 +51,7 @@ export default function HomePage() {
 
       {/* Draws nothing for a signed-out visitor: a recommendation is one
           person's history, and there is no anonymous version of it. */}
-      <RecommendedForYou />
+      <HomeRecommendations />
 
       {/* Suspense keeps the static part of the page prerendered while the
           blocks that call the API stream at request time -- otherwise the

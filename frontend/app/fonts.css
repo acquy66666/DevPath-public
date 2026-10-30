@@ -7,7 +7,13 @@
  * one bad answer broke every page -- the E2E run on main after PR #88 died on
  * it. These are the very files and @font-face rules Google serves (as next/font
  * would fetch them), one file per subset with its unicode-range, so the browser
- * still downloads only the subsets a page uses. Noto Serif keeps the three
+ * still downloads only the subsets a page uses -- with one change: Google's
+ * latin-ext range overlaps its vietnamese one (ă đ ĩ ũ ơ ư ỳ–ỹ ₫), so every
+ * Vietnamese page fetched latin-ext too (34 KB for Lexend) for letters the
+ * vietnamese file already has. Each latin-ext range below leaves out exactly
+ * the code points its family's vietnamese file draws (checked against the
+ * files' cmap tables on 30/10/2026; Geist Mono's vietnamese file has no ₫, so
+ * its latin-ext keeps it). Noto Serif keeps the three
  * subsets a certificate can need. Fallback faces carry the metrics next/font
  * computes, so text does not jump when the web font arrives.
  *
@@ -37,7 +43,7 @@
   font-weight: 400 700;
   font-display: swap;
   src: url("/fonts/lexend-latin-ext.woff2") format("woff2");
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range: U+0100-0101, U+0104-010F, U+0112-0127, U+012A-0167, U+016A-019F, U+01A2-01AE, U+01B1-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EFA-1EFF, U+2020, U+20A0-20AA, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Lexend";
@@ -87,7 +93,7 @@
   font-weight: 100 900;
   font-display: swap;
   src: url("/fonts/geist-mono-latin-ext.woff2") format("woff2");
-  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range: U+100-101, U+104-10F, U+112-127, U+12A-167, U+16A-19F, U+1A2-1AE, U+1B1-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EFA-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Geist Mono";
@@ -115,7 +121,7 @@
   font-stretch: 100%;
   font-display: swap;
   src: url("/fonts/noto-serif-latin-ext.woff2") format("woff2");
-  unicode-range: U+100-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+  unicode-range: U+100-101, U+104-10F, U+112-127, U+12A-167, U+16A-19F, U+1A2-1AE, U+1B1-2BA, U+2BD-2C5, U+2C7-2CC, U+2CE-2D7, U+2DD-2FF, U+304, U+308, U+329, U+1D00-1DBF, U+1E00-1E9F, U+1EFA-1EFF, U+2020, U+20A0-20AA, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
   font-family: "Noto Serif";

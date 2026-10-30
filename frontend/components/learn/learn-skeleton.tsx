@@ -1,11 +1,18 @@
+import type { ReactNode } from "react";
+
 import { Skeleton, SkeletonText } from "@/components/ui/skeleton";
 
 /**
  * The learning page while its course, progress and contents are on their
  * way: the real frame -- course strip, lesson title, a 16:9 player, the two
  * buttons, the contents card -- so nothing moves when they land.
+ *
+ * `heading` is the lesson's real heading when the table of contents (which
+ * the server sends with the page) already names the lesson: the largest text
+ * on screen is then there with the first paint rather than after the session
+ * and three requests.
  */
-export function LearnSkeleton() {
+export function LearnSkeleton({ heading = null }: { heading?: ReactNode }) {
   return (
     <div className="flex flex-col gap-6" aria-busy="true">
       <p className="sr-only" role="status">
@@ -24,11 +31,13 @@ export function LearnSkeleton() {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_20rem] xl:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex min-w-0 flex-col gap-5">
-          <div className="flex flex-col gap-2">
-            <SkeletonText size="caption" className="w-56" />
-            <SkeletonText size="h1" className="w-96 max-w-full" />
-            <Skeleton className="h-6.5 w-28 rounded-full" />
-          </div>
+          {heading ?? (
+            <div className="flex flex-col gap-2">
+              <SkeletonText size="caption" className="w-56" />
+              <SkeletonText size="h1" className="w-96 max-w-full" />
+              <Skeleton className="h-6.5 w-28 rounded-full" />
+            </div>
+          )}
           <Skeleton className="aspect-video w-full rounded-lg" />
           <div className="flex gap-2">
             <Skeleton className="h-11 w-full sm:h-9 sm:w-52" />

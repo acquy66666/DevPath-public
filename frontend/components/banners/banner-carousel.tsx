@@ -105,8 +105,10 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
 function Slide({ banner, focusable }: { banner: Banner; focusable: boolean }) {
   const picture = (
     <>
+      {/* Lazy: the carousel sits under the hero since Phase 7, and its three
+          pictures (~63 KB) were fetched before the hero's text had painted. */}
       {/* eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here */}
-      <img src={banner.image_url} alt="" className="size-full object-cover" />
+      <img src={banner.image_url} alt="" loading="lazy" decoding="async" className="size-full object-cover" />
       {/* A scrim under the words: the picture is whatever an admin uploaded,
           and white text has to stay readable on any of it. Right padding
           leaves room for the controls in the corner. */}

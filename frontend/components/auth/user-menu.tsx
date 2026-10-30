@@ -17,8 +17,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { UserAvatar } from "@/components/auth/user-avatar";
-import { Button } from "@/components/ui/button";
+import { AccountButton } from "@/components/layout/header-buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,10 +49,7 @@ export function UserMenu({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-10 gap-2 px-1 text-base sm:px-2" aria-label={`Tài khoản: ${user.full_name}`}>
-          <UserAvatar user={user} className="size-8 text-sm" />
-          <span className="hidden max-w-32 truncate sm:inline">{user.full_name}</span>
-        </Button>
+        <AccountButton user={user} />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-56">

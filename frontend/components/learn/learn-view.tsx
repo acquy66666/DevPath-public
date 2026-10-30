@@ -4,12 +4,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTree, MessageCircleQuestion, NotebookPen, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import { ChatPanel } from "@/components/chat/chat-panel";
-import { ExerciseWorkspace } from "@/components/exercise/exercise-workspace";
 import { CourseBar } from "@/components/learn/course-bar";
 import { CourseComplete, NEXT_COURSES_ID } from "@/components/learn/course-complete";
+import {
+  ChatPanel,
+  ExerciseWorkspace,
+  loadMarkdown,
+  Markdown,
+  NextCourses,
+  QaPanel,
+  QuizWorkspace,
+} from "@/components/learn/lazy-parts";
 import { LearnSkeleton } from "@/components/learn/learn-skeleton";
 import { LessonActions } from "@/components/learn/lesson-actions";
 import { LessonHeading } from "@/components/learn/lesson-heading";
@@ -17,17 +24,13 @@ import { LessonList } from "@/components/learn/lesson-list";
 import { NotesPanel } from "@/components/learn/notes-panel";
 import { VideoPlayer, type PlayerHandle } from "@/components/learn/video-player";
 import { Mascot } from "@/components/mascot/mascot";
-import { QaPanel } from "@/components/qa/qa-panel";
-import { QuizWorkspace } from "@/components/quiz/quiz-workspace";
-import { NextCourses } from "@/components/recommendations/next-courses";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Markdown } from "@/components/ui/markdown";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ApiError } from "@/lib/api/client";
-import { getCourseBySlug } from "@/lib/api/courses";
-import { getCurriculum, getLesson } from "@/lib/api/curriculum";
+import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
+import { getCurriculum, getLesson, type Curriculum } from "@/lib/api/curriculum";
 import { getQuizOfLesson } from "@/lib/api/quiz";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import { getCourseProgress, saveProgress } from "@/lib/api/progress";
@@ -48,12 +51,22 @@ export function LearnView({
   slug,
   lessonId,
   threadId,
+  initialCourse,
+  initialCurriculum,
 }: {
   slug: string;
   /** From `?bai=`. Null means "wherever I left off". */
   lessonId: string | null;
   /** From `?hoi-dap=`: a question under this lesson to open straight onto. */
   threadId: string | null;
+  /**
+   * The course and its contents as the server saw them, for anyone: drawn
+   * at once, and the reader's own requests start from them. Null when the
+   * server could not fetch them (a draft, a hiccup) -- then they are asked
+   * for here, with the reader's token.
+   */
+  initialCourse: CourseDetail | null;
+  initialCurriculum: Curriculum | null;
 }) {
   const { accessToken, status, user } = useAuth();
   const router = useRouter();
@@ -64,6 +77,7 @@ export function LearnView({
     queryKey: ["course", slug],
     queryFn: () => getCourseBySlug(slug, accessToken),
     enabled: signedIn,
+    initialData: initialCourse ?? undefined,
   });
   const courseId = course.data?.id ?? null;
 
@@ -78,6 +92,7 @@ export function LearnView({
     queryKey: ["curriculum", courseId],
     queryFn: () => getCurriculum(courseId as string, accessToken),
     enabled: signedIn && courseId !== null,
+    initialData: courseId !== null && courseId === initialCourse?.id ? (initialCurriculum ?? undefined) : undefined,
   });
 
   const bookmarks = useQuery({
@@ -134,6 +149,19 @@ export function LearnView({
     enabled: signedIn && currentId !== null && lesson.data?.type === "quiz",
     retry: false,
   });
+
+  // The first time the page opens, the frame stays up until the lesson itself
+  // is in too. Progress and the lesson are asked for at the same moment, and
+  // when progress won the race the page used to draw with a small stand-in
+  // for the lesson that then grew -- pushing the contents, which sit under
+  // the lesson on a phone, down by a fifth of the screen (Lighthouse: CLS
+  // 0.21 on one run in three). Moving to another lesson afterwards keeps the
+  // page and shows the stand-in, as before.
+  const [opened, setOpened] = useState(false);
+  const lessonSettled = currentId === null || lesson.data !== undefined || lesson.isError;
+  if (!opened && course.data && curriculum.data && progress.data && lessonSettled) {
+    setOpened(true);
+  }
 
   // While a quiz is being answered, "Nộp bài" is the main button on screen;
   // "Bài tiếp theo" must not compete with it even on a finished lesson.
@@ -202,7 +230,29 @@ export function LearnView({
     requestAnimationFrame(() => composer.current?.focus());
   }
 
-  if (status === "loading") return <LearnSkeleton />;
+  // Until the reader's own data is in, the frame stands in for the page --
+  // with the lesson's real heading when the contents already say what it is.
+  const outline = curriculum.data ?? null;
+  const summary = outline?.sections.flatMap((section) => section.lessons).find((row) => row.id === currentId);
+  // An article needs the Markdown renderer, which is its own chunk: start
+  // fetching it now, while the session and the lesson are still on their way.
+  const lessonType = summary?.type ?? lesson.data?.type ?? null;
+  useEffect(() => {
+    if (lessonType === "article") void loadMarkdown();
+  }, [lessonType]);
+
+  const waitingHeading = outline && summary ? (
+    <LessonHeading
+      place={locateLesson(outline, summary.id)}
+      title={summary.title}
+      type={summary.type}
+      length={null}
+      resumeAt={null}
+      finished={false}
+    />
+  ) : null;
+
+  if (status === "loading") return <LearnSkeleton heading={waitingHeading} />;
 
   if (!signedIn) {
     return (
@@ -248,7 +298,9 @@ export function LearnView({
     );
   }
 
-  if (!course.data || !curriculum.data || !progress.data) return <LearnSkeleton />;
+  if (!opened || !course.data || !curriculum.data || !progress.data) {
+    return <LearnSkeleton heading={waitingHeading} />;
+  }
 
   const completedIds = new Set(
     progress.data.lessons

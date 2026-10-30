@@ -251,7 +251,21 @@ function lighthouse(name, url, run, cookie) {
     args.push(quote(`--extra-headers=${headers}`));
   }
   try {
-    execFileSync(win ? "npx.cmd" : "npx", args, { stdio: "inherit", shell: win });
+    // Lighthouse sometimes loses the start of its trace on a busy machine
+    // (NO_NAVSTART, exit 1, nothing measured): one more go, a fresh Chrome.
+    // A signed-in retry may reuse a cookie the failed run already rotated; the
+    // backend's 30 s leeway covers that, and an expired one shows up as the
+    // learning page's sign-in gate in the report rather than as a wrong number.
+    for (let attempt = 1; ; attempt++) {
+      try {
+        execFileSync(win ? "npx.cmd" : "npx", args, { stdio: "inherit", shell: win });
+        break;
+      } catch (error) {
+        const partial = fs.existsSync(out) ? JSON.parse(fs.readFileSync(out, "utf8")) : null;
+        if (attempt >= 2 || (partial && partial.runtimeError?.code !== "NO_NAVSTART")) throw error;
+        log(`lighthouse ${name} #${run}: NO_NAVSTART, chạy lại`);
+      }
+    }
   } finally {
     if (headers) fs.rmSync(headers, { force: true });
   }

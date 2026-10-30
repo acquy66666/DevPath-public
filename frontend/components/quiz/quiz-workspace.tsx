@@ -9,7 +9,7 @@ import { QuizIntro } from "@/components/quiz/quiz-intro";
 import { preloadResultMoods, QuizResult } from "@/components/quiz/quiz-result";
 import { QuizSheet } from "@/components/quiz/quiz-sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton, SkeletonRegion, SkeletonText } from "@/components/ui/skeleton";
+import { QuizSkeleton } from "@/components/quiz/quiz-skeleton";
 import { apiErrorMessage } from "@/lib/api/error-messages";
 import {
   getAttempt,
@@ -228,26 +228,7 @@ export function QuizWorkspace({
   }, [attempt]);
 
   if (quiz.isPending) {
-    return (
-      <SkeletonRegion
-        label="Đang tải bài trắc nghiệm"
-        className="flex flex-col gap-5 rounded-lg border bg-card p-5 sm:p-6"
-      >
-        <div className="flex items-center gap-4">
-          <Skeleton className="size-12 shrink-0 rounded-lg" />
-          <div className="flex w-full max-w-72 flex-col">
-            <SkeletonText size="h3" className="w-44" />
-            <SkeletonText size="body-sm" />
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <Skeleton className="h-16 sm:h-18" />
-          <Skeleton className="h-16 sm:h-18" />
-          <Skeleton className="h-16 sm:h-18" />
-        </div>
-        <Skeleton className="h-11 w-full sm:w-44" />
-      </SkeletonRegion>
-    );
+    return <QuizSkeleton />;
   }
 
   if (quiz.isError) {

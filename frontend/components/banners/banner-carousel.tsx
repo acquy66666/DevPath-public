@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Banner } from "@/lib/api/banners";
 
@@ -27,6 +27,26 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
   const [reducedMotion, setReducedMotion] = useState(false);
   const count = banners.length;
 
+  // The pictures load when the carousel is about to come into view, not
+  // with the page: it sits under the hero, and the browser's own
+  // `loading="lazy"` still fetched all three (~63 KB) before the hero's text
+  // had painted -- on a phone its threshold is 1250-2500 px. 200 px ahead is
+  // enough for them to be there by the time it scrolls in.
+  const frame = useRef<HTMLElement>(null);
+  const [near, setNear] = useState(false);
+  useEffect(() => {
+    const element = frame.current;
+    if (!element || near) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setNear(true);
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [near]);
+
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReducedMotion(query.matches);
@@ -46,6 +66,7 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
 
   return (
     <section
+      ref={frame}
       aria-roledescription="carousel"
       aria-label="Tin nổi bật"
       className="relative overflow-hidden rounded-xl border bg-muted"
@@ -67,7 +88,7 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
             aria-hidden={position !== index}
             className="relative aspect-[16/9] w-full shrink-0 sm:aspect-[21/8]"
           >
-            <Slide banner={banner} focusable={position === index} />
+            <Slide banner={banner} focusable={position === index} load={near} />
           </div>
         ))}
       </div>
@@ -102,11 +123,12 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
   );
 }
 
-function Slide({ banner, focusable }: { banner: Banner; focusable: boolean }) {
+function Slide({ banner, focusable, load }: { banner: Banner; focusable: boolean; load: boolean }) {
   const picture = (
     <>
+      {/* No source until the carousel is near the screen (see above). */}
       {/* eslint-disable-next-line @next/next/no-img-element -- R2/MinIO URLs, not optimisable here */}
-      <img src={banner.image_url} alt="" className="size-full object-cover" />
+      <img src={load ? banner.image_url : undefined} alt="" decoding="async" className="size-full object-cover" />
       {/* A scrim under the words: the picture is whatever an admin uploaded,
           and white text has to stay readable on any of it. Right padding
           leaves room for the controls in the corner. */}

@@ -16,6 +16,7 @@ import {
   type CatalogQuery,
   type CatalogSort,
 } from "@/lib/api/courses";
+import { CodeFontPreload } from "@/components/layout/code-font-preload";
 
 /**
  * The catalogue. Server-rendered, and every filtered view is a real URL.
@@ -138,6 +139,7 @@ export default async function CatalogPage({
 
   return (
     <div>
+      <CodeFontPreload />
       {/* The page head on `card`: the title, the search box, the topics. */}
       <div className="border-b bg-card">
         <header className="mx-auto max-w-6xl space-y-5 px-4 pt-10 pb-6">

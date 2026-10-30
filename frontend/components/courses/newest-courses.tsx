@@ -2,7 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 
 import { CourseCard } from "@/components/courses/course-card";
-import { CourseBlock, CourseBlockSkeleton } from "@/components/recommendations/course-block";
+import { CourseBlock } from "@/components/recommendations/course-block";
 import { listCourses, type CourseCard as Course } from "@/lib/api/courses";
 
 const TITLE = "Khóa học mới";
@@ -13,7 +13,7 @@ const LIMIT = 4;
  * The newest courses on sale, for everyone who opens the home page -- the one
  * row a signed-out visitor sees before deciding whether to look further.
  *
- * Server Component, streamed behind Suspense: the list is the same for every
+ * Server Component, rendered with the page: the list is the same for every
  * reader and worth crawling. `connection()` keeps it out of the build-time
  * prerender, which would otherwise freeze the catalogue as it was then.
  *
@@ -38,10 +38,6 @@ export async function NewestCourses() {
       ))}
     </CourseBlock>
   );
-}
-
-export function NewestCoursesSkeleton() {
-  return <CourseBlockSkeleton title={TITLE} count={LIMIT} described action={<AllCoursesLink />} />;
 }
 
 function AllCoursesLink() {

@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { Mascot } from "@/components/mascot/mascot";
+import { LazyNaomiStill } from "@/components/mascot/lazy-still";
 
 /** The tests of the example, as the submission page lists them. */
 const TESTS = [
@@ -77,7 +77,7 @@ export function GradingShowcase() {
               ))}
             </ol>
           </div>
-          <Mascot mood="celebrate" className="-mb-2 size-24 shrink-0 sm:size-28" />
+          <LazyNaomiStill mood="celebrate" className="-mb-2 size-24 shrink-0 sm:size-28" />
         </div>
       </div>
     </figure>

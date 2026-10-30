@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Mascot } from "@/components/mascot/mascot";
+import { LazyNaomiStill } from "@/components/mascot/lazy-still";
 import type { Mood } from "@/lib/mascot/moods";
 import { cn } from "@/lib/utils";
 
@@ -62,7 +62,7 @@ export function EmptyState({
           row && "@md:flex-row @md:justify-center @md:text-left",
         )}
       >
-        <Mascot mood={mood} size="md" className={NAOMI[size]} />
+        <LazyNaomiStill mood={mood} size="md" className={NAOMI[size]} />
         <div className={cn("flex min-w-0 flex-col items-center gap-1", row && "@md:items-start")}>
           <Title className={cn("text-balance text-foreground", size === "sm" ? "text-body-sm font-semibold" : "text-title")}>
             {title}

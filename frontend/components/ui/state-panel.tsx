@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-import { Mascot } from "@/components/mascot/mascot";
+import { LazyNaomiStill } from "@/components/mascot/lazy-still";
 import { cn } from "@/lib/utils";
 
 /**
@@ -47,7 +47,7 @@ export function StatePanel({
       className={cn("@container mx-auto w-full", mood ? "max-w-3xl" : "max-w-xl", compact ? "py-2" : "px-4 py-12 md:py-20", className)}
     >
       <div className={cn("grid items-center gap-6", mood && "@xl:grid-cols-[auto_minmax(0,1fr)] @xl:gap-10")}>
-        {mood ? <Mascot mood={mood} size="lg" className="size-32 @xl:size-50" /> : null}
+        {mood ? <LazyNaomiStill mood={mood} size="lg" className="size-32 @xl:size-50" /> : null}
         <div className="flex min-w-0 flex-col gap-2">
           {code ? <p className="font-mono text-eyebrow text-muted-foreground uppercase">{code}</p> : null}
           <Title className={cn("text-balance text-foreground", Title === "h1" ? "text-h1" : "text-h2")}>{title}</Title>

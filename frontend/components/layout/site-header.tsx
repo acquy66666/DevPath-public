@@ -1,34 +1,33 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { lazy, Suspense, useState } from "react";
 
-import { UserMenu } from "@/components/auth/user-menu";
 import { CartBadge } from "@/components/commerce/cart-badge";
 import { BrandMark } from "@/components/layout/brand-mark";
-import { NotificationBell } from "@/components/notifications/notification-bell";
+import { AccountButton, BellButton, MobileNavButton } from "@/components/layout/header-buttons";
+import { isCurrent, NAV } from "@/components/layout/site-nav";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { useAfterLoad } from "@/lib/design/use-after-load";
 import { cn } from "@/lib/utils";
 
-/** The site's sections, for everyone. A signed-in user's own pages live in the avatar menu. */
-const NAV = [
-  { href: "/khoa-hoc", label: "Khóa học" },
-  { href: "/bang-xep-hang", label: "Bảng xếp hạng" },
-] as const;
-
-function isCurrent(pathname: string, href: string) {
-  // "/khoa-hoc-cua-toi" starts with "/khoa-hoc" and is not under it.
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
+// The three menus load after the page is up (see header-buttons.tsx): the
+// phone menu once the page has loaded and gone quiet, or at the first touch
+// of its button -- the server draws the button -- and the other two only for
+// a signed-in user, who is known after the session is restored. Each shows
+// its own button meanwhile.
+const MobileNav = dynamic(() => import("@/components/layout/mobile-nav").then((m) => m.MobileNav), {
+  ssr: false,
+  loading: () => <MobileNavButton />,
+});
+const NotificationBell = lazy(() =>
+  import("@/components/notifications/notification-bell").then((m) => ({ default: m.NotificationBell })),
+);
+const UserMenu = lazy(() => import("@/components/auth/user-menu").then((m) => ({ default: m.UserMenu })));
 
 /**
  * Client Component because the session lives in context, and the session is
@@ -45,31 +44,28 @@ function isCurrent(pathname: string, href: string) {
 export function SiteHeader() {
   const { user, status } = useAuth();
   const pathname = usePathname();
+  const menu = useAfterLoad();
+  // What the reader did to the stand-in before the menu was here.
+  const [early, setEarly] = useState<"open" | "focus" | null>(null);
 
   return (
     <header className="border-b bg-card print:hidden">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4">
         <div className="flex min-w-0 items-center gap-1 md:gap-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Mở menu điều hướng">
-                <Menu className="size-5" aria-hidden />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-56">
-              {NAV.map((item) => (
-                <DropdownMenuItem key={item.href} asChild>
-                  <Link
-                    href={item.href}
-                    aria-current={isCurrent(pathname, item.href) ? "page" : undefined}
-                    className="min-h-10 text-base aria-[current=page]:bg-secondary aria-[current=page]:font-semibold aria-[current=page]:text-secondary-foreground"
-                  >
-                    {item.label}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {menu.ready ? (
+            <MobileNav defaultOpen={early === "open"} autoFocus={early !== null} />
+          ) : (
+            <MobileNavButton
+              onClick={() => {
+                setEarly("open");
+                menu.now();
+              }}
+              onFocus={() => {
+                setEarly((was) => was ?? "focus");
+                menu.now();
+              }}
+            />
+          )}
 
           <Link href="/" className="shrink-0 rounded-md text-xl font-bold sm:text-2xl">
             <BrandMark />
@@ -102,9 +98,13 @@ export function SiteHeader() {
             <Skeleton className="h-9 w-36 sm:h-11 sm:w-52" />
           ) : user ? (
             <>
-              <NotificationBell />
+              <Suspense fallback={<BellButton />}>
+                <NotificationBell />
+              </Suspense>
               <CartBadge />
-              <UserMenu user={user} />
+              <Suspense fallback={<AccountButton user={user} />}>
+                <UserMenu user={user} />
+              </Suspense>
             </>
           ) : (
             <>

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 
 import { LearnView } from "@/components/learn/learn-view";
+import { getCourseBySlug, type CourseDetail } from "@/lib/api/courses";
+import { getCurriculum, type Curriculum } from "@/lib/api/curriculum";
 
 export const metadata: Metadata = {
   title: "Đang học — DevPath",
@@ -26,12 +28,42 @@ export default async function LearnPage({
   const query = await searchParams;
   const lessonId = first(query.bai);
   const threadId = first(query["hoi-dap"]);
+  const { course, curriculum } = await loadOutline(slug);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <LearnView slug={slug} lessonId={lessonId} threadId={threadId} />
+      <LearnView
+        slug={slug}
+        lessonId={lessonId}
+        threadId={threadId}
+        initialCourse={course}
+        initialCurriculum={curriculum}
+      />
     </div>
   );
+}
+
+/**
+ * The public half of the page, fetched here so it arrives with the HTML: the
+ * course and its table of contents are the same for a visitor and an enrolled
+ * reader (a token only matters for a course not yet published). With them the
+ * lesson title -- the largest thing on screen -- is drawn before the browser
+ * has even restored the session, and the reader's progress is asked for
+ * straight after it, instead of after a round trip for the course id.
+ *
+ * Anything that goes wrong here is left to the client, which asks again with
+ * the reader's token and shows the error it gets: a draft only its owner may
+ * open, a backend that blinked.
+ */
+async function loadOutline(
+  slug: string,
+): Promise<{ course: CourseDetail | null; curriculum: Curriculum | null }> {
+  try {
+    const course = await getCourseBySlug(slug);
+    return { course, curriculum: await getCurriculum(course.id) };
+  } catch {
+    return { course: null, curriculum: null };
+  }
 }
 
 function first(value: string | string[] | undefined): string | null {

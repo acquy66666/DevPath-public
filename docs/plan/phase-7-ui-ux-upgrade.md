@@ -160,7 +160,12 @@ Mỗi task: mockup trên artifact Design → user duyệt → code → `npm run 
   - `web-design-guidelines`: thêm liên kết "Bỏ qua tới nội dung chính" (đích `<main id="noi-dung">`), email tắt kiểm chính tả trong `FormField`.
   - **Kiểm:** `npm run test:e2e` 10 passed, bộ ảnh 24/24 trên stack sạch, ESLint sạch, `npm test` 156/156.
   - Bằng chứng: [`accessibility.md`](../report/assets/phase-7/accessibility.md)
-- [ ] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu
+- [x] Hiệu năng: Lighthouse mobile ba trang ở bước "trước" — LCP ≤ 2,5 s, CLS ≤ 0,1, không tệ hơn số "trước"; nhân vật + Motion thêm ≤ 50 KB gzip ở màn đầu — xong 30/10:
+  - **Kết quả** (trung vị 3 lượt, stack demo, đúng đường đo của `before.md`): LCP trang chủ 2,56 → **2,26 s**, chi tiết khóa học 2,56 → **2,40 s**, trang học 3,31 → **2,41 s**; CLS ≤ 0,001; axe 3 → 0 vi phạm; First Load JS trang chủ 208,9 → **177,6 KB** (ngân sách 50 KB thành âm 31 KB; trên `main` trước task là +30,9 KB).
+  - **Cách Lighthouse tính:** `simulate` tính mọi request bắt đầu trước LCP quan sát, LCP nhảy theo bậc 150 ms (~25–30 KB); chunk tải ngay sau hydrate vẫn bị tính → hoãn tới sau `load` + lúc rảnh. Máy bận (một trò chơi đang chạy) làm số đo vô nghĩa.
+  - **Sửa:** trang học tải sẵn khóa + mục lục ở máy chủ, khung chờ vẽ tiêu đề bài thật; `latin-ext` của Google chồng `vietnamese` nên mọi trang tải thêm 34 KB → bỏ phần chồng theo `cmap`; menu header/Toast/hộp thoại báo cáo/khối gợi ý/phần phụ trang học tải lười; Turbopack đóng gói lặp Naomi có hoạt ảnh 3 lần ở trang chủ → `<LazyNaomiStill>` cho chỗ tĩnh; Geist Mono preload + tách ASCII (14 KB); banner chỉ tải khi gần màn hình; favicon mặc định create-next-app 26 KB → `icon.svg` 254 byte (giả định); trang chủ bỏ hai skeleton Suspense không bao giờ hiện (HTML 21,1 → 16,7 KB); nginx `gzip_comp_level 5`.
+  - **Lỗi tìm ra:** CLS 0,214 ở trang học khi tiến độ về trước bài học (đã sửa); NaomiStill dạng server component lặp SVG trong payload RSC làm trang chi tiết chậm một bậc (bỏ).
+  - Bằng chứng: [`performance.md`](../report/assets/phase-7/performance.md)
 - [ ] Viết skill dự án **`devpath-ui`** (`.claude/skills/devpath-ui/`, dùng `skill-creator`, khuôn `brand-guidelines`): luật token, component, nhân vật (khi nào dùng `mood` nào, ở đâu không dùng), chuyển động. Skill `nextjs-feature` trỏ sang nó
 
 ## Gate cuối phase (= đóng băng giao diện)

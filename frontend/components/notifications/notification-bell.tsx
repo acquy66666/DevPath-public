@@ -1,12 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Bell, CheckCheck, Loader2 } from "lucide-react";
+import { CheckCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { BellButton } from "@/components/layout/header-buttons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,22 +71,7 @@ export function NotificationBell() {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="relative h-10 px-2 sm:px-3"
-          aria-label={unread > 0 ? `Thông báo, ${unread} chưa đọc` : "Thông báo"}
-        >
-          <Bell className="size-5" aria-hidden />
-          {unread > 0 ? (
-            <span
-              className="absolute -top-0.5 right-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-[0.7rem] font-semibold text-destructive-foreground tabular-nums"
-              aria-hidden
-            >
-              {unread > 9 ? "9+" : unread}
-            </span>
-          ) : null}
-        </Button>
+        <BellButton unread={unread} />
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end" className="w-[22rem] max-w-[calc(100vw-2rem)] p-0">

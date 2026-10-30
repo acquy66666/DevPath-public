@@ -1,11 +1,14 @@
 # Font tự host
 
-Các file `.woff2` ở đây là chính các file Google Fonts trả về, mỗi file một subset. `app/fonts.css` khai báo chúng với đúng `unicode-range` của Google, nên trình duyệt vẫn chỉ tải subset mà trang thật sự dùng.
+Các file `.woff2` ở đây là chính các file Google Fonts trả về, mỗi file một subset. `app/fonts.css` khai báo chúng với `unicode-range` của Google, nên trình duyệt vẫn chỉ tải subset mà trang thật sự dùng. Hai chỗ khác Google (Phase 7 — hiệu năng, 30/10/2026, số đo ở `docs/report/assets/phase-7/performance.md`):
+
+- **Dải `latin-ext` bỏ phần chồng với `vietnamese`** (ă đ ĩ ũ ơ ư ỳ–ỹ ₫): Google khai các ký tự đó ở cả hai subset nên trang tiếng Việt nào cũng tải thêm `latin-ext` (34 KB với Lexend) dù tệp `vietnamese` đã có. Dải mới chỉ bỏ đúng các ký tự mà tệp `vietnamese` của từng font thật sự vẽ (đã đối chiếu bảng `cmap`; Geist Mono `vietnamese` không có ₫ nên `latin-ext` của nó giữ ₫). Lấy lại font thì làm lại phép trừ này.
+- **Geist Mono `latin` tách đôi** bằng `frontend/scripts/split-mono-ascii.py` (fontTools): `geist-mono-ascii.woff2` (U+20–7E, 14 KB — được preload ở trang có code ngay màn đầu) và `geist-mono-latin-rest.woff2` (12 KB). Tệp `geist-mono-latin.woff2` của Google giữ lại làm nguồn, CSS không dùng nó.
 
 | Font | Lấy ngày | Subset | Dùng ở |
 |---|---|---|---|
 | Lexend (variable, 400–700) | 21/10/2026 (`lexend/v26`) | vietnamese, latin-ext, latin | Toàn site (`--font-lexend`). Thay Geist ngày 21/10: lý do ở [`docs/ui-ux/design-system/fonts.md`](../../../docs/ui-ux/design-system/fonts.md) |
-| Geist Mono 1.701 | 06/10/2026 | cyrillic-ext, cyrillic, symbols, vietnamese, latin-ext, latin | Code (`--font-geist-mono`) |
+| Geist Mono 1.701 | 06/10/2026 | cyrillic-ext, cyrillic, symbols, vietnamese, latin-ext, latin (tách thành `ascii` + `latin-rest`) | Code (`--font-geist-mono`) |
 | Noto Serif 2.015 (600–700) | 06/10/2026 | vietnamese, latin-ext, latin | Tiêu đề + tên trên trang chứng chỉ (`.font-certificate`) |
 
 Giấy phép: SIL Open Font License 1.1, xem [OFL.txt](OFL.txt).

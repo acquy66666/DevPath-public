@@ -2,11 +2,11 @@ import { ShieldCheck, Sparkles, MessageSquareText } from "lucide-react";
 import { Suspense } from "react";
 
 import { HomeBanners, HomeBannersSkeleton } from "@/components/banners/home-banners";
-import { NewestCourses, NewestCoursesSkeleton } from "@/components/courses/newest-courses";
+import { NewestCourses } from "@/components/courses/newest-courses";
 import { GradingShowcase } from "@/components/home/grading-showcase";
 import { HeroActions } from "@/components/home/hero-actions";
 import { HomeRecommendations } from "@/components/home/home-recommendations";
-import { HomeTopics, HomeTopicsSkeleton } from "@/components/home/home-topics";
+import { HomeTopics } from "@/components/home/home-topics";
 import { CodeFontPreload } from "@/components/layout/code-font-preload";
 
 /** The three things DevPath does that a plain video course does not. */
@@ -53,16 +53,18 @@ export default function HomePage() {
           person's history, and there is no anonymous version of it. */}
       <HomeRecommendations />
 
-      {/* Suspense keeps the static part of the page prerendered while the
-          blocks that call the API stream at request time -- otherwise the
-          lists would be baked into the HTML at build time. */}
-      <Suspense fallback={<HomeTopicsSkeleton />}>
-        <HomeTopics />
-      </Suspense>
-
-      <Suspense fallback={<NewestCoursesSkeleton />}>
-        <NewestCourses />
-      </Suspense>
+      {/* Rendered with the page rather than streamed behind skeletons. The
+          catalogue answers in milliseconds, so the skeletons were never seen
+          -- yet both they and the real blocks went down in the HTML and the
+          RSC payload, and those ~2 KB put the home page's HTML and CSS one
+          round trip over on a slow phone (first paint 1.21 s against the
+          course page's 0.96 s; Phase 7 performance,
+          docs/report/assets/phase-7/performance.md). Like the course page,
+          the response now waits for the API; both blocks draw nothing when
+          it fails. `connection()` inside them keeps them out of the
+          build-time prerender. */}
+      <HomeTopics />
+      <NewestCourses />
     </div>
   );
 }

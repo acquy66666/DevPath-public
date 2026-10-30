@@ -13,14 +13,20 @@ import {
 
 import { isCurrent, NAV } from "./site-nav";
 
-/** Below `md`, the site's sections fold into this menu. Loaded lazily by the header. */
-export function MobileNav() {
+/**
+ * Below `md`, the site's sections fold into this menu. Loaded lazily by the
+ * header, which draws the same button until then: a click on it opens this
+ * menu as soon as it is here (`defaultOpen`), and a focused button hands its
+ * focus over (`autoFocus`).
+ */
+export function MobileNav({ defaultOpen = false, autoFocus = false }: { defaultOpen?: boolean; autoFocus?: boolean }) {
   const pathname = usePathname();
 
   return (
-    <DropdownMenu>
+    <DropdownMenu defaultOpen={defaultOpen}>
       <DropdownMenuTrigger asChild>
-        <MobileNavButton />
+        {/* autoFocus only hands over the focus the stand-in button had. */}
+        <MobileNavButton autoFocus={autoFocus} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
         {NAV.map((item) => (

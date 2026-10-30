@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 
 import { CartBadge } from "@/components/commerce/cart-badge";
 import { BrandMark } from "@/components/layout/brand-mark";
@@ -12,12 +12,14 @@ import { isCurrent, NAV } from "@/components/layout/site-nav";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/auth/auth-provider";
+import { useAfterLoad } from "@/lib/design/use-after-load";
 import { cn } from "@/lib/utils";
 
 // The three menus load after the page is up (see header-buttons.tsx): the
-// phone menu as soon as the page hydrates -- the server draws its button --
-// and the other two only for a signed-in user, who is known after the session
-// is restored. Each shows its own button meanwhile.
+// phone menu once the page has loaded and gone quiet, or at the first touch
+// of its button -- the server draws the button -- and the other two only for
+// a signed-in user, who is known after the session is restored. Each shows
+// its own button meanwhile.
 const MobileNav = dynamic(() => import("@/components/layout/mobile-nav").then((m) => m.MobileNav), {
   ssr: false,
   loading: () => <MobileNavButton />,
@@ -42,12 +44,28 @@ const UserMenu = lazy(() => import("@/components/auth/user-menu").then((m) => ({
 export function SiteHeader() {
   const { user, status } = useAuth();
   const pathname = usePathname();
+  const menu = useAfterLoad();
+  // What the reader did to the stand-in before the menu was here.
+  const [early, setEarly] = useState<"open" | "focus" | null>(null);
 
   return (
     <header className="border-b bg-card print:hidden">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4">
         <div className="flex min-w-0 items-center gap-1 md:gap-6">
-          <MobileNav />
+          {menu.ready ? (
+            <MobileNav defaultOpen={early === "open"} autoFocus={early !== null} />
+          ) : (
+            <MobileNavButton
+              onClick={() => {
+                setEarly("open");
+                menu.now();
+              }}
+              onFocus={() => {
+                setEarly((was) => was ?? "focus");
+                menu.now();
+              }}
+            />
+          )}
 
           <Link href="/" className="shrink-0 rounded-md text-xl font-bold sm:text-2xl">
             <BrandMark />

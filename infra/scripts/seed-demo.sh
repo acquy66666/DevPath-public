@@ -9,7 +9,8 @@
 # What a demo needs that `--seed` alone does not give: lecture transcripts
 # for the assistant, homepage banners, a year of sales for the dashboards,
 # seventy days of study for XP, streaks and the leaderboard, the coupon codes,
-# certificates, and -- with GEMINI_API_KEY set -- the course material embedded
+# certificates, a fuller catalogue (scripts.seed_catalogue), and -- with
+# GEMINI_API_KEY set -- the course material embedded
 # for the assistant and the recommender. Without that last part the assistant
 # answers every question with "chưa có tài liệu".
 #
@@ -55,6 +56,10 @@ run scripts.seed_study
 run scripts.seed_coupons
 run scripts.rebuild_leaderboard
 run scripts.issue_certificates
+# Twenty-two more real courses for the catalogue page. After seed_sales on
+# purpose: the sales stay on the four real courses, so the dashboards read
+# the same numbers as on the dev machine.
+run scripts.seed_catalogue
 
 if grep -Eq '^GEMINI_API_KEY=.+' .env.prod; then
     # Embeds every published course's material (the assistant) and each

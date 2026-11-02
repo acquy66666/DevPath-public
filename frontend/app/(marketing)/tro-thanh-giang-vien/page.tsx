@@ -6,7 +6,7 @@ import { BecomeInstructorCard } from "@/components/auth/become-instructor-card";
 export const metadata: Metadata = {
   title: "Trở thành giảng viên — DevPath",
   description:
-    "Nâng cấp tài khoản DevPath để tạo khóa học, ra bài tập code được chấm tự động và theo dõi học viên.",
+    "Gửi yêu cầu trở thành giảng viên DevPath để tạo khóa học, ra bài tập code được chấm tự động và theo dõi học viên.",
 };
 
 /** What the instructor area holds, said as what you can do with it. */
@@ -17,17 +17,17 @@ const TOOLS = [
   { icon: BarChart3, title: "Thống kê và hỏi đáp", text: "Học viên mới, tỉ lệ hoàn thành, câu hỏi chưa trả lời." },
 ];
 
-/** The road from this page to a course on sale -- the admin review included. */
+/** The road from this page to a course on sale -- both admin reviews included. */
 const STEPS = [
-  { title: "Nâng cấp", text: "Một cú bấm trên trang này." },
-  { title: "Soạn nháp", text: "Chỉ bạn thấy khóa học." },
-  { title: "Gửi duyệt", text: "Quản trị viên xem lại nội dung." },
+  { title: "Gửi yêu cầu", text: "Kèm vài dòng giới thiệu về bạn." },
+  { title: "Được duyệt", text: "Quản trị viên mở khu giảng dạy cho bạn." },
+  { title: "Soạn và gửi duyệt", text: "Khóa học nháp được xem lại nội dung." },
   { title: "Lên sàn", text: "Học viên tìm thấy và ghi danh." },
 ];
 
 export default function BecomeInstructorPage() {
   return (
-    <div className="mx-auto grid max-w-6xl items-start gap-12 px-4 pt-10 pb-16 md:pt-14 lg:grid-cols-[minmax(0,1fr)_24rem]">
+    <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)] items-start gap-12 px-4 pt-10 pb-16 md:pt-14 lg:grid-cols-[minmax(0,1fr)_24rem]">
       <div className="min-w-0 space-y-10">
         <header className="space-y-4">
           <p className="text-eyebrow text-link uppercase">Dành cho người dạy</p>
@@ -77,7 +77,7 @@ export default function BecomeInstructorPage() {
 
       {/* After the explanation on a phone, beside it from lg: the reader has
           seen what the button does before reaching it. */}
-      <aside aria-label="Nâng cấp tài khoản" className="lg:sticky lg:top-8">
+      <aside aria-label="Yêu cầu trở thành giảng viên" className="lg:sticky lg:top-8">
         <BecomeInstructorCard />
       </aside>
     </div>

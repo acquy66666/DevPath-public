@@ -8,7 +8,7 @@
 import type { AdminSummary } from "@/lib/api/admin";
 
 /** Which count of `AdminSummary` a place carries as its badge. */
-export type PlaceBadge = "pending_courses" | "pending_reports";
+export type PlaceBadge = "pending_courses" | "pending_reports" | "pending_instructor_applications";
 
 export interface Place {
   href: string;
@@ -23,7 +23,7 @@ export interface PlaceGroup {
 }
 
 /**
- * Twelve places in four groups. A row of twelve tabs ran off the side at
+ * Thirteen places in four groups. A row of twelve tabs ran off the side at
  * 1440 px (docs/report/assets/phase-7/before.md); grouped in a side menu they
  * all show, and the work an admin decides on comes first.
  */
@@ -33,6 +33,11 @@ export const PLACE_GROUPS: PlaceGroup[] = [
     label: "Kiểm duyệt",
     places: [
       { href: "/quan-tri/khoa-hoc", label: "Duyệt khóa học", badge: "pending_courses" },
+      {
+        href: "/quan-tri/duyet-giang-vien",
+        label: "Duyệt giảng viên",
+        badge: "pending_instructor_applications",
+      },
       { href: "/quan-tri/bao-cao", label: "Báo cáo vi phạm", badge: "pending_reports" },
       { href: "/quan-tri/nguoi-dung", label: "Người dùng" },
     ],
@@ -80,7 +85,9 @@ export function badgeCount(place: Place, summary: AdminSummary | undefined): num
 
 /** Everything waiting, for the folded menu's button on a phone. */
 export function waitingTotal(summary: AdminSummary | undefined): number {
-  return summary ? summary.pending_courses + summary.pending_reports : 0;
+  return summary
+    ? summary.pending_courses + summary.pending_reports + summary.pending_instructor_applications
+    : 0;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -99,7 +106,7 @@ export function waitLabel(days: number): string {
 }
 
 export interface AttentionCard {
-  kind: "courses" | "reports" | "locked";
+  kind: "courses" | "applications" | "reports" | "locked";
   label: string;
   count: number;
   detail: string;
@@ -131,6 +138,18 @@ export function attentionCards(
             : "Chờ lâu nhất đứng đầu hàng đợi",
       action: "Mở hàng đợi",
       href: "/quan-tri/khoa-hoc",
+      quiet: false,
+    },
+    {
+      kind: "applications",
+      label: "Yêu cầu làm giảng viên",
+      count: summary.pending_instructor_applications,
+      detail:
+        summary.pending_instructor_applications === 0
+          ? "Không có yêu cầu nào đang chờ"
+          : "Duyệt xong, học viên vào được khu giảng dạy ngay",
+      action: "Xem yêu cầu",
+      href: "/quan-tri/duyet-giang-vien",
       quiet: false,
     },
     {

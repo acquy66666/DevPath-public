@@ -18,6 +18,7 @@ export interface AdminSummary {
   pending_courses: number;
   pending_reports: number;
   locked_users: number;
+  pending_instructor_applications: number;
 }
 
 export function getAdminSummary(accessToken: string): Promise<AdminSummary> {
@@ -205,6 +206,56 @@ export function unlockUser(accessToken: string, userId: string): Promise<AdminUs
     method: "POST",
     accessToken,
   });
+}
+
+// --- Applications to teach -------------------------------------------------
+
+export type ApplicationFilter = "pending" | "approved" | "rejected" | "all";
+
+/** Mirrors `AdminInstructorApplicationOut`. */
+export interface AdminInstructorApplication {
+  id: string;
+  status: "pending" | "approved" | "rejected";
+  motivation: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  decided_at: string | null;
+  applicant: AdminPerson & { created_at: string };
+  enrollments_count: number;
+  earlier_rejections: number;
+}
+
+export function listInstructorApplications(
+  accessToken: string,
+  { status, q, page }: { status: ApplicationFilter; q: string; page: number },
+): Promise<Page<AdminInstructorApplication>> {
+  const params = new URLSearchParams({ status, page: String(page), page_size: "20" });
+  if (q) params.set("q", q);
+  return apiFetch<Page<AdminInstructorApplication>>(
+    `/api/v1/admin/instructor-applications?${params}`,
+    { accessToken },
+  );
+}
+
+export function approveInstructorApplication(
+  accessToken: string,
+  applicationId: string,
+): Promise<AdminInstructorApplication> {
+  return apiFetch<AdminInstructorApplication>(
+    `/api/v1/admin/instructor-applications/${applicationId}/approve`,
+    { method: "POST", accessToken },
+  );
+}
+
+export function rejectInstructorApplication(
+  accessToken: string,
+  applicationId: string,
+  reason: string,
+): Promise<AdminInstructorApplication> {
+  return apiFetch<AdminInstructorApplication>(
+    `/api/v1/admin/instructor-applications/${applicationId}/reject`,
+    { method: "POST", accessToken, body: JSON.stringify({ reason }) },
+  );
 }
 
 // --- Reports ---------------------------------------------------------------

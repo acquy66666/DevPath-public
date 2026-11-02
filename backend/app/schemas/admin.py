@@ -146,6 +146,7 @@ class AdminSummaryOut(BaseModel):
     pending_courses: int
     pending_reports: int
     locked_users: int
+    pending_instructor_applications: int
 
 
 AdminCourseStatus = Literal["pending_review", "published", "rejected", "draft", "all"]

@@ -130,7 +130,7 @@ function Attention() {
           <AlertDescription>{apiErrorMessage(summary.error)}</AlertDescription>
         </Alert>
       ) : summary.data ? (
-        <ul className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+        <ul className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4">
           {attentionCards(
             summary.data,
             oldest ? { title: oldest.title, days: waitedDays(oldest.updated_at, new Date()) } : null,
@@ -154,8 +154,8 @@ function Attention() {
           ))}
         </ul>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4" aria-hidden>
-          {[0, 1, 2].map((tile) => (
+        <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-4" aria-hidden>
+          {[0, 1, 2, 3].map((tile) => (
             <Skeleton key={tile} className="h-36 rounded-lg sm:h-40" />
           ))}
         </div>

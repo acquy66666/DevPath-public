@@ -16,6 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.security import create_access_token
 from app.models import RefreshToken, User
+from app.services import instructor_applications as applications_service
+from tests.api.publishing import make_admin
 
 PASSWORD = "mật-khẩu-đủ-dài"
 NEW_PASSWORD = "mật-khẩu-mới-dài"
@@ -188,9 +190,10 @@ async def test_the_journey_from_sign_up_to_a_changed_password(
 ) -> None:
     """The demo script, as a test.
 
-    Register, look at yourself, renew the session, become an instructor, change
-    the password -- and check the two things that should follow from that last
-    step: other devices are out, and the new password is the one that works.
+    Register, look at yourself, renew the session, become an instructor (apply,
+    an admin approves), change the password -- and check the two things that
+    should follow from that last step: other devices are out, and the new
+    password is the one that works.
     """
     body = await register(api_client)
     user_id = body["user"]["id"]
@@ -204,8 +207,14 @@ async def test_the_journey_from_sign_up_to_a_changed_password(
     assert renewed.status_code == 200
     token = renewed.json()["access_token"]
 
-    promoted = await api_client.post("/api/v1/users/me/instructor", headers=bearer(token))
-    assert promoted.json()["role"] == "instructor"
+    applied = await api_client.post(
+        "/api/v1/users/me/instructor-application", json={}, headers=bearer(token)
+    )
+    assert applied.status_code == 201, applied.text
+    admin = await make_admin(db_session)
+    await applications_service.approve(db_session, uuid.UUID(applied.json()["id"]), admin)
+    me = await api_client.get("/api/v1/auth/me", headers=bearer(token))
+    assert me.json()["role"] == "instructor"
 
     phone = await second_device(app, db_session)
     assert len(await live_sessions(db_session, user_id)) == 2

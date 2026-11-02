@@ -82,7 +82,10 @@ CI chạy lại đúng lệnh này và **fail nếu lock đổi**: thêm depende
 | `GET /api/v1/auth/me` | Hồ sơ người đang đăng nhập (`Authorization: Bearer <access_token>`) |
 | `GET /api/v1/auth/google/authorize` | Bắt đầu đăng nhập Google (302 sang accounts.google.com) |
 | `GET /api/v1/auth/google/callback` | Google trả trình duyệt về đây, kết thúc bằng 302 về frontend |
-| `POST /api/v1/users/me/instructor` | Tự nâng cấp tài khoản lên `instructor` |
+| `GET /api/v1/users/me/instructor-application` | Yêu cầu làm giảng viên gần nhất của mình (`application: null` nếu chưa gửi) |
+| `POST /api/v1/users/me/instructor-application` | Gửi yêu cầu làm giảng viên (kèm lời giới thiệu tùy chọn) — **không** đổi vai |
+| `GET /api/v1/admin/instructor-applications` | Hàng đợi yêu cầu của admin (`status=pending\|approved\|rejected\|all`, `q`) |
+| `POST /api/v1/admin/instructor-applications/{id}/approve` · `/reject` | Admin duyệt (đổi vai thành `instructor`) hoặc từ chối (bắt buộc `reason`) |
 | `PATCH /api/v1/users/me` | Sửa hồ sơ của chính mình (hiện chỉ `full_name`) |
 | `POST /api/v1/users/me/password` | Đổi mật khẩu, thu hồi mọi phiên khác |
 
@@ -206,7 +209,7 @@ Vai trò đọc từ **hàng trong DB**, không đọc claim trong token: thu h�
 
 Ranh giới: quy tắc theo vai trò nằm ở dependency, còn **ownership check** ("khóa học này có phải của bạn không") nằm ở service — vì nó cần chính đối tượng đang bị đụng tới.
 
-Tự nâng cấp lên giảng viên là **self-service**, không có hàng đợi duyệt: `POST /users/me/instructor`, không nhận id nên không thể trỏ vào người khác. Gọi hai lần không phải lỗi; tài khoản `admin` thì bị từ chối 409 `ROLE_CHANGE_NOT_ALLOWED` vì nâng cấp sẽ làm **mất** quyền. Cái giữ cho nó an toàn nằm ở phía sau: khóa học của giảng viên mới vẫn ở trạng thái nháp và phải qua duyệt.
+Lên giảng viên **phải qua admin duyệt** (từ 02/11/2026; trước đó `POST /users/me/instructor` cho ai cũng tự lên — route đã bỏ). Học viên gửi `POST /users/me/instructor-application` (không nhận id nên không trỏ được vào người khác); đang có một yêu cầu chờ thì 409 `INSTRUCTOR_APPLICATION_PENDING`, đã là giảng viên thì 409 `ALREADY_INSTRUCTOR`, tài khoản `admin` thì 409 `ROLE_CHANGE_NOT_ALLOWED` vì đổi vai sẽ làm **mất** quyền. Admin duyệt → `users.role = 'instructor'` + thông báo `instructor_application_approved` trong một transaction; từ chối bắt buộc lý do (thông báo `instructor_application_rejected`), học viên gửi lại được. Logic ở `app/services/instructor_applications.py`. Khóa học của giảng viên mới vẫn ở trạng thái nháp và phải qua duyệt riêng.
 
 ### Hồ sơ & đổi mật khẩu
 

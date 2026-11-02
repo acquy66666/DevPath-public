@@ -7,6 +7,7 @@ nobody but an admin may decide.
 """
 
 import uuid
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -146,9 +147,14 @@ async def test_the_old_self_promotion_is_gone(
 async def test_the_queue_is_oldest_first_and_names_the_applicant(
     api_client: AsyncClient, db_session: AsyncSession, admin: dict, learner: dict
 ) -> None:
-    await apply(api_client, learner, motivation="Thư giới thiệu")
+    first_sent = await apply(api_client, learner, motivation="Thư giới thiệu")
     later = await make_user(db_session, "student", "Người Đến Sau")
     await apply(api_client, await sign_in(api_client, later))
+    # Both rows were written inside the test's one transaction, where now()
+    # does not move: give the first one the earlier time it would have had.
+    earlier = await db_session.get(InstructorApplication, uuid.UUID(first_sent["id"]))
+    earlier.created_at -= timedelta(minutes=5)
+    await db_session.flush()
 
     body = (await api_client.get(QUEUE, headers=admin)).json()
 

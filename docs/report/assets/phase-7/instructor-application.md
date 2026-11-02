@@ -24,16 +24,16 @@ Route cũ đã **bỏ hẳn**: còn nó thì cửa duyệt vô nghĩa. Giảng v
 ## Kiểm
 
 - Migration: `alembic upgrade head` → `downgrade -1` → `upgrade head` → `alembic check` ("No new upgrade operations detected").
-- pytest: `test_instructor_applications.py` 19 ca; ma trận phân quyền có luật cho 2 route học viên (route `/admin/*` tự xếp loại) và một yêu cầu của learner trong `LEARNER_PRIVATE`. Toàn bộ: xem PR.
+- pytest: `test_instructor_applications.py` 19 ca (chạy 3 lượt liền xanh); ma trận phân quyền có luật cho 2 route học viên (route `/admin/*` tự xếp loại) và một yêu cầu của learner trong `LEARNER_PRIVATE`. Toàn bộ trong container: 2.497 passed, 3 đỏ cố định của môi trường container (2 `storage…503` + `deploy.sh` không mount), 1 ca của mình flaky vì hai yêu cầu chung `created_at` trong một transaction test — đã sửa. CI job Backend xanh.
 - `npm test` 156/156, `npm run lint` + `tsc --noEmit` sạch, `next build` (không mạng) xanh có `/quan-tri/duyet-giang-vien`.
 - E2E `npm run test:e2e`: **10 passed** (axe 4 vai × 1440/375 gồm trang mới, luồng vàng, luồng bàn phím).
 - Chạy thật trên stack dev — [`instructor-application/flow.cjs`](instructor-application/flow.cjs), 12/12 kiểm:
   học viên gửi → thấy "đang chờ" → `/giang-day` vẫn từ chối (không vòng refresh) → admin thấy huy hiệu số chờ → duyệt A, từ chối B kèm lý do → A bấm thông báo trong cùng tab, vào `/giang-day` không tải lại → B thấy lý do + nút "Gửi lại yêu cầu" → 0 tràn ngang ở 360 px (trang học viên + hàng đợi admin).
+- Visual: 2 baseline `quan-tri-visual-{desktop,mobile}-linux.png` đổi có chủ đích (mục menu mới, 4 thẻ "Cần xử lý"), sinh bằng **cả bộ** `--update-snapshots` trên stack `devpath-visual` sạch (chạy riêng test admin thì thiếu tài khoản học viên mà bộ đầy đủ tạo, số "Tài khoản mới" lệch), kiểm lại trên stack sạch thứ hai: 24 passed.
 - **Lỗi tìm ra khi chạy thật:** ô nhập mới làm trang `/tro-thanh-giang-vien` tràn 22 px ở 360 px (lưới không đặt cột ở cỡ điện thoại) → `grid-cols-[minmax(0,1fr)]`.
 
 ## Chưa làm
 
-- `npm run test:visual` chưa chạy (cần stack sạch `devpath-visual`): menu admin thêm một mục và "Cần xử lý" thành 4 thẻ, nên baseline các màn admin sẽ đổi có chủ đích — cần `--update-snapshots` trên stack sạch rồi mở từng ảnh.
 - Các script chụp/đo cũ trong `docs/report/assets/` còn gọi `POST /users/me/instructor` (phase-6 `ui/capture.cjs`, `ffmpeg-hardening/upload_drill.py`, `upload-ticket-rate-limit/ticket_drill.py`; phase-7 `admin/stage.cjs`, `article-editor/run.cjs`, `instructor/stage.cjs`, `site-states/capture.cjs`): chạy lại thì phải đổi sang gửi yêu cầu + admin duyệt như `e2e/support/stack.ts`.
 
 ## Ảnh

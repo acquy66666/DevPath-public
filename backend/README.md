@@ -13,7 +13,7 @@ app/
 ├── core/                  Config, deps (get_db, get_current_user, require_role), bảo mật
 └── workers/               Celery tasks: chấm bài (grading), transcode video (media)
 tests/api/                 pytest theo domain
-scripts/                   seed.py, seed_interactions.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_embeddings.py, rebuild_course_stats.py, bench_grading.py, eval_chatbot.py, eval_token_estimate.py, lock.sh
+scripts/                   seed.py, seed_interactions.py, seed_catalogue.py, seed_transcripts.py, ingest_course.py, rebuild_recommendations.py, rebuild_course_embeddings.py, rebuild_course_stats.py, bench_grading.py, eval_chatbot.py, eval_token_estimate.py, lock.sh
 ```
 
 ## Nguyên tắc
@@ -568,6 +568,19 @@ docker compose exec backend python -m scripts.seed_community --purge
 ```
 
 Ghi qua `services/qa.py`, `study.py`, `reports.py` — dòng nào phạm luật thì script dừng với đúng lỗi nút bấm sẽ báo. Chỉ **đồng hồ** ghi thẳng bảng: câu hỏi, trả lời và thông báo của chúng được lùi về giờ trong kế hoạch, để chuông không ghi "vừa xong" dưới một câu hỏi ba ngày trước. Chạy sau `seed_interactions`. `--purge` xóa câu hỏi (trả lời và phiếu đi theo), mọi thông báo trỏ vào chúng — kể cả của giảng viên, người còn lại sau khi gỡ học viên seed — báo cáo về chúng, cùng ghi chú và đánh dấu trong kế hoạch; **gỡ trước `seed_interactions --purge`**. Ghi chú là chữ thường (trang học không render Markdown cho ghi chú). Test: `tests/test_seed_community.py` (kế hoạch khớp danh sách học viên mà `seed_interactions` sinh ra; đọc lại qua service; chạy hai lần; gỡ).
+
+### Catalog đầy đủ hơn: `seed_catalogue`
+
+Bốn khóa của `scripts.seed` làm trang `/khoa-hoc` gần như trống: bộ lọc nào cũng ra một hoặc không kết quả. `scripts/seed_catalogue.py` thêm **22 khóa thật** (2–3 chương, video HLS mẫu như seed gốc, bài đọc Markdown có nội dung để tìm kiếm toàn văn và trợ giảng đọc được) trong **18 danh mục mới** — dữ liệu & AI, CSDL, DevOps, di động, công cụ lập trình, Java, Go, bảo mật — đủ ba cấp độ, 5 khóa miễn phí, giá tới 899.000 ₫. Giảng viên là `khoa.tran` / `mai.anh`.
+
+```bash
+docker compose exec backend python -m scripts.seed_catalogue
+docker compose exec backend python -m scripts.rebuild_course_embeddings   # "Khóa học tương tự"
+docker compose exec backend python -m scripts.ingest_course --all          # trợ giảng AI
+docker compose exec backend python -m scripts.seed_catalogue --purge
+```
+
+Dựng bằng đúng `CourseSpec` + `_build_course` của `seed_courses.py`, nên mỗi khóa ở `published` với đúng các dòng mà lượt duyệt của admin để lại; id = `seed_course_id(slug)` (uuid5), chỉ `published_at` được lùi 2–149 ngày để "Mới nhất" có thứ tự. **Không nằm trong `scripts.seed`**: baseline hồi quy hình ảnh chụp trên stack chỉ có seed gốc. Chạy **sau** `seed_sales`/`seed_study` để số đơn không đổi. Chạy lại không ghi gì; `--purge` xóa khóa, dòng video `seed/<slug>/…` và danh mục nó thêm (danh mục đã có khóa khác thì giữ), từ chối khi còn đơn hàng chứa khóa của nó. Lượt nhúng tốn khoảng 22 + 44 embedding Gemini, chạy lại thì 0. Test: `tests/test_seed_catalogue.py`.
 
 ## Chứng chỉ hoàn thành (Phase 5)
 

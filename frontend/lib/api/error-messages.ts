@@ -36,6 +36,12 @@ const MESSAGES: Record<string, string> = {
   PASSWORD_NOT_SET:
     "Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu để đổi.",
   ROLE_CHANGE_NOT_ALLOWED: "Tài khoản này không thể tự đổi vai trò.",
+  ALREADY_INSTRUCTOR: "Tài khoản của bạn đã là giảng viên. Tải lại trang để vào khu giảng dạy.",
+  INSTRUCTOR_APPLICATION_PENDING:
+    "Yêu cầu trước của bạn đang chờ quản trị viên duyệt, chưa gửi thêm được.",
+  INSTRUCTOR_APPLICATION_NOT_FOUND: "Không tìm thấy yêu cầu này.",
+  INSTRUCTOR_APPLICATION_DECIDED:
+    "Yêu cầu này đã được quyết định trước đó. Tải lại danh sách để xem kết quả.",
 
   // Khóa học.
   COURSE_NOT_FOUND: "Không tìm thấy khóa học này. Có thể nó đã bị xóa.",

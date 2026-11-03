@@ -53,6 +53,7 @@ from app.models import (
     Course,
     CourseSection,
     Enrollment,
+    InstructorApplication,
     Lesson,
     Note,
     Notification,
@@ -231,8 +232,20 @@ async def build_world(session: AsyncSession) -> World:
         total=Decimal("0"),
     )
     notification = Notification(user_id=learner, type="qa_reply", payload={})
+    application = InstructorApplication(user_id=learner, motivation="thư riêng")
     session.add_all(
-        [note, bookmark, chat, submission, attempt, thread, review, order, notification]
+        [
+            note,
+            bookmark,
+            chat,
+            submission,
+            attempt,
+            thread,
+            review,
+            order,
+            notification,
+            application,
+        ]
     )
     await session.flush()
 
@@ -268,6 +281,7 @@ async def build_world(session: AsyncSession) -> World:
         "review": str(review.id),
         "code": order.code,
         "notification_id": str(notification.id),
+        "application": str(application.id),
         "hidden_output": HIDDEN_OUTPUT,
     }
     return world
@@ -283,6 +297,7 @@ LEARNER_PRIVATE = (
     "attempt_id",
     "code",
     "notification_id",
+    "application",
 )
 
 
@@ -534,7 +549,12 @@ RULES: dict[str, Rule] = {
     "POST /users/me/avatar/complete": Scoped(
         "classmate", body={"storage_key": "avatars/{learner}/x.png"}
     ),
-    "POST /users/me/instructor": Scoped("classmate"),
+    # Applying to teach files an application for the caller only; the
+    # learner's own application must never come back to anyone else.
+    "GET /users/me/instructor-application": Scoped("classmate"),
+    "POST /users/me/instructor-application": Scoped(
+        "classmate", body={"motivation": "Em muốn dạy Python."}
+    ),
     "GET /users/me/gamification": Scoped("classmate"),
     "GET /users/me/xp-events": Scoped("classmate"),
     "GET /enrollments/me": Scoped("classmate"),

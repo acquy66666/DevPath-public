@@ -104,6 +104,7 @@ const GUEST_PATHS = [
 const ADMIN_PATHS = [
   "/quan-tri",
   "/quan-tri/khoa-hoc",
+  "/quan-tri/duyet-giang-vien",
   "/quan-tri/bao-cao",
   "/quan-tri/nguoi-dung",
   "/quan-tri/doanh-thu",

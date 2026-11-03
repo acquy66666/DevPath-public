@@ -12,6 +12,11 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from app.api.v1._transport import client_info, token_response
 from app.core.deps import CurrentUser, DbSession
 from app.schemas.auth import TokenOut, UserOut
+from app.schemas.instructor_applications import (
+    InstructorApplicationCreate,
+    InstructorApplicationOut,
+    MyInstructorApplicationOut,
+)
 from app.schemas.users import (
     AvatarConfirmIn,
     AvatarUploadIn,
@@ -19,6 +24,7 @@ from app.schemas.users import (
     PasswordChangeIn,
     ProfileUpdateIn,
 )
+from app.services import instructor_applications as applications_service
 from app.services import users as users_service
 from app.services.rate_limit import RateLimiter, get_rate_limiter
 from app.services.storage import ObjectStorage, get_storage
@@ -29,19 +35,38 @@ Storage = Annotated[ObjectStorage, Depends(get_storage)]
 RateLimit = Annotated[RateLimiter, Depends(get_rate_limiter)]
 
 
-@router.post("/me/instructor", response_model=UserOut)
-async def become_instructor(current_user: CurrentUser, session: DbSession) -> UserOut:
-    """Upgrade your own account to `instructor`. Requires sign-in, nothing else.
+@router.get("/me/instructor-application", response_model=MyInstructorApplicationOut)
+async def get_my_instructor_application(
+    current_user: CurrentUser, session: DbSession
+) -> MyInstructorApplicationOut:
+    """Your latest application to teach -- pending, approved, or rejected with
+    the reason -- or `application: null` if you never applied."""
+    application = await applications_service.latest_for(session, current_user)
+    return MyInstructorApplicationOut(
+        application=InstructorApplicationOut.model_validate(application)
+        if application
+        else None
+    )
 
-    Only the caller's account is ever touched -- the route has no id to take,
-    so there is no way to point it at anyone else.
 
-    The access token the caller is holding still says `student`; endpoints read
-    the role from the database so that does not matter for permissions, but the
-    frontend should refresh to render itself as an instructor.
+@router.post(
+    "/me/instructor-application",
+    response_model=InstructorApplicationOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def apply_to_teach(
+    payload: InstructorApplicationCreate, current_user: CurrentUser, session: DbSession
+) -> InstructorApplicationOut:
+    """Ask an admin to make your account an instructor. Changes no role.
+
+    No id in the path: it only ever files an application for the caller.
+    409 `INSTRUCTOR_APPLICATION_PENDING` while one is waiting,
+    `ALREADY_INSTRUCTOR` for an instructor, `ROLE_CHANGE_NOT_ALLOWED` for an admin.
     """
-    user = await users_service.promote_to_instructor(session, current_user)
-    return UserOut.model_validate(user)
+    application = await applications_service.apply(
+        session, current_user, motivation=payload.motivation
+    )
+    return InstructorApplicationOut.model_validate(application)
 
 
 @router.patch("/me", response_model=UserOut)

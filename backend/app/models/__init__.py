@@ -36,6 +36,12 @@ from app.models.grading import (
     SubmissionResult,
     TestCase,
 )
+from app.models.instructor_application import (
+    APPLICATION_MOTIVATION_MAX_LENGTH,
+    APPLICATION_REASON_MAX_LENGTH,
+    APPLICATION_STATUSES,
+    InstructorApplication,
+)
 from app.models.instructor_tier import (
     TIER_COUNT,
     TIER_NAME_MAX_LENGTH,
@@ -47,6 +53,8 @@ from app.models.notification import (
     NOTIFICATION_COURSE_APPROVED,
     NOTIFICATION_COURSE_REJECTED,
     NOTIFICATION_COURSE_TAKEN_DOWN,
+    NOTIFICATION_INSTRUCTOR_APPLICATION_APPROVED,
+    NOTIFICATION_INSTRUCTOR_APPLICATION_REJECTED,
     NOTIFICATION_INSTRUCTOR_TIER_CHANGED,
     NOTIFICATION_QA_QUESTION,
     NOTIFICATION_QA_REPLY,
@@ -96,6 +104,9 @@ from app.models.study import Bookmark, Note
 from app.models.user import User
 
 __all__ = [
+    "APPLICATION_MOTIVATION_MAX_LENGTH",
+    "APPLICATION_REASON_MAX_LENGTH",
+    "APPLICATION_STATUSES",
     "Banner",
     "BANNER_TITLE_MAX_LENGTH",
     "Base",
@@ -121,6 +132,7 @@ __all__ = [
     "Enrollment",
     "EXPENSE_CATEGORIES",
     "EXPENSE_DESCRIPTION_MAX_LENGTH",
+    "InstructorApplication",
     "InstructorTier",
     "InstructorTierChange",
     "Lesson",
@@ -132,6 +144,8 @@ __all__ = [
     "NOTIFICATION_COURSE_APPROVED",
     "NOTIFICATION_COURSE_REJECTED",
     "NOTIFICATION_COURSE_TAKEN_DOWN",
+    "NOTIFICATION_INSTRUCTOR_APPLICATION_APPROVED",
+    "NOTIFICATION_INSTRUCTOR_APPLICATION_REJECTED",
     "NOTIFICATION_INSTRUCTOR_TIER_CHANGED",
     "NOTIFICATION_QA_QUESTION",
     "NOTIFICATION_QA_REPLY",

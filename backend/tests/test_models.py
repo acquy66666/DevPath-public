@@ -121,6 +121,8 @@ def test_registered_tables_match_the_phases_done_so_far() -> None:
         "payout_statements",
         "payout_statement_lines",
         "platform_expenses",
+        # Learners applying to teach, decided by an admin (11/2026).
+        "instructor_applications",
     }
 
 

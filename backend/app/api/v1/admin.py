@@ -51,6 +51,12 @@ from app.schemas.coupons import (
     AdminCouponUpdate,
     CouponCourseRef,
 )
+from app.schemas.instructor_applications import (
+    AdminInstructorApplicationOut,
+    ApplicantOut,
+    ApplicationRejectIn,
+    ApplicationStatusFilter,
+)
 from app.schemas.instructor_stats import StatsPeriod
 from app.schemas.pagination import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE, Page
 from app.schemas.reports import ReportTargetType
@@ -59,6 +65,7 @@ from app.services import admin_users as users_service
 from app.services import banners as banners_service
 from app.services import categories as categories_service
 from app.services import excel, exports
+from app.services import instructor_applications as applications_service
 from app.services import moderation as moderation_service
 from app.services import platform_stats as stats_service
 from app.services import reports as reports_service
@@ -83,6 +90,7 @@ async def get_summary(_: Admin, session: DbSession) -> AdminSummaryOut:
         pending_courses=await moderation_service.pending_count(session),
         pending_reports=await reports_service.pending_count(session),
         locked_users=await users_service.locked_count(session),
+        pending_instructor_applications=await applications_service.pending_count(session),
     )
 
 
@@ -515,6 +523,69 @@ async def lock_user(user_id: uuid.UUID, _: Admin, session: DbSession) -> AdminUs
 @router.post("/users/{user_id}/unlock", response_model=AdminUserOut)
 async def unlock_user(user_id: uuid.UUID, _: Admin, session: DbSession) -> AdminUserOut:
     return _user_out(await users_service.unlock(session, user_id))
+
+
+# --- Applications to teach -------------------------------------------------
+
+
+def _application_out(item: applications_service.AdminApplication) -> AdminInstructorApplicationOut:
+    application = item.application
+    return AdminInstructorApplicationOut(
+        id=application.id,
+        status=application.status,
+        motivation=application.motivation,
+        rejection_reason=application.rejection_reason,
+        created_at=application.created_at,
+        decided_at=application.decided_at,
+        applicant=ApplicantOut.model_validate(item.applicant),
+        enrollments_count=item.enrollments_count,
+        earlier_rejections=item.earlier_rejections,
+    )
+
+
+@router.get("/instructor-applications", response_model=Page[AdminInstructorApplicationOut])
+async def list_instructor_applications(
+    _: Admin,
+    session: DbSession,
+    status: ApplicationStatusFilter = "pending",
+    q: Search = None,
+    page: PageNo = 1,
+    page_size: PageSize = DEFAULT_PAGE_SIZE,
+) -> Page[AdminInstructorApplicationOut]:
+    """The queue by default, longest waiting first. Search matches name or email."""
+    items, total = await applications_service.list_applications(
+        session, status=status, q=q, page=page, page_size=page_size
+    )
+    return Page[AdminInstructorApplicationOut](
+        items=[_application_out(item) for item in items],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.post(
+    "/instructor-applications/{application_id}/approve",
+    response_model=AdminInstructorApplicationOut,
+)
+async def approve_instructor_application(
+    application_id: uuid.UUID, admin: Admin, session: DbSession
+) -> AdminInstructorApplicationOut:
+    """pending -> approved: the applicant becomes an instructor and is told."""
+    return _application_out(await applications_service.approve(session, application_id, admin))
+
+
+@router.post(
+    "/instructor-applications/{application_id}/reject",
+    response_model=AdminInstructorApplicationOut,
+)
+async def reject_instructor_application(
+    application_id: uuid.UUID, body: ApplicationRejectIn, admin: Admin, session: DbSession
+) -> AdminInstructorApplicationOut:
+    """pending -> rejected, with the reason the applicant reads."""
+    return _application_out(
+        await applications_service.reject(session, application_id, admin, body.reason)
+    )
 
 
 # --- Reports ---------------------------------------------------------------

@@ -1,16 +1,41 @@
 import { apiFetch } from "./client";
 import type { Session, User } from "./auth";
 
+export type InstructorApplicationStatus = "pending" | "approved" | "rejected";
+
+/** Mirrors `InstructorApplicationOut`: the applicant's own receipt. */
+export interface InstructorApplication {
+  id: string;
+  status: InstructorApplicationStatus;
+  motivation: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  decided_at: string | null;
+}
+
+/** The caller's latest application to teach, or null if they never applied. */
+export async function getMyInstructorApplication(
+  accessToken: string,
+): Promise<InstructorApplication | null> {
+  const body = await apiFetch<{ application: InstructorApplication | null }>(
+    "/api/v1/users/me/instructor-application",
+    { accessToken },
+  );
+  return body.application;
+}
+
 /**
- * Upgrade the signed-in account to `instructor`.
- *
- * There is no id in the path on purpose: the endpoint only ever touches the
- * account the token belongs to.
+ * Ask an admin to make this account an instructor. Changes no role: the
+ * account stays a student until the application is approved.
  */
-export function becomeInstructor(accessToken: string): Promise<User> {
-  return apiFetch<User>("/api/v1/users/me/instructor", {
+export function applyToTeach(
+  accessToken: string,
+  motivation: string,
+): Promise<InstructorApplication> {
+  return apiFetch<InstructorApplication>("/api/v1/users/me/instructor-application", {
     method: "POST",
     accessToken,
+    body: JSON.stringify({ motivation }),
   });
 }
 

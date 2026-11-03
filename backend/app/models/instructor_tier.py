@@ -15,8 +15,8 @@ decision is a row in `instructor_tier_changes` with the numbers it was made on.
 
 **`users.instructor_tier_id` NULL means the first tier** (`rank = 1`). Every
 instructor starts there, and the column stays NULL until an admin moves them,
-so becoming an instructor -- `POST /users/me/instructor`, an admin changing a
-role -- never has to remember to set it.
+so becoming an instructor -- an admin approving an application
+(`services/instructor_applications.py`) -- never has to remember to set it.
 
 **A rate is frozen into the sale.** `order_items.instructor_share_rate` is
 copied from the instructor's tier when the order is paid. Promoting somebody

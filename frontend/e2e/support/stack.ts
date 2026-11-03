@@ -76,7 +76,15 @@ export async function stagePaidCourse(request: APIRequestContext): Promise<Stage
     data: { email, password: PASSWORD, full_name: "Giảng Viên E2E" },
   });
   const teacher = registered.access_token as string;
-  await send(request, "POST", "/users/me/instructor", { token: teacher });
+  // Teaching is granted, not taken: apply, and the seeded admin approves.
+  const application = await send(request, "POST", "/users/me/instructor-application", {
+    token: teacher,
+    data: { motivation: "Giảng viên dựng cho kiểm thử end-to-end." },
+  });
+  const admin = await signIn(request, ADMIN_EMAIL, ADMIN_PASSWORD);
+  await send(request, "POST", `/admin/instructor-applications/${application.id}/approve`, {
+    token: admin,
+  });
 
   const categories = (await send(request, "GET", "/categories")) as unknown as Json[];
   const category = ((categories[0].children as Json[]) ?? [])[0] ?? categories[0];
@@ -128,7 +136,6 @@ export async function stagePaidCourse(request: APIRequestContext): Promise<Stage
   }
 
   await send(request, "POST", `/courses/${courseId}/submit`, { token: teacher });
-  const admin = await signIn(request, ADMIN_EMAIL, ADMIN_PASSWORD);
   await send(request, "POST", `/admin/courses/${courseId}/approve`, {
     token: admin,
   });

@@ -151,7 +151,7 @@ export function AdminNavSkeleton() {
   return (
     <>
       <div className="-ml-3 hidden w-60 shrink-0 space-y-5 lg:block" aria-hidden>
-        {[1, 3, 5, 3].map((rows, group) => (
+        {[1, 4, 5, 3].map((rows, group) => (
           <div key={group} className="space-y-1">
             <Skeleton className="mx-3 mb-2.5 h-3 w-20" />
             {Array.from({ length: rows }, (_, row) => (

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 import { InstructorNavSkeleton, instructorSkeletonFor } from "@/components/instructor/instructor-skeletons";
 import { Button } from "@/components/ui/button";
@@ -50,15 +50,7 @@ export function InstructorGate({ children }: { children: ReactNode }) {
     );
   }
 
-  if (user.role === "student") {
-    return (
-      <Prompt
-        title="Bạn chưa phải giảng viên"
-        description="Nâng cấp tài khoản lên giảng viên để bắt đầu tạo khóa học. Chỉ mất một cú nhấp."
-        action={{ href: "/tro-thanh-giang-vien", label: "Trở thành giảng viên" }}
-      />
-    );
-  }
+  if (user.role === "student") return <StudentPrompt />;
 
   // Admins included: `require_role("instructor")` on the endpoints is an exact
   // match, so an admin who got in here would meet a 403 at every request. They
@@ -99,5 +91,32 @@ function Prompt({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/**
+ * A student at the door. An admin may have approved them a moment ago in
+ * another tab of the world -- the "đã được duyệt" notification links here --
+ * while this session still carries the role it was issued with, so read the
+ * session again once: if the row says instructor now, the gate opens.
+ */
+function StudentPrompt() {
+  const { refreshSession } = useAuth();
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (asked.current) return;
+    asked.current = true;
+    refreshSession().catch(() => {
+      // Signed out meanwhile: the provider has already said so.
+    });
+  }, [refreshSession]);
+
+  return (
+    <Prompt
+      title="Bạn chưa phải giảng viên"
+      description="Gửi yêu cầu trở thành giảng viên. Quản trị viên duyệt xong là bạn tạo khóa học được."
+      action={{ href: "/tro-thanh-giang-vien", label: "Trở thành giảng viên" }}
+    />
   );
 }

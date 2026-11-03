@@ -38,6 +38,10 @@ NOTIFICATION_COURSE_REJECTED = "course_rejected"
 NOTIFICATION_COURSE_TAKEN_DOWN = "course_taken_down"
 #: An admin moved you to another instructor tier, with the reason.
 NOTIFICATION_INSTRUCTOR_TIER_CHANGED = "instructor_tier_changed"
+#: An admin approved your application to teach; you are now an instructor.
+NOTIFICATION_INSTRUCTOR_APPLICATION_APPROVED = "instructor_application_approved"
+#: An admin turned down your application to teach, with the reason.
+NOTIFICATION_INSTRUCTOR_APPLICATION_REJECTED = "instructor_application_rejected"
 NOTIFICATION_TYPES = (
     NOTIFICATION_QA_REPLY,
     NOTIFICATION_QA_QUESTION,
@@ -45,6 +49,8 @@ NOTIFICATION_TYPES = (
     NOTIFICATION_COURSE_REJECTED,
     NOTIFICATION_COURSE_TAKEN_DOWN,
     NOTIFICATION_INSTRUCTOR_TIER_CHANGED,
+    NOTIFICATION_INSTRUCTOR_APPLICATION_APPROVED,
+    NOTIFICATION_INSTRUCTOR_APPLICATION_REJECTED,
 )
 
 

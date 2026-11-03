@@ -7,6 +7,7 @@ import {
   CircleCheck,
   CircleX,
   EyeOff,
+  GraduationCap,
   MessageCircleQuestion,
   MessageSquareReply,
   type LucideIcon,
@@ -104,6 +105,22 @@ export function describe(notification: AppNotification): Described {
         href: "/giang-day/cap-bac",
       };
     }
+    case "instructor_application_approved":
+      return {
+        icon: GraduationCap,
+        lead: "Yêu cầu trở thành giảng viên của bạn đã được duyệt. Vào khu giảng dạy để tạo khóa học đầu tiên",
+        quote: null,
+        tail: "",
+        href: "/giang-day",
+      };
+    case "instructor_application_rejected":
+      return {
+        icon: CircleX,
+        lead: "Yêu cầu trở thành giảng viên chưa được duyệt: ",
+        quote: null,
+        tail: clip(notification.payload.reason),
+        href: "/tro-thanh-giang-vien",
+      };
     default:
       return {
         icon: Bell,

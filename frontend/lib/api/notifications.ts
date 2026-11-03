@@ -45,6 +45,17 @@ export interface TierChangedPayload {
   note: string;
 }
 
+/** `instructor_application_approved`: you are an instructor now. */
+export interface ApplicationApprovedPayload {
+  application_id: string;
+}
+
+/** `instructor_application_rejected`: an admin turned your application down. */
+export interface ApplicationRejectedPayload {
+  application_id: string;
+  reason: string;
+}
+
 export interface CourseDecisionPayload {
   course_id: string;
   course_title: string;
@@ -70,7 +81,15 @@ export type AppNotification =
   | (NotificationBase & { type: "course_approved"; payload: CourseApprovedPayload })
   | (NotificationBase & { type: "course_rejected"; payload: CourseDecisionPayload })
   | (NotificationBase & { type: "course_taken_down"; payload: CourseDecisionPayload })
-  | (NotificationBase & { type: "instructor_tier_changed"; payload: TierChangedPayload });
+  | (NotificationBase & { type: "instructor_tier_changed"; payload: TierChangedPayload })
+  | (NotificationBase & {
+      type: "instructor_application_approved";
+      payload: ApplicationApprovedPayload;
+    })
+  | (NotificationBase & {
+      type: "instructor_application_rejected";
+      payload: ApplicationRejectedPayload;
+    });
 
 export function listNotifications(
   accessToken: string,

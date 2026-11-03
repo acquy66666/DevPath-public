@@ -23,7 +23,7 @@ export const DEV_MEDIA_ORIGIN = "http://minio.localhost:9000";
 export const UPLOAD_PLACEHOLDER_PREFIX = "#dang-tai-anh-";
 
 export function mediaOrigins(
-  siteUrl: string | undefined = process.env.NEXT_PUBLIC_SITE_URL,
+  siteUrl: string | undefined = siteAddress(),
   production: boolean = process.env.NODE_ENV === "production",
 ): string[] {
   const origins: string[] = [];
@@ -60,6 +60,18 @@ export function classifyImage(src: string | undefined, origins: readonly string[
   }
   if (origins.includes(url.origin)) return { kind: "hosted", src: url.href };
   return { kind: "external", href: url.href };
+}
+
+/**
+ * The site's own address. In the browser that is the page's origin; reading
+ * `NEXT_PUBLIC_SITE_URL` there would inline the domain into the browser
+ * bundle, which the production image must not carry (CI: "Frontend image
+ * carries the site URL, server side only"). Next replaces `typeof window`
+ * at build time, so the server branch is dropped from browser chunks.
+ */
+function siteAddress(): string | undefined {
+  if (typeof window !== "undefined") return window.location.origin;
+  return process.env.NEXT_PUBLIC_SITE_URL;
 }
 
 function originOf(value: string | undefined): string | null {

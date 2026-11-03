@@ -14,6 +14,7 @@ import {
   Receipt,
   TicketPercent,
   Trophy,
+  UserCheck,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -32,6 +33,7 @@ export const ADMIN_KEY = ["admin"] as const;
 const ICONS: Record<string, LucideIcon> = {
   "/quan-tri": LayoutDashboard,
   "/quan-tri/khoa-hoc": BookCheck,
+  "/quan-tri/duyet-giang-vien": UserCheck,
   "/quan-tri/bao-cao": Flag,
   "/quan-tri/nguoi-dung": Users,
   "/quan-tri/doanh-thu": LineChart,

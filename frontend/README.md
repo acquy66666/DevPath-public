@@ -267,8 +267,6 @@ lib/grading/         giới hạn tài nguyên, chép tay từ model backend
 - Tailwind + shadcn/ui, không thêm UI library khác.
 - Mỗi route segment có `loading.tsx` và `error.tsx`; danh sách rỗng phải có empty state tử tế.
 
-Chi tiết: skill `nextjs-feature` trong `.claude/skills/`.
-
 ## Ba cái bẫy của Next.js 16 đã gặp
 
 **Component gọi API phải `await connection()`.** Không có nó, trang bị prerender lúc build và kết quả API bị đóng băng vào HTML tĩnh — trạng thái backend sẽ luôn hiện như lúc chạy `npm run build`. Kết hợp với `<Suspense>` để phần tĩnh của trang vẫn được prerender bình thường.
@@ -276,5 +274,3 @@ Chi tiết: skill `nextjs-feature` trong `.claude/skills/`.
 **Dev server đôi khi phục vụ bundle cũ.** Sửa file, `tsc` sạch, tải lại trang vẫn ra giao diện cũ — đã gặp hai lần, cả hai đều ở container Docker trên Windows, nơi Turbopack phải poll để thấy thay đổi. `touch` không cứu được; `docker compose restart frontend` thì được. Dấu hiệu nhận ra: đọc `outerHTML` của phần vừa sửa thấy đúng cấu trúc cũ, tức không phải lỗi logic mà là mã cũ.
 
 **Không dựng JSX bên trong `try/catch`.** ESLint (`react-hooks/error-boundaries`) chặn, và đúng: lỗi render của component con sẽ bị `catch` nuốt nhầm. Await trong `try`, gán kết quả ra biến, rồi mới render bên ngoài.
-
-`AGENTS.md` và `CLAUDE.md` trong thư mục này do `next dev` tự sinh và tự thêm lại — chúng chỉ tới bộ doc trong `node_modules/next/dist/docs/`, là nguồn chính xác nhất cho phiên bản đang dùng.

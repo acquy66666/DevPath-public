@@ -19,7 +19,7 @@ Khóa luận tốt nghiệp: nền tảng e-learning kiểu Udemy tích hợp AI
 
 - **Phần em quyết định và chịu trách nhiệm:** phạm vi tính năng (đề cương), lựa chọn kiến trúc và công nghệ, thứ tự ưu tiên, duyệt thiết kế giao diện và linh vật, chấp nhận hay bác bỏ từng thay đổi.
 - **Cách kiểm chứng:** mọi thay đổi đi qua test tự động (pytest, `npm test`, Playwright E2E, hồi quy hình ảnh), CI, và được đo/chạy thật trước khi đánh dấu xong; số đo và log nằm ở `docs/report/assets/`.
-- **Các tệp phục vụ công cụ AI:** `CLAUDE.md` và `.claude/skills/` là hướng dẫn làm việc (quy ước code, checklist bảo mật sandbox) mà trợ lý đọc ở mỗi phiên. Chúng không phải mã chạy của sản phẩm.
+- **Các tệp phục vụ công cụ AI:** trong quá trình làm, repo có `CLAUDE.md` và `.claude/skills/`, là hướng dẫn làm việc (quy ước code, checklist bảo mật sandbox) mà trợ lý đọc ở mỗi phiên. Bản công khai bỏ chúng khỏi cây thư mục hiện tại cho gọn vì chúng không phải mã của sản phẩm. Lịch sử commit vẫn còn đủ.
 - **AI bên trong sản phẩm** (chatbot RAG, sinh quiz, embedding cho recommender) dùng Gemini API. Đây là tính năng của đề cương, khác với công cụ dùng để phát triển.
 
 ## Tech stack
@@ -141,7 +141,7 @@ Chi tiết từng phần: [infra/README.md](infra/README.md) (stack, cổng, sto
 
 ## Trạng thái
 
-**Phase 6 — Hardening & Deploy đang chạy** (Phase 1–5 đã đóng, tag `phase-1-done` … `phase-5-done`). Trạng thái chi tiết nằm ở checkbox trong [docs/plan/](docs/plan/00-overview.md); tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](CLAUDE.md).
+**Phase 6 — Hardening & Deploy đang chạy** (Phase 1–5 đã đóng, tag `phase-1-done` … `phase-5-done`). Trạng thái chi tiết nằm ở checkbox trong [docs/plan/](docs/plan/00-overview.md).
 
 - **Nền tảng (Phase 2):** đăng ký/đăng nhập (email + Google), 3 vai trò; giảng viên soạn khóa học, mục lục kéo-thả, upload video chuyển mã HLS; tìm kiếm toàn văn tiếng Việt, trình phát nhớ vị trí, ghi chú, đánh giá.
 - **Chấm mã nguồn (Phase 3) ⭐:** sandbox Docker cô lập (không mạng, không đặc quyền, rootfs chỉ đọc, timeout hai lớp), đủ 7 verdict, 7 ca tấn công đều bị chặn; hàng đợi Celery riêng, tiến độ từng test qua WebSocket.

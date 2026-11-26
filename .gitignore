@@ -31,8 +31,10 @@ uploads/
 .DS_Store
 Thumbs.db
 
-# Claude Code local
-.claude/settings.local.json
+# AI assistant working files (not part of the product)
+.claude/
+CLAUDE.md
+AGENTS.md
 
 # Python build / test artifacts
 .coverage

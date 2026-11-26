@@ -23,8 +23,6 @@ scripts/                   seed.py, seed_interactions.py, seed_catalogue.py, see
 - **Schema thay đổi luôn qua Alembic migration**, cập nhật [docs/database-design.md](../docs/database-design.md) trong cùng commit.
 - Định dạng lỗi thống nhất: `{"detail": {"code": "COURSE_NOT_FOUND", "message": "..."}}` — frontend dựa vào `code`.
 
-Chi tiết đầy đủ: skill `fastapi-endpoint` và `db-migration` trong `.claude/skills/`.
-
 ## Chạy local
 
 ```bash
@@ -654,7 +652,7 @@ Frontend: chuông trên header (badge đỏ, `9+` khi quá 9; dropdown 8 thông 
 
 ## Trạng thái
 
-Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Tóm tắt cập nhật nhất ở mục "Trạng thái hiện tại" của [CLAUDE.md](../CLAUDE.md), checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
+Toàn bộ API của Phase 2–3 và phần Phase 4 đã làm (quiz, gợi ý, ingest RAG, chat RAG) đều có ở `app/api/v1/`, mỗi router kèm test trong `tests/`. Checkbox chi tiết ở [docs/plan/](../docs/plan/00-overview.md).
 
 Migration là một chuỗi thẳng 28 revision, một head (`alembic heads` để kiểm):
 

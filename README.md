@@ -2,6 +2,26 @@
 
 Khóa luận tốt nghiệp: nền tảng e-learning kiểu Udemy tích hợp AI — chấm mã nguồn tự động trong Docker sandbox, hybrid recommender, chatbot RAG trợ giảng.
 
+## Hướng dẫn đọc nhanh
+
+| Muốn xem | Bắt đầu ở |
+|---|---|
+| API, nghiệp vụ (router → service → model) | [`backend/app/`](backend/app) — `api/v1/`, `services/`, `models/`; test ở [`backend/tests/`](backend/tests) |
+| Chấm code trong Docker sandbox | [`grader/`](grader) — `runner/`, `proxy/` (chặn Docker socket), `images/python/` |
+| Giao diện | [`frontend/app/`](frontend/app) (route), [`frontend/components/`](frontend/components), [`frontend/lib/`](frontend/lib) |
+| Triển khai | [`infra/`](infra) — compose dev/prod, nginx, backup, monitor |
+| Thiết kế | [Kiến trúc](docs/architecture.md), [CSDL](docs/database-design.md), [quyết định kỹ thuật](docs/report/assets/decisions.md) |
+| Bằng chứng từng phase (số đo, log, ảnh) | [`docs/report/assets/`](docs/report/assets/README.md) |
+
+## Về việc sử dụng công cụ AI trong quá trình làm
+
+Đồ án được làm với sự hỗ trợ của trợ lý lập trình AI (**Claude Code** của Anthropic) và **Claude Design** cho mockup/design system giao diện. Lịch sử commit được giữ nguyên, nên các commit có dòng `Co-Authored-By: Claude` là những commit có AI tham gia viết.
+
+- **Phần em quyết định và chịu trách nhiệm:** phạm vi tính năng (đề cương), lựa chọn kiến trúc và công nghệ, thứ tự ưu tiên, duyệt thiết kế giao diện và linh vật, chấp nhận hay bác bỏ từng thay đổi.
+- **Cách kiểm chứng:** mọi thay đổi đi qua test tự động (pytest, `npm test`, Playwright E2E, hồi quy hình ảnh), CI, và được đo/chạy thật trước khi đánh dấu xong; số đo và log nằm ở `docs/report/assets/`.
+- **Các tệp phục vụ công cụ AI:** `CLAUDE.md` và `.claude/skills/` là hướng dẫn làm việc (quy ước code, checklist bảo mật sandbox) mà trợ lý đọc ở mỗi phiên. Chúng không phải mã chạy của sản phẩm.
+- **AI bên trong sản phẩm** (chatbot RAG, sinh quiz, embedding cho recommender) dùng Gemini API. Đây là tính năng của đề cương, khác với công cụ dùng để phát triển.
+
 ## Tech stack
 
 | Lớp | Công nghệ |
